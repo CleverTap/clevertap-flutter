@@ -23,7 +23,7 @@ Now, in your Dart code, you can use :
     import 'package:clevertap_plugin/clevertap_plugin.dart';
 ```
 
-#Android
+## Android
 
 Add the following to your `dependencies` section in `project/build.gradle`
 
@@ -101,10 +101,11 @@ Add your CleverTap Account ID and Token to your `AndroidManifest.xml`, within th
         android:value="1"/> 
 
 ```
+## iOS
 
 ## Example Dart Usage
 
-Please checkout the `/example` directory for the sample app.
+Please checkout the [example](https://github.com/CleverTap/clevertap-flutter/tree/1.0.0/example) directory for the sample app.
 
 ### For more: 
 
