@@ -1,0 +1,21 @@
+name: clevertap_plugin
+description: CleverTap Flutter plugin.
+version: 1.0.0
+author: http://www.clevertap.com
+homepage: https://github.com/CleverTap/clevertap-flutter
+
+environment:
+  sdk: ">=2.1.0 <3.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  plugin:
+    androidPackage: com.clevertap.clevertap_plugin
+    pluginClass: CleverTapPlugin
