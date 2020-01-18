@@ -199,10 +199,6 @@ class CleverTapPlugin {
 		return await _channel.invokeMethod('profileSetGraphUser',{'profile':profile});
 	}
 
-	static Future<String> profileGetProperty(String propertyName) async {
-		return await _channel.invokeMethod('profileGetProperty',{'propertyName':propertyName});
-	}
-
 	static Future<void> profileRemoveValueForKey(String key) async {
 		return await _channel.invokeMethod('profileRemoveValueForKey',{'key':key});
 	}
