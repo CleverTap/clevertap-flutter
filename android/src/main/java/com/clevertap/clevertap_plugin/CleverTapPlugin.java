@@ -38,7 +38,7 @@ public class CleverTapPlugin implements MethodCallHandler, SyncListener,
 
   private static final String TAG = "CleverTapPlugin";
   private static final String ERROR_MSG = "CleverTap Instance is not initialized";
-  private static final String ERROR_IOS = "This method is only applicable for iOS";
+  private static final String ERROR_IOS = " method is only applicable for iOS";
   private CleverTapAPI cleverTapAPI;
   private Context context;
   private MethodChannel channel;
@@ -773,12 +773,12 @@ public class CleverTapPlugin implements MethodCallHandler, SyncListener,
 
       //no-op for android, methods only for iOS.
       case "registerForPush" : {
-        Log.d(TAG,ERROR_IOS);
+        Log.d(TAG,"registerForPush"+ERROR_IOS);
         break;
       }
 
       case "getInitialUrl" : {
-        Log.d(TAG,ERROR_IOS);
+        Log.d(TAG,"getInitialUrl"+ERROR_IOS);
         break;
       }
 

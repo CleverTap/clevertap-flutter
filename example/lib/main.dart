@@ -130,11 +130,11 @@ class _MyAppState extends State<MyApp> {
                     child: Text('Enable/Disable Networking Info')
                 ),
                 RaisedButton(
-                    onPressed: () => CleverTapPlugin.enablePersonalization(),
+                    onPressed: () => enablePersonalization(),
                     child: Text('Enable Personalization')
                 ),
                 RaisedButton(
-                    onPressed: () => CleverTapPlugin.disablePersonalization(),
+                    onPressed: () => disablePersonalization(),
                     child: Text('Disable Personalization')
                 ),
                 RaisedButton(
@@ -334,7 +334,16 @@ class _MyAppState extends State<MyApp> {
 
   void eventGetFirstTime(){
     var eventName = "Flutter Event";
-    CleverTapPlugin.eventGetFirstTime(eventName);
+    CleverTapPlugin.eventGetFirstTime(eventName).then((eventFirstTime) {
+      if (eventFirstTime == null) return;
+      setState((() {
+        print("Event Last time CleverTap = "+ eventFirstTime.toString());
+      }));
+    }).catchError((error) {
+      setState(() {
+        print("$error");
+      });
+    });
   }
 
   void eventGetLastTime(){
@@ -529,5 +538,15 @@ class _MyAppState extends State<MyApp> {
         print("$error");
       });
     });
+  }
+
+  void enablePersonalization(){
+    CleverTapPlugin.enablePersonalization();
+    print("Personalization enabled");
+  }
+
+  void disablePersonalization(){
+    CleverTapPlugin.disablePersonalization();
+    print("Personalization disabled");
   }
 }
