@@ -103,6 +103,20 @@ Add your CleverTap Account ID and Token to your `AndroidManifest.xml`, within th
 ```
 ## iOS
 
+After install, you will need to integrate the CleverTap SDK into your apps.
+
+1. Follow the integration instructions [starting with Step 2 here](https://support.clevertap.com/docs/ios/getting-started.html).
+2. In your `AppDelegate didFinishLaunchingWithOptions:` notify the CleverTap React SDK of application launch:
+```objc
+[CleverTap autoIntegrate]; // integrate CleverTap SDK using the autoIntegrate option
+[[CleverTapReactManager sharedInstance] applicationDidLaunchWithOptions:launchOptions];
+```
+NOTE:  Don't forget to add the CleverTap imports at the top of the file.
+```objc
+#import "CleverTap.h"
+#import "CleverTapPlugin.h"
+```
+
 ## Example Dart Usage
 
 Please checkout the [example](https://github.com/CleverTap/clevertap-flutter/tree/1.0.0/example) directory for the sample app.
