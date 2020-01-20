@@ -259,7 +259,7 @@ static NSDateFormatter *dateFormatter;
 }
 
 - (void)eventGetFirstTime:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    NSTimeInterval res = (int)[[CleverTap sharedInstance] eventGetFirstTime:call.arguments[@"eventName"]];
+    NSTimeInterval res = [[CleverTap sharedInstance] eventGetFirstTime:call.arguments[@"eventName"]];
     result(@(res));
 }
 

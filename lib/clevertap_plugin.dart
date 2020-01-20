@@ -153,11 +153,11 @@ class CleverTapPlugin {
 		return await _channel.invokeMethod('recordChargedEvent',{'chargeDetails':chargeDetails,'items':items});
 	}
 
-	static Future<int> eventGetFirstTime(String eventName) async {
+	static Future<dynamic> eventGetFirstTime(String eventName) async {
 		return await _channel.invokeMethod('eventGetFirstTime',{'eventName':eventName});
 	}
 
-	static Future<int> eventGetLastTime(String eventName) async {
+	static Future<dynamic> eventGetLastTime(String eventName) async {
 		return await _channel.invokeMethod('eventGetLastTime',{'eventName':eventName});
 	}
 
@@ -227,7 +227,7 @@ class CleverTapPlugin {
 		return await _channel.invokeMethod('pushInstallReferrer',{'source':source,'medium':medium,'campaign':campaign});
 	}
 
-	static Future<int> sessionGetTimeElapsed() async {
+	static Future<dynamic> sessionGetTimeElapsed() async {
 		return await _channel.invokeMethod('sessionGetTimeElapsed',{});
 	}
 
@@ -239,7 +239,7 @@ class CleverTapPlugin {
 		return await _channel.invokeMethod('sessionGetScreenCount',{});
 	}
 
-	static Future<int> sessionGetPreviousVisitTime() async {
+	static Future<dynamic> sessionGetPreviousVisitTime() async {
 		return await _channel.invokeMethod('sessionGetPreviousVisitTime',{});
 	}
 

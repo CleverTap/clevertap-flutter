@@ -170,8 +170,8 @@ class _MyAppState extends State<MyApp> {
                     child: Text('On User Login')
                 ),
                 RaisedButton(
-                    onPressed: () => getCTAttributionId(),
-                    child: Text('Get Attribution ID')
+                    onPressed: () => eventGetLastTime(),
+                    child: Text('Get Event Last Time ')
                 ),
                 RaisedButton(
                     onPressed: () => removeProfileValue(),
