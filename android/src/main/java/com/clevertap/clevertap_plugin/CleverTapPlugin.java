@@ -3,8 +3,7 @@ package com.clevertap.clevertap_plugin;
 import android.app.Activity;
 import android.content.Context;
 import android.location.Location;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
+import android.util.Log;
 
 import com.clevertap.android.sdk.CTExperimentsListener;
 import com.clevertap.android.sdk.CTInboxListener;
@@ -39,6 +38,7 @@ public class CleverTapPlugin implements MethodCallHandler, SyncListener,
 
   private static final String TAG = "CleverTapPlugin";
   private static final String ERROR_MSG = "CleverTap Instance is not initialized";
+  private static final String ERROR_IOS = "This method is only applicable for iOS";
   private CleverTapAPI cleverTapAPI;
   private Context context;
   private MethodChannel channel;
@@ -71,7 +71,7 @@ public class CleverTapPlugin implements MethodCallHandler, SyncListener,
   }
 
   @Override
-  public void onMethodCall(MethodCall call, @NonNull Result result) {
+  public void onMethodCall(MethodCall call, Result result) {
     switch (call.method) {
 
       case "setDebugLevel": {
@@ -431,6 +431,7 @@ public class CleverTapPlugin implements MethodCallHandler, SyncListener,
       }
 
       //Session API
+
       case "pushInstallReferrer": {
         String source = call.argument("source");
         String medium = call.argument("medium");
@@ -486,7 +487,6 @@ public class CleverTapPlugin implements MethodCallHandler, SyncListener,
       }
 
       //App Inbox Methods
-
       case "initializeInbox": {
         if(isCleverTapNotNull(cleverTapAPI)) {
           cleverTapAPI.initializeInbox();
@@ -529,6 +529,7 @@ public class CleverTapPlugin implements MethodCallHandler, SyncListener,
       }
 
       //Dynamic Variables methods
+
       case "registerBooleanVariable": {
         String varName = call.argument("name");
         if(isCleverTapNotNull(cleverTapAPI)) {
@@ -769,10 +770,23 @@ public class CleverTapPlugin implements MethodCallHandler, SyncListener,
         }
         break;
       }
+
+      //no-op for android, methods only for iOS.
+      case "registerForPush" : {
+        Log.d(TAG,ERROR_IOS);
+        break;
+      }
+
+      case "getInitialUrl" : {
+        Log.d(TAG,ERROR_IOS);
+        break;
+      }
+
       default: {
         result.notImplemented();
       }
     }
+
   }
 
   private void runOnMainThread(final Runnable runnable) {
@@ -832,7 +846,7 @@ public class CleverTapPlugin implements MethodCallHandler, SyncListener,
   }
 
   @Override
-  public void onDismissed(Map<String, Object> extras, @Nullable Map<String, Object> actionExtras) {
+  public void onDismissed(Map<String, Object> extras, Map<String, Object> actionExtras) {
     invokeMethodOnUiThread("onDismissed",extras,actionExtras);
   }
 
