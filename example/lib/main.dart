@@ -27,7 +27,6 @@ class _MyAppState extends State<MyApp> {
     CleverTapPlugin.initializeInbox();
     CleverTapPlugin.registerForPush();
     var initialUrl = CleverTapPlugin.getInitialUrl();
-    print("Initial url = "+initialUrl.toString());
   }
 
   // Platform messages are asynchronous, so we initialize in an async method.
@@ -193,10 +192,6 @@ class _MyAppState extends State<MyApp> {
                 RaisedButton(
                     onPressed: () => removeMultiValue(),
                     child: Text('Remove Multi Value')
-                ),
-                RaisedButton(
-                    onPressed: () => removeMultiValues(),
-                    child: Text('Remove Multi Values')
                 ),
                 RaisedButton(
                     onPressed: () => removeMultiValues(),
