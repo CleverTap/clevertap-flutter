@@ -109,7 +109,7 @@ After install, you will need to integrate the CleverTap SDK into your apps.
 2. In your `AppDelegate didFinishLaunchingWithOptions:` notify the CleverTap Flutter SDK of application launch:
 ```objc
 [CleverTap autoIntegrate]; // integrate CleverTap SDK using the autoIntegrate option
-[[CleverTapReactManager sharedInstance] applicationDidLaunchWithOptions:launchOptions];
+[[CleverTapPlugin sharedInstance] applicationDidLaunchWithOptions:launchOptions];
 ```
 NOTE:  Don't forget to add the CleverTap imports at the top of the file.
 ```objc
