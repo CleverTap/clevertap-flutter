@@ -27,9 +27,9 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-    
+
   clevertap_plugin:
-    path: /Users/aditi/repo/Github/clevertap-flutter/
+     path: ../
 
 
 # For information on the generic Dart part of this file, see the

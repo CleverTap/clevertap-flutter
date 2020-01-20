@@ -39,8 +39,8 @@ packages:
   clevertap_plugin:
     dependency: "direct dev"
     description:
-      path: "/Users/aditi/repo/Github/clevertap-flutter/"
-      relative: false
+      path: ".."
+      relative: true
     source: path
     version: "1.0.0"
   collection:
