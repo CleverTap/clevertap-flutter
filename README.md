@@ -119,7 +119,7 @@ NOTE:  Don't forget to add the CleverTap imports at the top of the file.
 
 ## Example Dart Usage
 
-Please checkout the [example](https://github.com/CleverTap/clevertap-flutter/tree/1.0.0/starter) directory for the sample app.
+Please checkout the [example](https://github.com/CleverTap/clevertap-flutter/master/example) directory for the sample app.
 
 ### For more: 
 
