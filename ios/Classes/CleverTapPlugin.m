@@ -249,7 +249,7 @@ static NSDateFormatter *dateFormatter;
 }
 
 - (void)setOffline:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    [[CleverTap sharedInstance] setOptOut:[call.arguments[@"value"] boolValue]];
+    [[CleverTap sharedInstance] setOffline:[call.arguments[@"value"] boolValue]];
     result(nil);
 }
 
