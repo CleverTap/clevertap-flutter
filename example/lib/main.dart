@@ -257,9 +257,9 @@ class _MyAppState extends State<MyApp> {
   void recordUser(){
     var stuff = ["bags","shoes"];
     var profile = {
-      'Name': 'John Doe',
+      'Name': 'Tony Stark',
       'Identity': '100',
-      'Email': 'johndoe@jd.com',
+      'Email': 'tony@stark.com',
       'Phone': '+14155551234',
       'props': 'property1',
       'stuff': stuff
@@ -413,9 +413,9 @@ class _MyAppState extends State<MyApp> {
   void onUserLogin(){
     var stuff = ["bags","shoes"];
     var profile = {
-      'Name': 'John Doe',
+      'Name': 'Captain America',
       'Identity': '100',
-      'Email': 'johndoe@jd.com',
+      'Email': 'captain@america.com',
       'Phone': '+14155551234',
       'stuff' : stuff
     };
