@@ -41,6 +41,7 @@ class _MyAppState extends State<MyApp> {
     _clevertapPlugin.setCleverTapProfileSyncHandler(profileDidUpdate);
     _clevertapPlugin.setCleverTapInboxDidInitializeHandler(inboxDidInitialize);
     _clevertapPlugin.setCleverTapInboxMessagesDidUpdateHandler(inboxMessagesDidUpdate);
+    _clevertapPlugin.setCleverTapExperimentsDidUpdateHandler(ctExperimentsUpdated);
   }
 
   void inAppNotificationDismissed(List<Map<String,dynamic>> mapList){
@@ -216,6 +217,10 @@ class _MyAppState extends State<MyApp> {
                 RaisedButton(
                     onPressed: () => getUTMDetails(),
                     child: Text('Session Get UTM Details')
+                ),
+                RaisedButton(
+                    onPressed: () => registerBooleanVar(),
+                    child: Text('Register Boolean Variable')
                 ),
               ],
             ),
@@ -524,5 +529,10 @@ class _MyAppState extends State<MyApp> {
   void disablePersonalization(){
     CleverTapPlugin.disablePersonalization();
     print("Personalization disabled");
+  }
+
+  void registerBooleanVar(){
+    CleverTapPlugin.registerBooleanVariable("boolVar");
+    print("boolVar variable registered");
   }
 }
