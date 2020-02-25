@@ -42,6 +42,7 @@ class _MyAppState extends State<MyApp> {
     _clevertapPlugin.setCleverTapInboxDidInitializeHandler(inboxDidInitialize);
     _clevertapPlugin.setCleverTapInboxMessagesDidUpdateHandler(inboxMessagesDidUpdate);
     _clevertapPlugin.setCleverTapExperimentsDidUpdateHandler(ctExperimentsUpdated);
+    _clevertapPlugin.setCleverTapDisplayUnitsLoadedHandler(onDisplayUnitsLoaded);
   }
 
   void inAppNotificationDismissed(List<Map<String,dynamic>> mapList){
@@ -82,6 +83,12 @@ class _MyAppState extends State<MyApp> {
   void ctExperimentsUpdated(){
     this.setState((){
       print("CTExperimentsUpdated called");
+    });
+  }
+
+  void onDisplayUnitsLoaded(List<Map<String,dynamic>> mapList){
+    this.setState((){
+      print("Display units loaded");
     });
   }
 
@@ -221,6 +228,50 @@ class _MyAppState extends State<MyApp> {
                 RaisedButton(
                     onPressed: () => registerBooleanVar(),
                     child: Text('Register Boolean Variable')
+                ),
+                RaisedButton(
+                    onPressed: () => registerDoubleVar(),
+                    child: Text('Register Double Variable')
+                ),
+                RaisedButton(
+                    onPressed: () => registerIntegerVar(),
+                    child: Text('Register Integer Variable')
+                ),
+                RaisedButton(
+                    onPressed: () => registerStringVar(),
+                    child: Text('Register String Variable')
+                ),
+                RaisedButton(
+                    onPressed: () => registerBooleanListVar(),
+                    child: Text('Register Boolean List Variable')
+                ),
+                RaisedButton(
+                    onPressed: () => registerDoubleListVar(),
+                    child: Text('Register Double List Variable')
+                ),
+                RaisedButton(
+                    onPressed: () => registerIntegerListVar(),
+                    child: Text('Register Integer List Variable')
+                ),
+                RaisedButton(
+                    onPressed: () => registerStringListVar(),
+                    child: Text('Register String List Variable')
+                ),
+                RaisedButton(
+                    onPressed: () => registerBooleanMapVar(),
+                    child: Text('Register Boolean Map Variable')
+                ),
+                RaisedButton(
+                    onPressed: () => registerDoubleMapVar(),
+                    child: Text('Register Double Map Variable')
+                ),
+                RaisedButton(
+                    onPressed: () => registerIntegerMapVar(),
+                    child: Text('Register Integer Map Variable')
+                ),
+                RaisedButton(
+                    onPressed: () => registerStringMapVar(),
+                    child: Text('Register String Map Variable')
                 ),
               ],
             ),
@@ -535,4 +586,62 @@ class _MyAppState extends State<MyApp> {
     CleverTapPlugin.registerBooleanVariable("boolVar");
     print("boolVar variable registered");
   }
+
+  void registerDoubleVar(){
+    CleverTapPlugin.registerDoubleVariable("doubleVar");
+    print("doubleVar variable registered");
+  }
+
+  void registerIntegerVar(){
+    CleverTapPlugin.registerIntegerVariable("integerVar");
+    print("integerVar variable registered");
+  }
+
+  void registerStringVar(){
+    CleverTapPlugin.registerStringVariable("stringVar");
+    print("stringVar variable registered");
+  }
+
+  void registerBooleanListVar() {
+    CleverTapPlugin.registerListOfBooleanVariable("boolListVar");
+    print("boolListVar variable registered");
+  }
+
+  void registerDoubleListVar() {
+    CleverTapPlugin.registerListOfDoubleVariable("doubleListVar");
+    print("doubleListvar variable registered");
+  }
+
+  void registerIntegerListVar() {
+    CleverTapPlugin.registerListOfIntegerVariable("integerListVar");
+    print("integerListVar variable registered");
+  }
+
+  void registerStringListVar() {
+    CleverTapPlugin.registerListOfStringVariable("stringListVar");
+    print("stringListVar variable registered");
+  }
+
+  void registerBooleanMapVar() {
+    CleverTapPlugin.registerMapOfBooleanVariable("boolMapVar");
+    print("boolMapVar variable registered");
+  }
+
+  void registerDoubleMapVar() {
+    CleverTapPlugin.registerMapOfDoubleVariable("doubleMapVar");
+    print("doubleMapVar variable registered");
+  }
+
+  void registerIntegerMapVar() {
+    CleverTapPlugin.registerMapOfIntegerVariable("integerListVar");
+    print("integerListVar variable registered");
+  }
+
+  void registerStringMapVar() {
+    CleverTapPlugin.registerMapOfStringVariable("stringListVar");
+    print("stringListVar variable registered");
+  }
+
+
+
 }

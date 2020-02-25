@@ -15,7 +15,10 @@ import com.clevertap.android.sdk.InAppNotificationListener;
 import com.clevertap.android.sdk.InboxMessageButtonListener;
 import com.clevertap.android.sdk.SyncListener;
 import com.clevertap.android.sdk.UTMDetail;
+import com.clevertap.android.sdk.displayunits.DisplayUnitListener;
+import com.clevertap.android.sdk.displayunits.model.CleverTapDisplayUnit;
 
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
@@ -34,7 +37,7 @@ import io.flutter.plugin.common.PluginRegistry.Registrar;
 public class CleverTapPlugin implements MethodCallHandler, SyncListener,
         InAppNotificationListener, CTInboxListener,
         CTExperimentsListener, InAppNotificationButtonListener,
-        InboxMessageButtonListener {
+        InboxMessageButtonListener, DisplayUnitListener {
 
   private static final String TAG = "CleverTapPlugin";
   private static final String ERROR_MSG = "CleverTap Instance is not initialized";
@@ -54,6 +57,7 @@ public class CleverTapPlugin implements MethodCallHandler, SyncListener,
       this.cleverTapAPI.setInAppNotificationButtonListener(this);
       this.cleverTapAPI.setInAppNotificationListener(this);
       this.cleverTapAPI.setSyncListener(this);
+      this.cleverTapAPI.setDisplayUnitListener(this);
       this.cleverTapAPI.setLibrary("Flutter");
     }
   }
@@ -85,6 +89,21 @@ public class CleverTapPlugin implements MethodCallHandler, SyncListener,
         String token = call.argument("token");
         if(isCleverTapNotNull(cleverTapAPI)) {
           cleverTapAPI.pushFcmRegistrationId(token, true);
+          result.success(null);
+        }else{
+          result.error(TAG,ERROR_MSG,null);
+        }
+        break;
+      }
+
+      case "createNotification": {
+        JSONObject extras = call.argument("extras");
+        if(isCleverTapNotNull(cleverTapAPI)) {
+          try {
+            CleverTapAPI.createNotification(context,Utils.jsonToBundle(extras));
+          } catch (JSONException e) {
+            result.error(TAG,"Unable to render notification due to JSONException - " + e.getLocalizedMessage(),null);
+          }
           result.success(null);
         }else{
           result.error(TAG,ERROR_MSG,null);
@@ -771,6 +790,53 @@ public class CleverTapPlugin implements MethodCallHandler, SyncListener,
         break;
       }
 
+      //Native Display
+      case "getAllDisplayUnits": {
+        if(isCleverTapNotNull(cleverTapAPI)) {
+          result.success(Utils.displayUnitListToMapList(cleverTapAPI.getAllDisplayUnits()));
+        }else{
+          result.error(TAG,ERROR_MSG,null);
+        }
+        break;
+      }
+
+      case "getDisplayUnitForId": {
+        String unitId = call.argument("unitId");
+        if(isCleverTapNotNull(cleverTapAPI)) {
+          if(cleverTapAPI.getDisplayUnitForId(unitId) != null){
+            JSONObject displayUnit = cleverTapAPI.getDisplayUnitForId(unitId).getJsonObject();
+            if(displayUnit != null){
+              result.success(Utils.jsonObjectToMap(displayUnit));
+            }
+          }else{
+            result.error(TAG,"Display Unit is NULL",null);
+          }
+        }else{
+          result.error(TAG,ERROR_MSG,null);
+        }
+        break;
+      }
+
+      case "pushDisplayUnitViewedEvent":{
+        String unitId = call.argument("unitId");
+        if(isCleverTapNotNull(cleverTapAPI)){
+          cleverTapAPI.pushDisplayUnitViewedEventForID(unitId);
+          result.success(null);
+        }else{
+          result.error(TAG,ERROR_MSG,null);
+        }
+      }
+
+      case "pushDisplayUnitClickedEvent":{
+        String unitId = call.argument("unitId");
+        if(isCleverTapNotNull(cleverTapAPI)){
+          cleverTapAPI.pushDisplayUnitClickedEventForID(unitId);
+          result.success(null);
+        }else{
+          result.error(TAG,ERROR_MSG,null);
+        }
+      }
+
       //no-op for android, methods only for iOS.
       case "registerForPush" : {
         Log.d(TAG,"registerForPush"+ERROR_IOS);
@@ -823,6 +889,10 @@ public class CleverTapPlugin implements MethodCallHandler, SyncListener,
 
   }
 
+  private void invokeMethodOnUiThread(final String methodName, final ArrayList<Map<String,Object>> mapList){
+    runOnMainThread(()-> {channel.invokeMethod(methodName,mapList);});
+  }
+
 
   @Override
   public void CTExperimentsUpdated() {
@@ -868,5 +938,10 @@ public class CleverTapPlugin implements MethodCallHandler, SyncListener,
   @Override
   public void onInboxButtonClick(HashMap<String, String> payload) {
     invokeMethodOnUiThread("onInboxButtonClick",payload);
+  }
+
+  @Override
+  public void onDisplayUnitsLoaded(ArrayList<CleverTapDisplayUnit> units) {
+    invokeMethodOnUiThread("onDisplayUnitsLoaded",Utils.displayUnitListToMapList(units));
   }
 }

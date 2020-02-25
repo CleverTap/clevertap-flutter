@@ -1,10 +1,12 @@
 package com.clevertap.clevertap_plugin;
 
+import android.os.Bundle;
 import android.util.Log;
 
 import com.clevertap.android.sdk.CTInboxStyleConfig;
 import com.clevertap.android.sdk.EventDetail;
 import com.clevertap.android.sdk.UTMDetail;
+import com.clevertap.android.sdk.displayunits.model.CleverTapDisplayUnit;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -13,6 +15,7 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 public class Utils {
@@ -151,5 +154,28 @@ public class Utils {
             Log.e("CleverTapError", "JSONArray to ArrayList of Tabs error", e);
             return tabList;
         }
+    }
+
+    static ArrayList<Map<String,Object>> displayUnitListToMapList(ArrayList<CleverTapDisplayUnit> units){
+        ArrayList<Map<String,Object>> mapList = new ArrayList<>();
+        if(units != null) {
+            for (CleverTapDisplayUnit unit : units) {
+                mapList.add(Utils.jsonObjectToMap(unit.getJsonObject()));
+            }
+        }
+        return mapList;
+    }
+
+    static Bundle jsonToBundle(JSONObject jsonObject) throws JSONException {
+        Bundle bundle = new Bundle();
+        if(jsonObject != null) {
+            Iterator iter = jsonObject.keys();
+            while (iter.hasNext()) {
+                String key = (String) iter.next();
+                String value = jsonObject.getString(key);
+                bundle.putString(key, value);
+            }
+        }
+        return bundle;
     }
 }

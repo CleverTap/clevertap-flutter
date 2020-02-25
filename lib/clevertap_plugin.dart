@@ -8,6 +8,7 @@ typedef void CleverTapProfileSyncHandler(Map<String,dynamic> map);
 typedef void CleverTapInboxDidInitializeHandler();
 typedef void CleverTapInboxMessagesDidUpdateHandler();
 typedef void CleverTapExperimentsDidUpdateHandler();
+typedef void CleverTapDisplayUnitsLoadedHandler(List<Map<String,dynamic>> mapList);
 
 class CleverTapPlugin {
 	CleverTapInAppNotificationDismissedHandler cleverTapInAppNotificationDismissedHandler;
@@ -16,6 +17,7 @@ class CleverTapPlugin {
 	CleverTapInboxDidInitializeHandler cleverTapInboxDidInitializeHandler;
 	CleverTapInboxMessagesDidUpdateHandler cleverTapInboxMessagesDidUpdateHandler;
 	CleverTapExperimentsDidUpdateHandler cleverTapExperimentsDidUpdateHandler;
+	CleverTapDisplayUnitsLoadedHandler cleverTapDisplayUnitsLoadedHandler;
 
 	static const MethodChannel _channel =
 	const MethodChannel('clevertap_plugin');
@@ -50,6 +52,9 @@ class CleverTapPlugin {
 			case "CTExperimentsUpdated":
 				cleverTapExperimentsDidUpdateHandler();
 				break;
+			case "onDisplayUnitsLoaded":
+				cleverTapDisplayUnitsLoadedHandler(call.arguments);
+				break;
 		}
 	}
 
@@ -76,6 +81,9 @@ class CleverTapPlugin {
 	/// Define a method to handle dynamic variable experiments update
 	void setCleverTapExperimentsDidUpdateHandler(CleverTapExperimentsDidUpdateHandler handler) =>
 		cleverTapExperimentsDidUpdateHandler = handler;
+
+	void setCleverTapDisplayUnitsLoadedHandler(CleverTapDisplayUnitsLoadedHandler handler)=>
+		cleverTapDisplayUnitsLoadedHandler = handler;
 
 	/// Sets debug level to show logs on Android Studio/Xcode console
 	static Future<void> setDebugLevel(int value) async {
