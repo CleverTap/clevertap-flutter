@@ -585,57 +585,57 @@ static NSDateFormatter *dateFormatter;
     result(@(res));
 }
 
-- (void)getDoubleVariable:(FlutterMethodCall *)call withResult:(FlutterResult)result{
+- (void)getDoubleVariable:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     double res = [[CleverTap sharedInstance] getDoubleVariableWithName:call.arguments[@"name"] defaultValue:[call.arguments[@"defaultValue"] doubleValue]];
     result(@(res));
 }
 
-- (void)getIntegerVariable:(FlutterMethodCall *)call withResult:(FlutterResult)result{
+- (void)getIntegerVariable:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     int res = [[CleverTap sharedInstance] getIntegerVariableWithName:call.arguments[@"name"] defaultValue:[call.arguments[@"defaultValue"] intValue]];
     result(@(res));
 }
 
-- (void)getStringVariable:(FlutterMethodCall *)call withResult:(FlutterResult)result{
+- (void)getStringVariable:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     NSString *res = [[CleverTap sharedInstance] getStringVariableWithName:call.arguments[@"name"] defaultValue:call.arguments[@"defaultValue"]];
     result(res);
 }
 
-- (void)getListOfBooleanVariable:(FlutterMethodCall *)call withResult:(FlutterResult)result{
+- (void)getListOfBooleanVariable:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     NSArray *res = [[CleverTap sharedInstance] getArrayOfBoolVariableWithName:call.arguments[@"name"] defaultValue:call.arguments[@"defaultValue"]];
     result(res);
 }
 
-- (void)getListOfDoubleVariable:(FlutterMethodCall *)call withResult:(FlutterResult)result{
+- (void)getListOfDoubleVariable:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     NSArray *res = [[CleverTap sharedInstance] getArrayOfDoubleVariableWithName:call.arguments[@"name"] defaultValue:call.arguments[@"defaultValue"]];
     result(res);
 }
 
-- (void)getListOfIntegerVariable:(FlutterMethodCall *)call withResult:(FlutterResult)result{
+- (void)getListOfIntegerVariable:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     NSArray *res = [[CleverTap sharedInstance] getArrayOfIntegerVariableWithName:call.arguments[@"name"] defaultValue:call.arguments[@"defaultValue"]];
     result(res);
 }
 
-- (void)getListOfStringVariable:(FlutterMethodCall *)call withResult:(FlutterResult)result{
+- (void)getListOfStringVariable:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     NSArray *res = [[CleverTap sharedInstance] getArrayOfStringVariableWithName:call.arguments[@"name"] defaultValue:call.arguments[@"defaultValue"]];
     result(res);
 }
 
-- (void)getMapOfBooleanVariable:(FlutterMethodCall *)call withResult:(FlutterResult)result{
+- (void)getMapOfBooleanVariable:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     NSDictionary *res = [[CleverTap sharedInstance] getDictionaryOfBoolVariableWithName:call.arguments[@"name"] defaultValue:call.arguments[@"defaultValue"]];
     result(res);
 }
 
-- (void)getMapOfDoubleVariable:(FlutterMethodCall *)call withResult:(FlutterResult)result{
+- (void)getMapOfDoubleVariable:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     NSDictionary *res = [[CleverTap sharedInstance] getDictionaryOfDoubleVariableWithName:call.arguments[@"name"] defaultValue:call.arguments[@"defaultValue"]];
     result(res);
 }
 
-- (void)getMapOfIntegerVariable:(FlutterMethodCall *)call withResult:(FlutterResult)result{
+- (void)getMapOfIntegerVariable:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     NSDictionary *res = [[CleverTap sharedInstance] getDictionaryOfIntegerVariableWithName:call.arguments[@"name"] defaultValue:call.arguments[@"defaultValue"]];
     result(res);
 }
 
-- (void)getMapOfStringVariable:(FlutterMethodCall *)call withResult:(FlutterResult)result{
+- (void)getMapOfStringVariable:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     NSDictionary *res = [[CleverTap sharedInstance] getDictionaryOfStringVariableWithName:call.arguments[@"name"] defaultValue:call.arguments[@"defaultValue"]];
     result(res);
 }
