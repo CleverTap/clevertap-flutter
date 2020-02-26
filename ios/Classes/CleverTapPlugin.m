@@ -6,6 +6,7 @@
 #import "CleverTapEventDetail.h"
 #import "CleverTapSyncDelegate.h"
 #import "CleverTapInAppNotificationDelegate.h"
+#import "CleverTap+DisplayUnit.h"
 
 @interface CleverTapPlugin ()  <CleverTapSyncDelegate, CleverTapInAppNotificationDelegate> {
 }
@@ -47,6 +48,7 @@ static NSDateFormatter *dateFormatter;
         [clevertap setInAppNotificationDelegate:self];
         [clevertap setLibrary:@"Flutter"];
         [self postNotificationWithName:kCleverTapExperimentsDidUpdate andBody:nil];
+        [self postNotificationWithName:kCleverTapDisplayUnitsLoaded andBody:nil];
         [self addObservers];
     }
     return self;
@@ -191,6 +193,16 @@ static NSDateFormatter *dateFormatter;
         [self getMapOfIntegerVariable:call withResult:result];
     else if ([@"getMapOfStringVariable" isEqualToString:call.method])
         [self getMapOfStringVariable:call withResult:result];
+    else if ([@"getAllDisplayUnits" isEqualToString:call.method])
+        [self getAllDisplayUnits:call withResult:result];
+    else if ([@"getDisplayUnitForId" isEqualToString:call.method])
+        [self getDisplayUnitForId:call withResult:result];
+    else if ([@"pushDisplayUnitViewedEvent" isEqualToString:call.method])
+        [self pushDisplayUnitViewedEvent:call withResult:result];
+    else if ([@"pushDisplayUnitClickedEvent" isEqualToString:call.method])
+        [self pushDisplayUnitClickedEvent:call withResult:result];
+    else if ([@"createNotification" isEqualToString:call.method])
+        result(nil);
     else if ([@"createNotificationChannel" isEqualToString:call.method])
         result(nil);
     else if ([@"createNotificationChannelWithSound" isEqualToString:call.method])
@@ -640,7 +652,39 @@ static NSDateFormatter *dateFormatter;
     result(res);
 }
 
+#pragma mark - Native Display
+
+- (void)getAllDisplayUnits:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    NSArray<CleverTapDisplayUnit *> *displayUnits = [[CleverTap sharedInstance] getAllDisplayUnits];
+    NSArray *results = [self cleverTapDisplayUnitToArray:displayUnits];
+    result(results);
+}
+
+- (void)getDisplayUnitForId:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTapDisplayUnit *unit = [[CleverTap sharedInstance] getDisplayUnitForID:call.arguments[@"unitId"]];
+    NSDictionary *res = unit.json;
+    result(res);
+}
+
+- (void)pushDisplayUnitViewedEvent:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    [[CleverTap sharedInstance] recordDisplayUnitViewedEventForID:call.arguments[@"unitId"]];
+    result(nil);
+}
+
+- (void)pushDisplayUnitClickedEvent:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    [[CleverTap sharedInstance] recordDisplayUnitClickedEventForID:call.arguments[@"unitId"]];
+    result(nil);
+}
+
 #pragma mark -  private/helpers
+
+- (NSArray*) cleverTapDisplayUnitToArray:(NSArray*) displayUnits{
+    NSMutableArray *returnArray = [NSMutableArray new];
+    for(CleverTapDisplayUnit *unit in displayUnits){
+        [returnArray addObject:unit.json];
+    }
+    return returnArray;
+}
 
 - (NSDictionary*)_eventDetailToDict:(CleverTapEventDetail*)detail {
     NSMutableDictionary *_dict = [NSMutableDictionary new];
