@@ -1,7 +1,7 @@
 PODS:
   - CleverTap-iOS-SDK (3.7.2):
     - SDWebImage (~> 5.1)
-  - clevertap_plugin (1.0.0):
+  - clevertap_plugin (1.1.0):
     - CleverTap-iOS-SDK (~> 3.7.2)
     - Flutter
   - Flutter (1.0.0)
@@ -26,10 +26,10 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   CleverTap-iOS-SDK: 8d6398edb908b888e6413226a863035c388f9c4b
-  clevertap_plugin: 66d37a2978378e82d47c7eac1c23ccae70d7b4e3
+  clevertap_plugin: bae9ee058ac0eba3d615bdb681453e3c78427b54
   Flutter: 0e3d915762c693b495b44d77113d4970485de6ec
   SDWebImage: 29c340dbdcef342bb13125553f4e19ce056b07a7
 
-PODFILE CHECKSUM: 3dbe063e9c90a5d7c9e4e76e70a821b9e2c1d271
+PODFILE CHECKSUM: 49ec7d4076524b7e225c38b98147173651ac4b9d
 
 COCOAPODS: 1.8.4

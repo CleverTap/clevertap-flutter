@@ -2,12 +2,13 @@ import 'dart:async';
 
 import 'package:flutter/services.dart';
 
-typedef void CleverTapInAppNotificationDismissedHandler(List<Map<String,dynamic>> mapList);
+typedef void CleverTapInAppNotificationDismissedHandler(Map<String,dynamic> mapList);
 typedef void CleverTapProfileDidInitializeHandler();
 typedef void CleverTapProfileSyncHandler(Map<String,dynamic> map);
 typedef void CleverTapInboxDidInitializeHandler();
 typedef void CleverTapInboxMessagesDidUpdateHandler();
 typedef void CleverTapExperimentsDidUpdateHandler();
+typedef void CleverTapDisplayUnitsLoadedHandler(Map<String,dynamic> mapList);
 
 class CleverTapPlugin {
 	CleverTapInAppNotificationDismissedHandler cleverTapInAppNotificationDismissedHandler;
@@ -16,6 +17,7 @@ class CleverTapPlugin {
 	CleverTapInboxDidInitializeHandler cleverTapInboxDidInitializeHandler;
 	CleverTapInboxMessagesDidUpdateHandler cleverTapInboxMessagesDidUpdateHandler;
 	CleverTapExperimentsDidUpdateHandler cleverTapExperimentsDidUpdateHandler;
+	CleverTapDisplayUnitsLoadedHandler cleverTapDisplayUnitsLoadedHandler;
 
 	static const MethodChannel _channel =
 	const MethodChannel('clevertap_plugin');
@@ -32,8 +34,8 @@ class CleverTapPlugin {
 		print("_platformCallHandler call ${call.method} ${call.arguments}");
 		switch (call.method) {
 			case "inAppNotificationDismissed":
-				print("inAppNotificationDismissed called in CleverTap Flutter");
-				cleverTapInAppNotificationDismissedHandler(call.arguments);
+				Map<dynamic,dynamic> args = call.arguments;
+				cleverTapInAppNotificationDismissedHandler(args.cast<String,dynamic>());
 				break;
 			case "profileDidInitialize":
 				cleverTapProfileDidInitializeHandler();
@@ -49,6 +51,10 @@ class CleverTapPlugin {
 				break;
 			case "CTExperimentsUpdated":
 				cleverTapExperimentsDidUpdateHandler();
+				break;
+			case "onDisplayUnitsLoaded":
+				Map<dynamic,dynamic> args = call.arguments;
+				cleverTapDisplayUnitsLoadedHandler(args.cast<String,dynamic>());
 				break;
 		}
 	}
@@ -73,9 +79,13 @@ class CleverTapPlugin {
 	void setCleverTapInboxMessagesDidUpdateHandler(CleverTapInboxMessagesDidUpdateHandler handler) =>
 		cleverTapInboxMessagesDidUpdateHandler = handler;
 
-	/// Define a method to handle inbox update
+	/// Define a method to handle dynamic variable experiments update
 	void setCleverTapExperimentsDidUpdateHandler(CleverTapExperimentsDidUpdateHandler handler) =>
 		cleverTapExperimentsDidUpdateHandler = handler;
+
+	/// Define a method to handle Native Display Unit updates
+	void setCleverTapDisplayUnitsLoadedHandler(CleverTapDisplayUnitsLoadedHandler handler)=>
+		cleverTapDisplayUnitsLoadedHandler = handler;
 
 	/// Sets debug level to show logs on Android Studio/Xcode console
 	static Future<void> setDebugLevel(int value) async {
@@ -92,9 +102,10 @@ class CleverTapPlugin {
 		return await _channel.invokeMethod('setPushToken', {'token':value});
 	}
 
-//	static Future<void> setUIEditorConnectionEnabled(bool value) async {
-//		return await _channel.invokeMethod('setUIEditorConnectionEnabled', {'value':value});
-//	}
+	// Set true to connect app to dashboard to see variables defined by app
+	static Future<void> setUIEditorConnectionEnabled(bool value) async {
+		return await _channel.invokeMethod('setUIEditorConnectionEnabled', {'value':value});
+	}
 
 	/// Method to create Notification Channel
 	static Future<void> createNotificationChannel(String channelId, String channelName, String channelDescription, int importance, bool showBadge) async {
@@ -376,99 +387,149 @@ class CleverTapPlugin {
 		return await _channel.invokeMethod('getInitialUrl',{});
 	}
 
-//	static Future<void> registerBooleanVariable(String name) async {
-//		return await _channel.invokeMethod('registerBooleanVariable',{'name':name});
-//	}
-//
-//	static Future<void> registerDoubleVariable(String name) async {
-//		return await _channel.invokeMethod('registerDoubleVariable',{'name':name});
-//	}
-//
-//	static Future<void> registerIntegerVariable(String name) async {
-//		return await _channel.invokeMethod('registerIntegerVariable',{'name':name});
-//	}
-//
-//	static Future<void> registerStringVariable(String name) async {
-//		return await _channel.invokeMethod('registerStringVariable',{'name':name});
-//	}
-//
-//	static Future<void> registerListOfBooleanVariable(String name) async {
-//		return await _channel.invokeMethod('registerListOfBooleanVariable',{'name':name});
-//	}
-//
-//	static Future<void> registerListOfDoubleVariable(String name) async {
-//		return await _channel.invokeMethod('registerListOfDoubleVariable',{'name':name});
-//	}
-//
-//	static Future<void> registerListOfIntegerVariable(String name) async {
-//		return await _channel.invokeMethod('registerListOfIntegerVariable',{'name':name});
-//	}
-//
-//	static Future<void> registerListOfStringVariable(String name) async {
-//		return await _channel.invokeMethod('registerListOfStringVariable',{'name':name});
-//	}
-//
-//	static Future<void> registerMapOfBooleanVariable(String name) async {
-//		return await _channel.invokeMethod('registerMapOfBooleanVariable',{'name':name});
-//	}
-//
-//	static Future<void> registerMapOfDoubleVariable(String name) async {
-//		return await _channel.invokeMethod('registerMapOfDoubleVariable',{'name':name});
-//	}
-//
-//	static Future<void> registerMapOfIntegerVariable(String name) async {
-//		return await _channel.invokeMethod('registerMapOfIntegerVariable',{'name':name});
-//	}
-//
-//	static Future<void> registerMapOfStringVariable(String name) async {
-//		return await _channel.invokeMethod('registerMapOfStringVariable',{'name':name});
-//	}
-//
-//	static Future<bool> getBooleanVariable(String name, bool defaultValue) async {
-//		return await _channel.invokeMethod('getBooleanVariable',{'name':name,'defaultValue':defaultValue});
-//	}
-//
-//	static Future<double> getDoubleVariable(String name, double defaultValue) async {
-//		return await _channel.invokeMethod('getDoubleVariable',{'name':name,'defaultValue':defaultValue});
-//	}
-//
-//	static Future<int> getIntegerVariable(String name, int defaultValue) async {
-//		return await _channel.invokeMethod('getIntegerVariable',{'name':name,'defaultValue':defaultValue});
-//	}
-//
-//	static Future<String> getStringVariable(String name, String defaultValue) async {
-//		return await _channel.invokeMethod('getStringVariable',{'name':name,'defaultValue':defaultValue});
-//	}
-//
-//	static Future<List> getListOfBooleanVariable(String name, List defaultValue) async {
-//		return await _channel.invokeMethod('getListOfBooleanVariable',{'name':name,'defaultValue':defaultValue});
-//	}
-//
-//	static Future<List> getListOfDoubleVariable(String name, List defaultValue) async {
-//		return await _channel.invokeMethod('getListOfDoubleVariable',{'name':name,'defaultValue':defaultValue});
-//	}
-//
-//	static Future<List> getListOfIntegerVariable(String name, List defaultValue) async {
-//		return await _channel.invokeMethod('getListOfIntegerVariable',{'name':name,'defaultValue':defaultValue});
-//	}
-//
-//	static Future<List> getListOfStringVariable(String name, List defaultValue) async {
-//		return await _channel.invokeMethod('getListOfStringVariable',{'name':name,'defaultValue':defaultValue});
-//	}
-//
-//	static Future<Map<String,bool>> getMapOfBooleanVariable(String name, Map<String,bool> defaultValue) async {
-//		return await _channel.invokeMethod('getMapOfBooleanVariable',{'name':name,'defaultValue':defaultValue});
-//	}
-//
-//	static Future<Map<String,double>> getMapOfDoubleVariable(String name, Map<String,double> defaultValue) async {
-//		return await _channel.invokeMethod('getMapOfDoubleVariable',{'name':name,'defaultValue':defaultValue});
-//	}
-//
-//	static Future<Map<String,int>> getMapOfIntegerVariable(String name, Map<String,int> defaultValue) async {
-//		return await _channel.invokeMethod('getMapOfIntegerVariable',{'name':name,'defaultValue':defaultValue});
-//	}
-//
-//	static Future<Map<String,String>> getMapOfStringVariable(String name, Map<String,String> defaultValue) async {
-//		return await _channel.invokeMethod('getMapOfStringVariable',{'name':name,'defaultValue':defaultValue});
-//	}
+	///Dynamic Variables
+	///Registers Boolean Variable
+	static Future<void> registerBooleanVariable(String name) async {
+		return await _channel.invokeMethod('registerBooleanVariable',{'name':name});
+	}
+
+	///Registers Double Variable
+	static Future<void> registerDoubleVariable(String name) async {
+		return await _channel.invokeMethod('registerDoubleVariable',{'name':name});
+	}
+
+	///Registers Integer Variable
+	static Future<void> registerIntegerVariable(String name) async {
+		return await _channel.invokeMethod('registerIntegerVariable',{'name':name});
+	}
+
+	///Registers String Variable
+	static Future<void> registerStringVariable(String name) async {
+		return await _channel.invokeMethod('registerStringVariable',{'name':name});
+	}
+
+	///Registers List of Boolean Variable
+	static Future<void> registerListOfBooleanVariable(String name) async {
+		return await _channel.invokeMethod('registerListOfBooleanVariable',{'name':name});
+	}
+
+	///Registers List of Double Variable
+	static Future<void> registerListOfDoubleVariable(String name) async {
+		return await _channel.invokeMethod('registerListOfDoubleVariable',{'name':name});
+	}
+
+	///Registers List of Integer Variable
+	static Future<void> registerListOfIntegerVariable(String name) async {
+		return await _channel.invokeMethod('registerListOfIntegerVariable',{'name':name});
+	}
+
+	///Registers List of String Variable
+	static Future<void> registerListOfStringVariable(String name) async {
+		return await _channel.invokeMethod('registerListOfStringVariable',{'name':name});
+	}
+
+	///Registers Map of Boolean Variable
+	static Future<void> registerMapOfBooleanVariable(String name) async {
+		return await _channel.invokeMethod('registerMapOfBooleanVariable',{'name':name});
+	}
+
+	///Registers Map of Double Variable
+	static Future<void> registerMapOfDoubleVariable(String name) async {
+		return await _channel.invokeMethod('registerMapOfDoubleVariable',{'name':name});
+	}
+
+	///Registers Map of Integer Variable
+	static Future<void> registerMapOfIntegerVariable(String name) async {
+		return await _channel.invokeMethod('registerMapOfIntegerVariable',{'name':name});
+	}
+
+	///Registers Map of String Variable
+	static Future<void> registerMapOfStringVariable(String name) async {
+		return await _channel.invokeMethod('registerMapOfStringVariable',{'name':name});
+	}
+
+	///Returns Boolean Variable registered
+	static Future<bool> getBooleanVariable(String name, bool defaultValue) async {
+		return await _channel.invokeMethod('getBooleanVariable',{'name':name,'defaultValue':defaultValue});
+	}
+
+	///Returns Double Variable registered
+	static Future<double> getDoubleVariable(String name, double defaultValue) async {
+		return await _channel.invokeMethod('getDoubleVariable',{'name':name,'defaultValue':defaultValue});
+	}
+
+	///Returns Integer Variable registered
+	static Future<int> getIntegerVariable(String name, int defaultValue) async {
+		return await _channel.invokeMethod('getIntegerVariable',{'name':name,'defaultValue':defaultValue});
+	}
+
+	///Returns String Variable registered
+	static Future<String> getStringVariable(String name, String defaultValue) async {
+		return await _channel.invokeMethod('getStringVariable',{'name':name,'defaultValue':defaultValue});
+	}
+
+	///Returns List of Boolean Variable registered
+	static Future<List> getListOfBooleanVariable(String name, List defaultValue) async {
+		return await _channel.invokeMethod('getListOfBooleanVariable',{'name':name,'defaultValue':defaultValue});
+	}
+
+	///Returns List of Double Variable registered
+	static Future<List> getListOfDoubleVariable(String name, List defaultValue) async {
+		return await _channel.invokeMethod('getListOfDoubleVariable',{'name':name,'defaultValue':defaultValue});
+	}
+
+	static Future<List> getListOfIntegerVariable(String name, List defaultValue) async {
+		return await _channel.invokeMethod('getListOfIntegerVariable',{'name':name,'defaultValue':defaultValue});
+	}
+
+	///Returns List of String Variable registered
+	static Future<List> getListOfStringVariable(String name, List defaultValue) async {
+		return await _channel.invokeMethod('getListOfStringVariable',{'name':name,'defaultValue':defaultValue});
+	}
+
+	///Returns Map of Boolean Variable registered
+	static Future<Map<String,bool>> getMapOfBooleanVariable(String name, Map<String,bool> defaultValue) async {
+		Map<dynamic, dynamic> response = await _channel.invokeMethod('getMapOfBooleanVariable',{'name':name,'defaultValue':defaultValue});
+		return response.cast<String,bool>();
+	}
+
+	///Returns Map of Double Variable registered
+	static Future<Map<String,double>> getMapOfDoubleVariable(String name, Map<String,double> defaultValue) async {
+		Map<dynamic, dynamic> response = await _channel.invokeMethod('getMapOfDoubleVariable',{'name':name,'defaultValue':defaultValue});
+		return response.cast<String,double>();
+	}
+
+	///Returns Map of Integer Variable registered
+	static Future<Map<String,int>> getMapOfIntegerVariable(String name, Map<String,int> defaultValue) async {
+		Map<dynamic, dynamic> response =  await _channel.invokeMethod('getMapOfIntegerVariable',{'name':name,'defaultValue':defaultValue});
+		return response.cast<String, int>();
+	}
+
+	///Returns Map of String Variable registered
+	static Future<Map<String,String>> getMapOfStringVariable(String name, Map<String,String> defaultValue) async {
+		Map<dynamic, dynamic> response = await _channel.invokeMethod('getMapOfStringVariable',{'name':name,'defaultValue':defaultValue});
+		return response.cast<String,String>();
+	}
+
+	///Display units
+	///Returns a List of Display units as a Map
+	static Future<List> getAllDisplayUnits() async {
+		return await _channel.invokeMethod('getAllDisplayUnits',{});
+	}
+
+	///Returns Display unit info as a Map
+	static Future<Map<String,dynamic>> getDisplayUnitForId(String unitId) async {
+		Map<dynamic, dynamic> response = await _channel.invokeMethod('getDisplayUnitForId',{'unitId':unitId});
+		return response.cast<String,dynamic>();
+	}
+
+	///Raise Notification Viewed for Display Unit id passed
+	static Future<void> pushDisplayUnitViewedEvent(String unitId) async {
+		return await _channel.invokeMethod('pushDisplayUnitViewedEvent',{'unitId':unitId});
+	}
+
+	///Raise Notification Clicked for Display Unit id passed
+	static Future<void> pushDisplayUnitClickedEvent(String unitId) async {
+		return await _channel.invokeMethod('pushDisplayUnitClickedEvent',{'unitId':unitId});
+	}
 }

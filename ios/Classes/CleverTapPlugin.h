@@ -5,6 +5,8 @@ static NSString *const kCleverTapProfileSync                = @"profileDataUpdat
 static NSString *const kCleverTapInAppNotificationDismissed = @"inAppNotificationDismissed";
 static NSString *const kCleverTapInboxDidInitialize         = @"inboxDidInitialize";
 static NSString *const kCleverTapInboxMessagesDidUpdate     = @"inboxMessagesDidUpdate";
+static NSString *const kCleverTapExperimentsDidUpdate       = @"CTExperimentsUpdated";
+static NSString *const kCleverTapDisplayUnitsLoaded         = @"onDisplayUnitsLoaded";
 
 @interface CleverTapPlugin : NSObject<FlutterPlugin>
 + (instancetype)sharedInstance;
