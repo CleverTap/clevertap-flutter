@@ -159,14 +159,16 @@ public class Utils {
         }
     }
 
-    static ArrayList<Map<String,Object>> displayUnitListToMapList(ArrayList<CleverTapDisplayUnit> units){
+    static Map<String,ArrayList<Map<String,Object>>> displayUnitListToMap(ArrayList<CleverTapDisplayUnit> units){
+        Map<String,ArrayList<Map<String,Object>>> returnMap = new HashMap<>();
         ArrayList<Map<String,Object>> mapList = new ArrayList<>();
         if(units != null) {
             for (CleverTapDisplayUnit unit : units) {
                 mapList.add(Utils.jsonObjectToMap(unit.getJsonObject()));
             }
         }
-        return mapList;
+        returnMap.put("adUnits",mapList);
+        return returnMap;
     }
 
     static Bundle jsonToBundle(JSONObject jsonObject) throws JSONException {

@@ -2,13 +2,13 @@ import 'dart:async';
 
 import 'package:flutter/services.dart';
 
-typedef void CleverTapInAppNotificationDismissedHandler(List<Map<String,dynamic>> mapList);
+typedef void CleverTapInAppNotificationDismissedHandler(Map<String,dynamic> mapList);
 typedef void CleverTapProfileDidInitializeHandler();
 typedef void CleverTapProfileSyncHandler(Map<String,dynamic> map);
 typedef void CleverTapInboxDidInitializeHandler();
 typedef void CleverTapInboxMessagesDidUpdateHandler();
 typedef void CleverTapExperimentsDidUpdateHandler();
-typedef void CleverTapDisplayUnitsLoadedHandler(List<Map<String,dynamic>> mapList);
+typedef void CleverTapDisplayUnitsLoadedHandler(Map<String,dynamic> mapList);
 
 class CleverTapPlugin {
 	CleverTapInAppNotificationDismissedHandler cleverTapInAppNotificationDismissedHandler;
@@ -34,8 +34,8 @@ class CleverTapPlugin {
 		print("_platformCallHandler call ${call.method} ${call.arguments}");
 		switch (call.method) {
 			case "inAppNotificationDismissed":
-				print("inAppNotificationDismissed called in CleverTap Flutter");
-				cleverTapInAppNotificationDismissedHandler(call.arguments);
+				Map<dynamic,dynamic> args = call.arguments;
+				cleverTapInAppNotificationDismissedHandler(args.cast<String,dynamic>());
 				break;
 			case "profileDidInitialize":
 				cleverTapProfileDidInitializeHandler();
@@ -53,8 +53,8 @@ class CleverTapPlugin {
 				cleverTapExperimentsDidUpdateHandler();
 				break;
 			case "onDisplayUnitsLoaded":
-				List<Map<dynamic,dynamic>> args = call.arguments;
-				cleverTapDisplayUnitsLoadedHandler(args.cast<Map<String,dynamic>>());
+				Map<dynamic,dynamic> args = call.arguments;
+				cleverTapDisplayUnitsLoadedHandler(args.cast<String,dynamic>());
 				break;
 		}
 	}

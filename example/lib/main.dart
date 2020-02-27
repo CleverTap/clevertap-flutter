@@ -47,7 +47,7 @@ class _MyAppState extends State<MyApp> {
     _clevertapPlugin.setCleverTapDisplayUnitsLoadedHandler(onDisplayUnitsLoaded);
   }
 
-  void inAppNotificationDismissed(List<Map<String,dynamic>> mapList){
+  void inAppNotificationDismissed(Map<String,dynamic> map){
     this.setState((){
       print("inAppNotificationDismissed called");
     });
@@ -101,24 +101,23 @@ class _MyAppState extends State<MyApp> {
       print("Integer List = "+intList.toString());
       List<dynamic> stringList = await CleverTapPlugin.getListOfStringVariable("stringListVar", null);
       print("String List = "+stringList.toString());
-      Map<String,bool> boolMap = await CleverTapPlugin.getMapOfBooleanVariable("boolMapVar", null);
-      print("Map of bool = "+boolMap.toString());
-      Map<String,double> doubleMap = await CleverTapPlugin.getMapOfDoubleVariable("doubleMapVar", null);
-      print("Map of double = "+doubleMap.toString());
-      Map<String,int> intMap = await CleverTapPlugin.getMapOfIntegerVariable("integerMapVar", null);
-      print("Map of int = "+boolMap.toString());
-      Map<String,String> strMap = await CleverTapPlugin.getMapOfStringVariable("stringMapVar", null);
-      print("Map of string = "+strMap.toString());
+//      Map<String,bool> boolMap = await CleverTapPlugin.getMapOfBooleanVariable("boolMapVar", null);
+//      print("Map of bool = "+boolMap.toString());
+//      Map<String,double> doubleMap = await CleverTapPlugin.getMapOfDoubleVariable("doubleMapVar", null);
+//      print("Map of double = "+doubleMap.toString());
+//      Map<String,int> intMap = await CleverTapPlugin.getMapOfIntegerVariable("integerMapVar", null);
+//      print("Map of int = "+boolMap.toString());
+//      Map<String,String> strMap = await CleverTapPlugin.getMapOfStringVariable("stringMapVar", null);
+//      print("Map of string = "+strMap.toString());
     });
   }
 
-  void onDisplayUnitsLoaded(List<Map<String,dynamic>> mapList){
-    print("ODUL");
+  void onDisplayUnitsLoaded(Map<String,dynamic> map){
     this.setState(() async {
       print("Display units loaded");
       Map<String,dynamic> adUnit = await CleverTapPlugin.getDisplayUnitForId("1582792356_20200227");
-      CleverTapPlugin.pushDisplayUnitClickedEvent("1582792356_20200227");
-      CleverTapPlugin.pushDisplayUnitViewedEvent("1582792356_20200227");
+      //CleverTapPlugin.pushDisplayUnitClickedEvent("1582792356_20200227");
+      //CleverTapPlugin.pushDisplayUnitViewedEvent("1582792356_20200227");
       print("Ad Unit = " + adUnit.toString());
     });
   }
@@ -711,8 +710,8 @@ class _MyAppState extends State<MyApp> {
   void getAdUnits() async{
     print("Display units loaded");
     Map<String,dynamic> adUnit = await CleverTapPlugin.getDisplayUnitForId("1582792356_20200227");
-    CleverTapPlugin.pushDisplayUnitClickedEvent("1582792356_20200227");
-    CleverTapPlugin.pushDisplayUnitViewedEvent("1582792356_20200227");
+    //CleverTapPlugin.pushDisplayUnitClickedEvent("1582792356_20200227");
+    //CleverTapPlugin.pushDisplayUnitViewedEvent("1582792356_20200227");
     print("Ad Unit = " + adUnit.toString());
   }
 

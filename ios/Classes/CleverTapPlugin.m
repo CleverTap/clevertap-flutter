@@ -203,6 +203,8 @@ static NSDateFormatter *dateFormatter;
         [self pushDisplayUnitViewedEvent:call withResult:result];
     else if ([@"pushDisplayUnitClickedEvent" isEqualToString:call.method])
         [self pushDisplayUnitClickedEvent:call withResult:result];
+    else if ([@"setUIEditorConnectionEnabled" isEqualToString:call.method])
+        [self setUIEditorConnectionEnabled:call withResult:result];
     else if ([@"createNotification" isEqualToString:call.method])
         result(nil);
     else if ([@"createNotificationChannel" isEqualToString:call.method])
@@ -533,6 +535,11 @@ static NSDateFormatter *dateFormatter;
 }
 
 #pragma mark - Dynamic Variables
+
+- (void)setUIEditorConnectionEnabled:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    [CleverTap setUIEditorConnectionEnabled:call.arguments[@"value"]];
+    result(nil);
+}
 
 - (void)registerBooleanVariable:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     [[CleverTap sharedInstance] registerBoolVariableWithName:call.arguments[@"name"]];
