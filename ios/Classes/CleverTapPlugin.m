@@ -48,7 +48,9 @@ static NSDateFormatter *dateFormatter;
         [clevertap setInAppNotificationDelegate:self];
         [clevertap setDisplayUnitDelegate:self];
         [clevertap setLibrary:@"Flutter"];
-        [self postNotificationWithName:kCleverTapExperimentsDidUpdate andBody:nil];
+        [clevertap registerExperimentsUpdatedBlock:^{
+            [self postNotificationWithName:kCleverTapExperimentsDidUpdate andBody:nil];
+        }];
         [self addObservers];
     }
     return self;
