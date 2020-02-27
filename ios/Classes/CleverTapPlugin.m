@@ -8,7 +8,7 @@
 #import "CleverTapInAppNotificationDelegate.h"
 #import "CleverTap+DisplayUnit.h"
 
-@interface CleverTapPlugin ()  <CleverTapSyncDelegate, CleverTapInAppNotificationDelegate> {
+@interface CleverTapPlugin ()  <CleverTapSyncDelegate, CleverTapInAppNotificationDelegate, CleverTapDisplayUnitDelegate> {
 }
 
 @property (strong, nonatomic) FlutterMethodChannel *channel;
@@ -46,9 +46,9 @@ static NSDateFormatter *dateFormatter;
         CleverTap *clevertap = [CleverTap sharedInstance];
         [clevertap setSyncDelegate:self];
         [clevertap setInAppNotificationDelegate:self];
+        [clevertap setDisplayUnitDelegate:self];
         [clevertap setLibrary:@"Flutter"];
         [self postNotificationWithName:kCleverTapExperimentsDidUpdate andBody:nil];
-        [self postNotificationWithName:kCleverTapDisplayUnitsLoaded andBody:nil];
         [self addObservers];
     }
     return self;
@@ -656,7 +656,7 @@ static NSDateFormatter *dateFormatter;
 
 - (void)getAllDisplayUnits:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     NSArray<CleverTapDisplayUnit *> *displayUnits = [[CleverTap sharedInstance] getAllDisplayUnits];
-    NSArray *results = [self cleverTapDisplayUnitToArray:displayUnits];
+    NSArray *results = [self _cleverTapDisplayUnitToArray:displayUnits];
     result(results);
 }
 
@@ -676,9 +676,15 @@ static NSDateFormatter *dateFormatter;
     result(nil);
 }
 
+- (void)displayUnitsUpdated:(NSArray<CleverTapDisplayUnit *> *)displayUnits {
+    NSMutableDictionary *_dict = [NSMutableDictionary new];
+    [_dict setValue:[self _cleverTapDisplayUnitToArray:displayUnits] forKey:@"adUnits"];
+    [self postNotificationWithName:kCleverTapDisplayUnitsLoaded andBody:_dict];
+}
+
 #pragma mark -  private/helpers
 
-- (NSArray*) cleverTapDisplayUnitToArray:(NSArray*) displayUnits{
+- (NSArray*)_cleverTapDisplayUnitToArray:(NSArray*) displayUnits {
     NSMutableArray *returnArray = [NSMutableArray new];
     for(CleverTapDisplayUnit *unit in displayUnits){
         [returnArray addObject:unit.json];
@@ -800,6 +806,11 @@ static NSDateFormatter *dateFormatter;
     [[NSNotificationCenter defaultCenter] addObserver:self
                                              selector:@selector(emitEventInternal:)
                                                  name:kCleverTapExperimentsDidUpdate
+                                               object:nil];
+    
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(emitEventInternal:)
+                                                 name:kCleverTapDisplayUnitsLoaded
                                                object:nil];
 }
 
