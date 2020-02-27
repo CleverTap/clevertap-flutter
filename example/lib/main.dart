@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'dart:async';
 
@@ -81,14 +83,43 @@ class _MyAppState extends State<MyApp> {
   }
 
   void ctExperimentsUpdated(){
-    this.setState((){
+    this.setState(() async {
       print("CTExperimentsUpdated called");
+      bool booleanVar = await CleverTapPlugin.getBooleanVariable("boolVar", false);
+      print("Boolean var = " + booleanVar.toString());
+      double doubleVar = await CleverTapPlugin.getDoubleVariable("doubleVar", 9.99);
+      print("Double var = " + doubleVar.toString());
+      int integerVar = await CleverTapPlugin.getIntegerVariable("integerVar", 999);
+      print("Integer var = "+integerVar.toString());
+      String stringVar = await CleverTapPlugin.getStringVariable("stringVar", "defaultString");
+      print("String var = "+stringVar.toString());
+      List<dynamic> boolList = await CleverTapPlugin.getListOfBooleanVariable("boolListVar", null);
+      print("List of bool = "+boolList.toString());
+      List<dynamic> doubleList = await CleverTapPlugin.getListOfDoubleVariable("doubleListVar", null);
+      print("List of double = "+doubleList.toString());
+      List<dynamic> intList = await CleverTapPlugin.getListOfIntegerVariable("integerListVar", null);
+      print("Integer List = "+intList.toString());
+      List<dynamic> stringList = await CleverTapPlugin.getListOfStringVariable("stringListVar", null);
+      print("String List = "+stringList.toString());
+      Map<String,bool> boolMap = await CleverTapPlugin.getMapOfBooleanVariable("boolMapVar", null);
+      print("Map of bool = "+boolMap.toString());
+      Map<String,double> doubleMap = await CleverTapPlugin.getMapOfDoubleVariable("doubleMapVar", null);
+      print("Map of double = "+doubleMap.toString());
+      Map<String,int> intMap = await CleverTapPlugin.getMapOfIntegerVariable("integerMapVar", null);
+      print("Map of int = "+boolMap.toString());
+      Map<String,String> strMap = await CleverTapPlugin.getMapOfStringVariable("stringMapVar", null);
+      print("Map of string = "+strMap.toString());
     });
   }
 
   void onDisplayUnitsLoaded(List<Map<String,dynamic>> mapList){
-    this.setState((){
+    print("ODUL");
+    this.setState(() async {
       print("Display units loaded");
+      Map<String,dynamic> adUnit = await CleverTapPlugin.getDisplayUnitForId("1582792356_20200227");
+      CleverTapPlugin.pushDisplayUnitClickedEvent("1582792356_20200227");
+      CleverTapPlugin.pushDisplayUnitViewedEvent("1582792356_20200227");
+      print("Ad Unit = " + adUnit.toString());
     });
   }
 
@@ -272,6 +303,14 @@ class _MyAppState extends State<MyApp> {
                 RaisedButton(
                     onPressed: () => registerStringMapVar(),
                     child: Text('Register String Map Variable')
+                ),
+                RaisedButton(
+                    onPressed: () => getVariables(),
+                    child: Text('Get Variable')
+                ),
+                RaisedButton(
+                    onPressed: () => getAdUnits(),
+                    child: Text('Get Ad Units')
                 ),
               ],
             ),
@@ -633,15 +672,48 @@ class _MyAppState extends State<MyApp> {
   }
 
   void registerIntegerMapVar() {
-    CleverTapPlugin.registerMapOfIntegerVariable("integerListVar");
+    CleverTapPlugin.registerMapOfIntegerVariable("integerMapVar");
     print("integerListVar variable registered");
   }
 
   void registerStringMapVar() {
-    CleverTapPlugin.registerMapOfStringVariable("stringListVar");
+    CleverTapPlugin.registerMapOfStringVariable("stringMapVar");
     print("stringListVar variable registered");
   }
 
+  void getVariables() async {
+    bool booleanVar = await CleverTapPlugin.getBooleanVariable("boolVar", false);
+    print("Boolean var = " + booleanVar.toString());
+    double doubleVar = await CleverTapPlugin.getDoubleVariable("doubleVar", 9.99);
+    print("Double var = " + doubleVar.toString());
+    int integerVar = await CleverTapPlugin.getIntegerVariable("integerVar", 999);
+    print("Integer var = "+integerVar.toString());
+    String stringVar = await CleverTapPlugin.getStringVariable("stringVar", "defaultString");
+    print("String var = "+stringVar.toString());
+    List<dynamic> boolList = await CleverTapPlugin.getListOfBooleanVariable("boolListVar", null);
+    print("List of bool = "+boolList.toString());
+    List<dynamic> doubleList = await CleverTapPlugin.getListOfDoubleVariable("doubleListVar", null);
+    print("List of double = "+doubleList.toString());
+    List<dynamic> intList = await CleverTapPlugin.getListOfIntegerVariable("integerListVar", null);
+    print("Integer List = "+intList.toString());
+    List<dynamic> stringList = await CleverTapPlugin.getListOfStringVariable("stringListVar", null);
+    print("String List = "+stringList.toString());
+    Map<String,bool> boolMap = await CleverTapPlugin.getMapOfBooleanVariable("boolMapVar", null);
+    print("Map of bool = "+boolMap.toString());
+    Map<String,double> doubleMap = await CleverTapPlugin.getMapOfDoubleVariable("doubleMapVar", null);
+    print("Map of double = "+doubleMap.toString());
+    Map<String,int> intMap = await CleverTapPlugin.getMapOfIntegerVariable("integerMapVar", null);
+    print("Map of int = "+boolMap.toString());
+    Map<String,String> strMap = await CleverTapPlugin.getMapOfStringVariable("stringMapVar", null);
+    print("Map of string = "+strMap.toString());
+  }
 
+  void getAdUnits() async{
+    print("Display units loaded");
+    Map<String,dynamic> adUnit = await CleverTapPlugin.getDisplayUnitForId("1582792356_20200227");
+    CleverTapPlugin.pushDisplayUnitClickedEvent("1582792356_20200227");
+    CleverTapPlugin.pushDisplayUnitViewedEvent("1582792356_20200227");
+    print("Ad Unit = " + adUnit.toString());
+  }
 
 }

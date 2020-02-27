@@ -69,19 +69,22 @@ public class Utils {
 
     static Map<String,Object> jsonObjectToMap(JSONObject jsonObject) {
         Map<String,Object> stringObjectMap = new HashMap<>();
+        String key;
+        Object value;
 
-        try{
-            if(jsonObject != null){
-                Iterator iterator = jsonObject.keys();
-                while (iterator.hasNext()){
-                    stringObjectMap.put(iterator.next().toString(),jsonObject.get(iterator.next().toString()));
+        if(jsonObject != null){
+            Iterator iterator = jsonObject.keys();
+            while (iterator.hasNext()){
+                key = iterator.next().toString();
+                try {
+                    value = jsonObject.get(key);
+                } catch (JSONException ex) {
+                    Log.e("CleverTapError", "JSON to Map error", ex);
+                    return stringObjectMap;
                 }
+                stringObjectMap.put(key,value.toString());
             }
-        }catch (JSONException e){
-            Log.e("CleverTapError", "JSON to Map error", e);
-            return stringObjectMap;
         }
-
         return stringObjectMap;
     }
 

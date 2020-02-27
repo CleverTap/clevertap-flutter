@@ -53,7 +53,8 @@ class CleverTapPlugin {
 				cleverTapExperimentsDidUpdateHandler();
 				break;
 			case "onDisplayUnitsLoaded":
-				cleverTapDisplayUnitsLoadedHandler(call.arguments);
+				List<Map<dynamic,dynamic>> args = call.arguments;
+				cleverTapDisplayUnitsLoadedHandler(args.cast<Map<String,dynamic>>());
 				break;
 		}
 	}
@@ -82,6 +83,7 @@ class CleverTapPlugin {
 	void setCleverTapExperimentsDidUpdateHandler(CleverTapExperimentsDidUpdateHandler handler) =>
 		cleverTapExperimentsDidUpdateHandler = handler;
 
+	/// Define a method to handle Native Display Unit updates
 	void setCleverTapDisplayUnitsLoadedHandler(CleverTapDisplayUnitsLoadedHandler handler)=>
 		cleverTapDisplayUnitsLoadedHandler = handler;
 
@@ -487,22 +489,26 @@ class CleverTapPlugin {
 
 	///Returns Map of Boolean Variable registered
 	static Future<Map<String,bool>> getMapOfBooleanVariable(String name, Map<String,bool> defaultValue) async {
-		return await _channel.invokeMethod('getMapOfBooleanVariable',{'name':name,'defaultValue':defaultValue});
+		Map<dynamic, dynamic> response = await _channel.invokeMethod('getMapOfBooleanVariable',{'name':name,'defaultValue':defaultValue});
+		return response.cast<String,bool>();
 	}
 
 	///Returns Map of Double Variable registered
 	static Future<Map<String,double>> getMapOfDoubleVariable(String name, Map<String,double> defaultValue) async {
-		return await _channel.invokeMethod('getMapOfDoubleVariable',{'name':name,'defaultValue':defaultValue});
+		Map<dynamic, dynamic> response = await _channel.invokeMethod('getMapOfDoubleVariable',{'name':name,'defaultValue':defaultValue});
+		return response.cast<String,double>();
 	}
 
 	///Returns Map of Integer Variable registered
 	static Future<Map<String,int>> getMapOfIntegerVariable(String name, Map<String,int> defaultValue) async {
-		return await _channel.invokeMethod('getMapOfIntegerVariable',{'name':name,'defaultValue':defaultValue});
+		Map<dynamic, dynamic> response =  await _channel.invokeMethod('getMapOfIntegerVariable',{'name':name,'defaultValue':defaultValue});
+		return response.cast<String, int>();
 	}
 
 	///Returns Map of String Variable registered
 	static Future<Map<String,String>> getMapOfStringVariable(String name, Map<String,String> defaultValue) async {
-		return await _channel.invokeMethod('getMapOfStringVariable',{'name':name,'defaultValue':defaultValue});
+		Map<dynamic, dynamic> response = await _channel.invokeMethod('getMapOfStringVariable',{'name':name,'defaultValue':defaultValue});
+		return response.cast<String,String>();
 	}
 
 	///Display units
@@ -513,7 +519,8 @@ class CleverTapPlugin {
 
 	///Returns Display unit info as a Map
 	static Future<Map<String,dynamic>> getDisplayUnitForId(String unitId) async {
-		return await _channel.invokeMethod('getDisplayUnitForId',{'unitId':unitId});
+		Map<dynamic, dynamic> response = await _channel.invokeMethod('getDisplayUnitForId',{'unitId':unitId});
+		return response.cast<String,dynamic>();
 	}
 
 	///Raise Notification Viewed for Display Unit id passed
