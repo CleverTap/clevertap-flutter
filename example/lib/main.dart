@@ -311,6 +311,34 @@ class _MyAppState extends State<MyApp> {
                     onPressed: () => getAdUnits(),
                     child: Text('Get Ad Units')
                 ),
+                RaisedButton(
+                    onPressed: () => getAllInboxMessages(),
+                    child: Text('Get All Inbox Messages')
+                ),
+                RaisedButton(
+                    onPressed: () => getUnreadInboxMessages(),
+                    child: Text('Get Unread Inbox Messages')
+                ),
+                RaisedButton(
+                    onPressed: () => getInboxMessageForId(),
+                    child: Text('Get Inbox Message For ID')
+                ),
+                RaisedButton(
+                    onPressed: () => deleteInboxMessageForId(),
+                    child: Text('Delete Inbox Message For ID')
+                ),
+                RaisedButton(
+                    onPressed: () => markReadInboxMessageForId(),
+                    child: Text('Mark Inbox Message As Read')
+                ),
+                RaisedButton(
+                    onPressed: () => pushInboxNotificationClickedEventForId(),
+                    child: Text('pushInboxNotificationClickedEventForId')
+                ),
+                RaisedButton(
+                    onPressed: () => pushInboxNotificationViewedEventForId(),
+                    child: Text('pushInboxNotificationViewedEventForId')
+                ),
               ],
             ),
           ),
@@ -366,6 +394,137 @@ class _MyAppState extends State<MyApp> {
       CleverTapPlugin.showInbox(null);
     }
   }
+
+  void getAllInboxMessages(){
+    CleverTapPlugin.getAllInboxMessages().then((messageList) {
+      if (messageList == null || messageList.length==0) return;
+
+      Map<String, dynamic> itemFirst = jsonDecode(messageList[0]);
+      Map<String, dynamic> itemLast = jsonDecode(messageList[messageList.length-1]);
+
+      setState((() {
+        print("First Inbox Message =  ${itemFirst["id"]}");
+        print("Last  Inbox Message =  ${itemLast["id"]}");
+      }));
+    }).catchError((error) {
+      setState(() {
+        print("$error");
+      });
+    });
+  }
+
+  void getUnreadInboxMessages() async{
+
+    var messageList= await CleverTapPlugin.getUnreadInboxMessages();
+
+    if (messageList == null || messageList.length==0) return;
+
+    Map<String, dynamic> itemFirst = jsonDecode(messageList[0]);
+    Map<String, dynamic> itemLast = jsonDecode(messageList[messageList.length-1]);
+
+    setState((() {
+      print("First Unread Inbox Message =  ${itemFirst["id"]}");
+      print("Last Unread Inbox Message =  ${itemLast["id"]}");
+    }));
+  }
+
+  void getInboxMessageForId() async{
+    var messageId=await getFirstInboxMessageId();
+
+    if(messageId==null) {
+      setState((() {
+        print("Inbox Message id is null");
+      }));
+      return;
+    }
+
+    var messageForId= await CleverTapPlugin.getInboxMessageForId(messageId);
+    setState((() {
+      print("Inbox Message for id =  ${messageForId}");
+    }));
+
+  }
+
+  void deleteInboxMessageForId() async{
+    var messageId=await getFirstInboxMessageId();
+
+    if(messageId==null) {
+      setState((() {
+        print("Inbox Message id is null");
+      }));
+      return;
+    }
+
+    await CleverTapPlugin.deleteInboxMessageForId(messageId);
+
+    setState((() {
+      print("Deleted Inbox Message with id =  ${messageId}");
+    }));
+
+  }
+
+  void markReadInboxMessageForId() async{
+    var messageList= await CleverTapPlugin.getUnreadInboxMessages();
+
+    if (messageList == null || messageList.length==0) return;
+
+    Map<String, dynamic> itemFirst = jsonDecode(messageList[0]);
+
+    await CleverTapPlugin.markReadInboxMessageForId(itemFirst["id"]);
+
+    setState((() {
+      print("Marked Inbox Message as read with id =  ${itemFirst["id"]}");
+    }));
+
+  }
+
+  void pushInboxNotificationClickedEventForId() async{
+    var messageId=await getFirstInboxMessageId();
+
+    if(messageId==null) {
+      setState((() {
+        print("Inbox Message id is null");
+      }));
+      return;
+    }
+
+    await CleverTapPlugin.pushInboxNotificationClickedEventForId(messageId);
+
+    setState((() {
+      print("Pushed NotificationClickedEvent for Inbox Message with id =  ${messageId}");
+    }));
+
+  }
+
+  void pushInboxNotificationViewedEventForId() async{
+    var messageId=await getFirstInboxMessageId();
+
+    if(messageId==null) {
+      setState((() {
+        print("Inbox Message id is null");
+      }));
+      return;
+    }
+
+    await CleverTapPlugin.pushInboxNotificationViewedEventForId(messageId);
+
+    setState((() {
+      print("Pushed NotificationViewedEvent for Inbox Message with id =  ${messageId}");
+    }));
+
+  }
+
+  Future<String> getFirstInboxMessageId() async{
+
+    var messageList= await CleverTapPlugin.getAllInboxMessages();
+
+    if (messageList == null || messageList.length==0) return null;
+    Map<String, dynamic> itemFirst = jsonDecode(messageList[0]);
+    return itemFirst["id"];
+  }
+
+
+
 
   void setOptOut(){
     if(optOut){

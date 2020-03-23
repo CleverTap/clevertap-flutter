@@ -3,6 +3,7 @@ package com.clevertap.clevertap_plugin;
 import android.os.Bundle;
 import android.util.Log;
 
+import com.clevertap.android.sdk.CTInboxMessage;
 import com.clevertap.android.sdk.CTInboxStyleConfig;
 import com.clevertap.android.sdk.EventDetail;
 import com.clevertap.android.sdk.UTMDetail;
@@ -182,5 +183,19 @@ public class Utils {
             }
         }
         return bundle;
+    }
+
+    static ArrayList<String> getJsonStringList(List<CTInboxMessage> list) {
+        ArrayList<String> jsonStringList =new ArrayList<>();
+        if (list!=null)
+        {
+            for (CTInboxMessage item:list)
+            {
+                if (item!=null&&item.getData()!=null) {
+                    jsonStringList.add(item.getData().toString());
+                }
+            }
+        }
+        return jsonStringList;
     }
 }

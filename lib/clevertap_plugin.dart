@@ -3,19 +3,23 @@ import 'dart:async';
 import 'package:flutter/services.dart';
 
 typedef void CleverTapInAppNotificationDismissedHandler(Map<String,dynamic> mapList);
+typedef void CleverTapInAppNotificationButtonClickedHandler(Map<String,String> mapList);
 typedef void CleverTapProfileDidInitializeHandler();
 typedef void CleverTapProfileSyncHandler(Map<String,dynamic> map);
 typedef void CleverTapInboxDidInitializeHandler();
 typedef void CleverTapInboxMessagesDidUpdateHandler();
+typedef void CleverTapInboxNotificationButtonClickedHandler(Map<String,String> mapList);
 typedef void CleverTapExperimentsDidUpdateHandler();
 typedef void CleverTapDisplayUnitsLoadedHandler(Map<String,dynamic> mapList);
 
 class CleverTapPlugin {
 	CleverTapInAppNotificationDismissedHandler cleverTapInAppNotificationDismissedHandler;
+	CleverTapInAppNotificationButtonClickedHandler cleverTapInAppNotificationButtonClickedHandler;
 	CleverTapProfileDidInitializeHandler cleverTapProfileDidInitializeHandler;
 	CleverTapProfileSyncHandler cleverTapProfileSyncHandler;
 	CleverTapInboxDidInitializeHandler cleverTapInboxDidInitializeHandler;
 	CleverTapInboxMessagesDidUpdateHandler cleverTapInboxMessagesDidUpdateHandler;
+	CleverTapInboxNotificationButtonClickedHandler cleverTapInboxNotificationButtonClickedHandler;
 	CleverTapExperimentsDidUpdateHandler cleverTapExperimentsDidUpdateHandler;
 	CleverTapDisplayUnitsLoadedHandler cleverTapDisplayUnitsLoadedHandler;
 
@@ -37,6 +41,10 @@ class CleverTapPlugin {
 				Map<dynamic,dynamic> args = call.arguments;
 				cleverTapInAppNotificationDismissedHandler(args.cast<String,dynamic>());
 				break;
+			case "onInAppButtonClick":
+				Map<String,String> args = call.arguments;
+				cleverTapInAppNotificationButtonClickedHandler(args);
+				break;
 			case "profileDidInitialize":
 				cleverTapProfileDidInitializeHandler();
 				break;
@@ -48,6 +56,10 @@ class CleverTapPlugin {
 				break;
 			case "inboxMessagesDidUpdate":
 				cleverTapInboxMessagesDidUpdateHandler();
+				break;
+			case "onInboxButtonClick":
+				Map<String,String> args = call.arguments;
+				cleverTapInboxNotificationButtonClickedHandler(args);
 				break;
 			case "CTExperimentsUpdated":
 				cleverTapExperimentsDidUpdateHandler();
@@ -62,6 +74,10 @@ class CleverTapPlugin {
 	/// Define a method to handle inApp notification dismissed
 	void setCleverTapInAppNotificationDismissedHandler(CleverTapInAppNotificationDismissedHandler handler) =>
 		cleverTapInAppNotificationDismissedHandler = handler;
+
+	/// Define a method to handle inApp notification button clicked
+	void setCleverTapInAppNotificationButtonClickedHandler(CleverTapInAppNotificationButtonClickedHandler handler) =>
+			cleverTapInAppNotificationButtonClickedHandler = handler;
 
 	/// Define a method to handle profile initialization
 	void setCleverTapProfileDidInitializeHandler(CleverTapProfileDidInitializeHandler handler) =>
@@ -78,6 +94,10 @@ class CleverTapPlugin {
 	/// Define a method to handle inbox update
 	void setCleverTapInboxMessagesDidUpdateHandler(CleverTapInboxMessagesDidUpdateHandler handler) =>
 		cleverTapInboxMessagesDidUpdateHandler = handler;
+
+	/// Define a method to handle inbox notification button clicked
+	void setCleverTapInboxNotificationButtonClickedHandler(CleverTapInboxNotificationButtonClickedHandler handler) =>
+			cleverTapInboxNotificationButtonClickedHandler = handler;
 
 	/// Define a method to handle dynamic variable experiments update
 	void setCleverTapExperimentsDidUpdateHandler(CleverTapExperimentsDidUpdateHandler handler) =>
@@ -380,6 +400,41 @@ class CleverTapPlugin {
 	/// Returns the count of total number of unread inbox messages for the user
 	static Future<int> getInboxMessageUnreadCount() async {
 		return await _channel.invokeMethod('getInboxMessageUnreadCount',{});
+	}
+
+	/// Returns a list of json string representation of all CTInboxMessage
+	static Future<List> getAllInboxMessages() async {
+		return await _channel.invokeMethod('getAllInboxMessages',{});
+	}
+
+	/// Returns a list of json string representation of unread CTInboxMessage
+	static Future<List> getUnreadInboxMessages() async {
+		return await _channel.invokeMethod('getUnreadInboxMessages',{});
+	}
+
+	/// Returns a json string representation of CTInboxMessage for given messageId
+	static Future<String> getInboxMessageForId(String messageId) async {
+		return await _channel.invokeMethod('getInboxMessageForId',{'messageId':messageId});
+	}
+
+	/// Deletes the CTInboxMessage object for given messageId
+	static Future<void> deleteInboxMessageForId(String messageId) async {
+		return await _channel.invokeMethod('deleteInboxMessageForId',{'messageId':messageId});
+	}
+
+	/// Marks the given messageId of CTInboxMessage object as read
+	static Future<void> markReadInboxMessageForId(String messageId) async {
+		return await _channel.invokeMethod('markReadInboxMessageForId',{'messageId':messageId});
+	}
+
+	/// Pushes the Notification Clicked event for App Inbox to CleverTap.
+	static Future<void> pushInboxNotificationClickedEventForId(String messageId) async {
+		return await _channel.invokeMethod('pushInboxNotificationClickedEventForId',{'messageId':messageId});
+	}
+
+	/// Pushes the Notification Viewed event for App Inbox to CleverTap.
+	static Future<void> pushInboxNotificationViewedEventForId(String messageId) async {
+		return await _channel.invokeMethod('pushInboxNotificationViewedEventForId',{'messageId':messageId});
 	}
 
 	/// only iOS - If an application is launched from a push notification click, returns the CleverTap deep link included in the push notification
