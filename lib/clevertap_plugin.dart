@@ -122,6 +122,21 @@ class CleverTapPlugin {
 		return await _channel.invokeMethod('setPushToken', {'token':value});
 	}
 
+	/// Set the Xiaomi Token for Push Notifications
+	static Future<void> setXiaomiPushToken(String value) async {
+		return await _channel.invokeMethod('setXiaomiPushToken', {'token':value});
+	}
+
+	/// Set the Baidu Token for Push Notifications
+	static Future<void> setBaiduPushToken(String value) async {
+		return await _channel.invokeMethod('setBaiduPushToken', {'token':value});
+	}
+
+	/// Set the Huawei Token for Push Notifications
+	static Future<void> setHuaweiPushToken(String value) async {
+		return await _channel.invokeMethod('setHuaweiPushToken', {'token':value});
+	}
+
 	// Set true to connect app to dashboard to see variables defined by app
 	static Future<void> setUIEditorConnectionEnabled(bool value) async {
 		return await _channel.invokeMethod('setUIEditorConnectionEnabled', {'value':value});

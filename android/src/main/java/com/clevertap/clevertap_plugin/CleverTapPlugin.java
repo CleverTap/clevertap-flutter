@@ -117,6 +117,41 @@ public class CleverTapPlugin implements MethodCallHandler, SyncListener,
                 break;
             }
 
+            //Baidu/Xiaomi/Huawei push notifications
+
+            case "setXiaomiPushToken": {
+                String token = call.argument("token");
+                if (isCleverTapNotNull(cleverTapAPI)) {
+                    cleverTapAPI.pushXiaomiRegistrationId(token, true);
+                    result.success(null);
+                } else {
+                    result.error(TAG, ERROR_MSG, null);
+                }
+                break;
+            }
+
+            case "setBaiduPushToken": {
+                String token = call.argument("token");
+                if (isCleverTapNotNull(cleverTapAPI)) {
+                    cleverTapAPI.pushBaiduRegistrationId(token, true);
+                    result.success(null);
+                } else {
+                    result.error(TAG, ERROR_MSG, null);
+                }
+                break;
+            }
+
+            case "setHuaweiPushToken": {
+                String token = call.argument("token");
+                if (isCleverTapNotNull(cleverTapAPI)) {
+                    cleverTapAPI.pushHuaweiRegistrationId(token, true);
+                    result.success(null);
+                } else {
+                    result.error(TAG, ERROR_MSG, null);
+                }
+                break;
+            }
+
             //UI Editor connection
             case "setUIEditorConnectionEnabled": {
                 boolean enabled = call.argument("value");
