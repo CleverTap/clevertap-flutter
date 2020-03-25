@@ -8,7 +8,7 @@
 #import "CleverTapInAppNotificationDelegate.h"
 #import "CleverTap+DisplayUnit.h"
 
-@interface CleverTapPlugin ()  <CleverTapSyncDelegate, CleverTapInAppNotificationDelegate, CleverTapDisplayUnitDelegate> {
+@interface CleverTapPlugin ()  <CleverTapSyncDelegate, CleverTapInAppNotificationDelegate, CleverTapDisplayUnitDelegate,CleverTapInboxViewControllerDelegate> {
 }
 
 @property (strong, nonatomic) FlutterMethodChannel *channel;
@@ -145,6 +145,20 @@ static NSDateFormatter *dateFormatter;
         [self getInboxMessageCount:call withResult:result];
     else if ([@"getInboxMessageUnreadCount" isEqualToString:call.method])
         [self getInboxMessageUnreadCount:call withResult:result];
+    else if ([@"getAllInboxMessages" isEqualToString:call.method])
+        [self getAllInboxMessages:call withResult:result];
+    else if ([@"getUnreadInboxMessages" isEqualToString:call.method])
+        [self getUnreadInboxMessages:call withResult:result];//TODO
+    else if ([@"getInboxMessageForId" isEqualToString:call.method])
+        [self getInboxMessageForId:call withResult:result];//TODO
+    else if ([@"deleteInboxMessageForId" isEqualToString:call.method])
+        [self deleteInboxMessageForId:call withResult:result];//TODO
+    else if ([@"markReadInboxMessageForId" isEqualToString:call.method])
+        [self markReadInboxMessageForId:call withResult:result];//TODO
+    else if ([@"pushInboxNotificationClickedEventForId" isEqualToString:call.method])
+        [self pushInboxNotificationClickedEventForId:call withResult:result];//TODO
+    else if ([@"pushInboxNotificationViewedEventForId" isEqualToString:call.method])
+        [self pushInboxNotificationViewedEventForId:call withResult:result];//TODO
     else if ([@"getInitialUrl" isEqualToString:call.method])
         [self getInitialUrl:call result:result];
     else if ([@"registerBooleanVariable" isEqualToString:call.method])
@@ -218,6 +232,12 @@ static NSDateFormatter *dateFormatter;
     else if ([@"createNotificationChannelGroup" isEqualToString:call.method])
         result(nil);
     else if ([@"deleteNotificationChannel" isEqualToString:call.method])
+        result(nil);
+    else if ([@"setXiaomiPushToken" isEqualToString:call.method])
+        result(nil);
+    else if ([@"setBaiduPushToken" isEqualToString:call.method])
+        result(nil);
+    else if ([@"setHuaweiPushToken" isEqualToString:call.method])
         result(nil);
     else
         result(FlutterMethodNotImplemented);
@@ -441,6 +461,44 @@ static NSDateFormatter *dateFormatter;
 }
 
 #pragma mark - Inbox
+
+- (void)pushInboxNotificationViewedEventForId:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    [[CleverTap sharedInstance] recordInboxNotificationViewedEventForID:call.arguments[@"messageId"]];
+    result(nil);
+}
+
+- (void)pushInboxNotificationClickedEventForId:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    [[CleverTap sharedInstance] recordInboxNotificationClickedEventForID:call.arguments[@"messageId"]];
+    result(nil);
+}
+
+- (void)markReadInboxMessageForId:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    [[CleverTap sharedInstance] markReadInboxMessageForID:call.arguments[@"messageId"]];
+    result(nil);
+}
+
+- (void)deleteInboxMessageForId:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    [[CleverTap sharedInstance] deleteInboxMessageForID:call.arguments[@"messageId"]];
+    result(nil);
+}
+
+- (void)getInboxMessageForId:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTapInboxMessage *message = [[CleverTap sharedInstance] getInboxMessageForId:call.arguments[@"unitId"]];
+    NSDictionary *res = message.json;
+    result(res);
+}
+
+- (void)getUnreadInboxMessages:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    NSArray *messages = [[CleverTap sharedInstance] getUnreadInboxMessages];
+    NSArray *results = [self _cleverTapInboxMessagesToArray:messages];
+    result(results);
+}
+
+- (void)getAllInboxMessages:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    NSArray *messages = [[CleverTap sharedInstance] getAllInboxMessages];
+    NSArray *results = [self _cleverTapInboxMessagesToArray:messages];
+    result(results);
+}
 
 - (void)getInboxMessageCount:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     int res = (int)[[CleverTap sharedInstance] getInboxMessageCount];
@@ -693,6 +751,14 @@ static NSDateFormatter *dateFormatter;
 
 #pragma mark -  private/helpers
 
+- (NSArray*)_cleverTapInboxMessagesToArray:(NSArray*) inboxMessages {
+    NSMutableArray *returnArray = [NSMutableArray new];
+    for(CleverTapInboxMessage *unit in inboxMessages){
+        [returnArray addObject:unit.json];
+    }
+    return returnArray;
+}
+
 - (NSArray*)_cleverTapDisplayUnitToArray:(NSArray*) displayUnits {
     NSMutableArray *returnArray = [NSMutableArray new];
     for(CleverTapDisplayUnit *unit in displayUnits){
@@ -858,6 +924,17 @@ static NSDateFormatter *dateFormatter;
     }
     
     [self postNotificationWithName:kCleverTapInAppNotificationDismissed andBody:body];
+}
+
+- (void)inAppNotificationButtonTappedWithCustomExtras:(NSDictionary *)customExtras {
+    [self postNotificationWithName:kCleverTapInAppButtonCLicked andBody:customExtras];
+}
+
+#pragma mark CleverTapInboxViewControllerDelegate
+
+- (void)messageButtonTappedWithCustomExtras:(NSDictionary *_Nullable)customExtras{
+    
+    [self postNotificationWithName:kCleverTapInboxButtonCLicked andBody:customExtras];
 }
 
 @end
