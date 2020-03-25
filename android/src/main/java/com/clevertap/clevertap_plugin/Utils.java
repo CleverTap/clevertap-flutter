@@ -172,6 +172,18 @@ public class Utils {
         return returnMap;
     }
 
+    static Map<String,ArrayList<Map<String,Object>>> inboxMessageListToMap(ArrayList<CTInboxMessage> inboxMessageArrayList){
+        Map<String,ArrayList<Map<String,Object>>> returnMap = new HashMap<>();
+        ArrayList<Map<String,Object>> mapList = new ArrayList<>();
+        if(inboxMessageArrayList != null) {
+            for (CTInboxMessage message : inboxMessageArrayList) {
+                mapList.add(Utils.jsonObjectToMap(message.getData()));
+            }
+        }
+        returnMap.put("inboxMessages",mapList);
+        return returnMap;
+    }
+
     static Bundle jsonToBundle(JSONObject jsonObject) throws JSONException {
         Bundle bundle = new Bundle();
         if(jsonObject != null) {
@@ -183,19 +195,5 @@ public class Utils {
             }
         }
         return bundle;
-    }
-
-    static ArrayList<String> getJsonStringList(List<CTInboxMessage> list) {
-        ArrayList<String> jsonStringList =new ArrayList<>();
-        if (list!=null)
-        {
-            for (CTInboxMessage item:list)
-            {
-                if (item!=null&&item.getData()!=null) {
-                    jsonStringList.add(item.getData().toString());
-                }
-            }
-        }
-        return jsonStringList;
     }
 }

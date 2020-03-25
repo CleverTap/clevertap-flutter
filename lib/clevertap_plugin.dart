@@ -418,18 +418,21 @@ class CleverTapPlugin {
 	}
 
 	/// Returns a list of json string representation of all CTInboxMessage
-	static Future<List> getAllInboxMessages() async {
-		return await _channel.invokeMethod('getAllInboxMessages',{});
+	static Future<Map<String,dynamic>> getAllInboxMessages() async {
+		Map<dynamic, dynamic> response = await _channel.invokeMethod('getAllInboxMessages',{});
+		return response.cast<String,dynamic>();
 	}
 
 	/// Returns a list of json string representation of unread CTInboxMessage
-	static Future<List> getUnreadInboxMessages() async {
-		return await _channel.invokeMethod('getUnreadInboxMessages',{});
+	static Future<Map<String,dynamic>> getUnreadInboxMessages() async {
+		Map<dynamic, dynamic> response = await _channel.invokeMethod('getUnreadInboxMessages',{});
+		return response.cast<String,dynamic>();
 	}
 
 	/// Returns a json string representation of CTInboxMessage for given messageId
-	static Future<String> getInboxMessageForId(String messageId) async {
-		return await _channel.invokeMethod('getInboxMessageForId',{'messageId':messageId});
+	static Future<Map<String,dynamic>> getInboxMessageForId(String messageId) async {
+		Map<dynamic, dynamic> response = await _channel.invokeMethod('getInboxMessageForId',{'messageId':messageId});
+		return response.cast<String,dynamic>();
 	}
 
 	/// Deletes the CTInboxMessage object for given messageId

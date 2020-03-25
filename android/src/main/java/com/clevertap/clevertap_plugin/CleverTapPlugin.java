@@ -589,7 +589,7 @@ public class CleverTapPlugin implements MethodCallHandler, SyncListener,
             }
             case "getAllInboxMessages": {
                 if (isCleverTapNotNull(cleverTapAPI)) {
-                    result.success(Utils.getJsonStringList(cleverTapAPI.getAllInboxMessages()));
+                    result.success(Utils.inboxMessageListToMap(cleverTapAPI.getAllInboxMessages()));
                 } else {
                     result.error(TAG, ERROR_MSG, null);
                 }
@@ -598,7 +598,7 @@ public class CleverTapPlugin implements MethodCallHandler, SyncListener,
 
             case "getUnreadInboxMessages": {
                 if (isCleverTapNotNull(cleverTapAPI)) {
-                    result.success(Utils.getJsonStringList(cleverTapAPI.getUnreadInboxMessages()));
+                    result.success(Utils.inboxMessageListToMap(cleverTapAPI.getUnreadInboxMessages()));
                 } else {
                     result.error(TAG, ERROR_MSG, null);
                 }
@@ -616,8 +616,8 @@ public class CleverTapPlugin implements MethodCallHandler, SyncListener,
 
                     CTInboxMessage inboxMessage = cleverTapAPI.getInboxMessageForId(messageId);
 
-                    if (inboxMessage != null && inboxMessage.getData() != null) {
-                        result.success(inboxMessage.getData().toString());
+                    if (inboxMessage != null) {
+                        result.success(Utils.jsonObjectToMap(inboxMessage.getData()));
                     } else {
                         result.success(null);
                     }

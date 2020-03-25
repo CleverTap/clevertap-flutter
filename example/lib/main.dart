@@ -396,11 +396,13 @@ class _MyAppState extends State<MyApp> {
   }
 
   void getAllInboxMessages(){
-    CleverTapPlugin.getAllInboxMessages().then((messageList) {
-      if (messageList == null || messageList.length==0) return;
+    CleverTapPlugin.getAllInboxMessages().then((messageMap) {
+      if (messageMap == null || messageMap.length==0) return;
+      var messageList = messageMap["inboxMessages"];
 
-      Map<String, dynamic> itemFirst = jsonDecode(messageList[0]);
-      Map<String, dynamic> itemLast = jsonDecode(messageList[messageList.length-1]);
+      if (messageList == null || messageList.length==0) return;
+      Map<dynamic, dynamic> itemFirst = messageList[0];
+      Map<dynamic, dynamic> itemLast = messageList[messageList.length-1];
 
       setState((() {
         print("First Inbox Message =  ${itemFirst["id"]}");
@@ -415,12 +417,14 @@ class _MyAppState extends State<MyApp> {
 
   void getUnreadInboxMessages() async{
 
-    var messageList= await CleverTapPlugin.getUnreadInboxMessages();
+    var messageMap= await CleverTapPlugin.getUnreadInboxMessages();
+
+    if (messageMap == null || messageMap.length==0) return;
+    var messageList = messageMap["inboxMessages"];
 
     if (messageList == null || messageList.length==0) return;
-
-    Map<String, dynamic> itemFirst = jsonDecode(messageList[0]);
-    Map<String, dynamic> itemLast = jsonDecode(messageList[messageList.length-1]);
+    Map<dynamic, dynamic> itemFirst = messageList[0];
+    Map<dynamic, dynamic> itemLast = messageList[messageList.length-1];
 
     setState((() {
       print("First Unread Inbox Message =  ${itemFirst["id"]}");
@@ -440,7 +444,7 @@ class _MyAppState extends State<MyApp> {
 
     var messageForId= await CleverTapPlugin.getInboxMessageForId(messageId);
     setState((() {
-      print("Inbox Message for id =  ${messageForId}");
+      print("Inbox Message for id =  ${messageForId.toString()}");
     }));
 
   }
@@ -464,11 +468,13 @@ class _MyAppState extends State<MyApp> {
   }
 
   void markReadInboxMessageForId() async{
-    var messageList= await CleverTapPlugin.getUnreadInboxMessages();
+    var messageMap= await CleverTapPlugin.getUnreadInboxMessages();
+
+    if (messageMap == null || messageMap.length==0) return;
+    var messageList = messageMap["inboxMessages"];
 
     if (messageList == null || messageList.length==0) return;
-
-    Map<String, dynamic> itemFirst = jsonDecode(messageList[0]);
+    Map<dynamic, dynamic> itemFirst = messageList[0];
 
     await CleverTapPlugin.markReadInboxMessageForId(itemFirst["id"]);
 
@@ -516,10 +522,14 @@ class _MyAppState extends State<MyApp> {
 
   Future<String> getFirstInboxMessageId() async{
 
-    var messageList= await CleverTapPlugin.getAllInboxMessages();
+    var messageMap= await CleverTapPlugin.getAllInboxMessages();
+
+    if (messageMap == null || messageMap.length==0) return null;
+    var messageList = messageMap["inboxMessages"];
 
     if (messageList == null || messageList.length==0) return null;
-    Map<String, dynamic> itemFirst = jsonDecode(messageList[0]);
+    Map<dynamic, dynamic> itemFirst = messageList[0];
+
     return itemFirst["id"];
   }
 
