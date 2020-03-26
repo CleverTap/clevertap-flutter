@@ -10,7 +10,7 @@ typedef void CleverTapInboxDidInitializeHandler();
 typedef void CleverTapInboxMessagesDidUpdateHandler();
 typedef void CleverTapInboxNotificationButtonClickedHandler(Map<String,String> mapList);
 typedef void CleverTapExperimentsDidUpdateHandler();
-typedef void CleverTapDisplayUnitsLoadedHandler(Map<String,dynamic> mapList);
+typedef void CleverTapDisplayUnitsLoadedHandler(List<dynamic> displayUnitList);
 
 class CleverTapPlugin {
 	CleverTapInAppNotificationDismissedHandler cleverTapInAppNotificationDismissedHandler;
@@ -65,8 +65,8 @@ class CleverTapPlugin {
 				cleverTapExperimentsDidUpdateHandler();
 				break;
 			case "onDisplayUnitsLoaded":
-				Map<dynamic,dynamic> args = call.arguments;
-				cleverTapDisplayUnitsLoadedHandler(args.cast<String,dynamic>());
+				List<dynamic> args = call.arguments;
+				cleverTapDisplayUnitsLoadedHandler(args);
 				break;
 		}
 	}
@@ -418,15 +418,15 @@ class CleverTapPlugin {
 	}
 
 	/// Returns a list of json string representation of all CTInboxMessage
-	static Future<Map<String,dynamic>> getAllInboxMessages() async {
-		Map<dynamic, dynamic> response = await _channel.invokeMethod('getAllInboxMessages',{});
-		return response.cast<String,dynamic>();
+	static Future<List> getAllInboxMessages() async {
+		List<dynamic> response = await _channel.invokeMethod('getAllInboxMessages',{});
+		return response;
 	}
 
 	/// Returns a list of json string representation of unread CTInboxMessage
-	static Future<Map<String,dynamic>> getUnreadInboxMessages() async {
-		Map<dynamic, dynamic> response = await _channel.invokeMethod('getUnreadInboxMessages',{});
-		return response.cast<String,dynamic>();
+	static Future<List> getUnreadInboxMessages() async {
+		List<dynamic> response = await _channel.invokeMethod('getUnreadInboxMessages',{});
+		return response;
 	}
 
 	/// Returns a json string representation of CTInboxMessage for given messageId

@@ -126,13 +126,15 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
-  void onDisplayUnitsLoaded(Map<String,dynamic> map){
+  void onDisplayUnitsLoaded(List<dynamic> displayUnits){
     this.setState(() async {
-      print("Display units loaded");
-      Map<String,dynamic> adUnit = await CleverTapPlugin.getDisplayUnitForId("1582792356_20200227");
-      //CleverTapPlugin.pushDisplayUnitClickedEvent("1582792356_20200227");
-      //CleverTapPlugin.pushDisplayUnitViewedEvent("1582792356_20200227");
-      print("Ad Unit = " + adUnit.toString());
+      List displayUnits = await CleverTapPlugin.getAllDisplayUnits();
+      print("Display Units = "+ displayUnits.toString());
+//      print(" on Display units loaded");
+//      Map<String,dynamic> adUnit = await CleverTapPlugin.getDisplayUnitForId("1584623951_20200326");
+//      //CleverTapPlugin.pushDisplayUnitClickedEvent("1584623951_20200326");
+//      //CleverTapPlugin.pushDisplayUnitViewedEvent("1584623951_20200326");
+//      print("Ad Unit = " + adUnit.toString());
     });
   }
 
@@ -393,7 +395,7 @@ class _MyAppState extends State<MyApp> {
   void recordUser(){
     var stuff = ["bags","shoes"];
     var profile = {
-      'Name': 'Tony Stark',
+      'Name': 'Tony \'Stark',
       'Identity': '100',
       'Email': 'tony@stark.com',
       'Phone': '+14155551234',
@@ -410,9 +412,9 @@ class _MyAppState extends State<MyApp> {
   }
 
   void getAllInboxMessages(){
-    CleverTapPlugin.getAllInboxMessages().then((messageMap) {
-      if (messageMap == null || messageMap.length==0) return;
-      var messageList = messageMap["inboxMessages"];
+    CleverTapPlugin.getAllInboxMessages().then((messageList) {
+//      if (messageMap == null || messageMap.length==0) return;
+//      var messageList = messageMap["inboxMessages"];
 
       if (messageList == null || messageList.length==0) return;
       Map<dynamic, dynamic> itemFirst = messageList[0];
@@ -431,10 +433,10 @@ class _MyAppState extends State<MyApp> {
 
   void getUnreadInboxMessages() async{
 
-    var messageMap= await CleverTapPlugin.getUnreadInboxMessages();
+    var messageList= await CleverTapPlugin.getUnreadInboxMessages();
 
-    if (messageMap == null || messageMap.length==0) return;
-    var messageList = messageMap["inboxMessages"];
+//    if (messageMap == null || messageMap.length==0) return;
+//    var messageList = messageMap["inboxMessages"];
 
     if (messageList == null || messageList.length==0) return;
     Map<dynamic, dynamic> itemFirst = messageList[0];
@@ -482,10 +484,10 @@ class _MyAppState extends State<MyApp> {
   }
 
   void markReadInboxMessageForId() async{
-    var messageMap= await CleverTapPlugin.getUnreadInboxMessages();
+    var messageList = await CleverTapPlugin.getUnreadInboxMessages();
 
-    if (messageMap == null || messageMap.length==0) return;
-    var messageList = messageMap["inboxMessages"];
+//    if (messageMap == null || messageMap.length==0) return;
+//    var messageList = messageMap["inboxMessages"];
 
     if (messageList == null || messageList.length==0) return;
     Map<dynamic, dynamic> itemFirst = messageList[0];
@@ -536,10 +538,10 @@ class _MyAppState extends State<MyApp> {
 
   Future<String> getFirstInboxMessageId() async{
 
-    var messageMap= await CleverTapPlugin.getAllInboxMessages();
+    var messageList = await CleverTapPlugin.getAllInboxMessages();
 
-    if (messageMap == null || messageMap.length==0) return null;
-    var messageList = messageMap["inboxMessages"];
+//    if (messageMap == null || messageMap.length==0) return null;
+//    var messageList = messageMap["inboxMessages"];
 
     if (messageList == null || messageList.length==0) return null;
     Map<dynamic, dynamic> itemFirst = messageList[0];
@@ -891,11 +893,13 @@ class _MyAppState extends State<MyApp> {
   }
 
   void getAdUnits() async{
-    print("Display units loaded");
-    Map<String,dynamic> adUnit = await CleverTapPlugin.getDisplayUnitForId("1582792356_20200227");
+    List displayUnits = await CleverTapPlugin.getAllDisplayUnits();
+    print("Display Units = "+ displayUnits.toString());
+    //print("Display units loaded");
+    //Map<String,dynamic> adUnit = await CleverTapPlugin.getDisplayUnitForId("1582792356_20200227");
     //CleverTapPlugin.pushDisplayUnitClickedEvent("1582792356_20200227");
     //CleverTapPlugin.pushDisplayUnitViewedEvent("1582792356_20200227");
-    print("Ad Unit = " + adUnit.toString());
+    //print("Ad Unit = " + adUnit.toString());
   }
 
 }

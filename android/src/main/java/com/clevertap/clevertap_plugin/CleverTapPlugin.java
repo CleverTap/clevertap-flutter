@@ -589,7 +589,7 @@ public class CleverTapPlugin implements MethodCallHandler, SyncListener,
             }
             case "getAllInboxMessages": {
                 if (isCleverTapNotNull(cleverTapAPI)) {
-                    result.success(Utils.inboxMessageListToMap(cleverTapAPI.getAllInboxMessages()));
+                    result.success(Utils.inboxMessageListToArrayList(cleverTapAPI.getAllInboxMessages()));
                 } else {
                     result.error(TAG, ERROR_MSG, null);
                 }
@@ -598,7 +598,7 @@ public class CleverTapPlugin implements MethodCallHandler, SyncListener,
 
             case "getUnreadInboxMessages": {
                 if (isCleverTapNotNull(cleverTapAPI)) {
-                    result.success(Utils.inboxMessageListToMap(cleverTapAPI.getUnreadInboxMessages()));
+                    result.success(Utils.inboxMessageListToArrayList(cleverTapAPI.getUnreadInboxMessages()));
                 } else {
                     result.error(TAG, ERROR_MSG, null);
                 }
@@ -943,7 +943,7 @@ public class CleverTapPlugin implements MethodCallHandler, SyncListener,
             //Native Display
             case "getAllDisplayUnits": {
                 if (isCleverTapNotNull(cleverTapAPI)) {
-                    result.success(Utils.displayUnitListToMap(cleverTapAPI.getAllDisplayUnits()));
+                    result.success(Utils.displayUnitListToArrayList(cleverTapAPI.getAllDisplayUnits()));
                 } else {
                     result.error(TAG, ERROR_MSG, null);
                 }
@@ -1023,7 +1023,11 @@ public class CleverTapPlugin implements MethodCallHandler, SyncListener,
     private void invokeMethodOnUiThread(final String methodName, final Map map) {
         final MethodChannel channel = this.channel;
         runOnMainThread(() -> channel.invokeMethod(methodName, map));
+    }
 
+    private void invokeMethodOnUiThread(final String methodName, final ArrayList list) {
+        final MethodChannel channel = this.channel;
+        runOnMainThread(() -> channel.invokeMethod(methodName, list));
     }
 
 
@@ -1078,6 +1082,6 @@ public class CleverTapPlugin implements MethodCallHandler, SyncListener,
 
     @Override
     public void onDisplayUnitsLoaded(ArrayList<CleverTapDisplayUnit> units) {
-        invokeMethodOnUiThread("onDisplayUnitsLoaded", Utils.displayUnitListToMap(units));
+        invokeMethodOnUiThread("onDisplayUnitsLoaded", Utils.displayUnitListToArrayList(units));
     }
 }

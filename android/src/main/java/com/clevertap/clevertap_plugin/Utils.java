@@ -160,28 +160,24 @@ public class Utils {
         }
     }
 
-    static Map<String,ArrayList<Map<String,Object>>> displayUnitListToMap(ArrayList<CleverTapDisplayUnit> units){
-        Map<String,ArrayList<Map<String,Object>>> returnMap = new HashMap<>();
-        ArrayList<Map<String,Object>> mapList = new ArrayList<>();
+    static ArrayList<Map<String,Object>> displayUnitListToArrayList(ArrayList<CleverTapDisplayUnit> units){
+        ArrayList<Map<String,Object>> displayUnitList = new ArrayList<>();
         if(units != null) {
             for (CleverTapDisplayUnit unit : units) {
-                mapList.add(Utils.jsonObjectToMap(unit.getJsonObject()));
+                displayUnitList.add(Utils.jsonObjectToMap(unit.getJsonObject()));
             }
         }
-        returnMap.put("adUnits",mapList);
-        return returnMap;
+        return displayUnitList;
     }
 
-    static Map<String,ArrayList<Map<String,Object>>> inboxMessageListToMap(ArrayList<CTInboxMessage> inboxMessageArrayList){
-        Map<String,ArrayList<Map<String,Object>>> returnMap = new HashMap<>();
-        ArrayList<Map<String,Object>> mapList = new ArrayList<>();
+    static ArrayList<Map<String,Object>> inboxMessageListToArrayList(ArrayList<CTInboxMessage> inboxMessageArrayList){
+        ArrayList<Map<String,Object>> inboxMessageList = new ArrayList<>();
         if(inboxMessageArrayList != null) {
             for (CTInboxMessage message : inboxMessageArrayList) {
-                mapList.add(Utils.jsonObjectToMap(message.getData()));
+                inboxMessageList.add(Utils.jsonObjectToMap(message.getData()));
             }
         }
-        returnMap.put("inboxMessages",mapList);
-        return returnMap;
+        return inboxMessageList;
     }
 
     static Bundle jsonToBundle(JSONObject jsonObject) throws JSONException {
