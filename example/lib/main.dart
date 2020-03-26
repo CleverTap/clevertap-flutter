@@ -412,41 +412,17 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
-  void getAllInboxMessages(){
-    CleverTapPlugin.getAllInboxMessages().then((messageList) {
-//      if (messageMap == null || messageMap.length==0) return;
-//      var messageList = messageMap["inboxMessages"];
-
-      if (messageList == null || messageList.length==0) return;
-      Map<dynamic, dynamic> itemFirst = messageList[0];
-      Map<dynamic, dynamic> itemLast = messageList[messageList.length-1];
-
-      setState((() {
-        print("First Inbox Message =  ${itemFirst["id"]}");
-        print("Last  Inbox Message =  ${itemLast["id"]}");
-      }));
-    }).catchError((error) {
-      setState(() {
-        print("$error");
-      });
-    });
+ void getAllInboxMessages() async{
+    List messages = await CleverTapPlugin.getAllInboxMessages();
+    print("Inbox Messages = "+ messages.toString());
+    
   }
+ 
 
   void getUnreadInboxMessages() async{
 
-    var messageList= await CleverTapPlugin.getUnreadInboxMessages();
-
-//    if (messageMap == null || messageMap.length==0) return;
-//    var messageList = messageMap["inboxMessages"];
-
-    if (messageList == null || messageList.length==0) return;
-    Map<dynamic, dynamic> itemFirst = messageList[0];
-    Map<dynamic, dynamic> itemLast = messageList[messageList.length-1];
-
-    setState((() {
-      print("First Unread Inbox Message =  ${itemFirst["id"]}");
-      print("Last Unread Inbox Message =  ${itemLast["id"]}");
-    }));
+    List messages = await CleverTapPlugin.getUnreadInboxMessages();
+    print("Unread Inbox Messages = "+ messages.toString());
   }
 
   void getInboxMessageForId() async{
@@ -901,6 +877,6 @@ class _MyAppState extends State<MyApp> {
     //CleverTapPlugin.pushDisplayUnitClickedEvent("1582792356_20200227");
     //CleverTapPlugin.pushDisplayUnitViewedEvent("1582792356_20200227");
     //print("Ad Unit = " + adUnit.toString());
-  }
+  }  
 
 }
