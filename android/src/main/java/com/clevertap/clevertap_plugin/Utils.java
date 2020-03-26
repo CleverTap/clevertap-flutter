@@ -13,10 +13,13 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 public class Utils {
@@ -191,5 +194,32 @@ public class Utils {
             }
         }
         return bundle;
+    }
+
+    static HashMap<String, Object> dartMapToProfileMap(Map<String, Object> profileMap){
+        if (profileMap == null) return null;
+
+        HashMap<String, Object> profile = new HashMap<>();
+        for (Map.Entry<String, Object> stringObjectEntry : profileMap.entrySet()) {
+            try {
+                String key = stringObjectEntry.getKey();
+
+                if ("DOB".equals(key)) {
+                    String dob = profileMap.get(key).toString();
+                    SimpleDateFormat format = new SimpleDateFormat("dd-MM-yyyy", Locale.ENGLISH);
+                    try {
+                        Date date = format.parse(dob);
+                        profile.put(key, date);
+                    } catch (Throwable t) {
+                        Log.e("CleverTapError", t.getLocalizedMessage());
+                    }
+                } else {
+                    profile.put(key, stringObjectEntry.getValue());
+                }
+            } catch (Throwable t) {
+                Log.e("CleverTapError", t.getLocalizedMessage());
+            }
+        }
+        return profile;
     }
 }

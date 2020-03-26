@@ -385,7 +385,7 @@ public class CleverTapPlugin implements MethodCallHandler, SyncListener,
                 break;
             }
             case "onUserLogin": {
-                Map<String, Object> profile = call.argument("profile");
+                Map<String, Object> profile = Utils.dartMapToProfileMap(call.argument("profile"));
                 if (isCleverTapNotNull(cleverTapAPI)) {
                     cleverTapAPI.onUserLogin(profile);
                     result.success(null);
@@ -395,7 +395,7 @@ public class CleverTapPlugin implements MethodCallHandler, SyncListener,
                 break;
             }
             case "profileSet": {
-                Map<String, Object> profile = call.argument("profile");
+                Map<String, Object> profile = Utils.dartMapToProfileMap(call.argument("profile"));
                 if (isCleverTapNotNull(cleverTapAPI)) {
                     cleverTapAPI.pushProfile(profile);
                     result.success(null);

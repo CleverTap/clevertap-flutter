@@ -21,9 +21,9 @@
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>CleverTapAccountID</key>
-	<string>TEST-46W-WWR-R85Z</string>
+	<string>TEST-65R-487-R85Z</string>
 	<key>CleverTapToken</key>
-	<string>TEST-200-064</string>
+	<string>TEST-ab4-256</string>
 	<key>CleverTapUseIFA</key>
 	<false/>
 	<key>LSRequiresIPhoneOS</key>
