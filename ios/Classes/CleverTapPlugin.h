@@ -6,9 +6,9 @@ static NSString *const kCleverTapInAppNotificationDismissed       = @"inAppNotif
 static NSString *const kCleverTapInboxDidInitialize               = @"inboxDidInitialize";
 static NSString *const kCleverTapInboxMessagesDidUpdate           = @"inboxMessagesDidUpdate";
 static NSString *const kCleverTapExperimentsDidUpdate             = @"CTExperimentsUpdated";
-static NSString *const kCleverTapDisplayUnitsLoaded               = @"displayUnitsLoaded";
-static NSString *const kCleverTapInAppNotificationButtonTapped    = @"inAppNotificationButtonTapped";
-static NSString *const kCleverTapInboxMessageButtonTapped         = @"inboxMessageButtonTapped";
+static NSString *const kCleverTapDisplayUnitsLoaded               = @"onDisplayUnitsLoaded";
+static NSString *const kCleverTapInAppNotificationButtonTapped    = @"onInAppButtonClick";
+static NSString *const kCleverTapInboxMessageButtonTapped         = @"onInboxButtonClick";
 
 @interface CleverTapPlugin : NSObject<FlutterPlugin>
 + (instancetype)sharedInstance;
