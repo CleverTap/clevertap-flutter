@@ -8,7 +8,7 @@
 #import "CleverTapInAppNotificationDelegate.h"
 #import "CleverTap+DisplayUnit.h"
 
-@interface CleverTapPlugin ()  <CleverTapSyncDelegate, CleverTapInAppNotificationDelegate, CleverTapDisplayUnitDelegate,CleverTapInboxViewControllerDelegate> {
+@interface CleverTapPlugin ()  <CleverTapSyncDelegate, CleverTapInAppNotificationDelegate, CleverTapDisplayUnitDelegate, CleverTapInboxViewControllerDelegate> {
 }
 
 @property (strong, nonatomic) FlutterMethodChannel *channel;
@@ -526,7 +526,7 @@ static NSDateFormatter *dateFormatter;
     if ([styleConfig isKindOfClass:[NSNull class]]) {
         styleConfig = nil;
     }
-    CleverTapInboxViewController *inboxController = [[CleverTap sharedInstance] newInboxViewControllerWithConfig:[self _dictToInboxStyleConfig:styleConfig ? styleConfig : nil] andDelegate:nil];
+    CleverTapInboxViewController *inboxController = [[CleverTap sharedInstance] newInboxViewControllerWithConfig:[self _dictToInboxStyleConfig:styleConfig ? styleConfig : nil] andDelegate:(id <CleverTapInboxViewControllerDelegate>)self];
     if (inboxController) {
         UINavigationController *navigationController = [[UINavigationController alloc] initWithRootViewController:inboxController];
         UIWindow *keyWindow = [[UIApplication sharedApplication] keyWindow];
@@ -887,6 +887,16 @@ static NSDateFormatter *dateFormatter;
                                              selector:@selector(emitEventInternal:)
                                                  name:kCleverTapDisplayUnitsLoaded
                                                object:nil];
+    
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(emitEventInternal:)
+                                                 name:kCleverTapInAppNotificationButtonTapped
+                                               object:nil];
+    
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(emitEventInternal:)
+                                                 name:kCleverTapInboxMessageButtonTapped
+                                               object:nil];
 }
 
 - (void)postNotificationWithName:(NSString *)name andBody:(NSDictionary *)body {
@@ -912,9 +922,7 @@ static NSDateFormatter *dateFormatter;
 #pragma mark CleverTapInAppNotificationDelegate
 
 - (void)inAppNotificationDismissedWithExtras:(NSDictionary *)extras andActionExtras:(NSDictionary *)actionExtras {
-    
     NSMutableDictionary *body = [NSMutableDictionary new];
-    
     if (extras != nil) {
         body[@"extras"] = extras;
     }
@@ -922,19 +930,25 @@ static NSDateFormatter *dateFormatter;
     if (actionExtras != nil) {
         body[@"actionExtras"] = actionExtras;
     }
-    
     [self postNotificationWithName:kCleverTapInAppNotificationDismissed andBody:body];
 }
 
 - (void)inAppNotificationButtonTappedWithCustomExtras:(NSDictionary *)customExtras {
-    [self postNotificationWithName:kCleverTapInAppButtonCLicked andBody:customExtras];
+    NSMutableDictionary *body = [NSMutableDictionary new];
+    if (customExtras != nil) {
+        body[@"customExtras"] = customExtras;
+    }
+    [self postNotificationWithName:kCleverTapInAppNotificationButtonTapped andBody:customExtras];
 }
 
 #pragma mark CleverTapInboxViewControllerDelegate
 
 - (void)messageButtonTappedWithCustomExtras:(NSDictionary *_Nullable)customExtras{
-    
-    [self postNotificationWithName:kCleverTapInboxButtonCLicked andBody:customExtras];
+    NSMutableDictionary *body = [NSMutableDictionary new];
+    if (customExtras != nil) {
+        body[@"customExtras"] = customExtras;
+    }
+    [self postNotificationWithName:kCleverTapInboxMessageButtonTapped andBody:customExtras];
 }
 
 @end
