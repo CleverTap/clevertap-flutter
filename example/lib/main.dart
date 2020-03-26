@@ -45,11 +45,25 @@ class _MyAppState extends State<MyApp> {
     _clevertapPlugin.setCleverTapInboxMessagesDidUpdateHandler(inboxMessagesDidUpdate);
     _clevertapPlugin.setCleverTapExperimentsDidUpdateHandler(ctExperimentsUpdated);
     _clevertapPlugin.setCleverTapDisplayUnitsLoadedHandler(onDisplayUnitsLoaded);
+    _clevertapPlugin.setCleverTapInAppNotificationButtonClickedHandler(inAppNotificationButtonClicked);
+    _clevertapPlugin.setCleverTapInboxNotificationButtonClickedHandler(inboxNotificationButtonClicked);
   }
 
   void inAppNotificationDismissed(Map<String,dynamic> map){
     this.setState((){
       print("inAppNotificationDismissed called");
+    });
+  }
+
+  void inAppNotificationButtonClicked(Map<String,dynamic> map){
+    this.setState((){
+      print("inAppNotificationButtonClicked called = ${map.toString()}");
+    });
+  }
+
+  void inboxNotificationButtonClicked(Map<String,dynamic> map){
+    this.setState((){
+      print("inboxNotificationButtonClicked called = ${map.toString()}");
     });
   }
 
