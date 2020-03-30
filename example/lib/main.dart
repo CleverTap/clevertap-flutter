@@ -88,10 +88,10 @@ class _MyAppState extends State<MyApp> {
   }
 
   void inboxMessagesDidUpdate(){
-    this.setState((){
+    this.setState(() async {
       print("inboxMessagesDidUpdate called");
-      var unread = CleverTapPlugin.getInboxMessageUnreadCount();
-      var total = CleverTapPlugin.getInboxMessageCount();
+      int unread = await CleverTapPlugin.getInboxMessageUnreadCount();
+      int total = await CleverTapPlugin.getInboxMessageCount();
       print("Unread count = "+unread.toString());
       print("Total count = "+total.toString());
     });
