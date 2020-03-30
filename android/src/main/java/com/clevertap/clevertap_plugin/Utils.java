@@ -3,6 +3,7 @@ package com.clevertap.clevertap_plugin;
 import android.os.Bundle;
 import android.util.Log;
 
+import com.clevertap.android.sdk.CTInboxMessage;
 import com.clevertap.android.sdk.CTInboxStyleConfig;
 import com.clevertap.android.sdk.EventDetail;
 import com.clevertap.android.sdk.UTMDetail;
@@ -12,10 +13,13 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 public class Utils {
@@ -159,16 +163,24 @@ public class Utils {
         }
     }
 
-    static Map<String,ArrayList<Map<String,Object>>> displayUnitListToMap(ArrayList<CleverTapDisplayUnit> units){
-        Map<String,ArrayList<Map<String,Object>>> returnMap = new HashMap<>();
-        ArrayList<Map<String,Object>> mapList = new ArrayList<>();
+    static ArrayList<Map<String,Object>> displayUnitListToArrayList(ArrayList<CleverTapDisplayUnit> units){
+        ArrayList<Map<String,Object>> displayUnitList = new ArrayList<>();
         if(units != null) {
             for (CleverTapDisplayUnit unit : units) {
-                mapList.add(Utils.jsonObjectToMap(unit.getJsonObject()));
+                displayUnitList.add(Utils.jsonObjectToMap(unit.getJsonObject()));
             }
         }
-        returnMap.put("adUnits",mapList);
-        return returnMap;
+        return displayUnitList;
+    }
+
+    static ArrayList<Map<String,Object>> inboxMessageListToArrayList(ArrayList<CTInboxMessage> inboxMessageArrayList){
+        ArrayList<Map<String,Object>> inboxMessageList = new ArrayList<>();
+        if(inboxMessageArrayList != null) {
+            for (CTInboxMessage message : inboxMessageArrayList) {
+                inboxMessageList.add(Utils.jsonObjectToMap(message.getData()));
+            }
+        }
+        return inboxMessageList;
     }
 
     static Bundle jsonToBundle(JSONObject jsonObject) throws JSONException {
@@ -182,5 +194,32 @@ public class Utils {
             }
         }
         return bundle;
+    }
+
+    static HashMap<String, Object> dartMapToProfileMap(Map<String, Object> profileMap){
+        if (profileMap == null) return null;
+
+        HashMap<String, Object> profile = new HashMap<>();
+        for (Map.Entry<String, Object> stringObjectEntry : profileMap.entrySet()) {
+            try {
+                String key = stringObjectEntry.getKey();
+
+                if ("DOB".equals(key)) {
+                    String dob = profileMap.get(key).toString();
+                    SimpleDateFormat format = new SimpleDateFormat("dd-MM-yyyy", Locale.ENGLISH);
+                    try {
+                        Date date = format.parse(dob);
+                        profile.put(key, date);
+                    } catch (Throwable t) {
+                        Log.e("CleverTapError", t.getLocalizedMessage());
+                    }
+                } else {
+                    profile.put(key, stringObjectEntry.getValue());
+                }
+            } catch (Throwable t) {
+                Log.e("CleverTapError", t.getLocalizedMessage());
+            }
+        }
+        return profile;
     }
 }

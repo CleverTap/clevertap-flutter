@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'dart:io' show Platform;
 
 import 'package:clevertap_plugin/clevertap_plugin.dart';
 
@@ -45,11 +46,25 @@ class _MyAppState extends State<MyApp> {
     _clevertapPlugin.setCleverTapInboxMessagesDidUpdateHandler(inboxMessagesDidUpdate);
     _clevertapPlugin.setCleverTapExperimentsDidUpdateHandler(ctExperimentsUpdated);
     _clevertapPlugin.setCleverTapDisplayUnitsLoadedHandler(onDisplayUnitsLoaded);
+    _clevertapPlugin.setCleverTapInAppNotificationButtonClickedHandler(inAppNotificationButtonClicked);
+    _clevertapPlugin.setCleverTapInboxNotificationButtonClickedHandler(inboxNotificationButtonClicked);
   }
 
   void inAppNotificationDismissed(Map<String,dynamic> map){
     this.setState((){
       print("inAppNotificationDismissed called");
+    });
+  }
+
+  void inAppNotificationButtonClicked(Map<String,dynamic> map){
+    this.setState((){
+      print("inAppNotificationButtonClicked called = ${map.toString()}");
+    });
+  }
+
+  void inboxNotificationButtonClicked(Map<String,dynamic> map){
+    this.setState((){
+      print("inboxNotificationButtonClicked called = ${map.toString()}");
     });
   }
 
@@ -73,10 +88,10 @@ class _MyAppState extends State<MyApp> {
   }
 
   void inboxMessagesDidUpdate(){
-    this.setState((){
+    this.setState(() async {
       print("inboxMessagesDidUpdate called");
-      var unread = CleverTapPlugin.getInboxMessageUnreadCount();
-      var total = CleverTapPlugin.getInboxMessageCount();
+      int unread = await CleverTapPlugin.getInboxMessageUnreadCount();
+      int total = await CleverTapPlugin.getInboxMessageCount();
       print("Unread count = "+unread.toString());
       print("Total count = "+total.toString());
     });
@@ -112,13 +127,10 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
-  void onDisplayUnitsLoaded(Map<String,dynamic> map){
+  void onDisplayUnitsLoaded(List<dynamic> displayUnits){
     this.setState(() async {
-      print("Display units loaded");
-      Map<String,dynamic> adUnit = await CleverTapPlugin.getDisplayUnitForId("1582792356_20200227");
-      //CleverTapPlugin.pushDisplayUnitClickedEvent("1582792356_20200227");
-      //CleverTapPlugin.pushDisplayUnitViewedEvent("1582792356_20200227");
-      print("Ad Unit = " + adUnit.toString());
+      List displayUnits = await CleverTapPlugin.getAllDisplayUnits();
+      print("Display Units = "+ displayUnits.toString());
     });
   }
 
@@ -311,6 +323,34 @@ class _MyAppState extends State<MyApp> {
                     onPressed: () => getAdUnits(),
                     child: Text('Get Ad Units')
                 ),
+                RaisedButton(
+                    onPressed: () => getAllInboxMessages(),
+                    child: Text('Get All Inbox Messages')
+                ),
+                RaisedButton(
+                    onPressed: () => getUnreadInboxMessages(),
+                    child: Text('Get Unread Inbox Messages')
+                ),
+                RaisedButton(
+                    onPressed: () => getInboxMessageForId(),
+                    child: Text('Get Inbox Message For ID')
+                ),
+                RaisedButton(
+                    onPressed: () => deleteInboxMessageForId(),
+                    child: Text('Delete Inbox Message For ID')
+                ),
+                RaisedButton(
+                    onPressed: () => markReadInboxMessageForId(),
+                    child: Text('Mark Inbox Message As Read')
+                ),
+                RaisedButton(
+                    onPressed: () => pushInboxNotificationClickedEventForId(),
+                    child: Text('pushInboxNotificationClickedEventForId')
+                ),
+                RaisedButton(
+                    onPressed: () => pushInboxNotificationViewedEventForId(),
+                    child: Text('pushInboxNotificationViewedEventForId')
+                ),
               ],
             ),
           ),
@@ -351,10 +391,11 @@ class _MyAppState extends State<MyApp> {
   void recordUser(){
     var stuff = ["bags","shoes"];
     var profile = {
-      'Name': 'Tony Stark',
+      'Name': 'Thor',
       'Identity': '100',
-      'Email': 'tony@stark.com',
-      'Phone': '+14155551234',
+      'DOB': '22-04-2000',///Key always has to be "DOB" and format should always be dd-MM-yyyy
+      'Email': 'thor1@asgard.com',
+      'Phone': '14155551234',
       'props': 'property1',
       'stuff': stuff
     };
@@ -364,6 +405,126 @@ class _MyAppState extends State<MyApp> {
   void showInbox(){
     if(inboxInitialized) {
       CleverTapPlugin.showInbox(null);
+    }
+  }
+
+ void getAllInboxMessages() async{
+    List messages = await CleverTapPlugin.getAllInboxMessages();
+    print("Inbox Messages = "+ messages.toString());
+    
+  }
+
+  void getUnreadInboxMessages() async{
+
+    List messages = await CleverTapPlugin.getUnreadInboxMessages();
+    print("Unread Inbox Messages = "+ messages.toString());
+  }
+
+  void getInboxMessageForId() async{
+    var messageId=await getFirstInboxMessageId();
+
+    if(messageId==null) {
+      setState((() {
+        print("Inbox Message id is null");
+      }));
+      return;
+    }
+
+    var messageForId= await CleverTapPlugin.getInboxMessageForId(messageId);
+    setState((() {
+      print("Inbox Message for id =  ${messageForId.toString()}");
+    }));
+
+  }
+
+  void deleteInboxMessageForId() async{
+    var messageId=await getFirstInboxMessageId();
+
+    if(messageId==null) {
+      setState((() {
+        print("Inbox Message id is null");
+      }));
+      return;
+    }
+
+    await CleverTapPlugin.deleteInboxMessageForId(messageId);
+
+    setState((() {
+      print("Deleted Inbox Message with id =  ${messageId}");
+    }));
+
+  }
+
+  void markReadInboxMessageForId() async{
+    var messageList = await CleverTapPlugin.getUnreadInboxMessages();
+
+    if (messageList == null || messageList.length==0) return;
+    Map<dynamic, dynamic> itemFirst = messageList[0];
+
+    if(Platform.isAndroid) {
+      await CleverTapPlugin.markReadInboxMessageForId(itemFirst["id"]);
+      setState((() {
+        print("Marked Inbox Message as read with id =  ${itemFirst["id"]}");
+      }));
+    }else if(Platform.isIOS){
+      await CleverTapPlugin.markReadInboxMessageForId(itemFirst["_id"]);
+      setState((() {
+        print("Marked Inbox Message as read with id =  ${itemFirst["_id"]}");
+      }));
+    }
+
+
+
+  }
+
+  void pushInboxNotificationClickedEventForId() async{
+    var messageId=await getFirstInboxMessageId();
+
+    if(messageId==null) {
+      setState((() {
+        print("Inbox Message id is null");
+      }));
+      return;
+    }
+
+    await CleverTapPlugin.pushInboxNotificationClickedEventForId(messageId);
+
+    setState((() {
+      print("Pushed NotificationClickedEvent for Inbox Message with id =  ${messageId}");
+    }));
+
+  }
+
+  void pushInboxNotificationViewedEventForId() async{
+    var messageId=await getFirstInboxMessageId();
+
+    if(messageId==null) {
+      setState((() {
+        print("Inbox Message id is null");
+      }));
+      return;
+    }
+
+    await CleverTapPlugin.pushInboxNotificationViewedEventForId(messageId);
+
+    setState((() {
+      print("Pushed NotificationViewedEvent for Inbox Message with id =  ${messageId}");
+    }));
+
+  }
+
+  Future<String> getFirstInboxMessageId() async{
+
+    var messageList = await CleverTapPlugin.getAllInboxMessages();
+    print("inside getFirstInboxMessageId");
+    if (messageList == null || messageList.length==0) return null;
+    Map<dynamic, dynamic> itemFirst = messageList[0];
+    print(itemFirst.toString());
+
+    if(Platform.isAndroid) {
+      return itemFirst["id"];
+    }else if (Platform.isIOS){
+      return itemFirst["_id"];
     }
   }
 
@@ -708,11 +869,8 @@ class _MyAppState extends State<MyApp> {
   }
 
   void getAdUnits() async{
-    print("Display units loaded");
-    Map<String,dynamic> adUnit = await CleverTapPlugin.getDisplayUnitForId("1582792356_20200227");
-    //CleverTapPlugin.pushDisplayUnitClickedEvent("1582792356_20200227");
-    //CleverTapPlugin.pushDisplayUnitViewedEvent("1582792356_20200227");
-    print("Ad Unit = " + adUnit.toString());
-  }
+    List displayUnits = await CleverTapPlugin.getAllDisplayUnits();
+    print("Display Units = "+ displayUnits.toString());
+  }  
 
 }
