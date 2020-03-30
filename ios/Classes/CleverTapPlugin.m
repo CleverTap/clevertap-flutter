@@ -483,7 +483,7 @@ static NSDateFormatter *dateFormatter;
 }
 
 - (void)getInboxMessageForId:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    CleverTapInboxMessage *message = [[CleverTap sharedInstance] getInboxMessageForId:call.arguments[@"unitId"]];
+    CleverTapInboxMessage *message = [[CleverTap sharedInstance] getInboxMessageForId:call.arguments[@"messageId"]];
     NSDictionary *res = message.json;
     result(res);
 }
