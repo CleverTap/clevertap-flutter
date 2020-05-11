@@ -11,6 +11,10 @@ typedef void CleverTapInboxMessagesDidUpdateHandler();
 typedef void CleverTapInboxNotificationButtonClickedHandler(Map<String,String> mapList);
 typedef void CleverTapExperimentsDidUpdateHandler();
 typedef void CleverTapDisplayUnitsLoadedHandler(List<dynamic> displayUnitList);
+typedef void CleverTapFeatureFlagUpdatedHandler();
+typedef void CleverTapProductConfigInitializedHandler();
+typedef void CleverTapProductConfigFetchedHandler();
+typedef void CleverTapProductConfigActivatedHandler();
 
 class CleverTapPlugin {
 	CleverTapInAppNotificationDismissedHandler cleverTapInAppNotificationDismissedHandler;
@@ -22,6 +26,10 @@ class CleverTapPlugin {
 	CleverTapInboxNotificationButtonClickedHandler cleverTapInboxNotificationButtonClickedHandler;
 	CleverTapExperimentsDidUpdateHandler cleverTapExperimentsDidUpdateHandler;
 	CleverTapDisplayUnitsLoadedHandler cleverTapDisplayUnitsLoadedHandler;
+	CleverTapFeatureFlagUpdatedHandler cleverTapFeatureFlagUpdatedHandler;
+	CleverTapProductConfigInitializedHandler cleverTapProductConfigInitializedHandler;
+	CleverTapProductConfigFetchedHandler cleverTapProductConfigFetchedHandler;
+	CleverTapProductConfigActivatedHandler cleverTapProductConfigActivatedHandler;
 
 	static const MethodChannel _channel =
 	const MethodChannel('clevertap_plugin');
@@ -68,6 +76,18 @@ class CleverTapPlugin {
 				List<dynamic> args = call.arguments;
 				cleverTapDisplayUnitsLoadedHandler(args);
 				break;
+			case "featureFlagsUpdated":
+				cleverTapFeatureFlagUpdatedHandler();
+				break;
+			case "productConfigInitialized":
+				cleverTapProductConfigInitializedHandler();
+				break;
+			case "productConfigFetched" :
+				cleverTapProductConfigFetchedHandler();
+				break;
+			case "productConfigActivated" :
+				cleverTapProductConfigActivatedHandler();
+				break;
 		}
 	}
 
@@ -106,6 +126,22 @@ class CleverTapPlugin {
 	/// Define a method to handle Native Display Unit updates
 	void setCleverTapDisplayUnitsLoadedHandler(CleverTapDisplayUnitsLoadedHandler handler)=>
 		cleverTapDisplayUnitsLoadedHandler = handler;
+
+	/// Define a method to handle Feature Flag updates
+	void setCleverTapFeatureFlagUpdatedHandler (CleverTapFeatureFlagUpdatedHandler handler)=>
+		cleverTapFeatureFlagUpdatedHandler = handler;
+
+	/// Define a method to handle Product config initialization
+	void setCleverTapProductConfigInitializedHandler (CleverTapProductConfigInitializedHandler handler)=>
+		cleverTapProductConfigInitializedHandler = handler;
+
+	/// Define a method to handle Product config fetch updates
+	void setCleverTapProductConfigFetchedHandler (CleverTapProductConfigFetchedHandler handler) =>
+		cleverTapProductConfigFetchedHandler = handler;
+
+	/// Define a method to handle Product config activation updates
+	void setCleverTapProductConfigActivatedHandler (CleverTapProductConfigActivatedHandler handler) =>
+		cleverTapProductConfigActivatedHandler = handler;
 
 	/// Sets debug level to show logs on Android Studio/Xcode console
 	static Future<void> setDebugLevel(int value) async {
@@ -604,5 +640,72 @@ class CleverTapPlugin {
 	///Raise Notification Clicked for Display Unit id passed
 	static Future<void> pushDisplayUnitClickedEvent(String unitId) async {
 		return await _channel.invokeMethod('pushDisplayUnitClickedEvent',{'unitId':unitId});
+	}
+
+	///Feature Flags
+	///Returns boolean value of Feature Flag
+	static Future<bool> getFeatureFlag(String key, bool defaultValue) async {
+		return await _channel.invokeMethod('getFeatureFlag',{'key':key,'defaultValue':defaultValue});
+	}
+
+	///Product Config
+	///Sets Default Values for Product Config using the passed Map
+	static Future<void> setDefaultsMap(Map<String,Object> defaults) async{
+		return await _channel.invokeMethod('setDefaultsMap',{'defaults':defaults});
+	}
+
+	///Fetches the Product Configs from CleverTap
+	static Future<void> fetch() async {
+		return await _channel.invokeMethod('fetch',{});
+	}
+
+	///Fetches Product configs, adhering to the specified minimum fetch interval in seconds.
+	static Future<void> fetchWithMinimumFetchIntervalInSeconds(int interval) async {
+		return await _channel.invokeMethod('fetchWithMinimumFetchIntervalInSeconds',{'interval':interval});
+	}
+
+	///Activates the most recently fetched Product configs
+	static Future<void> activate() async {
+		return await _channel.invokeMethod('activate',{});
+	}
+
+	///Fetches and then activates the fetched Product configs.
+	static Future<void> fetchAndActivate() async {
+		return await _channel.invokeMethod('fetchAndActivate',{});
+	}
+
+	///Sets the minimum interval between successive fetch calls.
+	static Future<void> setMinimumFetchIntervalInSeconds(int interval) async {
+		return await _channel.invokeMethod('setMinimumFetchIntervalInSeconds',{'interval':interval});
+	}
+
+	///Returns the last fetched timestamp in millis.
+	static Future<int> getLastFetchTimeStampInMillis() async {
+		return await _channel.invokeMethod('getLastFetchTimeStampInMillis',{});
+	}
+
+	///Returns the parameter value for the given key as a String.
+	static Future<String> getString(String key) async {
+		return await _channel.invokeMethod('getString',{'key':key});
+	}
+
+	///Returns the parameter value for the given key as a boolean.
+	static Future<bool> getBoolean(String key) async {
+		return await _channel.invokeMethod('getBoolean',{'key':key});
+	}
+
+	///Returns the parameter value for the given key as a long (int for Dart).
+	static Future<int> getLong(String key) async {
+		return await _channel.invokeMethod('getLong',{'key':key});
+	}
+
+	///Returns the parameter value for the given key as a double.
+	static Future<double> getDouble(String key) async {
+		return await _channel.invokeMethod('getDouble',{'key':key});
+	}
+
+	///Deletes all activated, fetched and defaults configs as well as all Product Config settings.
+	static Future<void> reset() async {
+		return await _channel.invokeMethod('reset',{});
 	}
 }
