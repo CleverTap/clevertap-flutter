@@ -1,5 +1,5 @@
 name: clevertap_plugin
-description: CleverTap Flutter plugin.
+description: The CleverTap Flutter SDK for Mobile Customer Engagement,Analytics and Retention solutions.
 version: 1.1.2
 homepage: https://github.com/CleverTap/clevertap-flutter
 
