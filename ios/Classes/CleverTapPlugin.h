@@ -9,8 +9,13 @@ static NSString *const kCleverTapExperimentsDidUpdate             = @"CTExperime
 static NSString *const kCleverTapDisplayUnitsLoaded               = @"onDisplayUnitsLoaded";
 static NSString *const kCleverTapInAppNotificationButtonTapped    = @"onInAppButtonClick";
 static NSString *const kCleverTapInboxMessageButtonTapped         = @"onInboxButtonClick";
+static NSString *const kCleverTapProductConfigFetched             = @"productConfigFetched";
+static NSString *const kCleverTapProductConfigActivated           = @"productConfigActivated";
+static NSString *const kCleverTapProductConfigInitialized         = @"productConfigInitialized";
+static NSString *const kCleverTapFeatureFlagsUpdated              = @"featureFlagsUpdated";
 
-@interface CleverTapPlugin : NSObject<FlutterPlugin>
+@interface CleverTapPlugin : NSObject <FlutterPlugin>
+
 + (instancetype)sharedInstance;
 
 - (void)applicationDidLaunchWithOptions:(NSDictionary *)options;
