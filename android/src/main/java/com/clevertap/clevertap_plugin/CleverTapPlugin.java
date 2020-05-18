@@ -2,7 +2,10 @@ package com.clevertap.clevertap_plugin;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.location.Location;
+import android.net.Uri;
+import android.os.Bundle;
 import android.util.Log;
 
 import com.clevertap.android.sdk.CTExperimentsListener;
@@ -15,12 +18,14 @@ import com.clevertap.android.sdk.EventDetail;
 import com.clevertap.android.sdk.InAppNotificationButtonListener;
 import com.clevertap.android.sdk.InAppNotificationListener;
 import com.clevertap.android.sdk.InboxMessageButtonListener;
+import com.clevertap.android.sdk.Logger;
 import com.clevertap.android.sdk.SyncListener;
 import com.clevertap.android.sdk.UTMDetail;
 import com.clevertap.android.sdk.displayunits.DisplayUnitListener;
 import com.clevertap.android.sdk.displayunits.model.CleverTapDisplayUnit;
 import com.clevertap.android.sdk.product_config.CTProductConfigListener;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -980,6 +985,7 @@ public class CleverTapPlugin implements MethodCallHandler, SyncListener,
                 } else {
                     result.error(TAG, ERROR_MSG, null);
                 }
+                break;
             }
 
             case "pushDisplayUnitClickedEvent": {
@@ -990,6 +996,7 @@ public class CleverTapPlugin implements MethodCallHandler, SyncListener,
                 } else {
                     result.error(TAG, ERROR_MSG, null);
                 }
+                break;
             }
 
             case "getFeatureFlag": {
@@ -1000,6 +1007,7 @@ public class CleverTapPlugin implements MethodCallHandler, SyncListener,
                 } else {
                     result.error(TAG, ERROR_MSG, null);
                 }
+                break;
             }
 
             case "setDefaultsMap": {
@@ -1010,6 +1018,7 @@ public class CleverTapPlugin implements MethodCallHandler, SyncListener,
                 } else {
                     result.error(TAG, ERROR_MSG, null);
                 }
+                break;
             }
 
             case "fetch": {
@@ -1019,16 +1028,18 @@ public class CleverTapPlugin implements MethodCallHandler, SyncListener,
                 } else {
                     result.error(TAG, ERROR_MSG, null);
                 }
+                break;
             }
 
             case "fetchWithMinimumFetchIntervalInSeconds": {
-                long interval = call.argument("interval");
+                int interval = call.argument("interval");
                 if (isCleverTapNotNull(cleverTapAPI)) {
                     cleverTapAPI.productConfig().fetch(interval);
                     result.success(null);
                 } else {
                     result.error(TAG, ERROR_MSG, null);
                 }
+                break;
             }
 
             case "activate": {
@@ -1038,6 +1049,7 @@ public class CleverTapPlugin implements MethodCallHandler, SyncListener,
                 } else {
                     result.error(TAG, ERROR_MSG, null);
                 }
+                break;
             }
 
             case "fetchAndActivate": {
@@ -1047,6 +1059,7 @@ public class CleverTapPlugin implements MethodCallHandler, SyncListener,
                 } else {
                     result.error(TAG, ERROR_MSG, null);
                 }
+                break;
             }
 
             case "setMinimumFetchIntervalInSeconds": {
@@ -1057,6 +1070,7 @@ public class CleverTapPlugin implements MethodCallHandler, SyncListener,
                 } else {
                     result.error(TAG, ERROR_MSG, null);
                 }
+                break;
             }
 
             case "getLastFetchTimeStampInMillis": {
@@ -1065,6 +1079,47 @@ public class CleverTapPlugin implements MethodCallHandler, SyncListener,
                 } else {
                     result.error(TAG, ERROR_MSG, null);
                 }
+                break;
+            }
+
+            case "getString":{
+                String key = call.argument("key");
+                if (isCleverTapNotNull(cleverTapAPI)) {
+                    result.success(cleverTapAPI.productConfig().getString(key));
+                } else {
+                    result.error(TAG, ERROR_MSG, null);
+                }
+                break;
+            }
+
+            case "getBoolean":{
+                String key = call.argument("key");
+                if (isCleverTapNotNull(cleverTapAPI)) {
+                    result.success(cleverTapAPI.productConfig().getBoolean(key));
+                } else {
+                    result.error(TAG, ERROR_MSG, null);
+                }
+                break;
+            }
+
+            case "getLong":{
+                String key = call.argument("key");
+                if (isCleverTapNotNull(cleverTapAPI)) {
+                    result.success(cleverTapAPI.productConfig().getLong(key));
+                } else {
+                    result.error(TAG, ERROR_MSG, null);
+                }
+                break;
+            }
+
+            case "getDouble":{
+                String key = call.argument("key");
+                if (isCleverTapNotNull(cleverTapAPI)) {
+                    result.success(cleverTapAPI.productConfig().getDouble(key));
+                } else {
+                    result.error(TAG, ERROR_MSG, null);
+                }
+                break;
             }
 
             //no-op for android, methods only for iOS.

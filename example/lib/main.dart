@@ -141,21 +141,37 @@ class _MyAppState extends State<MyApp> {
   void featureFlagsUpdated(){
     print("Feature Flags Updated");
     this.setState(() async {
-      bool booleanVar = await CleverTapPlugin.getFeatureFlag("FFKey", false);
+      bool booleanVar = await CleverTapPlugin.getFeatureFlag("boolkey", false);
       print("Feature flag = " + booleanVar.toString());
     });
   }
 
   void productConfigInitialized(){
     print("Product Config Initialized");
+    this.setState(() async {
+      await CleverTapPlugin.fetch();
+    });
   }
 
   void productConfigFetched(){
     print("Product Config Fetched");
+    this.setState(() async {
+      await CleverTapPlugin.activate();
+    });
+
   }
 
   void productConfigActivated(){
     print("Product Config Activated");
+    this.setState(() async {
+      String stringvar = await CleverTapPlugin.getString("StringKey");
+      print("PC String = " + stringvar.toString());
+      int intvar = await CleverTapPlugin.getLong("IntKey");
+      print("PC int = " + intvar.toString());
+      double doublevar = await CleverTapPlugin.getDouble("DoubleKey");
+      print("PC double = " + doublevar.toString());
+    });
+
   }
 
   @override
