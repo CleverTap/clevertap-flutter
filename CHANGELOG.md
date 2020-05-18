@@ -1,6 +1,6 @@
 ## CHANGE LOG
 
-### Version 1.1.1 (//TODO)
+### Version 1.1.2 (//TODO)
 * Adds support for Product Config and Feature Flags
 * Supports CleverTap Android and iOS SDK v3.8.0
 
