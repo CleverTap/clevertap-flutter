@@ -246,6 +246,8 @@ static NSDateFormatter *dateFormatter;
         [self getFeatureFlag:call withResult:result];
     else if ([@"createNotification" isEqualToString:call.method])
         result(nil);
+    else if ([@"processPushNotification" isEqualToString:call.method])
+        result(nil);
     else if ([@"createNotificationChannel" isEqualToString:call.method])
         result(nil);
     else if ([@"createNotificationChannelWithSound" isEqualToString:call.method])
