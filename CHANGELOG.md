@@ -1,5 +1,10 @@
 ## CHANGE LOG
 
+### Version 1.1.2 (May 20, 2020)
+* Adds support for Product Config and Feature Flags
+* Adds support for Custom Handling Push Amplification Campaigns
+* Supports CleverTap Android and iOS SDK v3.8.0
+
 ### Version 1.1.1 (March 30, 2020)
 * Adds support for Custom App Inbox
 * Adds support for InApp/Inbox button click listeners

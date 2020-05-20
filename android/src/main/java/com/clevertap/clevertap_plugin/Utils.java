@@ -21,6 +21,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 public class Utils {
     static Map<String,Object> eventDetailToMap(EventDetail eventDetail){
@@ -221,5 +222,27 @@ public class Utils {
             }
         }
         return profile;
+    }
+
+    static Map<String, Object> bundleToMap(Bundle extras) {
+        Map<String, Object> map = new HashMap<String, Object>();
+
+        Set<String> ks = extras.keySet();
+        for (String key : ks) {
+            map.put(key, extras.get(key));
+        }
+        return map;
+    }
+
+    static Bundle stringToBundle(String content) throws JSONException {
+        JSONObject jsonObject = new JSONObject(content);
+        Bundle bundle = new Bundle();
+        Iterator iter = jsonObject.keys();
+        while(iter.hasNext()){
+            String key = (String)iter.next();
+            String value = jsonObject.getString(key);
+            bundle.putString(key,value);
+        }
+        return bundle;
     }
 }

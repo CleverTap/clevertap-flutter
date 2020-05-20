@@ -39,6 +39,7 @@ class _MyAppState extends State<MyApp> {
 
   void activateCleverTapFlutterPluginHandlers(){
     _clevertapPlugin = new CleverTapPlugin();
+    _clevertapPlugin.setCleverTapPushAmpPayloadReceivedHandler(pushAmpPayloadReceived);
     _clevertapPlugin.setCleverTapInAppNotificationDismissedHandler(inAppNotificationDismissed);
     _clevertapPlugin.setCleverTapProfileDidInitializeHandler(profileDidInitialize);
     _clevertapPlugin.setCleverTapProfileSyncHandler(profileDidUpdate);
@@ -48,6 +49,10 @@ class _MyAppState extends State<MyApp> {
     _clevertapPlugin.setCleverTapDisplayUnitsLoadedHandler(onDisplayUnitsLoaded);
     _clevertapPlugin.setCleverTapInAppNotificationButtonClickedHandler(inAppNotificationButtonClicked);
     _clevertapPlugin.setCleverTapInboxNotificationButtonClickedHandler(inboxNotificationButtonClicked);
+    _clevertapPlugin.setCleverTapFeatureFlagUpdatedHandler(featureFlagsUpdated);
+    _clevertapPlugin.setCleverTapProductConfigInitializedHandler(productConfigInitialized);
+    _clevertapPlugin.setCleverTapProductConfigFetchedHandler(productConfigFetched);
+    _clevertapPlugin.setCleverTapProductConfigActivatedHandler(productConfigActivated);
   }
 
   void inAppNotificationDismissed(Map<String,dynamic> map){
@@ -131,6 +136,50 @@ class _MyAppState extends State<MyApp> {
     this.setState(() async {
       List displayUnits = await CleverTapPlugin.getAllDisplayUnits();
       print("Display Units = "+ displayUnits.toString());
+    });
+  }
+
+  void featureFlagsUpdated(){
+    print("Feature Flags Updated");
+    this.setState(() async {
+      bool booleanVar = await CleverTapPlugin.getFeatureFlag("BoolKey", false);
+      print("Feature flag = " + booleanVar.toString());
+    });
+  }
+
+  void productConfigInitialized(){
+    print("Product Config Initialized");
+    this.setState(() async {
+      await CleverTapPlugin.fetch();
+    });
+  }
+
+  void productConfigFetched(){
+    print("Product Config Fetched");
+    this.setState(() async {
+      await CleverTapPlugin.activate();
+    });
+
+  }
+
+  void productConfigActivated(){
+    print("Product Config Activated");
+    this.setState(() async {
+      String stringvar = await CleverTapPlugin.getProductConfigString("StringKey");
+      print("PC String = " + stringvar.toString());
+      int intvar = await CleverTapPlugin.getProductConfigLong("IntKey");
+      print("PC int = " + intvar.toString());
+      double doublevar = await CleverTapPlugin.getProductConfigDouble("DoubleKey");
+      print("PC double = " + doublevar.toString());
+    });
+  }
+
+  void pushAmpPayloadReceived(Map<String,dynamic> map){
+    print("pushAmpPayloadReceived called");
+    this.setState(() async {
+      var data = jsonEncode(map);
+      print("JSON = "+data.toString());
+      CleverTapPlugin.createNotification(data);
     });
   }
 
@@ -350,6 +399,18 @@ class _MyAppState extends State<MyApp> {
                 RaisedButton(
                     onPressed: () => pushInboxNotificationViewedEventForId(),
                     child: Text('pushInboxNotificationViewedEventForId')
+                ),
+                RaisedButton(
+                    onPressed: () => fetch(),
+                    child: Text('Fetch')
+                ),
+                RaisedButton(
+                    onPressed: () => activate(),
+                    child: Text('Activate')
+                ),
+                RaisedButton(
+                    onPressed: () => fetchAndActivate(),
+                    child: Text('Fetch And Activate')
                 ),
               ],
             ),
@@ -871,6 +932,19 @@ class _MyAppState extends State<MyApp> {
   void getAdUnits() async{
     List displayUnits = await CleverTapPlugin.getAllDisplayUnits();
     print("Display Units = "+ displayUnits.toString());
-  }  
+  }
+
+  void fetch(){
+    CleverTapPlugin.fetch();
+    ///CleverTapPlugin.fetchWithMinimumIntervalInSeconds(0);
+  }
+
+  void activate(){
+    CleverTapPlugin.activate();
+  }
+
+  void fetchAndActivate(){
+    CleverTapPlugin.fetchAndActivate();
+  }
 
 }

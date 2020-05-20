@@ -12,7 +12,7 @@ To add the CleverTap Flutter SDK to your project, edit your project's `pubspec.y
 
 ```yaml
     dependencies:
-    clevertap_plugin: 1.1.1
+    clevertap_plugin: 1.1.2
 ```
 
 Run `flutter packages get` to install the SDK
@@ -36,7 +36,7 @@ Add the following to your `dependencies` section in `project/build.gradle`
 
 Add the following to your `dependencies` section in `app/build.gradle`
 ```groovy
-    implementation 'com.clevertap.android:clevertap-android-sdk:3.7.2'
+    implementation 'com.clevertap.android:clevertap-android-sdk:3.8.0'
         implementation 'com.android.support:support-v4:28.0.0'
         implementation 'com.google.firebase:firebase-messaging:17.3.4'//Mandatory for using FCM push notifications, skip if not using FCM
         implementation 'com.android.support:appcompat-v7:28.0.0'//MANDATORY for App Inbox
@@ -106,7 +106,7 @@ Add your CleverTap Account ID and Token to your `AndroidManifest.xml`, within th
 
 After install, you will need to integrate the CleverTap SDK into your apps.
 
-1. Follow the integration instructions [starting with Step 2 here](https://support.clevertap.com/docs/ios/getting-started.html).
+1. Follow the integration instructions [starting with Step 2 here](https://developer.clevertap.com/docs/ios-quickstart-guide#section-step-2-add-clever-tap-credentials).
 2. In your `AppDelegate didFinishLaunchingWithOptions:` notify the CleverTap Flutter SDK of application launch:
 ```objc
 [CleverTap autoIntegrate]; // integrate CleverTap SDK using the autoIntegrate option
