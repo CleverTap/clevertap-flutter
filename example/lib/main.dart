@@ -39,6 +39,7 @@ class _MyAppState extends State<MyApp> {
 
   void activateCleverTapFlutterPluginHandlers(){
     _clevertapPlugin = new CleverTapPlugin();
+    _clevertapPlugin.setCleverTapPushAmpPayloadReceivedHandler(pushAmpPayloadReceived);
     _clevertapPlugin.setCleverTapInAppNotificationDismissedHandler(inAppNotificationDismissed);
     _clevertapPlugin.setCleverTapProfileDidInitializeHandler(profileDidInitialize);
     _clevertapPlugin.setCleverTapProfileSyncHandler(profileDidUpdate);
@@ -52,7 +53,6 @@ class _MyAppState extends State<MyApp> {
     _clevertapPlugin.setCleverTapProductConfigInitializedHandler(productConfigInitialized);
     _clevertapPlugin.setCleverTapProductConfigFetchedHandler(productConfigFetched);
     _clevertapPlugin.setCleverTapProductConfigActivatedHandler(productConfigActivated);
-    _clevertapPlugin.setCleverTapPushAmpPayloadReceivedHandler(pushAmpPayloadReceived);
   }
 
   void inAppNotificationDismissed(Map<String,dynamic> map){
@@ -165,20 +165,20 @@ class _MyAppState extends State<MyApp> {
   void productConfigActivated(){
     print("Product Config Activated");
     this.setState(() async {
-      String stringvar = await CleverTapPlugin.getString("StringKey");
+      String stringvar = await CleverTapPlugin.getProductConfigString("StringKey");
       print("PC String = " + stringvar.toString());
-      int intvar = await CleverTapPlugin.getLong("IntKey");
+      int intvar = await CleverTapPlugin.getProductConfigLong("IntKey");
       print("PC int = " + intvar.toString());
-      double doublevar = await CleverTapPlugin.getDouble("DoubleKey");
+      double doublevar = await CleverTapPlugin.getProductConfigDouble("DoubleKey");
       print("PC double = " + doublevar.toString());
     });
   }
 
   void pushAmpPayloadReceived(Map<String,dynamic> map){
-    this.setState((){
-      print("pushAmpPayloadReceived called");
-      print(map.toString());
+    print("pushAmpPayloadReceived called");
+    this.setState(() async {
       var data = jsonEncode(map);
+      print("JSON = "+data.toString());
       CleverTapPlugin.createNotification(data);
     });
   }
@@ -936,7 +936,7 @@ class _MyAppState extends State<MyApp> {
 
   void fetch(){
     CleverTapPlugin.fetch();
-    ///CleverTapPlugin.fetchWithMinimumFetchIntervalInSeconds(0);
+    ///CleverTapPlugin.fetchWithMinimumIntervalInSeconds(0);
   }
 
   void activate(){

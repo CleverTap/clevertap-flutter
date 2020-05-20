@@ -19,17 +19,6 @@
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
-                <!-- Sets the intent action to view the activity -->
-                <action android:name="android.intent.action.VIEW" />
-                <!-- Allows the link to be opened from a web browser -->
-                <category android:name="android.intent.category.BROWSABLE" />
-                <!-- Allows the deep link to be used without specifying the app name -->
-                <category android:name="android.intent.category.DEFAULT" />
-
-                <data
-                    android:host="com.example.clevertap_plugin_example"
-                    android:pathPrefix="/MainActivity"
-                    android:scheme="flutter" />
             </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.
@@ -39,10 +28,10 @@
             android:value="2" />
         <meta-data
             android:name="CLEVERTAP_ACCOUNT_ID"
-            android:value="TEST-65R-487-R85Z"/>
+            android:value="YOUR-ACCOUNT-ID"/>
         <meta-data
             android:name="CLEVERTAP_TOKEN"
-            android:value="TEST-ab4-256"/>
+            android:value="YOUR-ACCOUNT-TOKEN"/>
         <!-- IMPORTANT: To force use Google AD ID to uniquely identify  users, use the following meta tag. GDPR mandates that if you are using this tag, there is prominent disclousure to your end customer in their application. Read more about GDPR here - https://clevertap.com/blog/in-preparation-of-gdpr-compliance/ -->
         <meta-data
             android:name="CLEVERTAP_USE_GOOGLE_AD_ID"

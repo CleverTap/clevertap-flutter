@@ -116,10 +116,11 @@ public class CleverTapPlugin implements MethodCallHandler, SyncListener,
             }
 
             case "createNotification": {
-                JSONObject extras = call.argument("extras");
+                String extras = call.argument("extras");
                 if (isCleverTapNotNull(cleverTapAPI)) {
                     try {
-                        CleverTapAPI.createNotification(context, Utils.jsonToBundle(extras));
+                        Log.d(TAG, "createNotification Android");
+                        CleverTapAPI.createNotification(context, Utils.stringToBundle(extras));
                     } catch (JSONException e) {
                         result.error(TAG, "Unable to render notification due to JSONException - " + e.getLocalizedMessage(), null);
                     }

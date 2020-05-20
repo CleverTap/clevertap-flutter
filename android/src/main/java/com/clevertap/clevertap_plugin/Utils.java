@@ -224,7 +224,7 @@ public class Utils {
         return profile;
     }
 
-    public static Map<String, Object> bundleToMap(Bundle extras) {
+    static Map<String, Object> bundleToMap(Bundle extras) {
         Map<String, Object> map = new HashMap<String, Object>();
 
         Set<String> ks = extras.keySet();
@@ -232,5 +232,17 @@ public class Utils {
             map.put(key, extras.get(key));
         }
         return map;
+    }
+
+    static Bundle stringToBundle(String content) throws JSONException {
+        JSONObject jsonObject = new JSONObject(content);
+        Bundle bundle = new Bundle();
+        Iterator iter = jsonObject.keys();
+        while(iter.hasNext()){
+            String key = (String)iter.next();
+            String value = jsonObject.getString(key);
+            bundle.putString(key,value);
+        }
+        return bundle;
     }
 }

@@ -99,7 +99,8 @@ class CleverTapPlugin {
         cleverTapProductConfigActivatedHandler();
         break;
       case "pushAmpPayloadReceived":
-        cleverTapPushAmpPayloadReceivedHandler(call.arguments);
+        Map<dynamic, dynamic> args = call.arguments;
+        cleverTapPushAmpPayloadReceivedHandler(args.cast<String, dynamic>());
         break;
     }
   }
@@ -302,6 +303,7 @@ class CleverTapPlugin {
 
   /// Method to create Notification using CleverTap
   static Future<void> createNotification(dynamic data) async {
+    print("inside createNotification Dart");
     return await _channel.invokeMethod('createNotification', {'extras': data});
   }
 
@@ -818,7 +820,7 @@ class CleverTapPlugin {
 
   ///Product Config
   ///Sets Default Values for Product Config using the passed Map
-  static Future<void> setDefaultsMap(Map<String, Object> defaults) async {
+  static Future<void> setDefaultsMap(Map<String, dynamic> defaults) async {
     return await _channel
         .invokeMethod('setDefaultsMap', {'defaults': defaults});
   }
@@ -829,8 +831,7 @@ class CleverTapPlugin {
   }
 
   ///Fetches Product configs, adhering to the specified minimum fetch interval in seconds.
-  static Future<void> fetchWithMinimumFetchIntervalInSeconds(
-      int interval) async {
+  static Future<void> fetchWithMinimumIntervalInSeconds(int interval) async {
     return await _channel.invokeMethod(
         'fetchWithMinimumFetchIntervalInSeconds', {'interval': interval});
   }
@@ -857,27 +858,27 @@ class CleverTapPlugin {
   }
 
   ///Returns the parameter value for the given key as a String.
-  static Future<String> getString(String key) async {
+  static Future<String> getProductConfigString(String key) async {
     return await _channel.invokeMethod('getString', {'key': key});
   }
 
   ///Returns the parameter value for the given key as a boolean.
-  static Future<bool> getBoolean(String key) async {
+  static Future<bool> getProductConfigBoolean(String key) async {
     return await _channel.invokeMethod('getBoolean', {'key': key});
   }
 
   ///Returns the parameter value for the given key as a long (int for Dart).
-  static Future<int> getLong(String key) async {
+  static Future<int> getProductConfigLong(String key) async {
     return await _channel.invokeMethod('getLong', {'key': key});
   }
 
   ///Returns the parameter value for the given key as a double.
-  static Future<double> getDouble(String key) async {
+  static Future<double> getProductConfigDouble(String key) async {
     return await _channel.invokeMethod('getDouble', {'key': key});
   }
 
   ///Deletes all activated, fetched and defaults configs as well as all Product Config settings.
-  static Future<void> reset() async {
+  static Future<void> resetProductConfig() async {
     return await _channel.invokeMethod('reset', {});
   }
 }

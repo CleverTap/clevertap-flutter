@@ -70,4 +70,4 @@ dependencies {
     implementation 'com.android.installreferrer:installreferrer:1.0'
 }
 
-apply plugin: 'com.google.gms.google-services'
+//apply plugin: 'com.google.gms.google-services'
