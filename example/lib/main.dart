@@ -52,6 +52,7 @@ class _MyAppState extends State<MyApp> {
     _clevertapPlugin.setCleverTapProductConfigInitializedHandler(productConfigInitialized);
     _clevertapPlugin.setCleverTapProductConfigFetchedHandler(productConfigFetched);
     _clevertapPlugin.setCleverTapProductConfigActivatedHandler(productConfigActivated);
+    _clevertapPlugin.setCleverTapPushAmpPayloadReceivedHandler(pushAmpPayloadReceived);
   }
 
   void inAppNotificationDismissed(Map<String,dynamic> map){
@@ -141,7 +142,7 @@ class _MyAppState extends State<MyApp> {
   void featureFlagsUpdated(){
     print("Feature Flags Updated");
     this.setState(() async {
-      bool booleanVar = await CleverTapPlugin.getFeatureFlag("boolkey", false);
+      bool booleanVar = await CleverTapPlugin.getFeatureFlag("BoolKey", false);
       print("Feature flag = " + booleanVar.toString());
     });
   }
@@ -171,7 +172,15 @@ class _MyAppState extends State<MyApp> {
       double doublevar = await CleverTapPlugin.getDouble("DoubleKey");
       print("PC double = " + doublevar.toString());
     });
+  }
 
+  void pushAmpPayloadReceived(Map<String,dynamic> map){
+    this.setState((){
+      print("pushAmpPayloadReceived called");
+      print(map.toString());
+      var data = jsonEncode(map);
+      CleverTapPlugin.createNotification(data);
+    });
   }
 
   @override
@@ -927,6 +936,7 @@ class _MyAppState extends State<MyApp> {
 
   void fetch(){
     CleverTapPlugin.fetch();
+    ///CleverTapPlugin.fetchWithMinimumFetchIntervalInSeconds(0);
   }
 
   void activate(){

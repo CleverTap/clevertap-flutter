@@ -18,6 +18,7 @@ typedef void CleverTapFeatureFlagUpdatedHandler();
 typedef void CleverTapProductConfigInitializedHandler();
 typedef void CleverTapProductConfigFetchedHandler();
 typedef void CleverTapProductConfigActivatedHandler();
+typedef void CleverTapPushAmpPayloadReceivedHandler(Map<String, dynamic> map);
 
 class CleverTapPlugin {
   CleverTapInAppNotificationDismissedHandler
@@ -37,6 +38,7 @@ class CleverTapPlugin {
       cleverTapProductConfigInitializedHandler;
   CleverTapProductConfigFetchedHandler cleverTapProductConfigFetchedHandler;
   CleverTapProductConfigActivatedHandler cleverTapProductConfigActivatedHandler;
+  CleverTapPushAmpPayloadReceivedHandler cleverTapPushAmpPayloadReceivedHandler;
 
   static const MethodChannel _channel = const MethodChannel('clevertap_plugin');
 
@@ -95,6 +97,9 @@ class CleverTapPlugin {
         break;
       case "productConfigActivated":
         cleverTapProductConfigActivatedHandler();
+        break;
+      case "pushAmpPayloadReceived":
+        cleverTapPushAmpPayloadReceivedHandler(call.arguments);
         break;
     }
   }
@@ -162,6 +167,11 @@ class CleverTapPlugin {
   void setCleverTapProductConfigActivatedHandler(
           CleverTapProductConfigActivatedHandler handler) =>
       cleverTapProductConfigActivatedHandler = handler;
+
+  /// Define a method to handle Push Amplification payload
+  void setCleverTapPushAmpPayloadReceivedHandler(
+          CleverTapPushAmpPayloadReceivedHandler handler) =>
+      cleverTapPushAmpPayloadReceivedHandler = handler;
 
   /// Sets debug level to show logs on Android Studio/Xcode console
   static Future<void> setDebugLevel(int value) async {
@@ -288,6 +298,17 @@ class CleverTapPlugin {
   static Future<void> deleteNotificationChannelGroup(String groupId) async {
     return await _channel
         .invokeMethod('deleteNotificationChannelGroup', {'groupId': groupId});
+  }
+
+  /// Method to create Notification using CleverTap
+  static Future<void> createNotification(dynamic data) async {
+    return await _channel.invokeMethod('createNotification', {'extras': data});
+  }
+
+  /// Method to process Notification using CleverTap to avoid duplicates using Push Amplification
+  static Future<void> processPushNotification(dynamic data) async {
+    return await _channel
+        .invokeMethod('processPushNotification', {'extras': data});
   }
 
   /// Method to allow user to Opt out of sending data to CleverTap as per GDPR rules

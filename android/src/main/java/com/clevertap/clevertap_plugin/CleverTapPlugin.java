@@ -13,6 +13,7 @@ import com.clevertap.android.sdk.CTFeatureFlagsListener;
 import com.clevertap.android.sdk.CTInboxListener;
 import com.clevertap.android.sdk.CTInboxMessage;
 import com.clevertap.android.sdk.CTInboxStyleConfig;
+import com.clevertap.android.sdk.CTPushListener;
 import com.clevertap.android.sdk.CleverTapAPI;
 import com.clevertap.android.sdk.EventDetail;
 import com.clevertap.android.sdk.InAppNotificationButtonListener;
@@ -48,7 +49,8 @@ public class CleverTapPlugin implements MethodCallHandler, SyncListener,
         InAppNotificationListener, CTInboxListener,
         CTExperimentsListener, InAppNotificationButtonListener,
         InboxMessageButtonListener, DisplayUnitListener,
-        CTFeatureFlagsListener, CTProductConfigListener {
+        CTFeatureFlagsListener, CTProductConfigListener,
+        CTPushListener {
 
     private static final String TAG = "CleverTapPlugin";
     private static final String ERROR_MSG = "CleverTap Instance is not initialized";
@@ -72,6 +74,7 @@ public class CleverTapPlugin implements MethodCallHandler, SyncListener,
             this.cleverTapAPI.setDisplayUnitListener(this);
             this.cleverTapAPI.setCTFeatureFlagsListener(this);
             this.cleverTapAPI.setCTProductConfigListener(this);
+            this.cleverTapAPI.setCTPushListener(this);
             this.cleverTapAPI.setLibrary("Flutter");
         }
     }
@@ -117,6 +120,21 @@ public class CleverTapPlugin implements MethodCallHandler, SyncListener,
                 if (isCleverTapNotNull(cleverTapAPI)) {
                     try {
                         CleverTapAPI.createNotification(context, Utils.jsonToBundle(extras));
+                    } catch (JSONException e) {
+                        result.error(TAG, "Unable to render notification due to JSONException - " + e.getLocalizedMessage(), null);
+                    }
+                    result.success(null);
+                } else {
+                    result.error(TAG, ERROR_MSG, null);
+                }
+                break;
+            }
+
+            case "processPushNotification": {
+                JSONObject extras = call.argument("extras");
+                if (isCleverTapNotNull(cleverTapAPI)) {
+                    try {
+                        CleverTapAPI.processPushNotification(context, Utils.jsonToBundle(extras));
                     } catch (JSONException e) {
                         result.error(TAG, "Unable to render notification due to JSONException - " + e.getLocalizedMessage(), null);
                     }
@@ -1238,5 +1256,10 @@ public class CleverTapPlugin implements MethodCallHandler, SyncListener,
     @Override
     public void onActivated() {
         invokeMethodOnUiThread("productConfigActivated", "");
+    }
+
+    @Override
+    public void onPushPayloadReceived(Bundle extras) {
+        invokeMethodOnUiThread("pushAmpPayloadReceived",Utils.bundleToMap(extras));
     }
 }
