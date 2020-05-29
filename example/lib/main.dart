@@ -29,7 +29,7 @@ class _MyAppState extends State<MyApp> {
     CleverTapPlugin.createNotificationChannel("fluttertest", "Flutter Test", "Flutter Test", 3, true);
     CleverTapPlugin.initializeInbox();
     CleverTapPlugin.registerForPush();
-    var initialUrl = CleverTapPlugin.getInitialUrl();
+    //var initialUrl = CleverTapPlugin.getInitialUrl();
   }
 
   // Platform messages are asynchronous, so we initialize in an async method.
@@ -420,7 +420,7 @@ class _MyAppState extends State<MyApp> {
     );
   }
 
-  Future<void> recordEvent(){
+  void recordEvent(){
     var eventData = {
       // Key:    Value
       'first': 'partridge',
@@ -511,7 +511,7 @@ class _MyAppState extends State<MyApp> {
     await CleverTapPlugin.deleteInboxMessageForId(messageId);
 
     setState((() {
-      print("Deleted Inbox Message with id =  ${messageId}");
+      print("Deleted Inbox Message with id =  $messageId");
     }));
 
   }
@@ -551,7 +551,7 @@ class _MyAppState extends State<MyApp> {
     await CleverTapPlugin.pushInboxNotificationClickedEventForId(messageId);
 
     setState((() {
-      print("Pushed NotificationClickedEvent for Inbox Message with id =  ${messageId}");
+      print("Pushed NotificationClickedEvent for Inbox Message with id =  $messageId");
     }));
 
   }
@@ -569,10 +569,11 @@ class _MyAppState extends State<MyApp> {
     await CleverTapPlugin.pushInboxNotificationViewedEventForId(messageId);
 
     setState((() {
-      print("Pushed NotificationViewedEvent for Inbox Message with id =  ${messageId}");
+      print("Pushed NotificationViewedEvent for Inbox Message with id =  $messageId");
     }));
 
   }
+
 
   Future<String> getFirstInboxMessageId() async{
 
@@ -587,6 +588,7 @@ class _MyAppState extends State<MyApp> {
     }else if (Platform.isIOS){
       return itemFirst["_id"];
     }
+    return null;
   }
 
   void setOptOut(){
@@ -908,25 +910,25 @@ class _MyAppState extends State<MyApp> {
     double doubleVar = await CleverTapPlugin.getDoubleVariable("doubleVar", 9.99);
     print("Double var = " + doubleVar.toString());
     int integerVar = await CleverTapPlugin.getIntegerVariable("integerVar", 999);
-    print("Integer var = "+integerVar.toString());
+    print("Integer var = "+ integerVar.toString());
     String stringVar = await CleverTapPlugin.getStringVariable("stringVar", "defaultString");
-    print("String var = "+stringVar.toString());
+    print("String var = "+ stringVar.toString());
     List<dynamic> boolList = await CleverTapPlugin.getListOfBooleanVariable("boolListVar", null);
-    print("List of bool = "+boolList.toString());
+    print("List of bool = "+ boolList.toString());
     List<dynamic> doubleList = await CleverTapPlugin.getListOfDoubleVariable("doubleListVar", null);
-    print("List of double = "+doubleList.toString());
+    print("List of double = "+ doubleList.toString());
     List<dynamic> intList = await CleverTapPlugin.getListOfIntegerVariable("integerListVar", null);
-    print("Integer List = "+intList.toString());
+    print("Integer List = "+ intList.toString());
     List<dynamic> stringList = await CleverTapPlugin.getListOfStringVariable("stringListVar", null);
-    print("String List = "+stringList.toString());
+    print("String List = "+ stringList.toString());
     Map<String,bool> boolMap = await CleverTapPlugin.getMapOfBooleanVariable("boolMapVar", null);
-    print("Map of bool = "+boolMap.toString());
+    print("Map of bool = "+ boolMap.toString());
     Map<String,double> doubleMap = await CleverTapPlugin.getMapOfDoubleVariable("doubleMapVar", null);
-    print("Map of double = "+doubleMap.toString());
+    print("Map of double = "+ doubleMap.toString());
     Map<String,int> intMap = await CleverTapPlugin.getMapOfIntegerVariable("integerMapVar", null);
-    print("Map of int = "+boolMap.toString());
+    print("Map of int = "+ intMap.toString());
     Map<String,String> strMap = await CleverTapPlugin.getMapOfStringVariable("stringMapVar", null);
-    print("Map of string = "+strMap.toString());
+    print("Map of string = "+ strMap.toString());
   }
 
   void getAdUnits() async{
