@@ -40,6 +40,7 @@ class _MyAppState extends State<MyApp> {
   void activateCleverTapFlutterPluginHandlers(){
     _clevertapPlugin = new CleverTapPlugin();
     _clevertapPlugin.setCleverTapPushAmpPayloadReceivedHandler(pushAmpPayloadReceived);
+    _clevertapPlugin.setCleverTapPushClickedPayloadReceivedHandler(pushClickedPayloadReceived);
     _clevertapPlugin.setCleverTapInAppNotificationDismissedHandler(inAppNotificationDismissed);
     _clevertapPlugin.setCleverTapProfileDidInitializeHandler(profileDidInitialize);
     _clevertapPlugin.setCleverTapProfileSyncHandler(profileDidUpdate);
@@ -180,6 +181,15 @@ class _MyAppState extends State<MyApp> {
       var data = jsonEncode(map);
       print("JSON = "+data.toString());
       CleverTapPlugin.createNotification(data);
+    });
+  }
+
+  void pushClickedPayloadReceived(Map<String,dynamic> map){
+    print("pushClickedPayloadReceived called");
+    this.setState(() async {
+      var data = jsonEncode(map);
+      print("Push Payload = "+data.toString());
+      //CleverTapPlugin.createNotification(data);
     });
   }
 
