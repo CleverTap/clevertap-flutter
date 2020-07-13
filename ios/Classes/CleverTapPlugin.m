@@ -8,9 +8,10 @@
 #import "CleverTap+DisplayUnit.h"
 #import "CleverTap+FeatureFlags.h"
 #import "CleverTap+ProductConfig.h"
+#import "CleverTapPushNotificationDelegate.h"
 #import "CleverTapInAppNotificationDelegate.h"
 
-@interface CleverTapPlugin () <CleverTapSyncDelegate, CleverTapInAppNotificationDelegate, CleverTapDisplayUnitDelegate, CleverTapInboxViewControllerDelegate, CleverTapProductConfigDelegate, CleverTapFeatureFlagsDelegate>
+@interface CleverTapPlugin () <CleverTapSyncDelegate, CleverTapInAppNotificationDelegate, CleverTapDisplayUnitDelegate, CleverTapInboxViewControllerDelegate, CleverTapProductConfigDelegate, CleverTapFeatureFlagsDelegate, CleverTapPushNotificationDelegate>
 
 @property (strong, nonatomic) FlutterMethodChannel *channel;
 
@@ -54,6 +55,7 @@ static NSDateFormatter *dateFormatter;
         [clevertap setDisplayUnitDelegate:self];
         [[clevertap productConfig] setDelegate:self];
         [[clevertap featureFlags] setDelegate:self];
+        [clevertap setPushNotificationDelegate:self];
         [clevertap setLibrary:@"Flutter"];
         [clevertap registerExperimentsUpdatedBlock:^{
             [self postNotificationWithName:kCleverTapExperimentsDidUpdate andBody:nil];
@@ -909,7 +911,7 @@ static NSDateFormatter *dateFormatter;
 #pragma mark - Product Config Delegates
 
 - (void)ctProductConfigFetched {
- 
+    
     [self postNotificationWithName:kCleverTapProductConfigFetched andBody:nil];
 }
 
@@ -1111,6 +1113,11 @@ static NSDateFormatter *dateFormatter;
                                              selector:@selector(emitEventInternal:)
                                                  name:kCleverTapFeatureFlagsUpdated
                                                object:nil];
+    
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(emitEventInternal:)
+                                                 name:kCleverTapPushNotificationClicked
+                                               object:nil];
 }
 
 - (void)postNotificationWithName:(NSString *)name andBody:(NSDictionary *)body {
@@ -1173,6 +1180,18 @@ static NSDateFormatter *dateFormatter;
         body[@"customExtras"] = customExtras;
     }
     [self postNotificationWithName:kCleverTapInboxMessageButtonTapped andBody:customExtras];
+}
+
+
+#pragma mark CleverTapPushNotificationDelegate
+
+- (void)pushNotificationTappedWithCustomExtras:(NSDictionary *)customExtras {
+    
+    NSMutableDictionary *body = [NSMutableDictionary new];
+    if (customExtras != nil) {
+        body[@"customExtras"] = customExtras;
+    }
+    [self postNotificationWithName:kCleverTapPushNotificationClicked andBody:customExtras];
 }
 
 @end
