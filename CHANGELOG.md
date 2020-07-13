@@ -1,5 +1,9 @@
 ## CHANGE LOG
 
+### Version 1.1.3 (July 15, 2020)
+* Adds a callback to provide Push Notifications custom key-value pairs
+* Supports CleverTap Android and iOS SDK v3.8.1
+
 ### Version 1.1.2 (May 20, 2020)
 * Adds support for Product Config and Feature Flags
 * Adds support for Custom Handling Push Amplification Campaigns
