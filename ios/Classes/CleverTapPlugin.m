@@ -41,7 +41,6 @@ static NSDateFormatter *dateFormatter;
 
 - (void)dealloc {
     
-    // TODO: check again
     [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
 
@@ -159,17 +158,17 @@ static NSDateFormatter *dateFormatter;
     else if ([@"getAllInboxMessages" isEqualToString:call.method])
         [self getAllInboxMessages:call withResult:result];
     else if ([@"getUnreadInboxMessages" isEqualToString:call.method])
-        [self getUnreadInboxMessages:call withResult:result];//TODO
+        [self getUnreadInboxMessages:call withResult:result];
     else if ([@"getInboxMessageForId" isEqualToString:call.method])
-        [self getInboxMessageForId:call withResult:result];//TODO
+        [self getInboxMessageForId:call withResult:result];
     else if ([@"deleteInboxMessageForId" isEqualToString:call.method])
-        [self deleteInboxMessageForId:call withResult:result];//TODO
+        [self deleteInboxMessageForId:call withResult:result];
     else if ([@"markReadInboxMessageForId" isEqualToString:call.method])
-        [self markReadInboxMessageForId:call withResult:result];//TODO
+        [self markReadInboxMessageForId:call withResult:result];
     else if ([@"pushInboxNotificationClickedEventForId" isEqualToString:call.method])
-        [self pushInboxNotificationClickedEventForId:call withResult:result];//TODO
+        [self pushInboxNotificationClickedEventForId:call withResult:result];
     else if ([@"pushInboxNotificationViewedEventForId" isEqualToString:call.method])
-        [self pushInboxNotificationViewedEventForId:call withResult:result];//TODO
+        [self pushInboxNotificationViewedEventForId:call withResult:result];
     else if ([@"getInitialUrl" isEqualToString:call.method])
         [self getInitialUrl:call result:result];
     else if ([@"registerBooleanVariable" isEqualToString:call.method])
