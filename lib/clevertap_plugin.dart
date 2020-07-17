@@ -19,6 +19,8 @@ typedef void CleverTapProductConfigInitializedHandler();
 typedef void CleverTapProductConfigFetchedHandler();
 typedef void CleverTapProductConfigActivatedHandler();
 typedef void CleverTapPushAmpPayloadReceivedHandler(Map<String, dynamic> map);
+typedef void CleverTapPushClickedPayloadReceivedHandler(
+    Map<String, dynamic> map);
 
 class CleverTapPlugin {
   CleverTapInAppNotificationDismissedHandler
@@ -39,6 +41,8 @@ class CleverTapPlugin {
   CleverTapProductConfigFetchedHandler cleverTapProductConfigFetchedHandler;
   CleverTapProductConfigActivatedHandler cleverTapProductConfigActivatedHandler;
   CleverTapPushAmpPayloadReceivedHandler cleverTapPushAmpPayloadReceivedHandler;
+  CleverTapPushClickedPayloadReceivedHandler
+      cleverTapPushClickedPayloadReceivedHandler;
 
   static const MethodChannel _channel = const MethodChannel('clevertap_plugin');
 
@@ -101,6 +105,11 @@ class CleverTapPlugin {
       case "pushAmpPayloadReceived":
         Map<dynamic, dynamic> args = call.arguments;
         cleverTapPushAmpPayloadReceivedHandler(args.cast<String, dynamic>());
+        break;
+
+      case "pushClickedPayloadReceived":
+        Map<dynamic, dynamic> args = call.arguments;
+        cleverTapPushClickedPayloadReceivedHandler(args.cast<String, dynamic>());
         break;
     }
   }
@@ -173,6 +182,11 @@ class CleverTapPlugin {
   void setCleverTapPushAmpPayloadReceivedHandler(
           CleverTapPushAmpPayloadReceivedHandler handler) =>
       cleverTapPushAmpPayloadReceivedHandler = handler;
+
+  /// Define a method to handle Push Clicked payload
+  void setCleverTapPushClickedPayloadReceivedHandler(
+      CleverTapPushClickedPayloadReceivedHandler handler) =>
+      cleverTapPushClickedPayloadReceivedHandler = handler;
 
   /// Sets debug level to show logs on Android Studio/Xcode console
   static Future<void> setDebugLevel(int value) async {

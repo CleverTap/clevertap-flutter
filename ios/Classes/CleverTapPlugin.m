@@ -8,9 +8,10 @@
 #import "CleverTap+DisplayUnit.h"
 #import "CleverTap+FeatureFlags.h"
 #import "CleverTap+ProductConfig.h"
+#import "CleverTapPushNotificationDelegate.h"
 #import "CleverTapInAppNotificationDelegate.h"
 
-@interface CleverTapPlugin () <CleverTapSyncDelegate, CleverTapInAppNotificationDelegate, CleverTapDisplayUnitDelegate, CleverTapInboxViewControllerDelegate, CleverTapProductConfigDelegate, CleverTapFeatureFlagsDelegate>
+@interface CleverTapPlugin () <CleverTapSyncDelegate, CleverTapInAppNotificationDelegate, CleverTapDisplayUnitDelegate, CleverTapInboxViewControllerDelegate, CleverTapProductConfigDelegate, CleverTapFeatureFlagsDelegate, CleverTapPushNotificationDelegate>
 
 @property (strong, nonatomic) FlutterMethodChannel *channel;
 
@@ -40,7 +41,6 @@ static NSDateFormatter *dateFormatter;
 
 - (void)dealloc {
     
-    // TODO: check again
     [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
 
@@ -54,6 +54,7 @@ static NSDateFormatter *dateFormatter;
         [clevertap setDisplayUnitDelegate:self];
         [[clevertap productConfig] setDelegate:self];
         [[clevertap featureFlags] setDelegate:self];
+        [clevertap setPushNotificationDelegate:self];
         [clevertap setLibrary:@"Flutter"];
         [clevertap registerExperimentsUpdatedBlock:^{
             [self postNotificationWithName:kCleverTapExperimentsDidUpdate andBody:nil];
@@ -157,17 +158,17 @@ static NSDateFormatter *dateFormatter;
     else if ([@"getAllInboxMessages" isEqualToString:call.method])
         [self getAllInboxMessages:call withResult:result];
     else if ([@"getUnreadInboxMessages" isEqualToString:call.method])
-        [self getUnreadInboxMessages:call withResult:result];//TODO
+        [self getUnreadInboxMessages:call withResult:result];
     else if ([@"getInboxMessageForId" isEqualToString:call.method])
-        [self getInboxMessageForId:call withResult:result];//TODO
+        [self getInboxMessageForId:call withResult:result];
     else if ([@"deleteInboxMessageForId" isEqualToString:call.method])
-        [self deleteInboxMessageForId:call withResult:result];//TODO
+        [self deleteInboxMessageForId:call withResult:result];
     else if ([@"markReadInboxMessageForId" isEqualToString:call.method])
-        [self markReadInboxMessageForId:call withResult:result];//TODO
+        [self markReadInboxMessageForId:call withResult:result];
     else if ([@"pushInboxNotificationClickedEventForId" isEqualToString:call.method])
-        [self pushInboxNotificationClickedEventForId:call withResult:result];//TODO
+        [self pushInboxNotificationClickedEventForId:call withResult:result];
     else if ([@"pushInboxNotificationViewedEventForId" isEqualToString:call.method])
-        [self pushInboxNotificationViewedEventForId:call withResult:result];//TODO
+        [self pushInboxNotificationViewedEventForId:call withResult:result];
     else if ([@"getInitialUrl" isEqualToString:call.method])
         [self getInitialUrl:call result:result];
     else if ([@"registerBooleanVariable" isEqualToString:call.method])
@@ -909,7 +910,7 @@ static NSDateFormatter *dateFormatter;
 #pragma mark - Product Config Delegates
 
 - (void)ctProductConfigFetched {
- 
+    
     [self postNotificationWithName:kCleverTapProductConfigFetched andBody:nil];
 }
 
@@ -1111,6 +1112,11 @@ static NSDateFormatter *dateFormatter;
                                              selector:@selector(emitEventInternal:)
                                                  name:kCleverTapFeatureFlagsUpdated
                                                object:nil];
+    
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(emitEventInternal:)
+                                                 name:kCleverTapPushNotificationClicked
+                                               object:nil];
 }
 
 - (void)postNotificationWithName:(NSString *)name andBody:(NSDictionary *)body {
@@ -1173,6 +1179,18 @@ static NSDateFormatter *dateFormatter;
         body[@"customExtras"] = customExtras;
     }
     [self postNotificationWithName:kCleverTapInboxMessageButtonTapped andBody:customExtras];
+}
+
+
+#pragma mark CleverTapPushNotificationDelegate
+
+- (void)pushNotificationTappedWithCustomExtras:(NSDictionary *)customExtras {
+    
+    NSMutableDictionary *body = [NSMutableDictionary new];
+    if (customExtras != nil) {
+        body[@"customExtras"] = customExtras;
+    }
+    [self postNotificationWithName:kCleverTapPushNotificationClicked andBody:customExtras];
 }
 
 @end

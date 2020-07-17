@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://github.com/CleverTap/clevertap-flutter/blob/master/clevertap-logo.png" width="300"/>
+</p>
+
 # CleverTap Flutter SDK
 
 The CleverTap Flutter SDK for Mobile Customer Engagement and Analytics solutions 
@@ -12,7 +16,7 @@ To add the CleverTap Flutter SDK to your project, edit your project's `pubspec.y
 
 ```yaml
     dependencies:
-    clevertap_plugin: 1.1.2
+    clevertap_plugin: 1.1.3
 ```
 
 Run `flutter packages get` to install the SDK
@@ -36,7 +40,7 @@ Add the following to your `dependencies` section in `project/build.gradle`
 
 Add the following to your `dependencies` section in `app/build.gradle`
 ```groovy
-    implementation 'com.clevertap.android:clevertap-android-sdk:3.8.0'
+    implementation 'com.clevertap.android:clevertap-android-sdk:3.8.1'
         implementation 'com.android.support:support-v4:28.0.0'
         implementation 'com.google.firebase:firebase-messaging:17.3.4'//Mandatory for using FCM push notifications, skip if not using FCM
         implementation 'com.android.support:appcompat-v7:28.0.0'//MANDATORY for App Inbox
@@ -108,20 +112,43 @@ After install, you will need to integrate the CleverTap SDK into your apps.
 
 1. Follow the integration instructions [starting with Step 2 here](https://developer.clevertap.com/docs/ios-quickstart-guide#section-step-2-add-clever-tap-credentials).
 2. In your `AppDelegate didFinishLaunchingWithOptions:` notify the CleverTap Flutter SDK of application launch:
+
+*Objective-C*
 ```objc
 [CleverTap autoIntegrate]; // integrate CleverTap SDK using the autoIntegrate option
 [[CleverTapPlugin sharedInstance] applicationDidLaunchWithOptions:launchOptions];
 ```
+
+*Swift*
+```swift
+CleverTap.autoIntegrate() // integrate CleverTap SDK using the autoIntegrate option
+CleverTapPlugin.sharedInstance()?.applicationDidLaunch(options: launchOptions)
+```
+
 NOTE:  Don't forget to add the CleverTap imports at the top of the file.
+
+*Objective-C*
 ```objc
 #import "CleverTap.h"
 #import "CleverTapPlugin.h"
 ```
 
-## Example Dart Usage
+*Swift*
+```swift
+import CleverTapSDK
+import clevertap_plugin
+```
 
-Please checkout the [example](https://github.com/CleverTap/clevertap-flutter/tree/master/example) directory for the sample app.
+## For more
 
-### For more: 
+- Checkout our [Example Dart Usage](https://github.com/CleverTap/clevertap-flutter/tree/master/example) directory for the sample app.
+- Checkout our [CleverTap developer docs](https://developer.clevertap.com/docs/ "CleverTap Technical Documentation")
 
-For more information you can checkout the [developer docs](https://developer.clevertap.com/docs/ "CleverTap Technical Documentation")
+## Changelog
+
+Check out the [CleverTap Flutter SDK Change Log](https://github.com/CleverTap/clevertap-flutter/blob/master/CHANGELOG.md).
+
+## Questions?
+
+ If you have questions or concerns, you can reach out to the CleverTap support team at [support@clevertap.com](mailto:support@clevertap.com).
+

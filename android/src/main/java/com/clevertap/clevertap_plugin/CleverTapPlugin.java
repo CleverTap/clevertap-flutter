@@ -2,11 +2,11 @@ package com.clevertap.clevertap_plugin;
 
 import android.app.Activity;
 import android.content.Context;
-import android.content.Intent;
 import android.location.Location;
-import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
+
+import androidx.annotation.NonNull;
 
 import com.clevertap.android.sdk.CTExperimentsListener;
 import com.clevertap.android.sdk.CTFeatureFlagsListener;
@@ -14,19 +14,18 @@ import com.clevertap.android.sdk.CTInboxListener;
 import com.clevertap.android.sdk.CTInboxMessage;
 import com.clevertap.android.sdk.CTInboxStyleConfig;
 import com.clevertap.android.sdk.CTPushListener;
+import com.clevertap.android.sdk.CTPushNotificationListener;
 import com.clevertap.android.sdk.CleverTapAPI;
 import com.clevertap.android.sdk.EventDetail;
 import com.clevertap.android.sdk.InAppNotificationButtonListener;
 import com.clevertap.android.sdk.InAppNotificationListener;
 import com.clevertap.android.sdk.InboxMessageButtonListener;
-import com.clevertap.android.sdk.Logger;
 import com.clevertap.android.sdk.SyncListener;
 import com.clevertap.android.sdk.UTMDetail;
 import com.clevertap.android.sdk.displayunits.DisplayUnitListener;
 import com.clevertap.android.sdk.displayunits.model.CleverTapDisplayUnit;
 import com.clevertap.android.sdk.product_config.CTProductConfigListener;
 
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -35,22 +34,26 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import io.flutter.embedding.engine.plugins.FlutterPlugin;
+import io.flutter.embedding.engine.plugins.activity.ActivityAware;
+import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding;
+import io.flutter.plugin.common.BinaryMessenger;
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
 import io.flutter.plugin.common.MethodChannel.Result;
-import io.flutter.plugin.common.PluginRegistry;
 import io.flutter.plugin.common.PluginRegistry.Registrar;
 
 /**
  * CleverTapPlugin
  */
-public class CleverTapPlugin implements MethodCallHandler, SyncListener,
-        InAppNotificationListener, CTInboxListener,
+public class CleverTapPlugin implements ActivityAware,
+        FlutterPlugin, MethodCallHandler,
+        SyncListener, InAppNotificationListener, CTInboxListener,
         CTExperimentsListener, InAppNotificationButtonListener,
         InboxMessageButtonListener, DisplayUnitListener,
         CTFeatureFlagsListener, CTProductConfigListener,
-        CTPushListener {
+        CTPushListener, CTPushNotificationListener {
 
     private static final String TAG = "CleverTapPlugin";
     private static final String ERROR_MSG = "CleverTap Instance is not initialized";
@@ -59,12 +62,62 @@ public class CleverTapPlugin implements MethodCallHandler, SyncListener,
     private CleverTapAPI cleverTapAPI;
     private Context context;
     private MethodChannel channel;
-    private PluginRegistry.Registrar flutterRegistrar;
+    private Activity activity;
 
-    private CleverTapPlugin(Activity activity) {
-        this.context = activity.getApplicationContext();
-        this.cleverTapAPI = CleverTapAPI.getDefaultInstance(activity.getApplicationContext());
+    public CleverTapPlugin() {}
+
+    @Override
+    public void onAttachedToEngine(@NonNull FlutterPluginBinding binding) {
+        setupPlugin(binding.getApplicationContext(),binding.getBinaryMessenger(),null);
+    }
+
+    @Override
+    public void onDetachedFromEngine(@NonNull FlutterPluginBinding binding) {
+        channel = null;
+    }
+
+    @Override
+    public void onAttachedToActivity(@NonNull ActivityPluginBinding binding) {
+        activity = binding.getActivity();
+    }
+
+    @Override
+    public void onDetachedFromActivityForConfigChanges() {
+        activity = null;
+    }
+
+    @Override
+    public void onReattachedToActivityForConfigChanges(@NonNull ActivityPluginBinding binding) {
+        activity = binding.getActivity();
+    }
+
+    @Override
+    public void onDetachedFromActivity() {
+        activity = null;
+    }
+
+    /**
+     * Plugin registration.
+     */
+    public static void registerWith(Registrar registrar) {
+        CleverTapPlugin plugin = new CleverTapPlugin();
+        plugin.setupPlugin(registrar.context(),null,registrar);
+    }
+
+    private void setupPlugin(Context context, BinaryMessenger messenger, Registrar registrar){
+        if(registrar != null){
+            //V1 setup
+            this.channel = new MethodChannel(registrar.messenger(), "clevertap_plugin");
+            this.activity = ((Activity) registrar.activeContext());
+        }else{
+            //V2 setup
+            this.channel = new MethodChannel(messenger, "clevertap_plugin");
+        }
+        this.channel.setMethodCallHandler(this);
+        this.context = context.getApplicationContext();
+        this.cleverTapAPI = CleverTapAPI.getDefaultInstance(this.context);
         if (this.cleverTapAPI != null) {
+            this.cleverTapAPI.setCTPushNotificationListener(this);
             this.cleverTapAPI.setCTExperimentsListener(this);
             this.cleverTapAPI.setCTNotificationInboxListener(this);
             this.cleverTapAPI.setInboxMessageButtonListener(this);
@@ -77,16 +130,6 @@ public class CleverTapPlugin implements MethodCallHandler, SyncListener,
             this.cleverTapAPI.setCTPushListener(this);
             this.cleverTapAPI.setLibrary("Flutter");
         }
-    }
-
-    /**
-     * Plugin registration.
-     */
-    public static void registerWith(Registrar registrar) {
-        CleverTapPlugin plugin = new CleverTapPlugin(registrar.activity());
-        plugin.channel = new MethodChannel(registrar.messenger(), "clevertap_plugin");
-        plugin.channel.setMethodCallHandler(plugin);
-        plugin.flutterRegistrar = registrar;
     }
 
     private boolean isCleverTapNotNull(CleverTapAPI cleverTapAPI) {
@@ -1160,7 +1203,7 @@ public class CleverTapPlugin implements MethodCallHandler, SyncListener,
     }
 
     private void runOnMainThread(final Runnable runnable) {
-        ((Activity) flutterRegistrar.activeContext()).runOnUiThread(runnable);
+        activity.runOnUiThread(runnable);
     }
 
     private void invokeMethodOnUiThread(final String methodName, final String cleverTapID) {
@@ -1262,5 +1305,10 @@ public class CleverTapPlugin implements MethodCallHandler, SyncListener,
     @Override
     public void onPushPayloadReceived(Bundle extras) {
         invokeMethodOnUiThread("pushAmpPayloadReceived",Utils.bundleToMap(extras));
+    }
+
+    @Override
+    public void onNotificationClickedPayloadReceived(HashMap<String, Object> hashMap) {
+        invokeMethodOnUiThread("pushClickedPayloadReceived",hashMap);
     }
 }
