@@ -278,7 +278,7 @@ class _MyAppState extends State<MyApp> {
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
                       title: Text("Set Opt Out"),
-                      subtitle: Text("Pushes an event"),
+                      subtitle: Text("Used to opt out of sending data to CleverTap"),
                       onTap: setOptOut,
                     ),
                   ),
