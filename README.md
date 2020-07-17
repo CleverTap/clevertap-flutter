@@ -118,10 +118,16 @@ NOTE:  Don't forget to add the CleverTap imports at the top of the file.
 #import "CleverTapPlugin.h"
 ```
 
-## Example Dart Usage
+## For more:
 
-Please checkout the [example](https://github.com/CleverTap/clevertap-flutter/tree/master/example) directory for the sample app.
+- Please checkout our [Example Dart Usage](https://github.com/CleverTap/clevertap-flutter/tree/master/example) directory for the sample app.
+- See the [CleverTap developer docs](https://developer.clevertap.com/docs/ "CleverTap Technical Documentation")
 
-### For more: 
+## Changelog
 
-For more information you can checkout the [developer docs](https://developer.clevertap.com/docs/ "CleverTap Technical Documentation")
+Check out the [CleverTap Flutter SDK Change Log](https://github.com/CleverTap/clevertap-react-native/blob/master/CHANGELOG.md).
+
+## Questions?
+
+ If you have questions or concerns, you can reach out to the CleverTap support team at [support@clevertap.com](mailto:support@clevertap.com).
+
