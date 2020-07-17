@@ -125,7 +125,7 @@ NOTE:  Don't forget to add the CleverTap imports at the top of the file.
 
 ## Changelog
 
-Check out the [CleverTap Flutter SDK Change Log](https://github.com/CleverTap/clevertap-react-native/blob/master/CHANGELOG.md).
+Check out the [CleverTap Flutter SDK Change Log](https://github.com/CleverTap/clevertap-flutter/blob/master/CHANGELOG.md).
 
 ## Questions?
 
