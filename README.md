@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://github.com/CleverTap/clevertap-flutter/blob/master/clevertap-logo.png" width="300"/>
+</p>
+
 # CleverTap Flutter SDK
 
 The CleverTap Flutter SDK for Mobile Customer Engagement and Analytics solutions 
