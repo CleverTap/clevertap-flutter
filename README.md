@@ -109,13 +109,13 @@ After install, you will need to integrate the CleverTap SDK into your apps.
 1. Follow the integration instructions [starting with Step 2 here](https://developer.clevertap.com/docs/ios-quickstart-guide#section-step-2-add-clever-tap-credentials).
 2. In your `AppDelegate didFinishLaunchingWithOptions:` notify the CleverTap Flutter SDK of application launch:
 
-Objective-C
+*Objective-C*
 ```objc
 [CleverTap autoIntegrate]; // integrate CleverTap SDK using the autoIntegrate option
 [[CleverTapPlugin sharedInstance] applicationDidLaunchWithOptions:launchOptions];
 ```
 
-Swift
+*Swift*
 ```swift
 CleverTap.autoIntegrate() // integrate CleverTap SDK using the autoIntegrate option
 CleverTapPlugin.sharedInstance()?.applicationDidLaunch(options: launchOptions)
@@ -123,13 +123,13 @@ CleverTapPlugin.sharedInstance()?.applicationDidLaunch(options: launchOptions)
 
 NOTE:  Don't forget to add the CleverTap imports at the top of the file.
 
-Objective-C
+*Objective-C*
 ```objc
 #import "CleverTap.h"
 #import "CleverTapPlugin.h"
 ```
 
-Swift
+*Swift*
 ```swift
 import CleverTapSDK
 import clevertap_plugin
@@ -137,8 +137,8 @@ import clevertap_plugin
 
 ## For more
 
-- Please checkout our [Example Dart Usage](https://github.com/CleverTap/clevertap-flutter/tree/master/example) directory for the sample app.
-- See the [CleverTap developer docs](https://developer.clevertap.com/docs/ "CleverTap Technical Documentation")
+- Checkout our [Example Dart Usage](https://github.com/CleverTap/clevertap-flutter/tree/master/example) directory for the sample app.
+- Checkout our [CleverTap developer docs](https://developer.clevertap.com/docs/ "CleverTap Technical Documentation")
 
 ## Changelog
 
