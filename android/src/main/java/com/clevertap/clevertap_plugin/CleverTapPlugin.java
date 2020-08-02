@@ -148,13 +148,7 @@ public class CleverTapPlugin implements ActivityAware,
             }
             // Push Methods
             case "setPushToken": {
-                String token = call.argument("token");
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    cleverTapAPI.pushFcmRegistrationId(token, true);
-                    result.success(null);
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                setPushToken(call,result);
                 break;
             }
 
@@ -1200,6 +1194,16 @@ public class CleverTapPlugin implements ActivityAware,
             }
         }
 
+    }
+
+    private void setPushToken(MethodCall call, Result result){
+        String token = call.argument("token");
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            cleverTapAPI.pushFcmRegistrationId(token, true);
+            result.success(null);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
     }
 
     private void runOnMainThread(final Runnable runnable) {
