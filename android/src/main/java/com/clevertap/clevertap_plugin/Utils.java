@@ -208,12 +208,8 @@ public class Utils {
                 if ("DOB".equals(key)) {
                     String dob = profileMap.get(key).toString();
                     SimpleDateFormat format = new SimpleDateFormat("dd-MM-yyyy", Locale.ENGLISH);
-                    try {
-                        Date date = format.parse(dob);
-                        profile.put(key, date);
-                    } catch (Throwable t) {
-                        Log.e("CleverTapError", t.getLocalizedMessage());
-                    }
+                    Date date = format.parse(dob);
+                    profile.put(key, date);
                 } else {
                     profile.put(key, stringObjectEntry.getValue());
                 }
