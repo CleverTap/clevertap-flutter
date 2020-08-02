@@ -410,9 +410,9 @@ void main() {
     });
   });
 
-
   test('testing getFeatureFlag method', () async {
-    await CleverTapPlugin.getFeatureFlag(varName,defaultBoolValue).then((boolFlag) {
+    await CleverTapPlugin.getFeatureFlag(varName, defaultBoolValue)
+        .then((boolFlag) {
       expect(boolFlag, mockBool);
     });
   });
@@ -446,5 +446,4 @@ void main() {
       expect(pcDouble, mockDouble);
     });
   });
-
 }

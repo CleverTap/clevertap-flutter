@@ -26,9 +26,10 @@ class _MyAppState extends State<MyApp> {
     initPlatformState();
     activateCleverTapFlutterPluginHandlers();
     CleverTapPlugin.setDebugLevel(3);
-    CleverTapPlugin.createNotificationChannel("fluttertest", "Flutter Test", "Flutter Test", 3, true);
+    CleverTapPlugin.createNotificationChannel(
+        "fluttertest", "Flutter Test", "Flutter Test", 3, true);
     CleverTapPlugin.initializeInbox();
-    CleverTapPlugin.registerForPush();//only for iOS
+    CleverTapPlugin.registerForPush(); //only for iOS
     //var initialUrl = CleverTapPlugin.getInitialUrl();
   }
 
@@ -37,91 +38,111 @@ class _MyAppState extends State<MyApp> {
     if (!mounted) return;
   }
 
-  void activateCleverTapFlutterPluginHandlers(){
+  void activateCleverTapFlutterPluginHandlers() {
     _clevertapPlugin = new CleverTapPlugin();
-    _clevertapPlugin.setCleverTapPushAmpPayloadReceivedHandler(pushAmpPayloadReceived);
-    _clevertapPlugin.setCleverTapPushClickedPayloadReceivedHandler(pushClickedPayloadReceived);
-    _clevertapPlugin.setCleverTapInAppNotificationDismissedHandler(inAppNotificationDismissed);
-    _clevertapPlugin.setCleverTapProfileDidInitializeHandler(profileDidInitialize);
+    _clevertapPlugin
+        .setCleverTapPushAmpPayloadReceivedHandler(pushAmpPayloadReceived);
+    _clevertapPlugin.setCleverTapPushClickedPayloadReceivedHandler(
+        pushClickedPayloadReceived);
+    _clevertapPlugin.setCleverTapInAppNotificationDismissedHandler(
+        inAppNotificationDismissed);
+    _clevertapPlugin
+        .setCleverTapProfileDidInitializeHandler(profileDidInitialize);
     _clevertapPlugin.setCleverTapProfileSyncHandler(profileDidUpdate);
     _clevertapPlugin.setCleverTapInboxDidInitializeHandler(inboxDidInitialize);
-    _clevertapPlugin.setCleverTapInboxMessagesDidUpdateHandler(inboxMessagesDidUpdate);
-    _clevertapPlugin.setCleverTapExperimentsDidUpdateHandler(ctExperimentsUpdated);
-    _clevertapPlugin.setCleverTapDisplayUnitsLoadedHandler(onDisplayUnitsLoaded);
-    _clevertapPlugin.setCleverTapInAppNotificationButtonClickedHandler(inAppNotificationButtonClicked);
-    _clevertapPlugin.setCleverTapInboxNotificationButtonClickedHandler(inboxNotificationButtonClicked);
+    _clevertapPlugin
+        .setCleverTapInboxMessagesDidUpdateHandler(inboxMessagesDidUpdate);
+    _clevertapPlugin
+        .setCleverTapExperimentsDidUpdateHandler(ctExperimentsUpdated);
+    _clevertapPlugin
+        .setCleverTapDisplayUnitsLoadedHandler(onDisplayUnitsLoaded);
+    _clevertapPlugin.setCleverTapInAppNotificationButtonClickedHandler(
+        inAppNotificationButtonClicked);
+    _clevertapPlugin.setCleverTapInboxNotificationButtonClickedHandler(
+        inboxNotificationButtonClicked);
     _clevertapPlugin.setCleverTapFeatureFlagUpdatedHandler(featureFlagsUpdated);
-    _clevertapPlugin.setCleverTapProductConfigInitializedHandler(productConfigInitialized);
-    _clevertapPlugin.setCleverTapProductConfigFetchedHandler(productConfigFetched);
-    _clevertapPlugin.setCleverTapProductConfigActivatedHandler(productConfigActivated);
+    _clevertapPlugin
+        .setCleverTapProductConfigInitializedHandler(productConfigInitialized);
+    _clevertapPlugin
+        .setCleverTapProductConfigFetchedHandler(productConfigFetched);
+    _clevertapPlugin
+        .setCleverTapProductConfigActivatedHandler(productConfigActivated);
   }
 
-  void inAppNotificationDismissed(Map<String,dynamic> map){
-    this.setState((){
+  void inAppNotificationDismissed(Map<String, dynamic> map) {
+    this.setState(() {
       print("inAppNotificationDismissed called");
     });
   }
 
-  void inAppNotificationButtonClicked(Map<String,dynamic> map){
-    this.setState((){
+  void inAppNotificationButtonClicked(Map<String, dynamic> map) {
+    this.setState(() {
       print("inAppNotificationButtonClicked called = ${map.toString()}");
     });
   }
 
-  void inboxNotificationButtonClicked(Map<String,dynamic> map){
-    this.setState((){
+  void inboxNotificationButtonClicked(Map<String, dynamic> map) {
+    this.setState(() {
       print("inboxNotificationButtonClicked called = ${map.toString()}");
     });
   }
 
-  void profileDidInitialize(){
-    this.setState((){
+  void profileDidInitialize() {
+    this.setState(() {
       print("profileDidInitialize called");
     });
   }
 
-  void profileDidUpdate(Map<String,dynamic> map){
-    this.setState((){
+  void profileDidUpdate(Map<String, dynamic> map) {
+    this.setState(() {
       print("profileDidUpdate called");
     });
   }
 
-  void inboxDidInitialize(){
-    this.setState((){
+  void inboxDidInitialize() {
+    this.setState(() {
       print("inboxDidInitialize called");
       inboxInitialized = true;
     });
   }
 
-  void inboxMessagesDidUpdate(){
+  void inboxMessagesDidUpdate() {
     this.setState(() async {
       print("inboxMessagesDidUpdate called");
       int unread = await CleverTapPlugin.getInboxMessageUnreadCount();
       int total = await CleverTapPlugin.getInboxMessageCount();
-      print("Unread count = "+unread.toString());
-      print("Total count = "+total.toString());
+      print("Unread count = " + unread.toString());
+      print("Total count = " + total.toString());
     });
   }
 
-  void ctExperimentsUpdated(){
+  void ctExperimentsUpdated() {
     this.setState(() async {
       print("CTExperimentsUpdated called");
-      bool booleanVar = await CleverTapPlugin.getBooleanVariable("boolVar", false);
+      bool booleanVar =
+          await CleverTapPlugin.getBooleanVariable("boolVar", false);
       print("Boolean var = " + booleanVar.toString());
-      double doubleVar = await CleverTapPlugin.getDoubleVariable("doubleVar", 9.99);
+      double doubleVar =
+          await CleverTapPlugin.getDoubleVariable("doubleVar", 9.99);
       print("Double var = " + doubleVar.toString());
-      int integerVar = await CleverTapPlugin.getIntegerVariable("integerVar", 999);
-      print("Integer var = "+integerVar.toString());
-      String stringVar = await CleverTapPlugin.getStringVariable("stringVar", "defaultString");
-      print("String var = "+stringVar.toString());
-      List<dynamic> boolList = await CleverTapPlugin.getListOfBooleanVariable("boolListVar", null);
-      print("List of bool = "+boolList.toString());
-      List<dynamic> doubleList = await CleverTapPlugin.getListOfDoubleVariable("doubleListVar", null);
-      print("List of double = "+doubleList.toString());
-      List<dynamic> intList = await CleverTapPlugin.getListOfIntegerVariable("integerListVar", null);
-      print("Integer List = "+intList.toString());
-      List<dynamic> stringList = await CleverTapPlugin.getListOfStringVariable("stringListVar", null);
-      print("String List = "+stringList.toString());
+      int integerVar =
+          await CleverTapPlugin.getIntegerVariable("integerVar", 999);
+      print("Integer var = " + integerVar.toString());
+      String stringVar =
+          await CleverTapPlugin.getStringVariable("stringVar", "defaultString");
+      print("String var = " + stringVar.toString());
+      List<dynamic> boolList =
+          await CleverTapPlugin.getListOfBooleanVariable("boolListVar", null);
+      print("List of bool = " + boolList.toString());
+      List<dynamic> doubleList =
+          await CleverTapPlugin.getListOfDoubleVariable("doubleListVar", null);
+      print("List of double = " + doubleList.toString());
+      List<dynamic> intList = await CleverTapPlugin.getListOfIntegerVariable(
+          "integerListVar", null);
+      print("Integer List = " + intList.toString());
+      List<dynamic> stringList =
+          await CleverTapPlugin.getListOfStringVariable("stringListVar", null);
+      print("String List = " + stringList.toString());
 //      Map<String,bool> boolMap = await CleverTapPlugin.getMapOfBooleanVariable("boolMapVar", null);
 //      print("Map of bool = "+boolMap.toString());
 //      Map<String,double> doubleMap = await CleverTapPlugin.getMapOfDoubleVariable("doubleMapVar", null);
@@ -133,14 +154,14 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
-  void onDisplayUnitsLoaded(List<dynamic> displayUnits){
+  void onDisplayUnitsLoaded(List<dynamic> displayUnits) {
     this.setState(() async {
       List displayUnits = await CleverTapPlugin.getAllDisplayUnits();
-      print("Display Units = "+ displayUnits.toString());
+      print("Display Units = " + displayUnits.toString());
     });
   }
 
-  void featureFlagsUpdated(){
+  void featureFlagsUpdated() {
     print("Feature Flags Updated");
     this.setState(() async {
       bool booleanVar = await CleverTapPlugin.getFeatureFlag("BoolKey", false);
@@ -148,58 +169,60 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
-  void productConfigInitialized(){
+  void productConfigInitialized() {
     print("Product Config Initialized");
     this.setState(() async {
       await CleverTapPlugin.fetch();
     });
   }
 
-  void productConfigFetched(){
+  void productConfigFetched() {
     print("Product Config Fetched");
     this.setState(() async {
       await CleverTapPlugin.activate();
     });
-
   }
 
-  void productConfigActivated(){
+  void productConfigActivated() {
     print("Product Config Activated");
     this.setState(() async {
-      String stringvar = await CleverTapPlugin.getProductConfigString("StringKey");
+      String stringvar =
+          await CleverTapPlugin.getProductConfigString("StringKey");
       print("PC String = " + stringvar.toString());
       int intvar = await CleverTapPlugin.getProductConfigLong("IntKey");
       print("PC int = " + intvar.toString());
-      double doublevar = await CleverTapPlugin.getProductConfigDouble("DoubleKey");
+      double doublevar =
+          await CleverTapPlugin.getProductConfigDouble("DoubleKey");
       print("PC double = " + doublevar.toString());
     });
   }
 
-  void pushAmpPayloadReceived(Map<String,dynamic> map){
+  void pushAmpPayloadReceived(Map<String, dynamic> map) {
     print("pushAmpPayloadReceived called");
     this.setState(() async {
       var data = jsonEncode(map);
-      print("Push Amp Payload = "+data.toString());
+      print("Push Amp Payload = " + data.toString());
       CleverTapPlugin.createNotification(data);
     });
   }
 
-  void pushClickedPayloadReceived(Map<String,dynamic> map){
+  void pushClickedPayloadReceived(Map<String, dynamic> map) {
     print("pushClickedPayloadReceived called");
     this.setState(() async {
       var data = jsonEncode(map);
-      print("on Push Click Payload = "+data.toString());
+      print("on Push Click Payload = " + data.toString());
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return StyledToast(
+      locale: const Locale('en', 'US'),
       child: MaterialApp(
         home: Scaffold(
-          appBar: AppBar(
-            title: const Text('CleverTap Plugin Example App'),
-          ),
+            appBar: AppBar(
+              title: const Text('CleverTap Plugin Example App'),
+            ),
             body: ListView(
               children: <Widget>[
                 Card(
@@ -209,8 +232,10 @@ class _MyAppState extends State<MyApp> {
                     child: ListTile(
                       dense: true,
                       trailing: Icon(Icons.warning),
-                      title: Text("NOTE : All CleverTap functions are listed below"),
-                      subtitle: Text("Please check console logs for more info after tapping below"),
+                      title: Text(
+                          "NOTE : All CleverTap functions are listed below"),
+                      subtitle: Text(
+                          "Please check console logs for more info after tapping below"),
                     ),
                   ),
                 ),
@@ -219,12 +244,13 @@ class _MyAppState extends State<MyApp> {
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
-                        title: Text("Set Debug Level"),
-                        subtitle: Text("Sets the debug level in Android/iOS to show console logs"),
-                        onTap: (){
-                          CleverTapPlugin.setDebugLevel(3);
-                        },
-                        trailing: Icon(Icons.info),
+                      title: Text("Set Debug Level"),
+                      subtitle: Text(
+                          "Sets the debug level in Android/iOS to show console logs"),
+                      onTap: () {
+                        CleverTapPlugin.setDebugLevel(3);
+                      },
+                      trailing: Icon(Icons.info),
                     ),
                   ),
                 ),
@@ -278,7 +304,8 @@ class _MyAppState extends State<MyApp> {
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
                       title: Text("Set Opt Out"),
-                      subtitle: Text("Used to opt out of sending data to CleverTap"),
+                      subtitle:
+                          Text("Used to opt out of sending data to CleverTap"),
                       onTap: setOptOut,
                     ),
                   ),
@@ -300,7 +327,8 @@ class _MyAppState extends State<MyApp> {
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
                       title: Text("Device Networking Info"),
-                      subtitle: Text("Enables/Disable device networking info as per GDPR"),
+                      subtitle: Text(
+                          "Enables/Disable device networking info as per GDPR"),
                       onTap: setEnableDeviceNetworkingInfo,
                     ),
                   ),
@@ -388,7 +416,8 @@ class _MyAppState extends State<MyApp> {
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
                       title: Text("Get Attribution ID"),
-                      subtitle: Text("Returns Attribution ID to send to attribution partners"),
+                      subtitle: Text(
+                          "Returns Attribution ID to send to attribution partners"),
                       onTap: getCTAttributionId,
                     ),
                   ),
@@ -685,7 +714,8 @@ class _MyAppState extends State<MyApp> {
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
                       title: Text("Get Variables"),
-                      subtitle: Text("Returns values for all the registered variables"),
+                      subtitle: Text(
+                          "Returns values for all the registered variables"),
                       onTap: getVariables,
                     ),
                   ),
@@ -762,7 +792,8 @@ class _MyAppState extends State<MyApp> {
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
                       title: Text("Push Inbox Message Clicked"),
-                      subtitle: Text("Pushes/Records inbox message clicked event"),
+                      subtitle:
+                          Text("Pushes/Records inbox message clicked event"),
                       onTap: pushInboxNotificationClickedEventForId,
                     ),
                   ),
@@ -773,7 +804,8 @@ class _MyAppState extends State<MyApp> {
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
                       title: Text("Push Inbox Message Viewed"),
-                      subtitle: Text("Pushes/Records inbox message viewed event"),
+                      subtitle:
+                          Text("Pushes/Records inbox message viewed event"),
                       onTap: pushInboxNotificationViewedEventForId,
                     ),
                   ),
@@ -812,24 +844,22 @@ class _MyAppState extends State<MyApp> {
                   ),
                 ),
               ],
-            )
-
-        ),
+            )),
       ),
     );
   }
 
-  void recordEvent(){
+  void recordEvent() {
     var eventData = {
       // Key:    Value
       'first': 'partridge',
       'second': 'turtledoves'
     };
-    CleverTapPlugin.recordEvent("Flutter Event",eventData);
+    CleverTapPlugin.recordEvent("Flutter Event", eventData);
     showToast("Raised event - Flutter Event");
   }
 
-  void recordChargedEvent(){
+  void recordChargedEvent() {
     var item1 = {
       // Key:    Value
       'name': 'thing1',
@@ -840,7 +870,7 @@ class _MyAppState extends State<MyApp> {
       'name': 'thing2',
       'amount': '100'
     };
-    var items = [item1,item2];
+    var items = [item1, item2];
     var chargeDetails = {
       // Key:    Value
       'total': '200',
@@ -850,12 +880,14 @@ class _MyAppState extends State<MyApp> {
     showToast("Raised event - Charged");
   }
 
-  void recordUser(){
-    var stuff = ["bags","shoes"];
+  void recordUser() {
+    var stuff = ["bags", "shoes"];
     var profile = {
       'Name': 'Thor',
       'Identity': '100',
-      'DOB': '22-04-2000',///Key always has to be "DOB" and format should always be dd-MM-yyyy
+      'DOB': '22-04-2000',
+
+      ///Key always has to be "DOB" and format should always be dd-MM-yyyy
       'Email': 'thor1@asgard.com',
       'Phone': '14155551234',
       'props': 'property1',
@@ -865,31 +897,30 @@ class _MyAppState extends State<MyApp> {
     showToast("Pushed profile " + profile.toString());
   }
 
-  void showInbox(){
-    if(inboxInitialized) {
+  void showInbox() {
+    if (inboxInitialized) {
       showToast("Opening App Inbox", onDismiss: () {
         CleverTapPlugin.showInbox(null);
       });
-
     }
   }
 
- void getAllInboxMessages() async{
+  void getAllInboxMessages() async {
     List messages = await CleverTapPlugin.getAllInboxMessages();
     showToast("See all inbox messages in console");
-    print("Inbox Messages = "+ messages.toString());
+    print("Inbox Messages = " + messages.toString());
   }
 
-  void getUnreadInboxMessages() async{
+  void getUnreadInboxMessages() async {
     List messages = await CleverTapPlugin.getUnreadInboxMessages();
     showToast("See unread inbox messages in console");
-    print("Unread Inbox Messages = "+ messages.toString());
+    print("Unread Inbox Messages = " + messages.toString());
   }
 
-  void getInboxMessageForId() async{
-    var messageId=await getFirstInboxMessageId();
+  void getInboxMessageForId() async {
+    var messageId = await getFirstInboxMessageId();
 
-    if(messageId==null) {
+    if (messageId == null) {
       setState((() {
         showToast("Inbox Message id is null");
         print("Inbox Message id is null");
@@ -897,18 +928,17 @@ class _MyAppState extends State<MyApp> {
       return;
     }
 
-    var messageForId= await CleverTapPlugin.getInboxMessageForId(messageId);
+    var messageForId = await CleverTapPlugin.getInboxMessageForId(messageId);
     setState((() {
       showToast("Inbox Message for id =  ${messageForId.toString()}");
       print("Inbox Message for id =  ${messageForId.toString()}");
     }));
-
   }
 
-  void deleteInboxMessageForId() async{
-    var messageId=await getFirstInboxMessageId();
+  void deleteInboxMessageForId() async {
+    var messageId = await getFirstInboxMessageId();
 
-    if(messageId==null) {
+    if (messageId == null) {
       setState((() {
         showToast("Inbox Message id is null");
         print("Inbox Message id is null");
@@ -922,34 +952,34 @@ class _MyAppState extends State<MyApp> {
       showToast("Deleted Inbox Message with id =  $messageId");
       print("Deleted Inbox Message with id =  $messageId");
     }));
-
   }
 
-  void markReadInboxMessageForId() async{
+  void markReadInboxMessageForId() async {
     var messageList = await CleverTapPlugin.getUnreadInboxMessages();
 
-    if (messageList == null || messageList.length==0) return;
+    if (messageList == null || messageList.length == 0) return;
     Map<dynamic, dynamic> itemFirst = messageList[0];
 
-    if(Platform.isAndroid) {
+    if (Platform.isAndroid) {
       await CleverTapPlugin.markReadInboxMessageForId(itemFirst["id"]);
       setState((() {
         showToast("Marked Inbox Message as read with id =  ${itemFirst["id"]}");
         print("Marked Inbox Message as read with id =  ${itemFirst["id"]}");
       }));
-    }else if(Platform.isIOS){
+    } else if (Platform.isIOS) {
       await CleverTapPlugin.markReadInboxMessageForId(itemFirst["_id"]);
       setState((() {
-        showToast("Marked Inbox Message as read with id =  ${itemFirst["_id"]}");
+        showToast(
+            "Marked Inbox Message as read with id =  ${itemFirst["_id"]}");
         print("Marked Inbox Message as read with id =  ${itemFirst["_id"]}");
       }));
     }
   }
 
-  void pushInboxNotificationClickedEventForId() async{
-    var messageId=await getFirstInboxMessageId();
+  void pushInboxNotificationClickedEventForId() async {
+    var messageId = await getFirstInboxMessageId();
 
-    if(messageId==null) {
+    if (messageId == null) {
       setState((() {
         showToast("Inbox Message id is null");
         print("Inbox Message id is null");
@@ -960,16 +990,17 @@ class _MyAppState extends State<MyApp> {
     await CleverTapPlugin.pushInboxNotificationClickedEventForId(messageId);
 
     setState((() {
-      showToast("Pushed NotificationClickedEvent for Inbox Message with id =  $messageId");
-      print("Pushed NotificationClickedEvent for Inbox Message with id =  $messageId");
+      showToast(
+          "Pushed NotificationClickedEvent for Inbox Message with id =  $messageId");
+      print(
+          "Pushed NotificationClickedEvent for Inbox Message with id =  $messageId");
     }));
-
   }
 
-  void pushInboxNotificationViewedEventForId() async{
-    var messageId=await getFirstInboxMessageId();
+  void pushInboxNotificationViewedEventForId() async {
+    var messageId = await getFirstInboxMessageId();
 
-    if(messageId==null) {
+    if (messageId == null) {
       setState((() {
         showToast("Inbox Message id is null");
         print("Inbox Message id is null");
@@ -980,77 +1011,76 @@ class _MyAppState extends State<MyApp> {
     await CleverTapPlugin.pushInboxNotificationViewedEventForId(messageId);
 
     setState((() {
-      showToast("Pushed NotificationViewedEvent for Inbox Message with id =  $messageId");
-      print("Pushed NotificationViewedEvent for Inbox Message with id =  $messageId");
+      showToast(
+          "Pushed NotificationViewedEvent for Inbox Message with id =  $messageId");
+      print(
+          "Pushed NotificationViewedEvent for Inbox Message with id =  $messageId");
     }));
-
   }
 
-
-  Future<String> getFirstInboxMessageId() async{
-
+  Future<String> getFirstInboxMessageId() async {
     var messageList = await CleverTapPlugin.getAllInboxMessages();
     print("inside getFirstInboxMessageId");
-    if (messageList == null || messageList.length==0) return null;
+    if (messageList == null || messageList.length == 0) return null;
     Map<dynamic, dynamic> itemFirst = messageList[0];
     print(itemFirst.toString());
 
-    if(Platform.isAndroid) {
+    if (Platform.isAndroid) {
       return itemFirst["id"];
-    }else if (Platform.isIOS){
+    } else if (Platform.isIOS) {
       return itemFirst["_id"];
     }
     return null;
   }
 
-  void setOptOut(){
-    if(optOut){
+  void setOptOut() {
+    if (optOut) {
       CleverTapPlugin.setOptOut(false);
       optOut = false;
       showToast("You have opted in");
-    }else{
+    } else {
       CleverTapPlugin.setOptOut(true);
       optOut = true;
       showToast("You have opted out");
     }
   }
 
-  void setOffline(){
-    if(offLine){
+  void setOffline() {
+    if (offLine) {
       CleverTapPlugin.setOffline(false);
       offLine = false;
       showToast("You are online");
-    }else{
+    } else {
       CleverTapPlugin.setOffline(true);
       offLine = true;
       showToast("You are offline");
     }
   }
 
-  void setEnableDeviceNetworkingInfo(){
-    if(enableDeviceNetworkingInfo){
+  void setEnableDeviceNetworkingInfo() {
+    if (enableDeviceNetworkingInfo) {
       CleverTapPlugin.enableDeviceNetworkInfoReporting(false);
       enableDeviceNetworkingInfo = false;
       showToast("You have disabled device networking info");
-    }else{
+    } else {
       CleverTapPlugin.enableDeviceNetworkInfoReporting(true);
       enableDeviceNetworkingInfo = true;
       showToast("You have enabled device networking info");
     }
   }
 
-  void recordScreenView(){
+  void recordScreenView() {
     var screenName = "Home Screen";
     CleverTapPlugin.recordScreenView(screenName);
   }
 
-  void eventGetFirstTime(){
+  void eventGetFirstTime() {
     var eventName = "Flutter Event";
     CleverTapPlugin.eventGetFirstTime(eventName).then((eventFirstTime) {
       if (eventFirstTime == null) return;
       setState((() {
-        showToast("Event First time CleverTap = "+ eventFirstTime.toString());
-        print("Event First time CleverTap = "+ eventFirstTime.toString());
+        showToast("Event First time CleverTap = " + eventFirstTime.toString());
+        print("Event First time CleverTap = " + eventFirstTime.toString());
       }));
     }).catchError((error) {
       setState(() {
@@ -1059,13 +1089,13 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
-  void eventGetLastTime(){
+  void eventGetLastTime() {
     var eventName = "Flutter Event";
     CleverTapPlugin.eventGetLastTime(eventName).then((eventLastTime) {
       if (eventLastTime == null) return;
       setState((() {
-        showToast("Event Last time CleverTap = "+ eventLastTime.toString());
-        print("Event Last time CleverTap = "+ eventLastTime.toString());
+        showToast("Event Last time CleverTap = " + eventLastTime.toString());
+        print("Event Last time CleverTap = " + eventLastTime.toString());
       }));
     }).catchError((error) {
       setState(() {
@@ -1074,13 +1104,14 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
-  void eventGetOccurrences(){
+  void eventGetOccurrences() {
     var eventName = "Flutter Event";
     CleverTapPlugin.eventGetOccurrences(eventName).then((eventOccurrences) {
       if (eventOccurrences == null) return;
       setState((() {
-        showToast("Event detail from CleverTap = "+ eventOccurrences.toString());
-        print("Event detail from CleverTap = "+ eventOccurrences.toString());
+        showToast(
+            "Event detail from CleverTap = " + eventOccurrences.toString());
+        print("Event detail from CleverTap = " + eventOccurrences.toString());
       }));
     }).catchError((error) {
       setState(() {
@@ -1089,13 +1120,13 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
-  void getEventDetail(){
+  void getEventDetail() {
     var eventName = "Flutter Event";
     CleverTapPlugin.eventGetDetail(eventName).then((eventDetailMap) {
       if (eventDetailMap == null) return;
       setState((() {
-        showToast("Event detail from CleverTap = "+ eventDetailMap.toString());
-        print("Event detail from CleverTap = "+ eventDetailMap.toString());
+        showToast("Event detail from CleverTap = " + eventDetailMap.toString());
+        print("Event detail from CleverTap = " + eventDetailMap.toString());
       }));
     }).catchError((error) {
       setState(() {
@@ -1104,13 +1135,14 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
-  void getEventHistory(){
+  void getEventHistory() {
     var eventName = "Flutter Event";
     CleverTapPlugin.getEventHistory(eventName).then((eventDetailMap) {
       if (eventDetailMap == null) return;
       setState((() {
-        showToast("Event History from CleverTap = "+ eventDetailMap.toString());
-        print("Event History from CleverTap = "+ eventDetailMap.toString());
+        showToast(
+            "Event History from CleverTap = " + eventDetailMap.toString());
+        print("Event History from CleverTap = " + eventDetailMap.toString());
       }));
     }).catchError((error) {
       setState(() {
@@ -1119,19 +1151,20 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
-  void setLocation(){
+  void setLocation() {
     var lat = 19.07;
     var long = 72.87;
-    CleverTapPlugin.setLocation(lat,long);
+    CleverTapPlugin.setLocation(lat, long);
     showToast("Location is set");
   }
 
-  void getCTAttributionId(){
-    CleverTapPlugin.profileGetCleverTapAttributionIdentifier().then((attributionId) {
+  void getCTAttributionId() {
+    CleverTapPlugin.profileGetCleverTapAttributionIdentifier()
+        .then((attributionId) {
       if (attributionId == null) return;
       setState((() {
-        showToast("Attribution Id = "+ "$attributionId");
-        print("Attribution Id = "+ "$attributionId");
+        showToast("Attribution Id = " + "$attributionId");
+        print("Attribution Id = " + "$attributionId");
       }));
     }).catchError((error) {
       setState(() {
@@ -1154,60 +1187,60 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
-  void onUserLogin(){
-    var stuff = ["bags","shoes"];
+  void onUserLogin() {
+    var stuff = ["bags", "shoes"];
     var profile = {
       'Name': 'Captain America',
       'Identity': '100',
       'Email': 'captain@america.com',
       'Phone': '+14155551234',
-      'stuff' : stuff
+      'stuff': stuff
     };
     CleverTapPlugin.onUserLogin(profile);
     showToast("onUserLogin called, check console for details");
   }
 
-  void removeProfileValue(){
+  void removeProfileValue() {
     CleverTapPlugin.profileRemoveValueForKey("props");
     showToast("check console for details");
   }
 
-  void setProfileMultiValue(){
-    var values = ["value1","value2"];
+  void setProfileMultiValue() {
+    var values = ["value1", "value2"];
     CleverTapPlugin.profileSetMultiValues("props", values);
     showToast("check console for details");
   }
 
-  void addMultiValue(){
+  void addMultiValue() {
     var value = "value1";
     CleverTapPlugin.profileAddMultiValue("props", value);
     showToast("check console for details");
   }
 
-  void addMultiValues(){
-    var values = ["value1","value2"];
+  void addMultiValues() {
+    var values = ["value1", "value2"];
     CleverTapPlugin.profileAddMultiValues("props", values);
     showToast("check console for details");
   }
 
-  void removeMultiValue(){
+  void removeMultiValue() {
     var value = "value1";
     CleverTapPlugin.profileRemoveMultiValue("props", value);
     showToast("check console for details");
   }
 
-  void removeMultiValues(){
-    var values = ["value1","value2"];
+  void removeMultiValues() {
+    var values = ["value1", "value2"];
     CleverTapPlugin.profileRemoveMultiValues("props", values);
     showToast("check console for details");
   }
 
-  void getTimeElapsed(){
+  void getTimeElapsed() {
     CleverTapPlugin.sessionGetTimeElapsed().then((timeElapsed) {
       if (timeElapsed == null) return;
       setState((() {
-        showToast("Session Time Elapsed = "+ timeElapsed.toString());
-        print("Session Time Elapsed = "+ timeElapsed.toString());
+        showToast("Session Time Elapsed = " + timeElapsed.toString());
+        print("Session Time Elapsed = " + timeElapsed.toString());
       }));
     }).catchError((error) {
       setState(() {
@@ -1216,12 +1249,12 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
-  void getTotalVisits(){
+  void getTotalVisits() {
     CleverTapPlugin.sessionGetTotalVisits().then((totalVisits) {
       if (totalVisits == null) return;
       setState((() {
-        showToast("Session Total Visits = "+ totalVisits.toString());
-        print("Session Total Visits = "+ totalVisits.toString());
+        showToast("Session Total Visits = " + totalVisits.toString());
+        print("Session Total Visits = " + totalVisits.toString());
       }));
     }).catchError((error) {
       setState(() {
@@ -1230,12 +1263,12 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
-  void getScreenCount(){
+  void getScreenCount() {
     CleverTapPlugin.sessionGetScreenCount().then((screenCount) {
       if (screenCount == null) return;
       setState((() {
-        showToast("Session Screen Count = "+ screenCount.toString());
-        print("Session Screen Count = "+ screenCount.toString());
+        showToast("Session Screen Count = " + screenCount.toString());
+        print("Session Screen Count = " + screenCount.toString());
       }));
     }).catchError((error) {
       setState(() {
@@ -1244,12 +1277,12 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
-  void getPreviousVisitTime(){
+  void getPreviousVisitTime() {
     CleverTapPlugin.sessionGetPreviousVisitTime().then((previousTime) {
       if (previousTime == null) return;
       setState((() {
-        showToast("Session Previous Visit Time = "+ previousTime.toString());
-        print("Session Previous Visit Time = "+ previousTime.toString());
+        showToast("Session Previous Visit Time = " + previousTime.toString());
+        print("Session Previous Visit Time = " + previousTime.toString());
       }));
     }).catchError((error) {
       setState(() {
@@ -1258,12 +1291,12 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
-  void getUTMDetails(){
+  void getUTMDetails() {
     CleverTapPlugin.sessionGetUTMDetails().then((utmDetails) {
       if (utmDetails == null) return;
       setState((() {
-        showToast("Session UTM Details = "+ utmDetails.toString());
-        print("Session UTM Details = "+ utmDetails.toString());
+        showToast("Session UTM Details = " + utmDetails.toString());
+        print("Session UTM Details = " + utmDetails.toString());
       }));
     }).catchError((error) {
       setState(() {
@@ -1272,37 +1305,37 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
-  void enablePersonalization(){
+  void enablePersonalization() {
     CleverTapPlugin.enablePersonalization();
     showToast("Personalization enabled");
     print("Personalization enabled");
   }
 
-  void disablePersonalization(){
+  void disablePersonalization() {
     CleverTapPlugin.disablePersonalization();
     showToast("Personalization disabled");
     print("Personalization disabled");
   }
 
-  void registerBooleanVar(){
+  void registerBooleanVar() {
     CleverTapPlugin.registerBooleanVariable("boolVar");
     showToast("boolVar variable registered");
     print("boolVar variable registered");
   }
 
-  void registerDoubleVar(){
+  void registerDoubleVar() {
     CleverTapPlugin.registerDoubleVariable("doubleVar");
     showToast("doubleVar variable registered");
     print("doubleVar variable registered");
   }
 
-  void registerIntegerVar(){
+  void registerIntegerVar() {
     CleverTapPlugin.registerIntegerVariable("integerVar");
     showToast("integerVar variable registered");
     print("integerVar variable registered");
   }
 
-  void registerStringVar(){
+  void registerStringVar() {
     CleverTapPlugin.registerStringVariable("stringVar");
     showToast("stringVar variable registered");
     print("stringVar variable registered");
@@ -1358,52 +1391,64 @@ class _MyAppState extends State<MyApp> {
 
   void getVariables() async {
     showToast("check console for logs");
-    bool booleanVar = await CleverTapPlugin.getBooleanVariable("boolVar", false);
+    bool booleanVar =
+        await CleverTapPlugin.getBooleanVariable("boolVar", false);
     print("Boolean var = " + booleanVar.toString());
-    double doubleVar = await CleverTapPlugin.getDoubleVariable("doubleVar", 9.99);
+    double doubleVar =
+        await CleverTapPlugin.getDoubleVariable("doubleVar", 9.99);
     print("Double var = " + doubleVar.toString());
-    int integerVar = await CleverTapPlugin.getIntegerVariable("integerVar", 999);
-    print("Integer var = "+ integerVar.toString());
-    String stringVar = await CleverTapPlugin.getStringVariable("stringVar", "defaultString");
-    print("String var = "+ stringVar.toString());
-    List<dynamic> boolList = await CleverTapPlugin.getListOfBooleanVariable("boolListVar", null);
-    print("List of bool = "+ boolList.toString());
-    List<dynamic> doubleList = await CleverTapPlugin.getListOfDoubleVariable("doubleListVar", null);
-    print("List of double = "+ doubleList.toString());
-    List<dynamic> intList = await CleverTapPlugin.getListOfIntegerVariable("integerListVar", null);
-    print("Integer List = "+ intList.toString());
-    List<dynamic> stringList = await CleverTapPlugin.getListOfStringVariable("stringListVar", null);
-    print("String List = "+ stringList.toString());
-    Map<String,bool> boolMap = await CleverTapPlugin.getMapOfBooleanVariable("boolMapVar", null);
-    print("Map of bool = "+ boolMap.toString());
-    Map<String,double> doubleMap = await CleverTapPlugin.getMapOfDoubleVariable("doubleMapVar", null);
-    print("Map of double = "+ doubleMap.toString());
-    Map<String,int> intMap = await CleverTapPlugin.getMapOfIntegerVariable("integerMapVar", null);
-    print("Map of int = "+ intMap.toString());
-    Map<String,String> strMap = await CleverTapPlugin.getMapOfStringVariable("stringMapVar", null);
-    print("Map of string = "+ strMap.toString());
+    int integerVar =
+        await CleverTapPlugin.getIntegerVariable("integerVar", 999);
+    print("Integer var = " + integerVar.toString());
+    String stringVar =
+        await CleverTapPlugin.getStringVariable("stringVar", "defaultString");
+    print("String var = " + stringVar.toString());
+    List<dynamic> boolList =
+        await CleverTapPlugin.getListOfBooleanVariable("boolListVar", null);
+    print("List of bool = " + boolList.toString());
+    List<dynamic> doubleList =
+        await CleverTapPlugin.getListOfDoubleVariable("doubleListVar", null);
+    print("List of double = " + doubleList.toString());
+    List<dynamic> intList =
+        await CleverTapPlugin.getListOfIntegerVariable("integerListVar", null);
+    print("Integer List = " + intList.toString());
+    List<dynamic> stringList =
+        await CleverTapPlugin.getListOfStringVariable("stringListVar", null);
+    print("String List = " + stringList.toString());
+    Map<String, bool> boolMap =
+        await CleverTapPlugin.getMapOfBooleanVariable("boolMapVar", null);
+    print("Map of bool = " + boolMap.toString());
+    Map<String, double> doubleMap =
+        await CleverTapPlugin.getMapOfDoubleVariable("doubleMapVar", null);
+    print("Map of double = " + doubleMap.toString());
+    Map<String, int> intMap =
+        await CleverTapPlugin.getMapOfIntegerVariable("integerMapVar", null);
+    print("Map of int = " + intMap.toString());
+    Map<String, String> strMap =
+        await CleverTapPlugin.getMapOfStringVariable("stringMapVar", null);
+    print("Map of string = " + strMap.toString());
   }
 
-  void getAdUnits() async{
+  void getAdUnits() async {
     List displayUnits = await CleverTapPlugin.getAllDisplayUnits();
     showToast("check console for logs");
-    print("Display Units = "+ displayUnits.toString());
+    print("Display Units = " + displayUnits.toString());
   }
 
-  void fetch(){
+  void fetch() {
     CleverTapPlugin.fetch();
     showToast("check console for logs");
+
     ///CleverTapPlugin.fetchWithMinimumIntervalInSeconds(0);
   }
 
-  void activate(){
+  void activate() {
     CleverTapPlugin.activate();
     showToast("check console for logs");
   }
 
-  void fetchAndActivate(){
+  void fetchAndActivate() {
     CleverTapPlugin.fetchAndActivate();
     showToast("check console for logs");
   }
-
 }

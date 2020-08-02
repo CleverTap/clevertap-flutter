@@ -109,7 +109,8 @@ class CleverTapPlugin {
 
       case "pushClickedPayloadReceived":
         Map<dynamic, dynamic> args = call.arguments;
-        cleverTapPushClickedPayloadReceivedHandler(args.cast<String, dynamic>());
+        cleverTapPushClickedPayloadReceivedHandler(
+            args.cast<String, dynamic>());
         break;
     }
   }
@@ -185,7 +186,7 @@ class CleverTapPlugin {
 
   /// Define a method to handle Push Clicked payload
   void setCleverTapPushClickedPayloadReceivedHandler(
-      CleverTapPushClickedPayloadReceivedHandler handler) =>
+          CleverTapPushClickedPayloadReceivedHandler handler) =>
       cleverTapPushClickedPayloadReceivedHandler = handler;
 
   /// Sets debug level to show logs on Android Studio/Xcode console
