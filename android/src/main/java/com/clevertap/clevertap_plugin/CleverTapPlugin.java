@@ -20,6 +20,7 @@ import com.clevertap.android.sdk.EventDetail;
 import com.clevertap.android.sdk.InAppNotificationButtonListener;
 import com.clevertap.android.sdk.InAppNotificationListener;
 import com.clevertap.android.sdk.InboxMessageButtonListener;
+import com.clevertap.android.sdk.PushType;
 import com.clevertap.android.sdk.SyncListener;
 import com.clevertap.android.sdk.UTMDetail;
 import com.clevertap.android.sdk.displayunits.DisplayUnitListener;
@@ -147,7 +148,7 @@ public class CleverTapPlugin implements ActivityAware,
             }
             // Push Methods
             case "setPushToken": {
-                setPushToken(call,result);
+                setPushToken(call,result, PushType.FCM);
                 break;
             }
             case "createNotification": {
@@ -160,17 +161,17 @@ public class CleverTapPlugin implements ActivityAware,
             }
             //Baidu/Xiaomi/Huawei push notifications
             case "setXiaomiPushToken": {
-                setXiaomiPushToken(call,result);
+
                 break;
             }
 
             case "setBaiduPushToken": {
-                setBaiduPushToken(call,result);
+                setPushToken(call,result,PushType.BPS);
                 break;
             }
 
             case "setHuaweiPushToken": {
-                setHuaweiPushToken(call,result);
+                setPushToken(call,result,PushType.HPS);
                 break;
             }
             //UI Editor connection
@@ -1057,8 +1058,6 @@ public class CleverTapPlugin implements ActivityAware,
             CTInboxMessage inboxMessage = cleverTapAPI.getInboxMessageForId(messageId);
             if (inboxMessage != null) {
                 result.success(Utils.jsonObjectToMap(inboxMessage.getData()));
-            } else {
-                result.success(null);
             }
         } else {
             result.error(TAG, ERROR_MSG, null);
@@ -1352,10 +1351,19 @@ public class CleverTapPlugin implements ActivityAware,
         }
     }
 
-    private void setPushToken(MethodCall call, Result result){
+    private void setPushToken(MethodCall call, Result result, PushType type){
         String token = call.argument("token");
         if (isCleverTapNotNull(cleverTapAPI)) {
-            cleverTapAPI.pushFcmRegistrationId(token, true);
+            switch (type.toString()){
+                case "fcm": cleverTapAPI.pushFcmRegistrationId(token,true);
+                    break;
+                case "xps": cleverTapAPI.pushXiaomiRegistrationId(token,true);
+                    break;
+                case "hps": cleverTapAPI.pushHuaweiRegistrationId(token,true);
+                    break;
+                case "bps": cleverTapAPI.pushBaiduRegistrationId(token, true);
+                    break;
+            }
             result.success(null);
         } else {
             result.error(TAG, ERROR_MSG, null);
@@ -1391,77 +1399,49 @@ public class CleverTapPlugin implements ActivityAware,
         }
     }
 
-    private void setXiaomiPushToken(MethodCall call,Result result){
-        String token = call.argument("token");
-        if (isCleverTapNotNull(cleverTapAPI)) {
-            cleverTapAPI.pushXiaomiRegistrationId(token, true);
-            result.success(null);
-        } else {
-            result.error(TAG, ERROR_MSG, null);
-        }
-    }
-
-    private void setBaiduPushToken(MethodCall call, Result result){
-        String token = call.argument("token");
-        if (isCleverTapNotNull(cleverTapAPI)) {
-            cleverTapAPI.pushBaiduRegistrationId(token, true);
-            result.success(null);
-        } else {
-            result.error(TAG, ERROR_MSG, null);
-        }
-    }
-
-    private void setHuaweiPushToken(MethodCall call, Result result){
-        String token = call.argument("token");
-        if (isCleverTapNotNull(cleverTapAPI)) {
-            cleverTapAPI.pushHuaweiRegistrationId(token, true);
-            result.success(null);
-        } else {
-            result.error(TAG, ERROR_MSG, null);
-        }
-    }
-
     private void createNotificationChannel(MethodCall call, Result result){
-        String channelId = call.argument("channelId");
-        String channelName = call.argument("channelName");
-        String channelDescription = call.argument("channelDescription");
-        int importance = call.argument("importance");
-        boolean showBadge = call.argument("showBadge");
-        CleverTapAPI.createNotificationChannel(context, channelId, channelName, channelDescription, importance, showBadge);
+        CleverTapAPI.createNotificationChannel(context,
+                call.argument("channelId"),
+                call.argument("channelName"),
+                call.argument("channelDescription"),
+                call.argument("importance"),
+                call.argument("showBadge"));
         result.success(null);
     }
 
     private void createNotificationChannelWithSound(MethodCall call, Result result){
-        String channelId = call.argument("channelId");
-        String channelName = call.argument("channelName");
-        String channelDescription = call.argument("channelDescription");
-        int importance = call.argument("importance");
-        boolean showBadge = call.argument("showBadge");
         String sound = call.argument("sound");
-        CleverTapAPI.createNotificationChannel(context, channelId, channelName, channelDescription, importance, showBadge, sound);
+        CleverTapAPI.createNotificationChannel(context,
+                call.argument("channelId"),
+                call.argument("channelName"),
+                call.argument("channelDescription"),
+                call.argument("importance"),
+                call.argument("showBadge"),
+                sound);
         result.success(null);
     }
 
     private void createNotificationChannelWithGroupId(MethodCall call, Result result){
-        String channelId = call.argument("channelId");
-        String channelName = call.argument("channelName");
-        String channelDescription = call.argument("channelDescription");
-        int importance = call.argument("importance");
-        String groupId = call.argument("groupId");
         boolean showBadge = call.argument("showBadge");
-        CleverTapAPI.createNotificationChannel(context, channelId, channelName, channelDescription, importance, groupId, showBadge);
+        CleverTapAPI.createNotificationChannel(context,
+                call.argument("channelId"),
+                call.argument("channelName"),
+                call.argument("channelDescription"),
+                call.argument("importance"),
+                call.argument("groupId"),
+                showBadge);
         result.success(null);
     }
 
     private void createNotificationChannelWithGroupIdAndSound(MethodCall call, Result result){
-        String channelId = call.argument("channelId");
-        String channelName = call.argument("channelName");
-        String channelDescription = call.argument("channelDescription");
-        int importance = call.argument("importance");
-        String groupId = call.argument("groupId");
-        boolean showBadge = call.argument("showBadge");
-        String sound = call.argument("sound");
-        CleverTapAPI.createNotificationChannel(context, channelId, channelName, channelDescription, importance, groupId, showBadge, sound);
+        CleverTapAPI.createNotificationChannel(context,
+                call.argument("channelId"),
+                call.argument("channelName"),
+                call.argument("channelDescription"),
+                call.argument("importance"),
+                call.argument("groupId"),
+                call.argument("showBadge"),
+                call.argument("sound"));
         result.success(null);
     }
 
