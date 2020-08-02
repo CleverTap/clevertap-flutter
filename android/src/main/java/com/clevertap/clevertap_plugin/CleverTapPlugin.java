@@ -139,7 +139,6 @@ public class CleverTapPlugin implements ActivityAware,
     @Override
     public void onMethodCall(MethodCall call, Result result) {
         switch (call.method) {
-
             case "setDebugLevel": {
                 int debugLevelValue = call.argument("debugLevel");
                 CleverTapAPI.setDebugLevel(debugLevelValue);
@@ -151,73 +150,29 @@ public class CleverTapPlugin implements ActivityAware,
                 setPushToken(call,result);
                 break;
             }
-
             case "createNotification": {
-                String extras = call.argument("extras");
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    try {
-                        Log.d(TAG, "createNotification Android");
-                        CleverTapAPI.createNotification(context, Utils.stringToBundle(extras));
-                    } catch (JSONException e) {
-                        result.error(TAG, "Unable to render notification due to JSONException - " + e.getLocalizedMessage(), null);
-                    }
-                    result.success(null);
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                createNotification(call,result);
                 break;
             }
-
             case "processPushNotification": {
-                JSONObject extras = call.argument("extras");
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    try {
-                        CleverTapAPI.processPushNotification(context, Utils.jsonToBundle(extras));
-                    } catch (JSONException e) {
-                        result.error(TAG, "Unable to render notification due to JSONException - " + e.getLocalizedMessage(), null);
-                    }
-                    result.success(null);
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                processPushNotification(call,result);
                 break;
             }
-
             //Baidu/Xiaomi/Huawei push notifications
-
             case "setXiaomiPushToken": {
-                String token = call.argument("token");
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    cleverTapAPI.pushXiaomiRegistrationId(token, true);
-                    result.success(null);
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                setXiaomiPushToken(call,result);
                 break;
             }
 
             case "setBaiduPushToken": {
-                String token = call.argument("token");
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    cleverTapAPI.pushBaiduRegistrationId(token, true);
-                    result.success(null);
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                setBaiduPushToken(call,result);
                 break;
             }
 
             case "setHuaweiPushToken": {
-                String token = call.argument("token");
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    cleverTapAPI.pushHuaweiRegistrationId(token, true);
-                    result.success(null);
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                setHuaweiPushToken(call,result);
                 break;
             }
-
             //UI Editor connection
             case "setUIEditorConnectionEnabled": {
                 boolean enabled = call.argument("value");
@@ -225,57 +180,25 @@ public class CleverTapPlugin implements ActivityAware,
                 result.success(null);
                 break;
             }
-
             //Notification channel/group methods for Android O
             case "createNotificationChannel": {
-                String channelId = call.argument("channelId");
-                String channelName = call.argument("channelName");
-                String channelDescription = call.argument("channelDescription");
-                int importance = call.argument("importance");
-                boolean showBadge = call.argument("showBadge");
-                CleverTapAPI.createNotificationChannel(context, channelId, channelName, channelDescription, importance, showBadge);
-                result.success(null);
+                createNotificationChannel(call,result);
                 break;
             }
             case "createNotificationChannelWithSound": {
-                String channelId = call.argument("channelId");
-                String channelName = call.argument("channelName");
-                String channelDescription = call.argument("channelDescription");
-                int importance = call.argument("importance");
-                boolean showBadge = call.argument("showBadge");
-                String sound = call.argument("sound");
-                CleverTapAPI.createNotificationChannel(context, channelId, channelName, channelDescription, importance, showBadge, sound);
-                result.success(null);
+                createNotificationChannelWithSound(call,result);
                 break;
             }
             case "createNotificationChannelWithGroupId": {
-                String channelId = call.argument("channelId");
-                String channelName = call.argument("channelName");
-                String channelDescription = call.argument("channelDescription");
-                int importance = call.argument("importance");
-                String groupId = call.argument("groupId");
-                boolean showBadge = call.argument("showBadge");
-                CleverTapAPI.createNotificationChannel(context, channelId, channelName, channelDescription, importance, groupId, showBadge);
-                result.success(null);
+                createNotificationChannelWithGroupId(call,result);
                 break;
             }
             case "createNotificationChannelWithGroupIdAndSound": {
-                String channelId = call.argument("channelId");
-                String channelName = call.argument("channelName");
-                String channelDescription = call.argument("channelDescription");
-                int importance = call.argument("importance");
-                String groupId = call.argument("groupId");
-                boolean showBadge = call.argument("showBadge");
-                String sound = call.argument("sound");
-                CleverTapAPI.createNotificationChannel(context, channelId, channelName, channelDescription, importance, groupId, showBadge, sound);
-                result.success(null);
+                createNotificationChannelWithGroupIdAndSound(call,result);
                 break;
             }
             case "createNotificationChannelGroup": {
-                String groupId = call.argument("groupId");
-                String groupName = call.argument("groupName");
-                CleverTapAPI.createNotificationChannelGroup(context, groupId, groupName);
-                result.success(null);
+                createNotificationChannelGroup(call,result);
                 break;
             }
             case "deleteNotificationChannel": {
@@ -290,891 +213,368 @@ public class CleverTapPlugin implements ActivityAware,
                 result.success(null);
                 break;
             }
-
             //Enables tracking opt out for the currently active user.
             case "setOptOut": {
-                boolean value = call.argument("value");
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    cleverTapAPI.setOptOut(value);
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                setOptOut(call,result);
                 break;
             }
-
             //Sets the SDK to offline mode
             case "setOffline": {
-                boolean value = call.argument("value");
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    cleverTapAPI.setOffline(value);
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                setOffline(call,result);
                 break;
             }
-
             //Enables the reporting of device network-related information, including IP address.  This reporting is disabled by default.
             case "enableDeviceNetworkInfoReporting": {
-                boolean value = call.argument("value");
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    cleverTapAPI.enableDeviceNetworkInfoReporting(value);
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                enableDeviceNetworkInfoReporting(call,result);
                 break;
             }
-
             // Personalization
             case "enablePersonalization": {
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    cleverTapAPI.enablePersonalization();
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                setPersonalization(result,true);
                 break;
             }
             case "disablePersonalization": {
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    cleverTapAPI.disablePersonalization();
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                setPersonalization(result,false);
                 break;
             }
-
             // Event API
             case "recordScreenView": {
-                String name = call.argument("screenName");
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    cleverTapAPI.recordScreen(name);
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                recordScreenView(call,result);
                 break;
             }
             case "recordEvent": {
-                Map<String, Object> eventData = call.argument("eventData");
-                String eventName = call.argument("eventName");
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    this.cleverTapAPI.pushEvent(eventName, eventData);
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                recordEvent(call,result);
                 break;
             }
             case "recordChargedEvent": {
-                HashMap<String, Object> chargeDetails = call.argument("chargeDetails");
-                ArrayList<HashMap<String, Object>> items = call.argument("items");
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    cleverTapAPI.pushChargedEvent(chargeDetails, items);
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                recordChargedEvent(call,result);
                 break;
             }
             case "eventGetFirstTime": {
-                String eventName = call.argument("eventName");
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    result.success(cleverTapAPI.getFirstTime(eventName));
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                eventGetFirstTime(call,result);
                 break;
             }
             case "eventGetLastTime": {
-                String eventName = call.argument("eventName");
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    result.success(cleverTapAPI.getLastTime(eventName));
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                eventGetLastTime(call,result);
                 break;
             }
             case "eventGetOccurrences": {
-                String eventName = call.argument("eventName");
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    result.success(cleverTapAPI.getCount(eventName));
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                eventGetOccurrences(call,result);
                 break;
             }
             case "eventGetDetail": {
-                String eventName = call.argument("eventName");
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    EventDetail eventDetail = cleverTapAPI.getDetails(eventName);
-                    result.success(Utils.eventDetailToMap(eventDetail));
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                eventGetDetail(call,result);
                 break;
             }
             case "getEventHistory": {
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    result.success(Utils.historyEventDetailToMap(cleverTapAPI.getHistory()));
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                getEventHistory(result);
                 break;
             }
-
             //Profile API
-
             case "setLocation": {
-                double lat = call.argument("latitude");
-                double lon = call.argument("longitude");
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    Location location = new Location("CleverTapFlutter");
-                    location.setLatitude(lat);
-                    location.setLongitude(lon);
-                    cleverTapAPI.setLocation(location);
-                    result.success(null);
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                setLocation(call,result);
                 break;
             }
             case "profileGetCleverTapAttributionIdentifier": {
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    result.success(cleverTapAPI.getCleverTapAttributionIdentifier());
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                profileGetCleverTapAttributionIdentifier(result);
                 break;
             }
             case "profileGetCleverTapID": {
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    result.success(cleverTapAPI.getCleverTapID());
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                profileGetCleverTapID(result);
                 break;
             }
             case "onUserLogin": {
-                Map<String, Object> profile = Utils.dartMapToProfileMap(call.argument("profile"));
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    cleverTapAPI.onUserLogin(profile);
-                    result.success(null);
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                onUserLogin(call,result);
                 break;
             }
             case "profileSet": {
-                Map<String, Object> profile = Utils.dartMapToProfileMap(call.argument("profile"));
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    cleverTapAPI.pushProfile(profile);
-                    result.success(null);
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                profileSet(call,result);
                 break;
             }
             case "profileSetGraphUser": {
-                Map<String, Object> profileMap = call.argument("profile");
-                JSONObject profile = Utils.mapToJSONObject(profileMap);
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    cleverTapAPI.pushFacebookUser(profile);
-                    result.success(null);
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                profileSetGraphUser(call,result);
                 break;
             }
             case "profileGetProperty": {
-                String propertyName = call.argument("propertyName");
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    result.success(cleverTapAPI.getProperty(propertyName));
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                profileGetProperty(call,result);
                 break;
             }
             case "profileRemoveValueForKey": {
-                String key = call.argument("key");
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    cleverTapAPI.removeValueForKey(key);
-                    result.success(null);
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                profileRemoveValueForKey(call,result);
                 break;
             }
             case "profileSetMultiValues": {
-                String key = call.argument("key");
-                ArrayList<String> values = call.argument("values");
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    cleverTapAPI.setMultiValuesForKey(key, values);
-                    result.success(null);
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                profileSetMultiValues(call,result);
                 break;
             }
             case "profileAddMultiValue": {
-                String key = call.argument("key");
-                String value = call.argument("value");
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    cleverTapAPI.addMultiValueForKey(key, value);
-                    result.success(null);
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                profileAddMultiValue(call,result);
                 break;
             }
             case "profileAddMultiValues": {
-                String key = call.argument("key");
-                ArrayList<String> values = call.argument("values");
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    cleverTapAPI.addMultiValuesForKey(key, values);
-                    result.success(null);
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                profileAddMultiValues(call,result);
                 break;
             }
             case "profileRemoveMultiValue": {
-                String key = call.argument("key");
-                String value = call.argument("value");
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    cleverTapAPI.removeMultiValueForKey(key, value);
-                    result.success(null);
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                profileRemoveMultiValue(call,result);
                 break;
             }
             case "profileRemoveMultiValues": {
-                String key = call.argument("key");
-                ArrayList<String> values = call.argument("values");
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    cleverTapAPI.removeMultiValuesForKey(key, values);
-                    result.success(null);
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                profileRemoveMultiValues(call,result);
                 break;
             }
-
             //Session API
-
             case "pushInstallReferrer": {
-                String source = call.argument("source");
-                String medium = call.argument("medium");
-                String campaign = call.argument("campaign");
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    cleverTapAPI.pushInstallReferrer(source, medium, campaign);
-                    result.success(null);
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                pushInstallReferrer(call,result);
                 break;
             }
             case "sessionGetTimeElapsed": {
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    result.success(cleverTapAPI.getTimeElapsed());
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                sessionGetTimeElapsed(result);
                 break;
             }
             case "sessionGetTotalVisits": {
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    result.success(cleverTapAPI.getTotalVisits());
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                sessionGetTotalVisits(result);
                 break;
             }
             case "sessionGetScreenCount": {
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    result.success(cleverTapAPI.getScreenCount());
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                sessionGetScreenCount(result);
                 break;
             }
             case "sessionGetPreviousVisitTime": {
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    result.success(cleverTapAPI.getPreviousVisitTime());
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                sessionGetPreviousVisitTime(result);
                 break;
             }
             case "sessionGetUTMDetails": {
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    UTMDetail detail = cleverTapAPI.getUTMDetails();
-                    result.success(Utils.utmDetailsToMap(detail));
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                sessionGetUTMDetails(result);
                 break;
             }
-
             //App Inbox Methods
             case "initializeInbox": {
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    cleverTapAPI.initializeInbox();
-                    result.success(null);
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                initializeInbox(result);
                 break;
             }
             case "showInbox": {
-                Map<String, Object> styleConfigMap = call.argument("styleConfig");
-                JSONObject styleConfigJson = Utils.mapToJSONObject(styleConfigMap);
-                CTInboxStyleConfig styleConfig = new CTInboxStyleConfig();
-                if (styleConfigJson != null) {
-                    styleConfig = Utils.jsonToStyleConfig(styleConfigJson);
-                }
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    cleverTapAPI.showAppInbox(styleConfig);
-                    result.success(null);
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                showInbox(call,result);
                 break;
             }
             case "getInboxMessageCount": {
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    result.success(cleverTapAPI.getInboxMessageCount());
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                getInboxMessageCount(result);
                 break;
             }
             case "getInboxMessageUnreadCount": {
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    result.success(cleverTapAPI.getInboxMessageUnreadCount());
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                getInboxMessageUnreadCount(result);
                 break;
             }
             case "getAllInboxMessages": {
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    result.success(Utils.inboxMessageListToArrayList(cleverTapAPI.getAllInboxMessages()));
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                getAllInboxMessages(result);
                 break;
             }
 
             case "getUnreadInboxMessages": {
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    result.success(Utils.inboxMessageListToArrayList(cleverTapAPI.getUnreadInboxMessages()));
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                getUnreadInboxMessages(result);
                 break;
             }
 
             case "getInboxMessageForId": {
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    String messageId = call.argument("messageId");
-
-                    if (messageId == null || messageId.isEmpty()) {
-                        result.error(TAG, ERROR_MSG_ID, null);
-                        return;
-                    }
-
-                    CTInboxMessage inboxMessage = cleverTapAPI.getInboxMessageForId(messageId);
-
-                    if (inboxMessage != null) {
-                        result.success(Utils.jsonObjectToMap(inboxMessage.getData()));
-                    } else {
-                        result.success(null);
-                    }
-
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                getInboxMessageForId(call,result);
                 break;
             }
 
             case "deleteInboxMessageForId": {
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    String messageId = call.argument("messageId");
-
-                    if (messageId == null || messageId.isEmpty()) {
-                        result.error(TAG, ERROR_MSG_ID, null);
-                        return;
-                    }
-
-                    cleverTapAPI.deleteInboxMessage(messageId);
-                    result.success(null);
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                deleteInboxMessageForId(call,result);
                 break;
             }
 
             case "markReadInboxMessageForId": {
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    String messageId = call.argument("messageId");
-
-                    if (messageId == null || messageId.isEmpty()) {
-                        result.error(TAG, ERROR_MSG_ID, null);
-                        return;
-                    }
-
-                    cleverTapAPI.markReadInboxMessage(messageId);
-                    result.success(null);
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                markReadInboxMessageForId(call,result);
                 break;
             }
 
             case "pushInboxNotificationClickedEventForId": {
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    String messageId = call.argument("messageId");
-
-                    if (messageId == null || messageId.isEmpty()) {
-                        result.error(TAG, ERROR_MSG_ID, null);
-                        return;
-                    }
-
-                    cleverTapAPI.pushInboxNotificationClickedEvent(messageId);
-                    result.success(null);
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                pushInboxNotificationClickedEventForId(call,result);
                 break;
             }
 
             case "pushInboxNotificationViewedEventForId": {
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    String messageId = call.argument("messageId");
-
-                    if (messageId == null || messageId.isEmpty()) {
-                        result.error(TAG, ERROR_MSG_ID, null);
-                        return;
-                    }
-
-                    cleverTapAPI.pushInboxNotificationViewedEvent(messageId);
-                    result.success(null);
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                pushInboxNotificationViewedEventForId(call,result);
                 break;
             }
-
-
             //Dynamic Variables methods
-
             case "registerBooleanVariable": {
-                String varName = call.argument("name");
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    cleverTapAPI.registerBooleanVariable(varName);
-                    result.success(null);
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                registerBooleanVariable(call,result);
                 break;
             }
             case "registerDoubleVariable": {
-                String varName = call.argument("name");
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    cleverTapAPI.registerDoubleVariable(varName);
-                    result.success(null);
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                registerDoubleVariable(call,result);
                 break;
             }
             case "registerIntegerVariable": {
-                String varName = call.argument("name");
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    cleverTapAPI.registerIntegerVariable(varName);
-                    result.success(null);
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                registerIntegerVariable(call,result);
                 break;
             }
             case "registerStringVariable": {
-                String varName = call.argument("name");
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    cleverTapAPI.registerStringVariable(varName);
-                    result.success(null);
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                registerStringVariable(call,result);
                 break;
             }
             case "registerListOfBooleanVariable": {
-                String varName = call.argument("name");
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    cleverTapAPI.registerListOfBooleanVariable(varName);
-                    result.success(null);
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                registerListOfBooleanVariable(call,result);
                 break;
             }
             case "registerListOfDoubleVariable": {
-                String varName = call.argument("name");
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    cleverTapAPI.registerListOfDoubleVariable(varName);
-                    result.success(null);
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                registerListOfDoubleVariable(call,result);
                 break;
             }
             case "registerListOfIntegerVariable": {
-                String varName = call.argument("name");
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    cleverTapAPI.registerListOfIntegerVariable(varName);
-                    result.success(null);
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                registerListOfIntegerVariable(call,result);
                 break;
             }
             case "registerListOfStringVariable": {
-                String varName = call.argument("name");
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    cleverTapAPI.registerListOfStringVariable(varName);
-                    result.success(null);
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                registerListOfStringVariable(call,result);
                 break;
             }
             case "registerMapOfBooleanVariable": {
-                String varName = call.argument("name");
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    cleverTapAPI.registerMapOfBooleanVariable(varName);
-                    result.success(null);
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                registerMapOfBooleanVariable(call,result);
                 break;
             }
             case "registerMapOfDoubleVariable": {
-                String varName = call.argument("name");
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    cleverTapAPI.registerMapOfDoubleVariable(varName);
-                    result.success(null);
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                registerMapOfDoubleVariable(call,result);
                 break;
             }
             case "registerMapOfIntegerVariable": {
-                String varName = call.argument("name");
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    cleverTapAPI.registerMapOfIntegerVariable(varName);
-                    result.success(null);
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                registerMapOfIntegerVariable(call,result);
                 break;
             }
             case "registerMapOfStringVariable": {
-                String varName = call.argument("name");
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    cleverTapAPI.registerMapOfStringVariable(varName);
-                    result.success(null);
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                registerMapOfStringVariable(call,result);
                 break;
             }
             case "getBooleanVariable": {
-                String varName = call.argument("name");
-                boolean defaultValue = call.argument("defaultValue");
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    result.success(cleverTapAPI.getBooleanVariable(varName, defaultValue));
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                getBooleanVariable(call,result);
                 break;
             }
             case "getDoubleVariable": {
-                String varName = call.argument("name");
-                double defaultValue = call.argument("defaultValue");
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    result.success(cleverTapAPI.getDoubleVariable(varName, defaultValue));
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                getDoubleVariable(call,result);
                 break;
             }
             case "getIntegerVariable": {
-                String varName = call.argument("name");
-                int defaultValue = call.argument("defaultValue");
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    result.success(cleverTapAPI.getIntegerVariable(varName, defaultValue));
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                getIntegerVariable(call,result);
                 break;
             }
             case "getStringVariable": {
-                String varName = call.argument("name");
-                String defaultValue = call.argument("defaultValue");
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    result.success(cleverTapAPI.getStringVariable(varName, defaultValue));
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                getStringVariable(call,result);
                 break;
             }
             case "getListOfBooleanVariable": {
-                String varName = call.argument("name");
-                List<Boolean> defaultValue = call.argument("defaultValue");
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    result.success(cleverTapAPI.getListOfBooleanVariable(varName, defaultValue));
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                getListOfBooleanVariable(call,result);
                 break;
             }
             case "getListOfDoubleVariable": {
-                String varName = call.argument("name");
-                List<Double> defaultValue = call.argument("defaultValue");
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    result.success(cleverTapAPI.getListOfDoubleVariable(varName, defaultValue));
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                getListOfDoubleVariable(call,result);
                 break;
             }
             case "getListOfIntegerVariable": {
-                String varName = call.argument("name");
-                List<Integer> defaultValue = call.argument("defaultValue");
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    result.success(cleverTapAPI.getListOfIntegerVariable(varName, defaultValue));
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                getListOfIntegerVariable(call,result);
                 break;
             }
             case "getListOfStringVariable": {
-                String varName = call.argument("name");
-                List<String> defaultValue = call.argument("defaultValue");
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    result.success(cleverTapAPI.getListOfStringVariable(varName, defaultValue));
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                getListOfStringVariable(call,result);
                 break;
             }
             case "getMapOfBooleanVariable": {
-                String varName = call.argument("name");
-                Map<String, Boolean> defaultValue = call.argument("defaultValue");
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    result.success(cleverTapAPI.getMapOfBooleanVariable(varName, defaultValue));
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                getMapOfBooleanVariable(call,result);
                 break;
             }
             case "getMapOfDoubleVariable": {
-                String varName = call.argument("name");
-                Map<String, Double> defaultValue = call.argument("defaultValue");
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    result.success(cleverTapAPI.getMapOfDoubleVariable(varName, defaultValue));
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                getMapOfDoubleVariable(call,result);
                 break;
             }
             case "getMapOfIntegerVariable": {
-                String varName = call.argument("name");
-                Map<String, Integer> defaultValue = call.argument("defaultValue");
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    result.success(cleverTapAPI.getMapOfIntegerVariable(varName, defaultValue));
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                getMapOfIntegerVariable(call,result);
                 break;
             }
             case "getMapOfStringVariable": {
-                String varName = call.argument("name");
-                Map<String, String> defaultValue = call.argument("defaultValue");
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    result.success(cleverTapAPI.getMapOfStringVariable(varName, defaultValue));
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                getMapOfStringVariable(call,result);
                 break;
             }
 
             //Native Display
             case "getAllDisplayUnits": {
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    result.success(Utils.displayUnitListToArrayList(cleverTapAPI.getAllDisplayUnits()));
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                getAllDisplayUnits(result);
                 break;
             }
 
             case "getDisplayUnitForId": {
-                String unitId = call.argument("unitId");
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    if (cleverTapAPI.getDisplayUnitForId(unitId) != null) {
-                        JSONObject displayUnit = cleverTapAPI.getDisplayUnitForId(unitId).getJsonObject();
-                        if (displayUnit != null) {
-                            result.success(Utils.jsonObjectToMap(displayUnit));
-                        }
-                    } else {
-                        result.error(TAG, "Display Unit is NULL", null);
-                    }
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                getDisplayUnitForId(call,result);
                 break;
             }
 
             case "pushDisplayUnitViewedEvent": {
-                String unitId = call.argument("unitId");
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    cleverTapAPI.pushDisplayUnitViewedEventForID(unitId);
-                    result.success(null);
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                pushDisplayUnitViewedEvent(call,result);
                 break;
             }
 
             case "pushDisplayUnitClickedEvent": {
-                String unitId = call.argument("unitId");
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    cleverTapAPI.pushDisplayUnitClickedEventForID(unitId);
-                    result.success(null);
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                pushDisplayUnitClickedEvent(call,result);
                 break;
             }
 
             case "getFeatureFlag": {
-                String key = call.argument("key");
-                boolean defaultValue = call.argument("defaultValue");
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    result.success(cleverTapAPI.featureFlag().get(key,defaultValue));
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                getFeatureFlag(call,result);
                 break;
             }
 
             case "setDefaultsMap": {
-                HashMap<String, Object> defaults = call.argument("defaults");
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    cleverTapAPI.productConfig().setDefaults(defaults);
-                    result.success(null);
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                setDefaultsMap(call,result);
                 break;
             }
 
             case "fetch": {
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    cleverTapAPI.productConfig().fetch();
-                    result.success(null);
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                fetch(result);
                 break;
             }
 
             case "fetchWithMinimumFetchIntervalInSeconds": {
-                int interval = call.argument("interval");
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    cleverTapAPI.productConfig().fetch(interval);
-                    result.success(null);
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                fetchWithMinimumFetchIntervalInSeconds(call,result);
                 break;
             }
 
             case "activate": {
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    cleverTapAPI.productConfig().activate();
-                    result.success(null);
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                activate(result);
                 break;
             }
 
             case "fetchAndActivate": {
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    cleverTapAPI.productConfig().fetchAndActivate();
-                    result.success(null);
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                fetchAndActivate(result);
                 break;
             }
 
             case "setMinimumFetchIntervalInSeconds": {
-                long interval = call.argument("interval");
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    cleverTapAPI.productConfig().setMinimumFetchIntervalInSeconds(interval);
-                    result.success(null);
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                setMinimumFetchIntervalInSeconds(call,result);
                 break;
             }
 
             case "getLastFetchTimeStampInMillis": {
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    result.success(cleverTapAPI.productConfig().getLastFetchTimeStampInMillis());
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                getLastFetchTimeStampInMillis(result);
                 break;
             }
 
             case "getString":{
-                String key = call.argument("key");
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    result.success(cleverTapAPI.productConfig().getString(key));
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                getString(call,result);
                 break;
             }
 
             case "getBoolean":{
-                String key = call.argument("key");
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    result.success(cleverTapAPI.productConfig().getBoolean(key));
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                getBoolean(call,result);
                 break;
             }
 
             case "getLong":{
-                String key = call.argument("key");
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    result.success(cleverTapAPI.productConfig().getLong(key));
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                getLong(call,result);
                 break;
             }
 
             case "getDouble":{
-                String key = call.argument("key");
-                if (isCleverTapNotNull(cleverTapAPI)) {
-                    result.success(cleverTapAPI.productConfig().getDouble(key));
-                } else {
-                    result.error(TAG, ERROR_MSG, null);
-                }
+                getDouble(call,result);
                 break;
             }
 
@@ -1196,11 +596,945 @@ public class CleverTapPlugin implements ActivityAware,
 
     }
 
+    private void getDouble(MethodCall call, Result result) {
+        String key = call.argument("key");
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            result.success(cleverTapAPI.productConfig().getDouble(key));
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void getLong(MethodCall call, Result result) {
+        String key = call.argument("key");
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            result.success(cleverTapAPI.productConfig().getLong(key));
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void getBoolean(MethodCall call, Result result) {
+        String key = call.argument("key");
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            result.success(cleverTapAPI.productConfig().getBoolean(key));
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void getString(MethodCall call, Result result) {
+        String key = call.argument("key");
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            result.success(cleverTapAPI.productConfig().getString(key));
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void getLastFetchTimeStampInMillis(Result result) {
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            result.success(cleverTapAPI.productConfig().getLastFetchTimeStampInMillis());
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void setMinimumFetchIntervalInSeconds(MethodCall call, Result result) {
+        long interval = call.argument("interval");
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            cleverTapAPI.productConfig().setMinimumFetchIntervalInSeconds(interval);
+            result.success(null);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void fetchAndActivate(Result result) {
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            cleverTapAPI.productConfig().fetchAndActivate();
+            result.success(null);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void activate(Result result) {
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            cleverTapAPI.productConfig().activate();
+            result.success(null);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void fetchWithMinimumFetchIntervalInSeconds(MethodCall call, Result result) {
+        int interval = call.argument("interval");
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            cleverTapAPI.productConfig().fetch(interval);
+            result.success(null);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void fetch(Result result) {
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            cleverTapAPI.productConfig().fetch();
+            result.success(null);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void setDefaultsMap(MethodCall call, Result result) {
+        HashMap<String, Object> defaults = call.argument("defaults");
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            cleverTapAPI.productConfig().setDefaults(defaults);
+            result.success(null);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void getFeatureFlag(MethodCall call, Result result) {
+        String key = call.argument("key");
+        boolean defaultValue = call.argument("defaultValue");
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            result.success(cleverTapAPI.featureFlag().get(key,defaultValue));
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void pushDisplayUnitClickedEvent(MethodCall call, Result result) {
+        String unitId = call.argument("unitId");
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            cleverTapAPI.pushDisplayUnitClickedEventForID(unitId);
+            result.success(null);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void pushDisplayUnitViewedEvent(MethodCall call, Result result) {
+        String unitId = call.argument("unitId");
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            cleverTapAPI.pushDisplayUnitViewedEventForID(unitId);
+            result.success(null);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void getDisplayUnitForId(MethodCall call, Result result) {
+        String unitId = call.argument("unitId");
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            if (cleverTapAPI.getDisplayUnitForId(unitId) != null) {
+                JSONObject displayUnit = cleverTapAPI.getDisplayUnitForId(unitId).getJsonObject();
+                if (displayUnit != null) {
+                    result.success(Utils.jsonObjectToMap(displayUnit));
+                }
+            } else {
+                result.error(TAG, "Display Unit is NULL", null);
+            }
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void getAllDisplayUnits(Result result) {
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            result.success(Utils.displayUnitListToArrayList(cleverTapAPI.getAllDisplayUnits()));
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void getMapOfStringVariable(MethodCall call, Result result) {
+        String varName = call.argument("name");
+        Map<String, String> defaultValue = call.argument("defaultValue");
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            result.success(cleverTapAPI.getMapOfStringVariable(varName, defaultValue));
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void getMapOfIntegerVariable(MethodCall call, Result result) {
+        String varName = call.argument("name");
+        Map<String, Integer> defaultValue = call.argument("defaultValue");
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            result.success(cleverTapAPI.getMapOfIntegerVariable(varName, defaultValue));
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void getMapOfDoubleVariable(MethodCall call, Result result) {
+        String varName = call.argument("name");
+        Map<String, Double> defaultValue = call.argument("defaultValue");
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            result.success(cleverTapAPI.getMapOfDoubleVariable(varName, defaultValue));
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void getMapOfBooleanVariable(MethodCall call, Result result) {
+        String varName = call.argument("name");
+        Map<String, Boolean> defaultValue = call.argument("defaultValue");
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            result.success(cleverTapAPI.getMapOfBooleanVariable(varName, defaultValue));
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void getListOfStringVariable(MethodCall call, Result result) {
+        String varName = call.argument("name");
+        List<String> defaultValue = call.argument("defaultValue");
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            result.success(cleverTapAPI.getListOfStringVariable(varName, defaultValue));
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void getListOfIntegerVariable(MethodCall call, Result result) {
+        String varName = call.argument("name");
+        List<Integer> defaultValue = call.argument("defaultValue");
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            result.success(cleverTapAPI.getListOfIntegerVariable(varName, defaultValue));
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void getListOfDoubleVariable(MethodCall call, Result result) {
+        String varName = call.argument("name");
+        List<Double> defaultValue = call.argument("defaultValue");
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            result.success(cleverTapAPI.getListOfDoubleVariable(varName, defaultValue));
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void getListOfBooleanVariable(MethodCall call, Result result) {
+        String varName = call.argument("name");
+        List<Boolean> defaultValue = call.argument("defaultValue");
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            result.success(cleverTapAPI.getListOfBooleanVariable(varName, defaultValue));
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void getStringVariable(MethodCall call, Result result) {
+        String varName = call.argument("name");
+        String defaultValue = call.argument("defaultValue");
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            result.success(cleverTapAPI.getStringVariable(varName, defaultValue));
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void getIntegerVariable(MethodCall call, Result result) {
+        String varName = call.argument("name");
+        int defaultValue = call.argument("defaultValue");
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            result.success(cleverTapAPI.getIntegerVariable(varName, defaultValue));
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void getDoubleVariable(MethodCall call, Result result) {
+        String varName = call.argument("name");
+        double defaultValue = call.argument("defaultValue");
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            result.success(cleverTapAPI.getDoubleVariable(varName, defaultValue));
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void getBooleanVariable(MethodCall call, Result result) {
+        String varName = call.argument("name");
+        boolean defaultValue = call.argument("defaultValue");
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            result.success(cleverTapAPI.getBooleanVariable(varName, defaultValue));
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void registerMapOfStringVariable(MethodCall call, Result result) {
+        String varName = call.argument("name");
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            cleverTapAPI.registerMapOfStringVariable(varName);
+            result.success(null);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void registerMapOfIntegerVariable(MethodCall call, Result result) {
+        String varName = call.argument("name");
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            cleverTapAPI.registerMapOfIntegerVariable(varName);
+            result.success(null);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void registerMapOfDoubleVariable(MethodCall call, Result result) {
+        String varName = call.argument("name");
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            cleverTapAPI.registerMapOfDoubleVariable(varName);
+            result.success(null);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void registerMapOfBooleanVariable(MethodCall call, Result result) {
+        String varName = call.argument("name");
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            cleverTapAPI.registerMapOfBooleanVariable(varName);
+            result.success(null);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void registerListOfStringVariable(MethodCall call, Result result) {
+        String varName = call.argument("name");
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            cleverTapAPI.registerListOfStringVariable(varName);
+            result.success(null);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void registerListOfIntegerVariable(MethodCall call, Result result) {
+        String varName = call.argument("name");
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            cleverTapAPI.registerListOfIntegerVariable(varName);
+            result.success(null);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void registerListOfDoubleVariable(MethodCall call, Result result) {
+        String varName = call.argument("name");
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            cleverTapAPI.registerListOfDoubleVariable(varName);
+            result.success(null);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void registerListOfBooleanVariable(MethodCall call, Result result) {
+        String varName = call.argument("name");
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            cleverTapAPI.registerListOfBooleanVariable(varName);
+            result.success(null);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void registerStringVariable(MethodCall call, Result result) {
+        String varName = call.argument("name");
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            cleverTapAPI.registerStringVariable(varName);
+            result.success(null);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void registerIntegerVariable(MethodCall call, Result result) {
+        String varName = call.argument("name");
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            cleverTapAPI.registerIntegerVariable(varName);
+            result.success(null);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void registerDoubleVariable(MethodCall call, Result result) {
+        String varName = call.argument("name");
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            cleverTapAPI.registerDoubleVariable(varName);
+            result.success(null);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void registerBooleanVariable(MethodCall call, Result result) {
+        String varName = call.argument("name");
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            cleverTapAPI.registerBooleanVariable(varName);
+            result.success(null);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void pushInboxNotificationViewedEventForId(MethodCall call, Result result) {
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            String messageId = call.argument("messageId");
+            if (messageId == null || messageId.isEmpty()) {
+                result.error(TAG, ERROR_MSG_ID, null);
+                return;
+            }
+            cleverTapAPI.pushInboxNotificationViewedEvent(messageId);
+            result.success(null);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void pushInboxNotificationClickedEventForId(MethodCall call, Result result) {
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            String messageId = call.argument("messageId");
+            if (messageId == null || messageId.isEmpty()) {
+                result.error(TAG, ERROR_MSG_ID, null);
+                return;
+            }
+            cleverTapAPI.pushInboxNotificationClickedEvent(messageId);
+            result.success(null);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void markReadInboxMessageForId(MethodCall call, Result result) {
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            String messageId = call.argument("messageId");
+            if (messageId == null || messageId.isEmpty()) {
+                result.error(TAG, ERROR_MSG_ID, null);
+                return;
+            }
+            cleverTapAPI.markReadInboxMessage(messageId);
+            result.success(null);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void deleteInboxMessageForId(MethodCall call, Result result) {
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            String messageId = call.argument("messageId");
+            if (messageId == null || messageId.isEmpty()) {
+                result.error(TAG, ERROR_MSG_ID, null);
+                return;
+            }
+            cleverTapAPI.deleteInboxMessage(messageId);
+            result.success(null);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void getInboxMessageForId(MethodCall call, Result result) {
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            String messageId = call.argument("messageId");
+            if (messageId == null || messageId.isEmpty()) {
+                result.error(TAG, ERROR_MSG_ID, null);
+                return;
+            }
+            CTInboxMessage inboxMessage = cleverTapAPI.getInboxMessageForId(messageId);
+            if (inboxMessage != null) {
+                result.success(Utils.jsonObjectToMap(inboxMessage.getData()));
+            } else {
+                result.success(null);
+            }
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void getUnreadInboxMessages(Result result) {
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            result.success(Utils.inboxMessageListToArrayList(cleverTapAPI.getUnreadInboxMessages()));
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void getAllInboxMessages(Result result) {
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            result.success(Utils.inboxMessageListToArrayList(cleverTapAPI.getAllInboxMessages()));
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void getInboxMessageUnreadCount(Result result) {
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            result.success(cleverTapAPI.getInboxMessageUnreadCount());
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void getInboxMessageCount(Result result) {
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            result.success(cleverTapAPI.getInboxMessageCount());
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void showInbox(MethodCall call, Result result) {
+        Map<String, Object> styleConfigMap = call.argument("styleConfig");
+        JSONObject styleConfigJson = Utils.mapToJSONObject(styleConfigMap);
+        CTInboxStyleConfig styleConfig;
+        styleConfig = Utils.jsonToStyleConfig(styleConfigJson);
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            cleverTapAPI.showAppInbox(styleConfig);
+            result.success(null);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void initializeInbox(Result result) {
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            cleverTapAPI.initializeInbox();
+            result.success(null);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void sessionGetUTMDetails(Result result) {
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            UTMDetail detail = cleverTapAPI.getUTMDetails();
+            result.success(Utils.utmDetailsToMap(detail));
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void sessionGetPreviousVisitTime(Result result) {
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            result.success(cleverTapAPI.getPreviousVisitTime());
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void sessionGetScreenCount(Result result) {
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            result.success(cleverTapAPI.getScreenCount());
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void sessionGetTotalVisits(Result result) {
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            result.success(cleverTapAPI.getTotalVisits());
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void sessionGetTimeElapsed(Result result) {
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            result.success(cleverTapAPI.getTimeElapsed());
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void pushInstallReferrer(MethodCall call, Result result) {
+        String source = call.argument("source");
+        String medium = call.argument("medium");
+        String campaign = call.argument("campaign");
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            cleverTapAPI.pushInstallReferrer(source, medium, campaign);
+            result.success(null);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void profileRemoveMultiValues(MethodCall call, Result result) {
+        String key = call.argument("key");
+        ArrayList<String> values = call.argument("values");
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            cleverTapAPI.removeMultiValuesForKey(key, values);
+            result.success(null);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void profileRemoveMultiValue(MethodCall call, Result result) {
+        String key = call.argument("key");
+        String value = call.argument("value");
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            cleverTapAPI.removeMultiValueForKey(key, value);
+            result.success(null);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void profileAddMultiValues(MethodCall call, Result result) {
+        String key = call.argument("key");
+        ArrayList<String> values = call.argument("values");
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            cleverTapAPI.addMultiValuesForKey(key, values);
+            result.success(null);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void profileAddMultiValue(MethodCall call, Result result) {
+        String key = call.argument("key");
+        String value = call.argument("value");
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            cleverTapAPI.addMultiValueForKey(key, value);
+            result.success(null);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void profileSetMultiValues(MethodCall call, Result result) {
+        String key = call.argument("key");
+        ArrayList<String> values = call.argument("values");
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            cleverTapAPI.setMultiValuesForKey(key, values);
+            result.success(null);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void profileRemoveValueForKey(MethodCall call, Result result) {
+        String key = call.argument("key");
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            cleverTapAPI.removeValueForKey(key);
+            result.success(null);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void profileGetProperty(MethodCall call, Result result) {
+        String propertyName = call.argument("propertyName");
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            result.success(cleverTapAPI.getProperty(propertyName));
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void profileSetGraphUser(MethodCall call, Result result) {
+        Map<String, Object> profileMap = call.argument("profile");
+        JSONObject profile = Utils.mapToJSONObject(profileMap);
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            cleverTapAPI.pushFacebookUser(profile);
+            result.success(null);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void profileSet(MethodCall call, Result result) {
+        Map<String, Object> profile = Utils.dartMapToProfileMap(call.argument("profile"));
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            cleverTapAPI.pushProfile(profile);
+            result.success(null);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void onUserLogin(MethodCall call, Result result) {
+        Map<String, Object> profile = Utils.dartMapToProfileMap(call.argument("profile"));
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            cleverTapAPI.onUserLogin(profile);
+            result.success(null);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void profileGetCleverTapID(Result result) {
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            result.success(cleverTapAPI.getCleverTapID());
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void profileGetCleverTapAttributionIdentifier(Result result) {
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            result.success(cleverTapAPI.getCleverTapAttributionIdentifier());
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void setLocation(MethodCall call, Result result) {
+        double lat = call.argument("latitude");
+        double lon = call.argument("longitude");
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            Location location = new Location("CleverTapFlutter");
+            location.setLatitude(lat);
+            location.setLongitude(lon);
+            cleverTapAPI.setLocation(location);
+            result.success(null);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void getEventHistory(Result result) {
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            result.success(Utils.historyEventDetailToMap(cleverTapAPI.getHistory()));
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void eventGetDetail(MethodCall call, Result result) {
+        String eventName = call.argument("eventName");
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            EventDetail eventDetail = cleverTapAPI.getDetails(eventName);
+            result.success(Utils.eventDetailToMap(eventDetail));
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void eventGetOccurrences(MethodCall call, Result result) {
+        String eventName = call.argument("eventName");
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            result.success(cleverTapAPI.getCount(eventName));
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void eventGetLastTime(MethodCall call, Result result) {
+        String eventName = call.argument("eventName");
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            result.success(cleverTapAPI.getLastTime(eventName));
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void eventGetFirstTime(MethodCall call, Result result) {
+        String eventName = call.argument("eventName");
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            result.success(cleverTapAPI.getFirstTime(eventName));
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
     private void setPushToken(MethodCall call, Result result){
         String token = call.argument("token");
         if (isCleverTapNotNull(cleverTapAPI)) {
             cleverTapAPI.pushFcmRegistrationId(token, true);
             result.success(null);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void createNotification(MethodCall call, Result result){
+        String extras = call.argument("extras");
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            try {
+                Log.d(TAG, "createNotification Android");
+                CleverTapAPI.createNotification(context, Utils.stringToBundle(extras));
+            } catch (JSONException e) {
+                result.error(TAG, "Unable to render notification due to JSONException - " + e.getLocalizedMessage(), null);
+            }
+            result.success(null);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void processPushNotification(MethodCall call, Result result){
+        JSONObject extras = call.argument("extras");
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            try {
+                CleverTapAPI.processPushNotification(context, Utils.jsonToBundle(extras));
+            } catch (JSONException e) {
+                result.error(TAG, "Unable to render notification due to JSONException - " + e.getLocalizedMessage(), null);
+            }
+            result.success(null);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void setXiaomiPushToken(MethodCall call,Result result){
+        String token = call.argument("token");
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            cleverTapAPI.pushXiaomiRegistrationId(token, true);
+            result.success(null);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void setBaiduPushToken(MethodCall call, Result result){
+        String token = call.argument("token");
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            cleverTapAPI.pushBaiduRegistrationId(token, true);
+            result.success(null);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void setHuaweiPushToken(MethodCall call, Result result){
+        String token = call.argument("token");
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            cleverTapAPI.pushHuaweiRegistrationId(token, true);
+            result.success(null);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void createNotificationChannel(MethodCall call, Result result){
+        String channelId = call.argument("channelId");
+        String channelName = call.argument("channelName");
+        String channelDescription = call.argument("channelDescription");
+        int importance = call.argument("importance");
+        boolean showBadge = call.argument("showBadge");
+        CleverTapAPI.createNotificationChannel(context, channelId, channelName, channelDescription, importance, showBadge);
+        result.success(null);
+    }
+
+    private void createNotificationChannelWithSound(MethodCall call, Result result){
+        String channelId = call.argument("channelId");
+        String channelName = call.argument("channelName");
+        String channelDescription = call.argument("channelDescription");
+        int importance = call.argument("importance");
+        boolean showBadge = call.argument("showBadge");
+        String sound = call.argument("sound");
+        CleverTapAPI.createNotificationChannel(context, channelId, channelName, channelDescription, importance, showBadge, sound);
+        result.success(null);
+    }
+
+    private void createNotificationChannelWithGroupId(MethodCall call, Result result){
+        String channelId = call.argument("channelId");
+        String channelName = call.argument("channelName");
+        String channelDescription = call.argument("channelDescription");
+        int importance = call.argument("importance");
+        String groupId = call.argument("groupId");
+        boolean showBadge = call.argument("showBadge");
+        CleverTapAPI.createNotificationChannel(context, channelId, channelName, channelDescription, importance, groupId, showBadge);
+        result.success(null);
+    }
+
+    private void createNotificationChannelWithGroupIdAndSound(MethodCall call, Result result){
+        String channelId = call.argument("channelId");
+        String channelName = call.argument("channelName");
+        String channelDescription = call.argument("channelDescription");
+        int importance = call.argument("importance");
+        String groupId = call.argument("groupId");
+        boolean showBadge = call.argument("showBadge");
+        String sound = call.argument("sound");
+        CleverTapAPI.createNotificationChannel(context, channelId, channelName, channelDescription, importance, groupId, showBadge, sound);
+        result.success(null);
+    }
+
+    private void createNotificationChannelGroup(MethodCall call, Result result){
+        String groupId = call.argument("groupId");
+        String groupName = call.argument("groupName");
+        CleverTapAPI.createNotificationChannelGroup(context, groupId, groupName);
+        result.success(null);
+    }
+
+    private void setOptOut(MethodCall call, Result result){
+        boolean value = call.argument("value");
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            cleverTapAPI.setOptOut(value);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void setOffline(MethodCall call, Result result){
+        boolean value = call.argument("value");
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            cleverTapAPI.setOffline(value);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void enableDeviceNetworkInfoReporting(MethodCall call, Result result){
+        boolean value = call.argument("value");
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            cleverTapAPI.enableDeviceNetworkInfoReporting(value);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void setPersonalization(Result result, boolean enable){
+        if(isCleverTapNotNull(cleverTapAPI)){
+            if(enable){
+                cleverTapAPI.enablePersonalization();
+            }else{
+                cleverTapAPI.disablePersonalization();
+            }
+        }else{
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void recordScreenView(MethodCall call, Result result){
+        String name = call.argument("screenName");
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            cleverTapAPI.recordScreen(name);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void recordEvent(MethodCall call, Result result){
+        Map<String, Object> eventData = call.argument("eventData");
+        String eventName = call.argument("eventName");
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            this.cleverTapAPI.pushEvent(eventName, eventData);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void recordChargedEvent(MethodCall call, Result result){
+        HashMap<String, Object> chargeDetails = call.argument("chargeDetails");
+        ArrayList<HashMap<String, Object>> items = call.argument("items");
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            cleverTapAPI.pushChargedEvent(chargeDetails, items);
         } else {
             result.error(TAG, ERROR_MSG, null);
         }
