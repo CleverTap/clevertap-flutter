@@ -16,7 +16,7 @@ To add the CleverTap Flutter SDK to your project, edit your project's `pubspec.y
 
 ```yaml
     dependencies:
-    clevertap_plugin: 1.1.4
+    clevertap_plugin: 1.2.0
 ```
 
 Run `flutter packages get` to install the SDK
@@ -33,25 +33,31 @@ Add the following to your `dependencies` section in `project/build.gradle`
 
 ```groovy
     dependencies {
-            classpath 'com.android.tools.build:gradle:3.5.1'
-            classpath 'com.google.gms:google-services:4.3.2' //<--- Mandatory for using Firebase Messaging, skip if not using FCM
+            classpath 'com.android.tools.build:gradle:4.0.1'
+            classpath 'com.google.gms:google-services:4.3.3' //<--- Mandatory for using Firebase Messaging, skip if not using FCM
         }
 ```
 
 Add the following to your `dependencies` section in `app/build.gradle`
 ```groovy
-    implementation 'com.clevertap.android:clevertap-android-sdk:3.8.2'
-        implementation 'com.android.support:support-v4:28.0.0'
-        implementation 'com.google.firebase:firebase-messaging:17.3.4'//Mandatory for using FCM push notifications, skip if not using FCM
-        implementation 'com.android.support:appcompat-v7:28.0.0'//MANDATORY for App Inbox
-        implementation 'com.android.support:design:28.0.0'//MANDATORY for App Inbox
-        implementation 'com.github.bumptech.glide:glide:4.9.0'//MANDATORY for App Inbox
-    //For CleverTap Android SDK v3.6.4 and above add the following -
-        implementation 'com.android.installreferrer:installreferrer:1.0'
-    //Optional ExoPlayer Libraries for Audio/Video Inbox Messages. Audio/Video messages will be dropped without these dependencies
-        implementation 'com.google.android.exoplayer:exoplayer:2.8.4'
-        implementation 'com.google.android.exoplayer:exoplayer-hls:2.8.4'
-        implementation 'com.google.android.exoplayer:exoplayer-ui:2.8.4'
+        implementation 'com.google.firebase:firebase-messaging:20.2.4'
+        implementation 'androidx.core:core:1.3.0'
+        implementation 'androidx.fragment:fragment:1.1.0'
+        
+        //MANDATORY for App Inbox
+        implementation 'androidx.appcompat:appcompat:1.2.0'
+        implementation 'androidx.recyclerview:recyclerview:1.1.0'
+        implementation 'androidx.viewpager:viewpager:1.0.0'
+        implementation 'com.google.android.material:material:1.2.1'
+        implementation 'com.github.bumptech.glide:glide:4.11.0'
+        
+        //For CleverTap Android SDK v3.6.4 and above add the following -
+        implementation 'com.android.installreferrer:installreferrer:2.1'
+        
+        //Optional ExoPlayer Libraries for Audio/Video Inbox Messages. Audio/Video messages will be dropped without these dependencies
+        implementation 'com.google.android.exoplayer:exoplayer:2.11.5'
+        implementation 'com.google.android.exoplayer:exoplayer-hls:2.11.5'
+        implementation 'com.google.android.exoplayer:exoplayer-ui:2.11.5'
 ```
 
 At the end of the `app/build.gradle` file add the following 
