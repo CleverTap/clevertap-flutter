@@ -116,35 +116,37 @@ Add your CleverTap Account ID and Token to your `AndroidManifest.xml`, within th
 ```
 ## 👩‍💻 iOS
 
-After install, you will need to integrate the CleverTap SDK into your app
+After installation, you will need to integrate CleverTap SDK into your app.
 
 1. Follow the integration instructions [starting with Step 2 here](https://developer.clevertap.com/docs/ios-quickstart-guide#section-step-2-add-clever-tap-credentials).
-2. In your `AppDelegate didFinishLaunchingWithOptions:` notify the CleverTap Flutter SDK of application launch:
+2. In your AppDelegate, initialize CleverTap SDK by adding the following code snippet:
+ 
+    2.1 Import the CleverTap header in your AppDelegate file.
 
-*Objective-C*
-```objc
-[CleverTap autoIntegrate]; // integrate CleverTap SDK using the autoIntegrate option
-[[CleverTapPlugin sharedInstance] applicationDidLaunchWithOptions:launchOptions];
-```
+    ###### Objective-C
+    ```objc
+    #import "CleverTap.h"
+    #import "CleverTapPlugin.h"
+    ```
 
-*Swift*
-```swift
-CleverTap.autoIntegrate() // integrate CleverTap SDK using the autoIntegrate option
-CleverTapPlugin.sharedInstance()?.applicationDidLaunch(options: launchOptions)
-```
+    ###### Swift
+    ```swift
+    import CleverTapSDK
+    import clevertap_plugin
+    ```
 
-NOTE:  Don't forget to add the CleverTap imports at the top of the file.
+    2.2 In your AppDelegate, `didFinishLaunchingWithOptions:` notify the CleverTap Flutter SDK of application launch
 
-*Objective-C*
-```objc
-#import "CleverTap.h"
-#import "CleverTapPlugin.h"
-```
+    ###### Objective-C
+    ```objc
+    [CleverTap autoIntegrate]; // integrate CleverTap SDK using the autoIntegrate option
+    [[CleverTapPlugin sharedInstance] applicationDidLaunchWithOptions:launchOptions];
+    ```
 
-*Swift*
-```swift
-import CleverTapSDK
-import clevertap_plugin
+    ###### Swift
+    ```swift
+    CleverTap.autoIntegrate() // integrate CleverTap SDK using the autoIntegrate option
+    CleverTapPlugin.sharedInstance()?.applicationDidLaunch(options: launchOptions)
 ```
 
 ## 📑 For more
