@@ -12,6 +12,7 @@
     UNUserNotificationCenter *center = [UNUserNotificationCenter currentNotificationCenter];
     center.delegate = self;
     // Override point for customization after application launch.
+    [CleverTap setCredentialsWithAccountID:@"ZWW-WWW-WWRZ" andToken:@"000-001"];
     [CleverTap setUIEditorConnectionEnabled:YES];
     [CleverTap autoIntegrate]; // integrate CleverTap SDK using the autoIntegrate option
     [[CleverTapPlugin sharedInstance] applicationDidLaunchWithOptions:launchOptions];
