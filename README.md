@@ -119,7 +119,7 @@ Add your CleverTap Account ID and Token to your `AndroidManifest.xml`, within th
 After installation, you will need to integrate CleverTap SDK into your app.
 
 * Follow the integration instructions [starting with Step 2 here](https://developer.clevertap.com/docs/ios-quickstart-guide#section-step-2-add-clever-tap-credentials).
-* In your AppDelegate, initialize CleverTap SDK by adding the following code snippet:
+* Initialize CleverTap SDK by adding the following code snippet:
   + 2.1 Import the CleverTap header in your AppDelegate file
 
   ###### Objective-C
@@ -134,7 +134,7 @@ After installation, you will need to integrate CleverTap SDK into your app.
   import clevertap_plugin
   ```
 
-  + 2.2 In your AppDelegate, `didFinishLaunchingWithOptions:` notify the CleverTap Flutter SDK of application launch
+  + 2.2 In your `didFinishLaunchingWithOptions:` method notify the CleverTap Flutter SDK of application launch
 
   ###### Objective-C
   ```objc
