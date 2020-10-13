@@ -1,3 +1,4 @@
+
 #import "CleverTap.h"
 #import "CleverTapPlugin.h"
 #import "CleverTap+Inbox.h"
@@ -654,7 +655,14 @@ static NSDateFormatter *dateFormatter;
     if (tabUnSelectedTextColor) {
         _config.tabUnSelectedTextColor = [self ct_colorWithHexString:tabUnSelectedTextColor alpha:1.0];
     }
-    
+    NSString *noMessageTextColor = [dict valueForKey:@"noMessageTextColor"];
+    if (noMessageTextColor) {
+        _config.noMessageViewTextColor = [self ct_colorWithHexString:noMessageTextColor alpha:1.0];
+    }
+    NSString *noMessageText = [dict valueForKey:@"noMessageText"];
+    if (noMessageText) {
+        _config.noMessageViewText = noMessageText;
+    }
     return _config;
 }
 
@@ -1192,5 +1200,6 @@ static NSDateFormatter *dateFormatter;
     }
     [self postNotificationWithName:kCleverTapPushNotificationClicked andBody:customExtras];
 }
+
 
 @end

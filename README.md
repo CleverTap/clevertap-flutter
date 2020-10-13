@@ -3,55 +3,63 @@
 </p>
 
 # CleverTap Flutter SDK
+[![pub package](https://img.shields.io/pub/v/clevertap_plugin.svg)](https://pub.dartlang.org/packages/clevertap_plugin)
 
-The CleverTap Flutter SDK for Mobile Customer Engagement and Analytics solutions 
+## 👋 Introduction
+The CleverTap Flutter SDK for Mobile Customer Engagement and Analytics solutions.
 
-CleverTap brings together real-time user insights, an advanced segmentation engine, and easy-to-use marketing tools in one mobile marketing platform — giving your team the power to create amazing experiences that deepen customer relationships. Our intelligent mobile marketing platform provides the insights you need to keep users engaged and drive long-term retention and growth.
+For more information check out our [website](https://clevertap.com/ "CleverTap")  and  [documentation](https://developer.clevertap.com/docs/ "CleverTap Technical Documentation").
 
-For more information check out our [website](https://clevertap.com "CleverTap") and [documentation](https://developer.clevertap.com/docs/ "CleverTap Technical Documentation").
+To get started, sign up [here](https://clevertap.com/live-product-demo/)
 
-## Install and Integration
+## 🚀 Installation and Quick Start
 
-To add the CleverTap Flutter SDK to your project, edit your project's `pubspec.yaml` file:
+- To add the **CleverTap Flutter SDK** to your project, edit your project's `pubspec.yaml` file:
 
 ```yaml
-    dependencies:
-    clevertap_plugin: 1.1.4
+dependencies:
+clevertap_plugin: 1.2.0
 ```
 
-Run `flutter packages get` to install the SDK
+- Run `flutter packages get` to install the SDK
 
-Now, in your Dart code, you can use :
+- Now, in your Dart code, you can use:
 
 ```dart
-    import 'package:clevertap_plugin/clevertap_plugin.dart';
+import 'package:clevertap_plugin/clevertap_plugin.dart';
 ```
 
-## Android
+## 👨‍💻 Android
 
 Add the following to your `dependencies` section in `project/build.gradle`
 
 ```groovy
     dependencies {
-            classpath 'com.android.tools.build:gradle:3.5.1'
-            classpath 'com.google.gms:google-services:4.3.2' //<--- Mandatory for using Firebase Messaging, skip if not using FCM
+            classpath 'com.android.tools.build:gradle:4.0.1'
+            classpath 'com.google.gms:google-services:4.3.3' //<--- Mandatory for using Firebase Messaging, skip if not using FCM
         }
 ```
 
 Add the following to your `dependencies` section in `app/build.gradle`
 ```groovy
-    implementation 'com.clevertap.android:clevertap-android-sdk:3.8.2'
-        implementation 'com.android.support:support-v4:28.0.0'
-        implementation 'com.google.firebase:firebase-messaging:17.3.4'//Mandatory for using FCM push notifications, skip if not using FCM
-        implementation 'com.android.support:appcompat-v7:28.0.0'//MANDATORY for App Inbox
-        implementation 'com.android.support:design:28.0.0'//MANDATORY for App Inbox
-        implementation 'com.github.bumptech.glide:glide:4.9.0'//MANDATORY for App Inbox
-    //For CleverTap Android SDK v3.6.4 and above add the following -
-        implementation 'com.android.installreferrer:installreferrer:1.0'
-    //Optional ExoPlayer Libraries for Audio/Video Inbox Messages. Audio/Video messages will be dropped without these dependencies
-        implementation 'com.google.android.exoplayer:exoplayer:2.8.4'
-        implementation 'com.google.android.exoplayer:exoplayer-hls:2.8.4'
-        implementation 'com.google.android.exoplayer:exoplayer-ui:2.8.4'
+        implementation 'com.google.firebase:firebase-messaging:20.2.4'
+        implementation 'androidx.core:core:1.3.0'
+        implementation 'androidx.fragment:fragment:1.1.0'
+        
+        //MANDATORY for App Inbox
+        implementation 'androidx.appcompat:appcompat:1.2.0'
+        implementation 'androidx.recyclerview:recyclerview:1.1.0'
+        implementation 'androidx.viewpager:viewpager:1.0.0'
+        implementation 'com.google.android.material:material:1.2.1'
+        implementation 'com.github.bumptech.glide:glide:4.11.0'
+        
+        //For CleverTap Android SDK v3.6.4 and above add the following -
+        implementation 'com.android.installreferrer:installreferrer:2.1'
+        
+        //Optional ExoPlayer Libraries for Audio/Video Inbox Messages. Audio/Video messages will be dropped without these dependencies
+        implementation 'com.google.android.exoplayer:exoplayer:2.11.5'
+        implementation 'com.google.android.exoplayer:exoplayer-hls:2.11.5'
+        implementation 'com.google.android.exoplayer:exoplayer-ui:2.11.5'
 ```
 
 At the end of the `app/build.gradle` file add the following 
@@ -106,49 +114,50 @@ Add your CleverTap Account ID and Token to your `AndroidManifest.xml`, within th
         android:value="1"/> 
 
 ```
-## iOS
+## 👩‍💻 iOS
 
-After install, you will need to integrate the CleverTap SDK into your apps.
+After installation, you will need to integrate CleverTap SDK into your app.
 
-1. Follow the integration instructions [starting with Step 2 here](https://developer.clevertap.com/docs/ios-quickstart-guide#section-step-2-add-clever-tap-credentials).
-2. In your `AppDelegate didFinishLaunchingWithOptions:` notify the CleverTap Flutter SDK of application launch:
+* Follow the integration instructions [starting with Step 2 here](https://developer.clevertap.com/docs/ios-quickstart-guide#section-step-2-add-clever-tap-credentials).
+* Initialize CleverTap SDK by adding the following code snippet:
+  + 2.1 Import the CleverTap header in your AppDelegate file
 
-*Objective-C*
-```objc
-[CleverTap autoIntegrate]; // integrate CleverTap SDK using the autoIntegrate option
-[[CleverTapPlugin sharedInstance] applicationDidLaunchWithOptions:launchOptions];
-```
+  ###### Objective-C
+  ```objc
+  #import "CleverTap.h"
+  #import "CleverTapPlugin.h"
+  ```
 
-*Swift*
-```swift
-CleverTap.autoIntegrate() // integrate CleverTap SDK using the autoIntegrate option
-CleverTapPlugin.sharedInstance()?.applicationDidLaunch(options: launchOptions)
-```
+  ###### Swift
+  ```swift
+  import CleverTapSDK
+  import clevertap_plugin
+  ```
 
-NOTE:  Don't forget to add the CleverTap imports at the top of the file.
+  + 2.2 In your `didFinishLaunchingWithOptions:` method notify the CleverTap Flutter SDK of application launch
 
-*Objective-C*
-```objc
-#import "CleverTap.h"
-#import "CleverTapPlugin.h"
-```
+  ###### Objective-C
+  ```objc
+  [CleverTap autoIntegrate]; // integrate CleverTap SDK using the autoIntegrate option
+  [[CleverTapPlugin sharedInstance] applicationDidLaunchWithOptions:launchOptions];
+  ```
 
-*Swift*
-```swift
-import CleverTapSDK
-import clevertap_plugin
-```
+  ###### Swift
+  ```swift
+  CleverTap.autoIntegrate() // integrate CleverTap SDK using the autoIntegrate option
+  CleverTapPlugin.sharedInstance()?.applicationDidLaunch(options: launchOptions)
+  ```
 
-## For more
+## 📑 For more
 
 - Checkout our [Example Dart Usage](https://github.com/CleverTap/clevertap-flutter/tree/master/example) directory for the sample app.
 - Checkout our [CleverTap developer docs](https://developer.clevertap.com/docs/ "CleverTap Technical Documentation")
 
-## Changelog
+## 🆕 Changelog
 
-Check out the [CleverTap Flutter SDK Change Log](https://github.com/CleverTap/clevertap-flutter/blob/master/CHANGELOG.md).
+Refer to the [CleverTap Flutter SDK Change Log](https://github.com/CleverTap/clevertap-flutter/blob/master/CHANGELOG.md).
 
-## Questions?
+## ❓Questions
 
  If you have questions or concerns, you can reach out to the CleverTap support team from the CleverTap Dashboard.
 

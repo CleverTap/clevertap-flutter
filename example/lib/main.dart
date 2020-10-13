@@ -900,7 +900,12 @@ class _MyAppState extends State<MyApp> {
   void showInbox() {
     if (inboxInitialized) {
       showToast("Opening App Inbox", onDismiss: () {
-        CleverTapPlugin.showInbox(null);
+        var styleConfig = {
+          'noMessageTextColor': '#ff6600',
+          'noMessageText': 'No message(s) to show.',
+          'navBarTitle': 'App Inbox'
+        };
+        CleverTapPlugin.showInbox(styleConfig);
       });
     }
   }
