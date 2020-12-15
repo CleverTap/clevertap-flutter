@@ -303,6 +303,14 @@ public class CleverTapPlugin implements ActivityAware,
                 getEventHistory(result);
                 break;
             }
+            case "pushNotificationClickedEvent": {
+                pushNotificationClickedEvent(call, result);
+                break;
+            }
+            case "pushNotificationViewedEvent": {
+                pushNotificationViewedEvent(call, result);
+                break;
+            }
             //Profile API
             case "setLocation": {
                 setLocation(call, result);
@@ -1319,6 +1327,26 @@ public class CleverTapPlugin implements ActivityAware,
         }
     }
 
+    private void pushNotificationClickedEvent(MethodCall call, Result result) {
+        HashMap<String, Object> extrasMap = call.argument("extras");
+        Bundle extras = Utils.mapToBundle(extrasMap);
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            this.cleverTapAPI.pushNotificationClickedEvent(extras);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void pushNotificationViewedEvent(MethodCall call, Result result) {
+        HashMap<String, Object> extrasMap = call.argument("extras");
+        Bundle extras = Utils.mapToBundle(extrasMap);
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            this.cleverTapAPI.pushNotificationViewedEvent(extras);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
     private void recordChargedEvent(MethodCall call, Result result) {
         HashMap<String, Object> chargeDetails = call.argument("chargeDetails");
         ArrayList<HashMap<String, Object>> items = call.argument("items");
@@ -1473,7 +1501,7 @@ public class CleverTapPlugin implements ActivityAware,
             activity.runOnUiThread(runnable);
         } else {
             try {
-                ((Activity) context).runOnUiThread(runnable);
+                ((Activity) cont).runOnUiThread(runnable);
             } catch (Exception e) {
                 Log.e(TAG, "Exception while running on main thread - ");
                 e.printStackTrace();

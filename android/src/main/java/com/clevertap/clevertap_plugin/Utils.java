@@ -243,6 +243,14 @@ public class Utils {
         return ret;
     }
 
+    static Bundle mapToBundle(HashMap<String,Object> hashMap){
+        Bundle bundle = new Bundle();
+        for (Map.Entry<String, Object> entry : hashMap.entrySet()) {
+            bundle.putString(entry.getKey(), entry.getValue().toString());
+        }
+        return bundle;
+    }
+
     private static ArrayList<String> arrayListStringFromJSONArray(JSONArray jsonArray) {
         ArrayList<String> tabList = new ArrayList<>();
         try {

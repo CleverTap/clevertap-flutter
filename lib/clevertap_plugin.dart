@@ -354,6 +354,20 @@ class CleverTapPlugin {
     return await _channel.invokeMethod('disablePersonalization', {});
   }
 
+  ///Record Notification Clicked event
+  static Future<void> pushNotificationClickedEvent(
+      Map<String, dynamic> extras) async {
+    return await _channel
+        .invokeMethod('pushNotificationClickedEvent', {'extras': extras});
+  }
+
+  ///Record Notification Viewed event
+  static Future<void> pushNotificationViewedEvent(
+      Map<String, dynamic> extras) async {
+    return await _channel
+        .invokeMethod('pushNotificationViewedEvent', {'extras': extras});
+  }
+
   /// Record a Screen View event
   static Future<void> recordScreenView(String screenName) async {
     return await _channel
@@ -895,5 +909,9 @@ class CleverTapPlugin {
   ///Deletes all activated, fetched and defaults configs as well as all Product Config settings.
   static Future<void> resetProductConfig() async {
     return await _channel.invokeMethod('reset', {});
+  }
+
+  static String getCleverTapDate(DateTime dateTime){
+    return '\$D_'+dateTime.millisecondsSinceEpoch.toString();
   }
 }

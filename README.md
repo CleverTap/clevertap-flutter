@@ -112,7 +112,20 @@ Add your CleverTap Account ID and Token to your `AndroidManifest.xml`, within th
     <meta-data
         android:name="CLEVERTAP_USE_GOOGLE_AD_ID"
         android:value="1"/> 
+```
+To use Push Notifications out of the box using CleverTap, add the following entries to you `AndroidManifest.xml`
 
+```xml
+<application>
+         ....
+         ....
+        <service android:name="com.clevertap.android.sdk.pushnotification.fcm.FcmMessageListenerService">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
+ </application>
 ```
 ## 👩‍💻 iOS
 

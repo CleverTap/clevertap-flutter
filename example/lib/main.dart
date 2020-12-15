@@ -1,10 +1,10 @@
-import 'dart:convert';
-
-import 'package:flutter/material.dart';
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io' show Platform;
-import 'package:flutter_styled_toast/flutter_styled_toast.dart';
+
 import 'package:clevertap_plugin/clevertap_plugin.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_styled_toast/flutter_styled_toast.dart';
 
 void main() => runApp(MyApp());
 
@@ -295,6 +295,30 @@ class _MyAppState extends State<MyApp> {
                       title: Text("Show Inbox"),
                       subtitle: Text("Opens sample App Inbox"),
                       onTap: showInbox,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.lightBlueAccent,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Push Notification Clicked Event"),
+                      subtitle:
+                          Text("Pushes/Records an Notification Clicked event"),
+                      onTap: recordNotificationClickedEvent,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.lightBlueAccent,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Push Notification Viewed Event"),
+                      subtitle:
+                          Text("Pushes/Records an Notification Clicked event"),
+                      onTap: recordNotificationViewedEvent,
                     ),
                   ),
                 ),
@@ -850,13 +874,36 @@ class _MyAppState extends State<MyApp> {
   }
 
   void recordEvent() {
+    var now = new DateTime.now();
+    var eventData = {
+      // Key:    Value
+      'first': 'partridge',
+      'second': 'turtledoves',
+      'date' : CleverTapPlugin.getCleverTapDate(now),
+      'number' : 1
+    };
+    CleverTapPlugin.recordEvent("Flutter Event", eventData);
+    showToast("Raised event - Flutter Event");
+  }
+
+  void recordNotificationClickedEvent(){
     var eventData = {
       // Key:    Value
       'first': 'partridge',
       'second': 'turtledoves'
     };
-    CleverTapPlugin.recordEvent("Flutter Event", eventData);
-    showToast("Raised event - Flutter Event");
+    CleverTapPlugin.pushNotificationClickedEvent(eventData);
+    showToast("Raised event - Notification Clicked");
+  }
+
+  void recordNotificationViewedEvent(){
+    var eventData = {
+      // Key:    Value
+      'first': 'partridge',
+      'second': 'turtledoves'
+    };
+    CleverTapPlugin.pushNotificationViewedEvent(eventData);
+    showToast("Raised event - Notification Viewed");
   }
 
   void recordChargedEvent() {
