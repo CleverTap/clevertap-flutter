@@ -4,6 +4,8 @@ import android.app.Activity;
 import android.content.Context;
 import android.location.Location;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import androidx.annotation.NonNull;
 import com.clevertap.android.sdk.CTExperimentsListener;
@@ -1501,7 +1503,8 @@ public class CleverTapPlugin implements ActivityAware,
             activity.runOnUiThread(runnable);
         } else {
             try {
-                ((Activity) cont).runOnUiThread(runnable);
+                Handler mainHandler = new Handler(Looper.getMainLooper());
+                mainHandler.post(runnable);
             } catch (Exception e) {
                 Log.e(TAG, "Exception while running on main thread - ");
                 e.printStackTrace();
