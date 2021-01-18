@@ -104,6 +104,8 @@ static NSDateFormatter *dateFormatter;
         [self recordScreenView:call withResult:result];
     else if (["recordNotificationViewedEventWithData" isEqualToString:call.method])
         [self recordNotificationViewedEventWithData:call withResult:result];
+    else if (["recordNotificationClickedEventWithData" isEqualToString:call.method])
+        [self recordNotificationClickedEventWithData:call withResult:result];
     else if ([@"setOptOut" isEqualToString:call.method])
         [self setOptOut:call withResult:result];
     else if ([@"setOffline" isEqualToString:call.method])
@@ -1054,6 +1056,12 @@ static NSDateFormatter *dateFormatter;
 - (void)recordNotificationViewedEventWithData:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     
     [[CleverTap sharedInstance] recordNotificationViewedEventWithData:call.arguments[@"notificationData"]];
+    result(nil);
+}
+
+- (void)recordNotificationClickedEventWithData:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+ 
+    [[CleverTap sharedInstance] recordNotificationClickedEventWithData:call.arguments[@"notificationData"]];
     result(nil);
 }
 
