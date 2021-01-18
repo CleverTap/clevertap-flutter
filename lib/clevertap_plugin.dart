@@ -388,6 +388,12 @@ class CleverTapPlugin {
         .invokeMethod('recordNotificationViewedEventWithData', {'notificationData': notificationData});
   }
 
+  /// Record Notification Clicked for Push Notifications
+  static Future<void> recordNotificationClickedEventWithData(String notificationData) async {
+    return await _channel
+        .invokeMethod('recordNotificationClickedEventWithData', {'notificationData': notificationData});
+  }
+
   /// Returns the timestamp of the first time the given event was raised
   static Future<dynamic> eventGetFirstTime(String eventName) async {
     return await _channel
