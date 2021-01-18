@@ -102,6 +102,8 @@ static NSDateFormatter *dateFormatter;
         [self disablePersonalization:call withResult:result];
     else if ([@"recordScreenView" isEqualToString:call.method])
         [self recordScreenView:call withResult:result];
+    else if (["recordNotificationViewedEventWithData" isEqualToString:call.method])
+        [self recordNotificationViewedEventWithData:call withResult:result];
     else if ([@"setOptOut" isEqualToString:call.method])
         [self setOptOut:call withResult:result];
     else if ([@"setOffline" isEqualToString:call.method])
@@ -1044,6 +1046,15 @@ static NSDateFormatter *dateFormatter;
     }
     
     return _profile;
+}
+
+
+#pragma mark - Push Notifications
+
+- (void)recordNotificationViewedEventWithData:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    
+    [[CleverTap sharedInstance] recordNotificationViewedEventWithData:call.arguments[@"notificationData"]];
+    result(nil);
 }
 
 
