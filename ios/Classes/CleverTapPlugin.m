@@ -102,9 +102,9 @@ static NSDateFormatter *dateFormatter;
         [self disablePersonalization:call withResult:result];
     else if ([@"recordScreenView" isEqualToString:call.method])
         [self recordScreenView:call withResult:result];
-    else if (["recordNotificationViewedEventWithData" isEqualToString:call.method])
+    else if ([@"recordNotificationViewedEventWithData" isEqualToString:call.method])
         [self recordNotificationViewedEventWithData:call withResult:result];
-    else if (["recordNotificationClickedEventWithData" isEqualToString:call.method])
+    else if ([@"recordNotificationClickedEventWithData" isEqualToString:call.method])
         [self recordNotificationClickedEventWithData:call withResult:result];
     else if ([@"setOptOut" isEqualToString:call.method])
         [self setOptOut:call withResult:result];
