@@ -211,6 +211,7 @@ class _MyAppState extends State<MyApp> {
     this.setState(() async {
       var data = jsonEncode(map);
       print("on Push Click Payload = " + data.toString());
+      CleverTapPlugin.recordNotificationClickedEventWithData(data);
     });
   }
 
