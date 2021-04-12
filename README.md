@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://github.com/CleverTap/clevertap-flutter/blob/master/clevertap-logo.png" width="300"/>
+  <img src="https://github.com/CleverTap/clevertap-react-native/blob/update-docs/docs/ct_logo.png" height="220"/>
 </p>
 
 # CleverTap Flutter SDK
