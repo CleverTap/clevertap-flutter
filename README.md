@@ -4,6 +4,9 @@
 
 # CleverTap Flutter SDK
 [![pub package](https://img.shields.io/pub/v/clevertap_plugin.svg)](https://pub.dartlang.org/packages/clevertap_plugin)
+<a href="https://github.com/CleverTap/clevertap-flutter/releases">
+    <img src="https://img.shields.io/github/release/CleverTap/clevertap-flutter.svg" />
+</a>
 
 ## 👋 Introduction
 The CleverTap Flutter SDK for Mobile Customer Engagement and Analytics solutions.
