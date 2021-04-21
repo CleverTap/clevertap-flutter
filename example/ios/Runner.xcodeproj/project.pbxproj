@@ -420,6 +420,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.clevertap.example;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				VALIDATE_WORKSPACE = NO;
 				VERSIONING_SYSTEM = "apple-generic";
 			};
 			name = Profile;
@@ -561,6 +562,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.clevertap.example;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
+				VALIDATE_WORKSPACE = NO;
 				VERSIONING_SYSTEM = "apple-generic";
 			};
 			name = Debug;
@@ -590,6 +592,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.clevertap.example;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				VALIDATE_WORKSPACE = NO;
 				VERSIONING_SYSTEM = "apple-generic";
 			};
 			name = Release;
