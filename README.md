@@ -8,7 +8,7 @@
     <img src="https://img.shields.io/github/release/CleverTap/clevertap-flutter.svg" />
 </a>
 
-## 👋 Introduction
+##  Introduction
 The CleverTap Flutter SDK for Mobile Customer Engagement and Analytics solutions.
 
 For more information check out our [website](https://clevertap.com/ "CleverTap")  and  [documentation](https://developer.clevertap.com/docs/ "CleverTap Technical Documentation").
