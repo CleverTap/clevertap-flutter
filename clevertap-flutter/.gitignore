@@ -1,0 +1,5 @@
+.dart_tool/
+.packages
+.idea/
+.DS_Store
+example/android/app/google-services.json
