@@ -60,7 +60,6 @@ target 'Runner' do
 
   # Keep pod path relative so it can be checked into Podfile.lock.
   pod 'Flutter', :path => 'Flutter'
-  pod 'CleverTap-iOS-SDK', '3.9.1'
 
   # Plugin Pods
 
