@@ -1,6 +1,6 @@
 ## CHANGE LOG
 
-### Version 1.2.1 (April 23, 2020)
+### Version 1.2.1 (April 23, 2021)
 * Update and Freeze [CleverTap Plugin Podspec](https://github.com/CleverTap/clevertap-flutter/blob/master/ios/clevertap_plugin.podspec) to a specific version of a CleverTap iOS SDK
 
 ### Version 1.2.0 (October 13, 2020)
