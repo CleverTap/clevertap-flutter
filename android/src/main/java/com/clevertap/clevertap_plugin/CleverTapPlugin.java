@@ -4,6 +4,8 @@ import android.app.Activity;
 import android.content.Context;
 import android.location.Location;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import androidx.annotation.NonNull;
 import com.clevertap.android.sdk.CTExperimentsListener;
@@ -301,6 +303,14 @@ public class CleverTapPlugin implements ActivityAware,
             }
             case "getEventHistory": {
                 getEventHistory(result);
+                break;
+            }
+            case "pushNotificationClickedEvent": {
+                pushNotificationClickedEvent(call, result);
+                break;
+            }
+            case "pushNotificationViewedEvent": {
+                pushNotificationViewedEvent(call, result);
                 break;
             }
             //Profile API
@@ -1319,6 +1329,26 @@ public class CleverTapPlugin implements ActivityAware,
         }
     }
 
+    private void pushNotificationClickedEvent(MethodCall call, Result result) {
+        HashMap<String, Object> extrasMap = call.argument("extras");
+        Bundle extras = Utils.mapToBundle(extrasMap);
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            this.cleverTapAPI.pushNotificationClickedEvent(extras);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void pushNotificationViewedEvent(MethodCall call, Result result) {
+        HashMap<String, Object> extrasMap = call.argument("extras");
+        Bundle extras = Utils.mapToBundle(extrasMap);
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            this.cleverTapAPI.pushNotificationViewedEvent(extras);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
     private void recordChargedEvent(MethodCall call, Result result) {
         HashMap<String, Object> chargeDetails = call.argument("chargeDetails");
         ArrayList<HashMap<String, Object>> items = call.argument("items");
@@ -1473,7 +1503,8 @@ public class CleverTapPlugin implements ActivityAware,
             activity.runOnUiThread(runnable);
         } else {
             try {
-                ((Activity) context).runOnUiThread(runnable);
+                Handler mainHandler = new Handler(Looper.getMainLooper());
+                mainHandler.post(runnable);
             } catch (Exception e) {
                 Log.e(TAG, "Exception while running on main thread - ");
                 e.printStackTrace();

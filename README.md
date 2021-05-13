@@ -38,7 +38,7 @@ Add the following to your `dependencies` section in `project/build.gradle`
 
 ```groovy
     dependencies {
-            classpath 'com.android.tools.build:gradle:4.0.1'
+            classpath 'com.android.tools.build:gradle:4.0.2'
             classpath 'com.google.gms:google-services:4.3.3' //<--- Mandatory for using Firebase Messaging, skip if not using FCM
         }
 ```
@@ -115,8 +115,25 @@ Add your CleverTap Account ID and Token to your `AndroidManifest.xml`, within th
     <meta-data
         android:name="CLEVERTAP_USE_GOOGLE_AD_ID"
         android:value="1"/> 
-
 ```
+To use Push Notifications out of the box using CleverTap, add the following entries to you `AndroidManifest.xml`
+
+```xml
+<application>
+         ....
+         ....
+        <service android:name="com.clevertap.android.sdk.pushnotification.fcm.FcmMessageListenerService">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
+ </application>
+```
+
+If you're upgrading to CleverTap Flutter SDK v1.2.0 and above, please find the [CHANGELOG related to CleverTap Android SDK here](https://github.com/CleverTap/clevertap-android-sdk/blob/master/docs/CTV4CHANGES.md).
+
+
 ## 👩‍💻 iOS
 
 After installation, you will need to integrate CleverTap SDK into your app.

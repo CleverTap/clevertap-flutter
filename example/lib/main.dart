@@ -1,10 +1,10 @@
-import 'dart:convert';
-
-import 'package:flutter/material.dart';
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io' show Platform;
-import 'package:flutter_styled_toast/flutter_styled_toast.dart';
+
 import 'package:clevertap_plugin/clevertap_plugin.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_styled_toast/flutter_styled_toast.dart';
 
 void main() => runApp(MyApp());
 
@@ -30,10 +30,10 @@ class _MyAppState extends State<MyApp> {
         "fluttertest", "Flutter Test", "Flutter Test", 3, true);
     CleverTapPlugin.initializeInbox();
     CleverTapPlugin.registerForPush(); //only for iOS
-    //var initialUrl = CleverTapPlugin.getInitialUrl();
+    ///var initialUrl = CleverTapPlugin.getInitialUrl();
   }
 
-  // Platform messages are asynchronous, so we initialize in an async method.
+  /// Platform messages are asynchronous, so we initialize in an async method.
   Future<void> initPlatformState() async {
     if (!mounted) return;
   }
@@ -143,14 +143,14 @@ class _MyAppState extends State<MyApp> {
       List<dynamic> stringList =
           await CleverTapPlugin.getListOfStringVariable("stringListVar", null);
       print("String List = " + stringList.toString());
-//      Map<String,bool> boolMap = await CleverTapPlugin.getMapOfBooleanVariable("boolMapVar", null);
-//      print("Map of bool = "+boolMap.toString());
-//      Map<String,double> doubleMap = await CleverTapPlugin.getMapOfDoubleVariable("doubleMapVar", null);
-//      print("Map of double = "+doubleMap.toString());
-//      Map<String,int> intMap = await CleverTapPlugin.getMapOfIntegerVariable("integerMapVar", null);
-//      print("Map of int = "+boolMap.toString());
-//      Map<String,String> strMap = await CleverTapPlugin.getMapOfStringVariable("stringMapVar", null);
-//      print("Map of string = "+strMap.toString());
+///      Map<String,bool> boolMap = await CleverTapPlugin.getMapOfBooleanVariable("boolMapVar", null);
+///      print("Map of bool = "+boolMap.toString());
+///      Map<String,double> doubleMap = await CleverTapPlugin.getMapOfDoubleVariable("doubleMapVar", null);
+///      print("Map of double = "+doubleMap.toString());
+///      Map<String,int> intMap = await CleverTapPlugin.getMapOfIntegerVariable("integerMapVar", null);
+///      print("Map of int = "+boolMap.toString());
+///      Map<String,String> strMap = await CleverTapPlugin.getMapOfStringVariable("stringMapVar", null);
+///      print("Map of string = "+strMap.toString());
     });
   }
 
@@ -295,6 +295,30 @@ class _MyAppState extends State<MyApp> {
                       title: Text("Show Inbox"),
                       subtitle: Text("Opens sample App Inbox"),
                       onTap: showInbox,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.lightBlueAccent,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Push Notification Clicked Event"),
+                      subtitle:
+                          Text("Pushes/Records an Notification Clicked event"),
+                      onTap: recordNotificationClickedEvent,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.lightBlueAccent,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Push Notification Viewed Event"),
+                      subtitle:
+                          Text("Pushes/Records an Notification Clicked event"),
+                      onTap: recordNotificationViewedEvent,
                     ),
                   ),
                 ),
@@ -850,29 +874,60 @@ class _MyAppState extends State<MyApp> {
   }
 
   void recordEvent() {
+    var now = new DateTime.now();
     var eventData = {
-      // Key:    Value
+      /// Key:    Value
       'first': 'partridge',
-      'second': 'turtledoves'
+      'second': 'turtledoves',
+      'date' : CleverTapPlugin.getCleverTapDate(now),
+      'number' : 1
     };
     CleverTapPlugin.recordEvent("Flutter Event", eventData);
     showToast("Raised event - Flutter Event");
   }
 
+  void recordNotificationClickedEvent(){
+    var eventData = {
+      /// Key:    Value
+      'nm': 'Notification message',
+      'nt': 'Notification title',
+      'wzrk_id': '0_0',
+      'wzrk_cid' : 'Notification Channel ID'
+      ///other CleverTap Push Payload Key Values found in Step 3 of
+      ///https://developer.clevertap.com/docs/android#section-custom-android-push-notifications-handling
+    };
+    CleverTapPlugin.pushNotificationClickedEvent(eventData);
+    showToast("Raised event - Notification Clicked");
+  }
+
+  void recordNotificationViewedEvent(){
+    var eventData = {
+      /// Key:    Value
+      'nm': 'Notification message',
+      'nt': 'Notification title',
+      'wzrk_id': '0_0',
+      'wzrk_cid' : 'Notification Channel ID'
+      ///other CleverTap Push Payload Key Values found in Step 3 of
+      ///https://developer.clevertap.com/docs/android#section-custom-android-push-notifications-handling
+    };
+    CleverTapPlugin.pushNotificationViewedEvent(eventData);
+    showToast("Raised event - Notification Viewed");
+  }
+
   void recordChargedEvent() {
     var item1 = {
-      // Key:    Value
+      /// Key:    Value
       'name': 'thing1',
       'amount': '100'
     };
     var item2 = {
-      // Key:    Value
+      /// Key:    Value
       'name': 'thing2',
       'amount': '100'
     };
     var items = [item1, item2];
     var chargeDetails = {
-      // Key:    Value
+      /// Key:    Value
       'total': '200',
       'payment': 'cash'
     };
@@ -1443,7 +1498,6 @@ class _MyAppState extends State<MyApp> {
   void fetch() {
     CleverTapPlugin.fetch();
     showToast("check console for logs");
-
     ///CleverTapPlugin.fetchWithMinimumIntervalInSeconds(0);
   }
 
