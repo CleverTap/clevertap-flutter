@@ -2,11 +2,11 @@ package com.clevertap.clevertap_plugin;
 
 import android.os.Bundle;
 import android.util.Log;
-import com.clevertap.android.sdk.CTInboxMessage;
 import com.clevertap.android.sdk.CTInboxStyleConfig;
-import com.clevertap.android.sdk.EventDetail;
 import com.clevertap.android.sdk.UTMDetail;
 import com.clevertap.android.sdk.displayunits.model.CleverTapDisplayUnit;
+import com.clevertap.android.sdk.events.EventDetail;
+import com.clevertap.android.sdk.inbox.CTInboxMessage;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;

@@ -12,7 +12,6 @@ typedef void CleverTapInboxDidInitializeHandler();
 typedef void CleverTapInboxMessagesDidUpdateHandler();
 typedef void CleverTapInboxNotificationButtonClickedHandler(
     Map<String, String> mapList);
-typedef void CleverTapExperimentsDidUpdateHandler();
 typedef void CleverTapDisplayUnitsLoadedHandler(List<dynamic> displayUnitList);
 typedef void CleverTapFeatureFlagUpdatedHandler();
 typedef void CleverTapProductConfigInitializedHandler();
@@ -33,7 +32,6 @@ class CleverTapPlugin {
   CleverTapInboxMessagesDidUpdateHandler cleverTapInboxMessagesDidUpdateHandler;
   CleverTapInboxNotificationButtonClickedHandler
       cleverTapInboxNotificationButtonClickedHandler;
-  CleverTapExperimentsDidUpdateHandler cleverTapExperimentsDidUpdateHandler;
   CleverTapDisplayUnitsLoadedHandler cleverTapDisplayUnitsLoadedHandler;
   CleverTapFeatureFlagUpdatedHandler cleverTapFeatureFlagUpdatedHandler;
   CleverTapProductConfigInitializedHandler
@@ -82,9 +80,6 @@ class CleverTapPlugin {
       case "onInboxButtonClick":
         Map<String, String> args = call.arguments;
         cleverTapInboxNotificationButtonClickedHandler(args);
-        break;
-      case "CTExperimentsUpdated":
-        cleverTapExperimentsDidUpdateHandler();
         break;
       case "onDisplayUnitsLoaded":
         List<dynamic> args = call.arguments;
@@ -149,11 +144,6 @@ class CleverTapPlugin {
           CleverTapInboxNotificationButtonClickedHandler handler) =>
       cleverTapInboxNotificationButtonClickedHandler = handler;
 
-  /// Define a method to handle dynamic variable experiments update
-  void setCleverTapExperimentsDidUpdateHandler(
-          CleverTapExperimentsDidUpdateHandler handler) =>
-      cleverTapExperimentsDidUpdateHandler = handler;
-
   /// Define a method to handle Native Display Unit updates
   void setCleverTapDisplayUnitsLoadedHandler(
           CleverTapDisplayUnitsLoadedHandler handler) =>
@@ -217,12 +207,6 @@ class CleverTapPlugin {
   /// Set the Huawei Token for Push Notifications
   static Future<void> setHuaweiPushToken(String value) async {
     return await _channel.invokeMethod('setHuaweiPushToken', {'token': value});
-  }
-
-  // Set true to connect app to dashboard to see variables defined by app
-  static Future<void> setUIEditorConnectionEnabled(bool value) async {
-    return await _channel
-        .invokeMethod('setUIEditorConnectionEnabled', {'value': value});
   }
 
   /// Method to create Notification Channel
