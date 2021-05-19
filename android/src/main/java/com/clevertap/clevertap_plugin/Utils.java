@@ -187,6 +187,10 @@ public class Utils {
                     String noMessageTextColor = styleConfigJson.getString(styleConfigKey);
                     styleConfig.setNoMessageViewTextColor(noMessageTextColor);
                 }
+                if ("firstTabTitle".equals(styleConfigKey)) {
+                    String firstTabTitle = styleConfigJson.getString(styleConfigKey);
+                    styleConfig.setFirstTabTitle(firstTabTitle);
+                }
                 if ("tabs".equals(styleConfigKey)) {
                     try {
                         ArrayList<String> tabsList = arrayListStringFromJSONArray(

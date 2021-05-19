@@ -1461,6 +1461,7 @@ class _MyAppState extends State<MyApp> {
     ///CleverTapPlugin.fetchWithMinimumIntervalInSeconds(0);
   }
 
+  // ignore: must_call_super
   void activate() {
     CleverTapPlugin.activate();
     showToast("check console for logs");

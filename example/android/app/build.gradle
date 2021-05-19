@@ -33,10 +33,11 @@ android {
 
     defaultConfig {
         applicationId "com.example.clevertap_plugin_example"
-        minSdkVersion 19
+        minSdkVersion 21
         targetSdkVersion 30
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
+        multiDexEnabled true
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -68,10 +69,12 @@ dependencies {
     implementation 'com.github.bumptech.glide:glide:4.11.0'
 
 //Optional ExoPlayer Libraries for Audio/Video Inbox Messages. Audio/Video messages will be dropped without these dependencies
-    implementation 'com.google.android.exoplayer:exoplayer:2.11.5'
-    implementation 'com.google.android.exoplayer:exoplayer-hls:2.11.5'
-    implementation 'com.google.android.exoplayer:exoplayer-ui:2.11.5'
+    implementation 'com.google.android.exoplayer:exoplayer:2.13.3'
+    implementation 'com.google.android.exoplayer:exoplayer-hls:2.13.3'
+    implementation 'com.google.android.exoplayer:exoplayer-ui:2.13.3'
     implementation 'com.android.installreferrer:installreferrer:2.1'
+
+    implementation 'com.android.support:multidex:1.0.3'
 }
 
 apply plugin: 'com.google.gms.google-services'

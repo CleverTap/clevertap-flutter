@@ -21,7 +21,7 @@ To get started, sign up [here](https://clevertap.com/live-product-demo/)
 
 ```yaml
 dependencies:
-clevertap_plugin: 1.2.1
+clevertap_plugin: 1.2.2
 ```
 
 - Run `flutter packages get` to install the SDK
@@ -38,8 +38,8 @@ Add the following to your `dependencies` section in `project/build.gradle`
 
 ```groovy
     dependencies {
-            classpath 'com.android.tools.build:gradle:4.0.2'
-            classpath 'com.google.gms:google-services:4.3.3' //<--- Mandatory for using Firebase Messaging, skip if not using FCM
+            classpath 'com.android.tools.build:gradle:4.1.1'
+            classpath 'com.google.gms:google-services:4.3.8' //<--- Mandatory for using Firebase Messaging, skip if not using FCM
         }
 ```
 

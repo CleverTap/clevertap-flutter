@@ -5,13 +5,13 @@ import 'package:flutter/services.dart';
 typedef void CleverTapInAppNotificationDismissedHandler(
     Map<String, dynamic> mapList);
 typedef void CleverTapInAppNotificationButtonClickedHandler(
-    Map<String, String>? mapList);
+    Map<String, dynamic>? mapList);
 typedef void CleverTapProfileDidInitializeHandler();
 typedef void CleverTapProfileSyncHandler(Map<String, dynamic>? map);
 typedef void CleverTapInboxDidInitializeHandler();
 typedef void CleverTapInboxMessagesDidUpdateHandler();
 typedef void CleverTapInboxNotificationButtonClickedHandler(
-    Map<String, String>? mapList);
+    Map<String, dynamic>? mapList);
 typedef void CleverTapDisplayUnitsLoadedHandler(List<dynamic>? displayUnitList);
 typedef void CleverTapFeatureFlagUpdatedHandler();
 typedef void CleverTapProductConfigInitializedHandler();
@@ -26,19 +26,24 @@ class CleverTapPlugin {
       cleverTapInAppNotificationDismissedHandler;
   late CleverTapInAppNotificationButtonClickedHandler
       cleverTapInAppNotificationButtonClickedHandler;
-  late CleverTapProfileDidInitializeHandler cleverTapProfileDidInitializeHandler;
+  late CleverTapProfileDidInitializeHandler
+      cleverTapProfileDidInitializeHandler;
   late CleverTapProfileSyncHandler cleverTapProfileSyncHandler;
   late CleverTapInboxDidInitializeHandler cleverTapInboxDidInitializeHandler;
-  late CleverTapInboxMessagesDidUpdateHandler cleverTapInboxMessagesDidUpdateHandler;
+  late CleverTapInboxMessagesDidUpdateHandler
+      cleverTapInboxMessagesDidUpdateHandler;
   late CleverTapInboxNotificationButtonClickedHandler
       cleverTapInboxNotificationButtonClickedHandler;
   late CleverTapDisplayUnitsLoadedHandler cleverTapDisplayUnitsLoadedHandler;
   late CleverTapFeatureFlagUpdatedHandler cleverTapFeatureFlagUpdatedHandler;
   late CleverTapProductConfigInitializedHandler
       cleverTapProductConfigInitializedHandler;
-  late CleverTapProductConfigFetchedHandler cleverTapProductConfigFetchedHandler;
-  late CleverTapProductConfigActivatedHandler cleverTapProductConfigActivatedHandler;
-  late CleverTapPushAmpPayloadReceivedHandler cleverTapPushAmpPayloadReceivedHandler;
+  late CleverTapProductConfigFetchedHandler
+      cleverTapProductConfigFetchedHandler;
+  late CleverTapProductConfigActivatedHandler
+      cleverTapProductConfigActivatedHandler;
+  late CleverTapPushAmpPayloadReceivedHandler
+      cleverTapPushAmpPayloadReceivedHandler;
   late CleverTapPushClickedPayloadReceivedHandler
       cleverTapPushClickedPayloadReceivedHandler;
 
@@ -62,8 +67,9 @@ class CleverTapPlugin {
             args.cast<String, dynamic>());
         break;
       case "onInAppButtonClick":
-        Map<String, String>? args = call.arguments;
-        cleverTapInAppNotificationButtonClickedHandler(args);
+        Map<dynamic, dynamic> args = call.arguments;
+        cleverTapInAppNotificationButtonClickedHandler(
+            args.cast<String, dynamic>());
         break;
       case "profileDidInitialize":
         cleverTapProfileDidInitializeHandler();
@@ -78,8 +84,9 @@ class CleverTapPlugin {
         cleverTapInboxMessagesDidUpdateHandler();
         break;
       case "onInboxButtonClick":
-        Map<String, String>? args = call.arguments;
-        cleverTapInboxNotificationButtonClickedHandler(args);
+        Map<dynamic, dynamic> args = call.arguments;
+        cleverTapInboxNotificationButtonClickedHandler(
+            args.cast<String, dynamic>());
         break;
       case "onDisplayUnitsLoaded":
         List<dynamic>? args = call.arguments;
@@ -402,14 +409,16 @@ class CleverTapPlugin {
   //  and last time timestamp of the event.
   static Future<Map<String, dynamic>> eventGetDetail(String eventName) async {
     Map<dynamic, dynamic> response =
-        await (_channel.invokeMethod('eventGetDetail', {'eventName': eventName}) as FutureOr<Map<dynamic, dynamic>>);
+        await (_channel.invokeMethod('eventGetDetail', {'eventName': eventName})
+            as FutureOr<Map<dynamic, dynamic>>);
     return response.cast<String, dynamic>();
   }
 
   /// Returns a Map of event names and corresponding event details of all the events raised
   static Future<Map<String, dynamic>> getEventHistory(String eventName) async {
     Map<dynamic, dynamic> response = await (_channel
-        .invokeMethod('getEventHistory', {'eventName': eventName}) as FutureOr<Map<dynamic, dynamic>>);
+            .invokeMethod('getEventHistory', {'eventName': eventName})
+        as FutureOr<Map<dynamic, dynamic>>);
     return response.cast<String, dynamic>();
   }
 
@@ -564,7 +573,8 @@ class CleverTapPlugin {
   /// Returns a Map of UTMDetail object which consists of UTM parameters like source, medium & campaign
   static Future<Map<String, dynamic>> sessionGetUTMDetails() async {
     Map<dynamic, dynamic> response =
-        await (_channel.invokeMethod('sessionGetUTMDetails', {}) as FutureOr<Map<dynamic, dynamic>>);
+        await (_channel.invokeMethod('sessionGetUTMDetails', {})
+            as FutureOr<Map<dynamic, dynamic>>);
     return response.cast<String, dynamic>();
   }
 
@@ -604,7 +614,8 @@ class CleverTapPlugin {
   static Future<Map<String, dynamic>> getInboxMessageForId(
       String messageId) async {
     Map<dynamic, dynamic> response = await (_channel
-        .invokeMethod('getInboxMessageForId', {'messageId': messageId}) as FutureOr<Map<dynamic, dynamic>>);
+            .invokeMethod('getInboxMessageForId', {'messageId': messageId})
+        as FutureOr<Map<dynamic, dynamic>>);
     return response.cast<String, dynamic>();
   }
 
@@ -713,7 +724,8 @@ class CleverTapPlugin {
   }
 
   ///Returns Boolean Variable registered
-  static Future<bool?> getBooleanVariable(String name, bool defaultValue) async {
+  static Future<bool?> getBooleanVariable(
+      String name, bool defaultValue) async {
     return await _channel.invokeMethod(
         'getBooleanVariable', {'name': name, 'defaultValue': defaultValue});
   }
@@ -769,8 +781,9 @@ class CleverTapPlugin {
   static Future<Map<String, bool>> getMapOfBooleanVariable(
       String name, Map<String, bool> defaultValue) async {
     Map<dynamic, dynamic> response = await (_channel.invokeMethod(
-        'getMapOfBooleanVariable',
-        {'name': name, 'defaultValue': defaultValue}) as FutureOr<Map<dynamic, dynamic>>);
+            'getMapOfBooleanVariable',
+            {'name': name, 'defaultValue': defaultValue})
+        as FutureOr<Map<dynamic, dynamic>>);
     return response.cast<String, bool>();
   }
 
@@ -778,7 +791,9 @@ class CleverTapPlugin {
   static Future<Map<String, double>> getMapOfDoubleVariable(
       String name, Map<String, double> defaultValue) async {
     Map<dynamic, dynamic> response = await (_channel.invokeMethod(
-        'getMapOfDoubleVariable', {'name': name, 'defaultValue': defaultValue}) as FutureOr<Map<dynamic, dynamic>>);
+            'getMapOfDoubleVariable',
+            {'name': name, 'defaultValue': defaultValue})
+        as FutureOr<Map<dynamic, dynamic>>);
     return response.cast<String, double>();
   }
 
@@ -786,8 +801,9 @@ class CleverTapPlugin {
   static Future<Map<String, int>> getMapOfIntegerVariable(
       String name, Map<String, int> defaultValue) async {
     Map<dynamic, dynamic> response = await (_channel.invokeMethod(
-        'getMapOfIntegerVariable',
-        {'name': name, 'defaultValue': defaultValue}) as FutureOr<Map<dynamic, dynamic>>);
+            'getMapOfIntegerVariable',
+            {'name': name, 'defaultValue': defaultValue})
+        as FutureOr<Map<dynamic, dynamic>>);
     return response.cast<String, int>();
   }
 
@@ -795,7 +811,9 @@ class CleverTapPlugin {
   static Future<Map<String, String>> getMapOfStringVariable(
       String name, Map<String, String> defaultValue) async {
     Map<dynamic, dynamic> response = await (_channel.invokeMethod(
-        'getMapOfStringVariable', {'name': name, 'defaultValue': defaultValue}) as FutureOr<Map<dynamic, dynamic>>);
+            'getMapOfStringVariable',
+            {'name': name, 'defaultValue': defaultValue})
+        as FutureOr<Map<dynamic, dynamic>>);
     return response.cast<String, String>();
   }
 
@@ -808,7 +826,8 @@ class CleverTapPlugin {
   ///Returns Display unit info as a Map
   static Future<Map<String, dynamic>> getDisplayUnitForId(String unitId) async {
     Map<dynamic, dynamic> response =
-        await (_channel.invokeMethod('getDisplayUnitForId', {'unitId': unitId}) as FutureOr<Map<dynamic, dynamic>>);
+        await (_channel.invokeMethod('getDisplayUnitForId', {'unitId': unitId})
+            as FutureOr<Map<dynamic, dynamic>>);
     return response.cast<String, dynamic>();
   }
 
@@ -895,7 +914,7 @@ class CleverTapPlugin {
     return await _channel.invokeMethod('reset', {});
   }
 
-  static String getCleverTapDate(DateTime dateTime){
-    return '\$D_'+dateTime.millisecondsSinceEpoch.toString();
+  static String getCleverTapDate(DateTime dateTime) {
+    return '\$D_' + dateTime.millisecondsSinceEpoch.toString();
   }
 }
