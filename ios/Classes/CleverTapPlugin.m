@@ -190,6 +190,10 @@ static NSDateFormatter *dateFormatter;
         [self getLastFetchTimeStampInMillis:call withResult:result];
     else if ([@"getFeatureFlag" isEqualToString:call.method])
         [self getFeatureFlag:call withResult:result];
+    else if ([@"pushNotificationViewedEvent" isEqualToString:call.method])
+        [self pushNotificationViewedEvent:call withResult:result];
+    else if ([@"pushNotificationClickedEvent" isEqualToString:call.method])
+        [self pushNotificationClickedEvent:call withResult:result];
     else if ([@"createNotification" isEqualToString:call.method])
         result(nil);
     else if ([@"processPushNotification" isEqualToString:call.method])
@@ -982,5 +986,18 @@ static NSDateFormatter *dateFormatter;
     [self postNotificationWithName:kCleverTapPushNotificationClicked andBody:customExtras];
 }
 
+#pragma mark - Push Notifications
+
+- (void)pushNotificationViewedEvent:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    
+    [[CleverTap sharedInstance] recordNotificationViewedEventWithData:call.arguments[@"notificationData"]];
+    result(nil);
+}
+
+- (void)pushNotificationClickedEvent:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    
+    [[CleverTap sharedInstance] recordNotificationClickedEventWithData:call.arguments[@"notificationData"]];
+    result(nil);
+}
 
 @end
