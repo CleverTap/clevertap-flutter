@@ -120,8 +120,6 @@ static NSDateFormatter *dateFormatter;
         [self profileGetCleverTapAttributionIdentifier:call withResult:result];
     else if ([@"profileGetCleverTapID" isEqualToString:call.method])
         [self profileGetCleverTapID:call withResult:result];
-    else if ([@"profileSetGraphUser" isEqualToString:call.method])
-        [self profileSetGraphUser:call withResult:result];
     else if ([@"profileGetProperty" isEqualToString:call.method])
         [self profileGetProperty:call withResult:result];
     else if ([@"profileRemoveValueForKey" isEqualToString:call.method])
@@ -390,11 +388,6 @@ static NSDateFormatter *dateFormatter;
 - (void)profileGetCleverTapID:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     
     result([[CleverTap sharedInstance] profileGetCleverTapID]);
-}
-
-- (void)profileSetGraphUser:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    
-    [[CleverTap sharedInstance] profilePushGraphUser:call.arguments[@"profile"]];
 }
 
 - (void)profileGetProperty:(FlutterMethodCall *)call withResult:(FlutterResult)result {
