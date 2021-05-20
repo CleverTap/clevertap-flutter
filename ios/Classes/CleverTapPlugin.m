@@ -88,7 +88,7 @@ static NSDateFormatter *dateFormatter;
         [self showInbox:call withResult:result];
     else if ([@"onUserLogin" isEqualToString:call.method])
         [self onUserLogin:call withResult:result];
-    else if ([@"setPushTokenAsString" isEqualToString:call.method])
+    else if ([@"setPushToken" isEqualToString:call.method])
         [self setPushTokenAsString:call withResult:result];
     else if ([@"registerForPush" isEqualToString:call.method])
         [self registerForPush:call withResult:result];
