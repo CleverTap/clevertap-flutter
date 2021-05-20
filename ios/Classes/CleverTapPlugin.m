@@ -869,11 +869,6 @@ static NSDateFormatter *dateFormatter;
     
     [[NSNotificationCenter defaultCenter] addObserver:self
                                              selector:@selector(emitEventInternal:)
-                                                 name:kCleverTapExperimentsDidUpdate
-                                               object:nil];
-    
-    [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(emitEventInternal:)
                                                  name:kCleverTapDisplayUnitsLoaded
                                                object:nil];
     
