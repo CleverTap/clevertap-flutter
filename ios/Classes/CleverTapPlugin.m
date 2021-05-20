@@ -566,6 +566,10 @@ static NSDateFormatter *dateFormatter;
     if (title) {
         _config.title = title;
     }
+    NSString *firstTabTitle = [dict valueForKey:@"firstTabTitle"];
+    if (firstTabTitle) {
+        _config.firstTabTitle = firstTabTitle;
+    }
     NSArray *messageTags = [dict valueForKey:@"tabs"];
     if (messageTags) {
         _config.messageTags = messageTags;
