@@ -339,10 +339,6 @@ public class CleverTapPlugin implements ActivityAware,
                 profileSet(call, result);
                 break;
             }
-            case "profileSetGraphUser": {
-                profileSetGraphUser(call, result);
-                break;
-            }
             case "profileGetProperty": {
                 profileGetProperty(call, result);
                 break;
@@ -1045,16 +1041,6 @@ public class CleverTapPlugin implements ActivityAware,
         Map<String, Object> profile = Utils.dartMapToProfileMap(call.argument("profile"));
         if (isCleverTapNotNull(cleverTapAPI)) {
             cleverTapAPI.pushProfile(profile);
-            result.success(null);
-        } else {
-            result.error(TAG, ERROR_MSG, null);
-        }
-    }
-
-    private void profileSetGraphUser(MethodCall call, Result result) {
-        Map<String, Object> profileMap = Utils.dartMapToProfileMap(call.argument("profile"));
-        if (isCleverTapNotNull(cleverTapAPI)) {
-            cleverTapAPI.pushProfile(profileMap);
             result.success(null);
         } else {
             result.error(TAG, ERROR_MSG, null);

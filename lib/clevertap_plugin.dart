@@ -476,13 +476,6 @@ class CleverTapPlugin {
     return await _channel.invokeMethod('profileSet', {'profile': profile});
   }
 
-  /// Pushes everything available in the JSON object returned by the Facebook GraphRequest
-  /// Convert JSON to Map<String,dynamic> before passing it to this method.
-  static Future<void> profileSetGraphUser(Map<String, dynamic> profile) async {
-    return await _channel
-        .invokeMethod('profileSetGraphUser', {'profile': profile});
-  }
-
   ///Remove the user profile property value specified by key from the user profile
   static Future<void> profileRemoveValueForKey(String key) async {
     return await _channel
