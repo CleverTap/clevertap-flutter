@@ -1,10 +1,10 @@
-import 'dart:convert';
-
-import 'package:flutter/material.dart';
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io' show Platform;
-import 'package:flutter_styled_toast/flutter_styled_toast.dart';
+
 import 'package:clevertap_plugin/clevertap_plugin.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_styled_toast/flutter_styled_toast.dart';
 
 void main() => runApp(MyApp());
 
@@ -30,10 +30,10 @@ class _MyAppState extends State<MyApp> {
         "fluttertest", "Flutter Test", "Flutter Test", 3, true);
     CleverTapPlugin.initializeInbox();
     CleverTapPlugin.registerForPush(); //only for iOS
-    //var initialUrl = CleverTapPlugin.getInitialUrl();
+    ///var initialUrl = CleverTapPlugin.getInitialUrl();
   }
 
-  // Platform messages are asynchronous, so we initialize in an async method.
+  /// Platform messages are asynchronous, so we initialize in an async method.
   Future<void> initPlatformState() async {
     if (!mounted) return;
   }
@@ -52,8 +52,6 @@ class _MyAppState extends State<MyApp> {
     _clevertapPlugin.setCleverTapInboxDidInitializeHandler(inboxDidInitialize);
     _clevertapPlugin
         .setCleverTapInboxMessagesDidUpdateHandler(inboxMessagesDidUpdate);
-    _clevertapPlugin
-        .setCleverTapExperimentsDidUpdateHandler(ctExperimentsUpdated);
     _clevertapPlugin
         .setCleverTapDisplayUnitsLoadedHandler(onDisplayUnitsLoaded);
     _clevertapPlugin.setCleverTapInAppNotificationButtonClickedHandler(
@@ -113,44 +111,6 @@ class _MyAppState extends State<MyApp> {
       int total = await CleverTapPlugin.getInboxMessageCount();
       print("Unread count = " + unread.toString());
       print("Total count = " + total.toString());
-    });
-  }
-
-  void ctExperimentsUpdated() {
-    this.setState(() async {
-      print("CTExperimentsUpdated called");
-      bool booleanVar =
-          await CleverTapPlugin.getBooleanVariable("boolVar", false);
-      print("Boolean var = " + booleanVar.toString());
-      double doubleVar =
-          await CleverTapPlugin.getDoubleVariable("doubleVar", 9.99);
-      print("Double var = " + doubleVar.toString());
-      int integerVar =
-          await CleverTapPlugin.getIntegerVariable("integerVar", 999);
-      print("Integer var = " + integerVar.toString());
-      String stringVar =
-          await CleverTapPlugin.getStringVariable("stringVar", "defaultString");
-      print("String var = " + stringVar.toString());
-      List<dynamic> boolList =
-          await CleverTapPlugin.getListOfBooleanVariable("boolListVar", null);
-      print("List of bool = " + boolList.toString());
-      List<dynamic> doubleList =
-          await CleverTapPlugin.getListOfDoubleVariable("doubleListVar", null);
-      print("List of double = " + doubleList.toString());
-      List<dynamic> intList = await CleverTapPlugin.getListOfIntegerVariable(
-          "integerListVar", null);
-      print("Integer List = " + intList.toString());
-      List<dynamic> stringList =
-          await CleverTapPlugin.getListOfStringVariable("stringListVar", null);
-      print("String List = " + stringList.toString());
-//      Map<String,bool> boolMap = await CleverTapPlugin.getMapOfBooleanVariable("boolMapVar", null);
-//      print("Map of bool = "+boolMap.toString());
-//      Map<String,double> doubleMap = await CleverTapPlugin.getMapOfDoubleVariable("doubleMapVar", null);
-//      print("Map of double = "+doubleMap.toString());
-//      Map<String,int> intMap = await CleverTapPlugin.getMapOfIntegerVariable("integerMapVar", null);
-//      print("Map of int = "+boolMap.toString());
-//      Map<String,String> strMap = await CleverTapPlugin.getMapOfStringVariable("stringMapVar", null);
-//      print("Map of string = "+strMap.toString());
     });
   }
 
@@ -295,6 +255,30 @@ class _MyAppState extends State<MyApp> {
                       title: Text("Show Inbox"),
                       subtitle: Text("Opens sample App Inbox"),
                       onTap: showInbox,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.lightBlueAccent,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Push Notification Clicked Event"),
+                      subtitle:
+                          Text("Pushes/Records an Notification Clicked event"),
+                      onTap: recordNotificationClickedEvent,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.lightBlueAccent,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Push Notification Viewed Event"),
+                      subtitle:
+                          Text("Pushes/Records an Notification Clicked event"),
+                      onTap: recordNotificationViewedEvent,
                     ),
                   ),
                 ),
@@ -581,150 +565,6 @@ class _MyAppState extends State<MyApp> {
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
-                      title: Text("Register Boolean Variable"),
-                      subtitle: Text("Registers boolean dynamic variable"),
-                      onTap: registerBooleanVar,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.lightBlueAccent,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Register Double Variable"),
-                      subtitle: Text("Registers double dynamic variable"),
-                      onTap: registerDoubleVar,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.lightBlueAccent,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Register Integer Variable"),
-                      subtitle: Text("Registers integer dynamic variable"),
-                      onTap: registerIntegerVar,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.lightBlueAccent,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Register String Variable"),
-                      subtitle: Text("Registers string dynamic variable"),
-                      onTap: registerStringVar,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.lightBlueAccent,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Register Boolean List Variable"),
-                      subtitle: Text("Registers boolean list dynamic variable"),
-                      onTap: registerBooleanListVar,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.lightBlueAccent,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Register Double List Variable"),
-                      subtitle: Text("Registers double list dynamic variable"),
-                      onTap: registerDoubleListVar,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.lightBlueAccent,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Register Integer List Variable"),
-                      subtitle: Text("Registers integer list dynamic variable"),
-                      onTap: registerIntegerListVar,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.lightBlueAccent,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Register String List Variable"),
-                      subtitle: Text("Registers string list dynamic variable"),
-                      onTap: registerStringListVar,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.lightBlueAccent,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Register Boolean Map Variable"),
-                      subtitle: Text("Registers boolean map dynamic variable"),
-                      onTap: registerBooleanMapVar,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.lightBlueAccent,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Register Double Map Variable"),
-                      subtitle: Text("Registers double map dynamic variable"),
-                      onTap: registerDoubleMapVar,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.lightBlueAccent,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Register Integer Map Variable"),
-                      subtitle: Text("Registers integer map dynamic variable"),
-                      onTap: registerIntegerMapVar,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.lightBlueAccent,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Register String Map Variable"),
-                      subtitle: Text("Registers string map dynamic variable"),
-                      onTap: registerStringMapVar,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.lightBlueAccent,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Get Variables"),
-                      subtitle: Text(
-                          "Returns values for all the registered variables"),
-                      onTap: getVariables,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.lightBlueAccent,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
                       title: Text("Get Ad Units"),
                       subtitle: Text("Returns all Display Units set"),
                       onTap: getAdUnits,
@@ -850,29 +690,60 @@ class _MyAppState extends State<MyApp> {
   }
 
   void recordEvent() {
+    var now = new DateTime.now();
     var eventData = {
-      // Key:    Value
+      /// Key:    Value
       'first': 'partridge',
-      'second': 'turtledoves'
+      'second': 'turtledoves',
+      'date' : CleverTapPlugin.getCleverTapDate(now),
+      'number' : 1
     };
     CleverTapPlugin.recordEvent("Flutter Event", eventData);
     showToast("Raised event - Flutter Event");
   }
 
+  void recordNotificationClickedEvent(){
+    var eventData = {
+      /// Key:    Value
+      'nm': 'Notification message',
+      'nt': 'Notification title',
+      'wzrk_id': '0_0',
+      'wzrk_cid' : 'Notification Channel ID'
+      ///other CleverTap Push Payload Key Values found in Step 3 of
+      ///https://developer.clevertap.com/docs/android#section-custom-android-push-notifications-handling
+    };
+    CleverTapPlugin.pushNotificationClickedEvent(eventData);
+    showToast("Raised event - Notification Clicked");
+  }
+
+  void recordNotificationViewedEvent(){
+    var eventData = {
+      /// Key:    Value
+      'nm': 'Notification message',
+      'nt': 'Notification title',
+      'wzrk_id': '0_0',
+      'wzrk_cid' : 'Notification Channel ID'
+      ///other CleverTap Push Payload Key Values found in Step 3 of
+      ///https://developer.clevertap.com/docs/android#section-custom-android-push-notifications-handling
+    };
+    CleverTapPlugin.pushNotificationViewedEvent(eventData);
+    showToast("Raised event - Notification Viewed");
+  }
+
   void recordChargedEvent() {
     var item1 = {
-      // Key:    Value
+      /// Key:    Value
       'name': 'thing1',
       'amount': '100'
     };
     var item2 = {
-      // Key:    Value
+      /// Key:    Value
       'name': 'thing2',
       'amount': '100'
     };
     var items = [item1, item2];
     var chargeDetails = {
-      // Key:    Value
+      /// Key:    Value
       'total': '200',
       'payment': 'cash'
     };
@@ -1321,119 +1192,7 @@ class _MyAppState extends State<MyApp> {
     showToast("Personalization disabled");
     print("Personalization disabled");
   }
-
-  void registerBooleanVar() {
-    CleverTapPlugin.registerBooleanVariable("boolVar");
-    showToast("boolVar variable registered");
-    print("boolVar variable registered");
-  }
-
-  void registerDoubleVar() {
-    CleverTapPlugin.registerDoubleVariable("doubleVar");
-    showToast("doubleVar variable registered");
-    print("doubleVar variable registered");
-  }
-
-  void registerIntegerVar() {
-    CleverTapPlugin.registerIntegerVariable("integerVar");
-    showToast("integerVar variable registered");
-    print("integerVar variable registered");
-  }
-
-  void registerStringVar() {
-    CleverTapPlugin.registerStringVariable("stringVar");
-    showToast("stringVar variable registered");
-    print("stringVar variable registered");
-  }
-
-  void registerBooleanListVar() {
-    CleverTapPlugin.registerListOfBooleanVariable("boolListVar");
-    showToast("boolListVar variable registered");
-    print("boolListVar variable registered");
-  }
-
-  void registerDoubleListVar() {
-    CleverTapPlugin.registerListOfDoubleVariable("doubleListVar");
-    showToast("doubleListVar variable registered");
-    print("doubleListVar variable registered");
-  }
-
-  void registerIntegerListVar() {
-    CleverTapPlugin.registerListOfIntegerVariable("integerListVar");
-    showToast("integerListVar variable registered");
-    print("integerListVar variable registered");
-  }
-
-  void registerStringListVar() {
-    CleverTapPlugin.registerListOfStringVariable("stringListVar");
-    showToast("stringListVar variable registered");
-    print("stringListVar variable registered");
-  }
-
-  void registerBooleanMapVar() {
-    CleverTapPlugin.registerMapOfBooleanVariable("boolMapVar");
-    showToast("boolMapVar variable registered");
-    print("boolMapVar variable registered");
-  }
-
-  void registerDoubleMapVar() {
-    CleverTapPlugin.registerMapOfDoubleVariable("doubleMapVar");
-    showToast("doubleMapVar variable registered");
-    print("doubleMapVar variable registered");
-  }
-
-  void registerIntegerMapVar() {
-    CleverTapPlugin.registerMapOfIntegerVariable("integerMapVar");
-    showToast("integerMaptVar variable registered");
-    print("integerMaptVar variable registered");
-  }
-
-  void registerStringMapVar() {
-    CleverTapPlugin.registerMapOfStringVariable("stringMapVar");
-    showToast("stringMapVar variable registered");
-    print("stringMapVar variable registered");
-  }
-
-  void getVariables() async {
-    showToast("check console for logs");
-    bool booleanVar =
-        await CleverTapPlugin.getBooleanVariable("boolVar", false);
-    print("Boolean var = " + booleanVar.toString());
-    double doubleVar =
-        await CleverTapPlugin.getDoubleVariable("doubleVar", 9.99);
-    print("Double var = " + doubleVar.toString());
-    int integerVar =
-        await CleverTapPlugin.getIntegerVariable("integerVar", 999);
-    print("Integer var = " + integerVar.toString());
-    String stringVar =
-        await CleverTapPlugin.getStringVariable("stringVar", "defaultString");
-    print("String var = " + stringVar.toString());
-    List<dynamic> boolList =
-        await CleverTapPlugin.getListOfBooleanVariable("boolListVar", null);
-    print("List of bool = " + boolList.toString());
-    List<dynamic> doubleList =
-        await CleverTapPlugin.getListOfDoubleVariable("doubleListVar", null);
-    print("List of double = " + doubleList.toString());
-    List<dynamic> intList =
-        await CleverTapPlugin.getListOfIntegerVariable("integerListVar", null);
-    print("Integer List = " + intList.toString());
-    List<dynamic> stringList =
-        await CleverTapPlugin.getListOfStringVariable("stringListVar", null);
-    print("String List = " + stringList.toString());
-    Map<String, bool> boolMap =
-        await CleverTapPlugin.getMapOfBooleanVariable("boolMapVar", null);
-    print("Map of bool = " + boolMap.toString());
-    Map<String, double> doubleMap =
-        await CleverTapPlugin.getMapOfDoubleVariable("doubleMapVar", null);
-    print("Map of double = " + doubleMap.toString());
-    Map<String, int> intMap =
-        await CleverTapPlugin.getMapOfIntegerVariable("integerMapVar", null);
-    print("Map of int = " + intMap.toString());
-    Map<String, String> strMap =
-        await CleverTapPlugin.getMapOfStringVariable("stringMapVar", null);
-    print("Map of string = " + strMap.toString());
-  }
-
+  
   void getAdUnits() async {
     List displayUnits = await CleverTapPlugin.getAllDisplayUnits();
     showToast("check console for logs");
@@ -1443,10 +1202,10 @@ class _MyAppState extends State<MyApp> {
   void fetch() {
     CleverTapPlugin.fetch();
     showToast("check console for logs");
-
     ///CleverTapPlugin.fetchWithMinimumIntervalInSeconds(0);
   }
 
+  // ignore: must_call_super
   void activate() {
     CleverTapPlugin.activate();
     showToast("check console for logs");

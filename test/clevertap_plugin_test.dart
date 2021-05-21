@@ -33,19 +33,19 @@ void main() {
   Map<String, String> mockStringMap = new Map();
   mockStringMap.putIfAbsent("key1", () => "mock");
 
-  List<dynamic> testList = List();
+  List<dynamic> testList = [];
   testList.add("message1");
 
-  List<bool> defaultBoolList = List();
+  List<bool> defaultBoolList = [];
   defaultBoolList.add(true);
 
-  List<double> defaultDoubleList = List();
+  List<double> defaultDoubleList = [];
   defaultDoubleList.add(9.9);
 
-  List<int> defaultIntegerList = List();
+  List<int> defaultIntegerList = [];
   defaultIntegerList.add(9);
 
-  List<String> defaultStringList = List();
+  List<String> defaultStringList = [];
   defaultStringList.add("defaultStrings");
 
   var eventName = 'Flutter Event';
