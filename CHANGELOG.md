@@ -1,6 +1,6 @@
 ## CHANGE LOG
 
-### Version 1.2.2 (May 20, 2021)
+### Version 1.2.2 (May 21, 2021)
 * Supports [CleverTap Android SDK v4.1.1](https://github.com/CleverTap/clevertap-android-sdk/releases/tag/core-v4.1.1)
 * Supports [CleverTap iOS SDK v3.9.4](https://github.com/CleverTap/clevertap-ios-sdk/releases/tag/3.9.4)
 * Removed Product A/B Testing (Dynamic Variables) code
