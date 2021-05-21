@@ -3,8 +3,9 @@
 ### Version 1.2.2 (May 21, 2021)
 * Supports [CleverTap Android SDK v4.1.1](https://github.com/CleverTap/clevertap-android-sdk/releases/tag/core-v4.1.1)
 * Supports [CleverTap iOS SDK v3.9.4](https://github.com/CleverTap/clevertap-ios-sdk/releases/tag/3.9.4)
-* Removed Product A/B Testing (Dynamic Variables) code
-* Removed `profileSetGraphUser` method
+* Removes Product A/B Testing (Dynamic Variables) code
+* Removes `profileSetGraphUser` method
+* Adds `pushNotificationViewedEvent` and `pushNotificationClickedEvent`
 
 ### Version 1.2.1 (April 23, 2021)
 * Update and Freeze [CleverTap Plugin Podspec](https://github.com/CleverTap/clevertap-flutter/blob/master/ios/clevertap_plugin.podspec) to a specific version of a CleverTap iOS SDK
