@@ -3,7 +3,6 @@
 #import "CleverTapPlugin.h"
 #import "CleverTap+Inbox.h"
 #import "CleverTapUTMDetail.h"
-#import "CleverTap+ABTesting.h"
 #import "CleverTapEventDetail.h"
 #import "CleverTapSyncDelegate.h"
 #import "CleverTap+DisplayUnit.h"
@@ -57,9 +56,6 @@ static NSDateFormatter *dateFormatter;
         [[clevertap featureFlags] setDelegate:self];
         [clevertap setPushNotificationDelegate:self];
         [clevertap setLibrary:@"Flutter"];
-        [clevertap registerExperimentsUpdatedBlock:^{
-            [self postNotificationWithName:kCleverTapExperimentsDidUpdate andBody:nil];
-        }];
         [self addObservers];
     }
     return self;
@@ -92,7 +88,7 @@ static NSDateFormatter *dateFormatter;
         [self showInbox:call withResult:result];
     else if ([@"onUserLogin" isEqualToString:call.method])
         [self onUserLogin:call withResult:result];
-    else if ([@"setPushTokenAsString" isEqualToString:call.method])
+    else if ([@"setPushToken" isEqualToString:call.method])
         [self setPushTokenAsString:call withResult:result];
     else if ([@"registerForPush" isEqualToString:call.method])
         [self registerForPush:call withResult:result];
@@ -124,8 +120,6 @@ static NSDateFormatter *dateFormatter;
         [self profileGetCleverTapAttributionIdentifier:call withResult:result];
     else if ([@"profileGetCleverTapID" isEqualToString:call.method])
         [self profileGetCleverTapID:call withResult:result];
-    else if ([@"profileSetGraphUser" isEqualToString:call.method])
-        [self profileSetGraphUser:call withResult:result];
     else if ([@"profileGetProperty" isEqualToString:call.method])
         [self profileGetProperty:call withResult:result];
     else if ([@"profileRemoveValueForKey" isEqualToString:call.method])
@@ -172,54 +166,6 @@ static NSDateFormatter *dateFormatter;
         [self pushInboxNotificationViewedEventForId:call withResult:result];
     else if ([@"getInitialUrl" isEqualToString:call.method])
         [self getInitialUrl:call result:result];
-    else if ([@"registerBooleanVariable" isEqualToString:call.method])
-        [self registerBooleanVariable:call withResult:result];
-    else if ([@"registerDoubleVariable" isEqualToString:call.method])
-        [self registerDoubleVariable:call withResult:result];
-    else if ([@"registerIntegerVariable" isEqualToString:call.method])
-        [self registerIntegerVariable:call withResult:result];
-    else if ([@"registerStringVariable" isEqualToString:call.method])
-        [self registerStringVariable:call withResult:result];
-    else if ([@"registerListOfBooleanVariable" isEqualToString:call.method])
-        [self registerListOfBooleanVariable:call withResult:result];
-    else if ([@"registerListOfDoubleVariable" isEqualToString:call.method])
-        [self registerListOfDoubleVariable:call withResult:result];
-    else if ([@"registerListOfIntegerVariable" isEqualToString:call.method])
-        [self registerListOfIntegerVariable:call withResult:result];
-    else if ([@"registerListOfStringVariable" isEqualToString:call.method])
-        [self registerListOfStringVariable:call withResult:result];
-    else if ([@"registerMapOfBooleanVariable" isEqualToString:call.method])
-        [self registerMapOfBooleanVariable:call withResult:result];
-    else if ([@"registerMapOfDoubleVariable" isEqualToString:call.method])
-        [self registerMapOfDoubleVariable:call withResult:result];
-    else if ([@"registerMapOfIntegerVariable" isEqualToString:call.method])
-        [self registerMapOfIntegerVariable:call withResult:result];
-    else if ([@"registerMapOfStringVariable" isEqualToString:call.method])
-        [self registerMapOfStringVariable:call withResult:result];
-    else if ([@"getBooleanVariable" isEqualToString:call.method])
-        [self getBooleanVariable:call withResult:result];
-    else if ([@"getDoubleVariable" isEqualToString:call.method])
-        [self getDoubleVariable:call withResult:result];
-    else if ([@"getIntegerVariable" isEqualToString:call.method])
-        [self getIntegerVariable:call withResult:result];
-    else if ([@"getStringVariable" isEqualToString:call.method])
-        [self getStringVariable:call withResult:result];
-    else if ([@"getListOfBooleanVariable" isEqualToString:call.method])
-        [self getListOfBooleanVariable:call withResult:result];
-    else if ([@"getListOfDoubleVariable" isEqualToString:call.method])
-        [self getListOfDoubleVariable:call withResult:result];
-    else if ([@"getListOfIntegerVariable" isEqualToString:call.method])
-        [self getListOfIntegerVariable:call withResult:result];
-    else if ([@"getListOfStringVariable" isEqualToString:call.method])
-        [self getListOfStringVariable:call withResult:result];
-    else if ([@"getMapOfBooleanVariable" isEqualToString:call.method])
-        [self getMapOfBooleanVariable:call withResult:result];
-    else if ([@"getMapOfDoubleVariable" isEqualToString:call.method])
-        [self getMapOfDoubleVariable:call withResult:result];
-    else if ([@"getMapOfIntegerVariable" isEqualToString:call.method])
-        [self getMapOfIntegerVariable:call withResult:result];
-    else if ([@"getMapOfStringVariable" isEqualToString:call.method])
-        [self getMapOfStringVariable:call withResult:result];
     else if ([@"getAllDisplayUnits" isEqualToString:call.method])
         [self getAllDisplayUnits:call withResult:result];
     else if ([@"getDisplayUnitForId" isEqualToString:call.method])
@@ -228,8 +174,6 @@ static NSDateFormatter *dateFormatter;
         [self pushDisplayUnitViewedEvent:call withResult:result];
     else if ([@"pushDisplayUnitClickedEvent" isEqualToString:call.method])
         [self pushDisplayUnitClickedEvent:call withResult:result];
-    else if ([@"setUIEditorConnectionEnabled" isEqualToString:call.method])
-        [self setUIEditorConnectionEnabled:call withResult:result];
     else if ([@"fetch" isEqualToString:call.method])
         [self fetch:call withResult:result];
     else if ([@"fetchWithMinimumFetchIntervalInSeconds" isEqualToString:call.method])
@@ -246,6 +190,10 @@ static NSDateFormatter *dateFormatter;
         [self getLastFetchTimeStampInMillis:call withResult:result];
     else if ([@"getFeatureFlag" isEqualToString:call.method])
         [self getFeatureFlag:call withResult:result];
+    else if ([@"pushNotificationViewedEvent" isEqualToString:call.method])
+        [self pushNotificationViewedEvent:call withResult:result];
+    else if ([@"pushNotificationClickedEvent" isEqualToString:call.method])
+        [self pushNotificationClickedEvent:call withResult:result];
     else if ([@"createNotification" isEqualToString:call.method])
         result(nil);
     else if ([@"processPushNotification" isEqualToString:call.method])
@@ -446,11 +394,6 @@ static NSDateFormatter *dateFormatter;
     result([[CleverTap sharedInstance] profileGetCleverTapID]);
 }
 
-- (void)profileSetGraphUser:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    
-    [[CleverTap sharedInstance] profilePushGraphUser:call.arguments[@"profile"]];
-}
-
 - (void)profileGetProperty:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     
     result([[CleverTap sharedInstance] profileGet:call.arguments[@"propertyName"]]);
@@ -623,6 +566,10 @@ static NSDateFormatter *dateFormatter;
     if (title) {
         _config.title = title;
     }
+    NSString *firstTabTitle = [dict valueForKey:@"firstTabTitle"];
+    if (firstTabTitle) {
+        _config.firstTabTitle = firstTabTitle;
+    }
     NSArray *messageTags = [dict valueForKey:@"tabs"];
     if (messageTags) {
         _config.messageTags = messageTags;
@@ -682,159 +629,6 @@ static NSDateFormatter *dateFormatter;
                      blue:((CGFloat) (hexint & 0xFF))/255
                     alpha:alpha];
     return color;
-}
-
-
-#pragma mark - Dynamic Variables
-
-- (void)setUIEditorConnectionEnabled:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    
-    [CleverTap setUIEditorConnectionEnabled:call.arguments[@"value"]];
-    result(nil);
-}
-
-- (void)registerBooleanVariable:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    
-    [[CleverTap sharedInstance] registerBoolVariableWithName:call.arguments[@"name"]];
-    result(nil);
-}
-
-- (void)registerDoubleVariable:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    
-    [[CleverTap sharedInstance] registerDoubleVariableWithName:call.arguments[@"name"]];
-    result(nil);
-}
-
-- (void)registerIntegerVariable:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    
-    [[CleverTap sharedInstance] registerIntegerVariableWithName:call.arguments[@"name"]];
-    result(nil);
-}
-
-- (void)registerStringVariable:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    
-    [[CleverTap sharedInstance] registerStringVariableWithName:call.arguments[@"name"]];
-    result(nil);
-}
-
-- (void)registerListOfBooleanVariable:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    
-    [[CleverTap sharedInstance] registerArrayOfBoolVariableWithName:call.arguments[@"name"]];
-    result(nil);
-}
-
-- (void)registerListOfDoubleVariable:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    
-    [[CleverTap sharedInstance] registerArrayOfDoubleVariableWithName:call.arguments[@"name"]];
-    result(nil);
-}
-
-- (void)registerListOfIntegerVariable:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    
-    [[CleverTap sharedInstance] registerArrayOfIntegerVariableWithName:call.arguments[@"name"]];
-    result(nil);
-}
-
-- (void)registerListOfStringVariable:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    
-    [[CleverTap sharedInstance] registerArrayOfStringVariableWithName:call.arguments[@"name"]];
-    result(nil);
-}
-
-- (void)registerMapOfBooleanVariable:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    
-    [[CleverTap sharedInstance] registerDictionaryOfBoolVariableWithName:call.arguments[@"name"]];
-    result(nil);
-}
-
-- (void)registerMapOfDoubleVariable:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    
-    [[CleverTap sharedInstance] registerDictionaryOfDoubleVariableWithName:call.arguments[@"name"]];
-    result(nil);
-}
-
-- (void)registerMapOfIntegerVariable:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    
-    [[CleverTap sharedInstance] registerDictionaryOfIntegerVariableWithName:call.arguments[@"name"]];
-    result(nil);
-}
-
-- (void)registerMapOfStringVariable:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    
-    [[CleverTap sharedInstance] registerDictionaryOfStringVariableWithName:call.arguments[@"name"]];
-    result(nil);
-}
-
-- (void)getBooleanVariable:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    
-    BOOL res = [[CleverTap sharedInstance] getBoolVariableWithName:call.arguments[@"name"] defaultValue:call.arguments[@"defaultValue"]];
-    result(@(res));
-}
-
-- (void)getDoubleVariable:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    
-    double res = [[CleverTap sharedInstance] getDoubleVariableWithName:call.arguments[@"name"] defaultValue:[call.arguments[@"defaultValue"] doubleValue]];
-    result(@(res));
-}
-
-- (void)getIntegerVariable:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    
-    int res = [[CleverTap sharedInstance] getIntegerVariableWithName:call.arguments[@"name"] defaultValue:[call.arguments[@"defaultValue"] intValue]];
-    result(@(res));
-}
-
-- (void)getStringVariable:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    
-    NSString *res = [[CleverTap sharedInstance] getStringVariableWithName:call.arguments[@"name"] defaultValue:call.arguments[@"defaultValue"]];
-    result(res);
-}
-
-- (void)getListOfBooleanVariable:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    
-    NSArray *res = [[CleverTap sharedInstance] getArrayOfBoolVariableWithName:call.arguments[@"name"] defaultValue:call.arguments[@"defaultValue"]];
-    result(res);
-}
-
-- (void)getListOfDoubleVariable:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    
-    NSArray *res = [[CleverTap sharedInstance] getArrayOfDoubleVariableWithName:call.arguments[@"name"] defaultValue:call.arguments[@"defaultValue"]];
-    result(res);
-}
-
-- (void)getListOfIntegerVariable:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    
-    NSArray *res = [[CleverTap sharedInstance] getArrayOfIntegerVariableWithName:call.arguments[@"name"] defaultValue:call.arguments[@"defaultValue"]];
-    result(res);
-}
-
-- (void)getListOfStringVariable:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    
-    NSArray *res = [[CleverTap sharedInstance] getArrayOfStringVariableWithName:call.arguments[@"name"] defaultValue:call.arguments[@"defaultValue"]];
-    result(res);
-}
-
-- (void)getMapOfBooleanVariable:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    
-    NSDictionary *res = [[CleverTap sharedInstance] getDictionaryOfBoolVariableWithName:call.arguments[@"name"] defaultValue:call.arguments[@"defaultValue"]];
-    result(res);
-}
-
-- (void)getMapOfDoubleVariable:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    
-    NSDictionary *res = [[CleverTap sharedInstance] getDictionaryOfDoubleVariableWithName:call.arguments[@"name"] defaultValue:call.arguments[@"defaultValue"]];
-    result(res);
-}
-
-- (void)getMapOfIntegerVariable:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    
-    NSDictionary *res = [[CleverTap sharedInstance] getDictionaryOfIntegerVariableWithName:call.arguments[@"name"] defaultValue:call.arguments[@"defaultValue"]];
-    result(res);
-}
-
-- (void)getMapOfStringVariable:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    
-    NSDictionary *res = [[CleverTap sharedInstance] getDictionaryOfStringVariableWithName:call.arguments[@"name"] defaultValue:call.arguments[@"defaultValue"]];
-    result(res);
 }
 
 
@@ -1083,11 +877,6 @@ static NSDateFormatter *dateFormatter;
     
     [[NSNotificationCenter defaultCenter] addObserver:self
                                              selector:@selector(emitEventInternal:)
-                                                 name:kCleverTapExperimentsDidUpdate
-                                               object:nil];
-    
-    [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(emitEventInternal:)
                                                  name:kCleverTapDisplayUnitsLoaded
                                                object:nil];
     
@@ -1201,5 +990,18 @@ static NSDateFormatter *dateFormatter;
     [self postNotificationWithName:kCleverTapPushNotificationClicked andBody:customExtras];
 }
 
+#pragma mark - Push Notifications
+
+- (void)pushNotificationViewedEvent:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    
+    [[CleverTap sharedInstance] recordNotificationViewedEventWithData:call.arguments[@"notificationData"]];
+    result(nil);
+}
+
+- (void)pushNotificationClickedEvent:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    
+    [[CleverTap sharedInstance] recordNotificationClickedEventWithData:call.arguments[@"notificationData"]];
+    result(nil);
+}
 
 @end
