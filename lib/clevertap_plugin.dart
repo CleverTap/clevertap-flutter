@@ -356,7 +356,7 @@ class CleverTapPlugin {
   static Future<void> pushNotificationViewedEvent(
       Map<String, dynamic> extras) async {
     return await _channel
-        .invokeMethod('pushNotificationViewedEvent', {'extras': extras});
+        .invokeMethod('pushNotificationViewedEvent', {'notificationData': extras});
   }
 
   /// Record a Screen View event

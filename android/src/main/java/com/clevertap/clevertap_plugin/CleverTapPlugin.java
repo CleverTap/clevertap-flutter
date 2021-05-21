@@ -1133,7 +1133,7 @@ public class CleverTapPlugin implements ActivityAware,
     }
 
     private void pushNotificationClickedEvent(MethodCall call, Result result) {
-        HashMap<String, Object> extrasMap = call.argument("extras");
+        HashMap<String, Object> extrasMap = call.argument("notificationData");
         Bundle extras = Utils.mapToBundle(extrasMap);
         if (isCleverTapNotNull(cleverTapAPI)) {
             this.cleverTapAPI.pushNotificationClickedEvent(extras);
@@ -1143,7 +1143,7 @@ public class CleverTapPlugin implements ActivityAware,
     }
 
     private void pushNotificationViewedEvent(MethodCall call, Result result) {
-        HashMap<String, Object> extrasMap = call.argument("extras");
+        HashMap<String, Object> extrasMap = call.argument("notificationData");
         Bundle extras = Utils.mapToBundle(extrasMap);
         if (isCleverTapNotNull(cleverTapAPI)) {
             this.cleverTapAPI.pushNotificationViewedEvent(extras);
