@@ -1,11 +1,5 @@
 package com.clevertap.clevertap_plugin;
 
-import static com.clevertap.clevertap_plugin.Constants.ANDROID_O_CREATE_CHANNEL_ERROR_MSG;
-import static com.clevertap.clevertap_plugin.Constants.ANDROID_O_DELETE_NOTIFICATION_ERROR_MSG;
-import static com.clevertap.clevertap_plugin.Constants.ERROR_IOS;
-import static com.clevertap.clevertap_plugin.Constants.ERROR_MSG;
-import static com.clevertap.clevertap_plugin.Constants.ERROR_MSG_ID;
-
 import android.app.Activity;
 import android.content.Context;
 import android.location.Location;
@@ -64,6 +58,18 @@ public class CleverTapPlugin implements ActivityAware,
         CTPushAmpListener, CTPushNotificationListener {
 
     private static final String TAG = "CleverTapPlugin";
+
+    private static final String ANDROID_O_DELETE_NOTIFICATION_ERROR_MSG = "Unable to delete notification " +
+            "for devices less than 26(O)";
+
+    private static final String ERROR_MSG = "CleverTap Instance is not initialized";
+
+    private static final String ANDROID_O_CREATE_CHANNEL_ERROR_MSG = "Unable to create notification channels" +
+            "for devices less than 26(O)";
+
+    private static final String ERROR_MSG_ID = "Message Id is null or empty";
+
+    private static final String ERROR_IOS = " method is only applicable for iOS";
 
     private Activity activity;
 
@@ -193,7 +199,7 @@ public class CleverTapPlugin implements ActivityAware,
             }
             //Baidu/Xiaomi/Huawei push notifications
             case "setXiaomiPushToken": {
-
+                setPushToken(call, result, PushType.XPS);
                 break;
             }
 
