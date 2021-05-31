@@ -337,17 +337,6 @@ class _MyAppState extends State<MyApp> {
                   ),
                 ),
                 Card(
-                  color: Colors.lightBlueAccent,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Get Location"),
-                      subtitle: Text("Use to get Location of a user"),
-                      onTap: getLocation,
-                    ),
-                  ),
-                ),
-                Card(
                   color: Colors.white,
                   child: Padding(
                     padding: const EdgeInsets.all(0.0),
@@ -1079,13 +1068,6 @@ class _MyAppState extends State<MyApp> {
     var long = 72.87;
     CleverTapPlugin.setLocation(lat, long);
     showToast("Location is set");
-  }
-
-  void getLocation() {
-    var lat = 20.07;
-    var long = 71.87;
-    CleverTapPlugin.getLocation(lat, long);
-    showToast("Got the location");
   }
 
   void getCTAttributionId() {
