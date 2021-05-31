@@ -1,10 +1,10 @@
-import 'dart:async';
 import 'dart:convert';
-import 'dart:io' show Platform;
 
-import 'package:clevertap_plugin/clevertap_plugin.dart';
 import 'package:flutter/material.dart';
+import 'dart:async';
+import 'dart:io' show Platform;
 import 'package:flutter_styled_toast/flutter_styled_toast.dart';
+import 'package:clevertap_plugin/clevertap_plugin.dart';
 
 void main() => runApp(MyApp());
 
@@ -29,10 +29,10 @@ class _MyAppState extends State<MyApp> {
     CleverTapPlugin.createNotificationChannel("fluttertest", "Flutter Test", "Flutter Test", 3, true);
     CleverTapPlugin.initializeInbox();
     CleverTapPlugin.registerForPush(); //only for iOS
-    ///var initialUrl = CleverTapPlugin.getInitialUrl();
+    //var initialUrl = CleverTapPlugin.getInitialUrl();
   }
 
-  /// Platform messages are asynchronous, so we initialize in an async method.
+  // Platform messages are asynchronous, so we initialize in an async method.
   Future<void> initPlatformState() async {
     if (!mounted) return;
   }
@@ -757,60 +757,29 @@ class _MyAppState extends State<MyApp> {
   }
 
   void recordEvent() {
-    var now = new DateTime.now();
     var eventData = {
-      /// Key:    Value
+      // Key:    Value
       'first': 'partridge',
-      'second': 'turtledoves',
-      'date' : CleverTapPlugin.getCleverTapDate(now),
-      'number' : 1
+      'second': 'turtledoves'
     };
     CleverTapPlugin.recordEvent("Flutter Event", eventData);
     showToast("Raised event - Flutter Event");
   }
 
-  void recordNotificationClickedEvent(){
-    var eventData = {
-      /// Key:    Value
-      'nm': 'Notification message',
-      'nt': 'Notification title',
-      'wzrk_id': '0_0',
-      'wzrk_cid' : 'Notification Channel ID'
-      ///other CleverTap Push Payload Key Values found in Step 3 of
-      ///https://developer.clevertap.com/docs/android#section-custom-android-push-notifications-handling
-    };
-    CleverTapPlugin.pushNotificationClickedEvent(eventData);
-    showToast("Raised event - Notification Clicked");
-  }
-
-  void recordNotificationViewedEvent(){
-    var eventData = {
-      /// Key:    Value
-      'nm': 'Notification message',
-      'nt': 'Notification title',
-      'wzrk_id': '0_0',
-      'wzrk_cid' : 'Notification Channel ID'
-      ///other CleverTap Push Payload Key Values found in Step 3 of
-      ///https://developer.clevertap.com/docs/android#section-custom-android-push-notifications-handling
-    };
-    CleverTapPlugin.pushNotificationViewedEvent(eventData);
-    showToast("Raised event - Notification Viewed");
-  }
-
   void recordChargedEvent() {
     var item1 = {
-      /// Key:    Value
+      // Key:    Value
       'name': 'thing1',
       'amount': '100'
     };
     var item2 = {
-      /// Key:    Value
+      // Key:    Value
       'name': 'thing2',
       'amount': '100'
     };
     var items = [item1, item2];
     var chargeDetails = {
-      /// Key:    Value
+      // Key:    Value
       'total': '200',
       'payment': 'cash'
     };
@@ -821,12 +790,12 @@ class _MyAppState extends State<MyApp> {
   void recordUser() {
     var stuff = ["bags", "shoes"];
     var profile = {
-      'Name': 'Thor',
+      'Name': 'sarvesh',
       'Identity': '100',
       'DOB': '22-04-2000',
 
       ///Key always has to be "DOB" and format should always be dd-MM-yyyy
-      'Email': 'thor1@asgard.com',
+      'Email': 'sarveshgk10@gmail.com',
       'Phone': '14155551234',
       'props': 'property1',
       'stuff': stuff
@@ -1272,10 +1241,10 @@ class _MyAppState extends State<MyApp> {
   void fetch() {
     CleverTapPlugin.fetch();
     showToast("check console for logs");
+
     ///CleverTapPlugin.fetchWithMinimumIntervalInSeconds(0);
   }
 
-  // ignore: must_call_super
   void activate() {
     CleverTapPlugin.activate();
     showToast("check console for logs");
