@@ -1,117 +1,86 @@
 ## Example Flutter Usage
 
 #### Grab a reference  
-```Dart 
-const CleverTap = require('clevertap-flutter');
+```Dart
+  const CleverTap = require('clevertap-flutter');
+
 ```
 
 ## User Properties
 
-#### Update User Profile(Push Profile )
+#### Update User Profile(Push Profile)
 ```Dart
-Void recordUser() {
-	    var stuff = ["bags", "shoes"];
-	    var profile = {
-	      'Name': 'S',
-	      'Identity': '100',
-	      'DOB': '22-04-2000',
-	
-
-	      ///Key always has to be "DOB" and format should always be dd-MM-yyyy
-	      'Email': 's@gmail.com',
-	      'Phone': '14155551234',
-	      'props': 'property1',
-	      'stuff': stuff
-	    };
-	    CleverTapPlugin.profileSet(profile);
-	    showToast("Pushed profile " + profile.toString());
-	  }
+    var stuff = ["bags", "shoes"];
+    var profile = {
+         'Name': 'S',
+         'Identity': '100',
+         'DOB': '22-04-2000',
+         ///Key always has to be "DOB" and format should always be dd-MM-yyyy
+         'Email': 's@gmail.com',
+         'Phone': '14155551234',
+         'props': 'property1',
+         'stuff': stuff
+    };
+    CleverTapPlugin.profileSet(profile);
 ```
 
 #### Set Multi Values For Key 
-``` Dart
-void setProfileMultiValue() {
-	    var values = ["value1", "value2"];
-	    CleverTapPlugin.profileSetMultiValues("props", values);
-	    showToast("check console for details");
-	  }
+```Dart
+    var values = ["value1", "value2"];
+    CleverTapPlugin.profileSetMultiValues("props", values);
 ```
 
 #### Remove Multi Value For Key 
 ```Dart
-void removeMultiValues() {
-	    var values = ["value1", "value2"];
-	    CleverTapPlugin.profileRemoveMultiValues("props", values);
-	    showToast("check console for details");
-	  }
+    var values = ["value1", "value2"];
+    CleverTapPlugin.profileRemoveMultiValues("props", values);
 ```
 
 #### Add Multi Value For Key
 ```Dart
-void addMultiValues() {
-	    var values = ["value1", "value2"];
-	    CleverTapPlugin.profileAddMultiValues("props", values);
-	    showToast("check console for details");
-	  }
+    var values = ["value1", "value2"];
+    CleverTapPlugin.profileAddMultiValues("props", values);
 ```
 
 #### Create a User profile when user logs in (On User Login)
 ```Dart
-void onUserLogin() {
-	    var stuff = ["bags", "shoes"];
-	    var profile = {
-	      'Name': 'S',
-	      'Identity': '100',
-	      'Email': 's@gmail.com',
-	      'Phone': '+14155551234',
-	      'stuff': stuff
-	    };
+    var stuff = ["bags", "shoes"];
+    var profile = {
+      'Name': 'Captain America',
+      'Identity': '100',
+      'Email': 'captain@america.com',
+      'Phone': '+14155551234',
+      'stuff': stuff
+    };
+    CleverTapPlugin.onUserLogin(profile);
 ```
 
 #### Get CleverTap Reference id
 ```Dart
-void getCleverTapId() {
-	    CleverTapPlugin.profileGetCleverTapID().then((clevertapId) {
-	      if (clevertapId == null) return;
-	      setState((() {
-	        showToast("$clevertapId");
-	        print("$clevertapId");
-	      }));
-	    }).catchError((error) {
-	      setState(() {
-	        print("$error");
-	      });
-	    });
-	  }
+  CleverTapPlugin.profileGetCleverTapID().then((clevertapId) {})
+
 ```
 
 #### Set Location to User Profile
 ```Dart
-void setLocation() {
-	    var lat = 19.07;
+        var lat = 19.07;
 	    var long = 72.87;
 	    CleverTapPlugin.setLocation(lat, long);
-	    showToast("Location is set");
-	  }
 ```
 
 #### Record an event  
 ```Dart
-void recordEvent() {
-	    var eventData = {
+        var eventData = {
 	      // Key:    Value
 	      'first': 'partridge',
 	      'second': 'turtledoves'
 	    };
 	    CleverTapPlugin.recordEvent("Flutter Event", eventData);
-	    showToast("Raised event - Flutter Event");
-	  }
 ```
 
 #### Record Charged event
 ```Dart
-void recordChargedEvent() {
-	    var item1 = {
+        var item1 = {
 	      // Key:    Value
 	      'name': 'thing1',
 	      'amount': '100'
@@ -128,26 +97,29 @@ void recordChargedEvent() {
 	      'payment': 'cash'
 	    };
 	    CleverTapPlugin.recordChargedEvent(chargeDetails, items);
-	    showToast("Raised event - Charged");
-	  }
 ```
 
 ## In App
 
 #### On In App Button Click
 ```Dart
-public void onInAppButtonClick(HashMap<String, String> payload) {
-	        invokeMethodOnUiThread("onInAppButtonClick", payload);
-	    }
+_clevertapPlugin.setCleverTapInAppNotificationButtonClickedHandler(inAppNotificationButtonClicked);
+
+void inAppNotificationButtonClicked(Map<String, dynamic> map) {
+    this.setState(() {
+      print("inAppNotificationButtonClicked called = ${map.toString()}");
+    });
+  }
 ```
 #### On Dismissed
 ```Dart
-void inAppNotificationDismissed(Map<String, dynamic> map) {
-	    this.setState(() {
-	      print("inAppNotificationDismissed called");
-	    });
-	  }
+_clevertapPlugin.setCleverTapInAppNotificationDismissedHandler(inAppNotificationDismissed)
 
+void inAppNotificationDismissed(Map<String, dynamic> map) {
+    this.setState(() {
+      print("inAppNotificationDismissed called");
+    });
+  }
 ```
 
 ## App Inbox
@@ -160,179 +132,72 @@ CleverTapPlugin.initializeInbox();
 
 #### Show the App Inbox
 ```Dart
-void showInbox() {
-	    if (inboxInitialized) {
-	      showToast("Opening App Inbox", onDismiss: () {
-	        var styleConfig = {
+            var styleConfig = {
 	          'noMessageTextColor': '#ff6600',
 	          'noMessageText': 'No message(s) to show.',
 	          'navBarTitle': 'App Inbox'
 	        };
 	        CleverTapPlugin.showInbox(styleConfig);
-	      });
-	    }
-	  }
  ```
 
 #### Get Total message count
 ```Dart
-void inboxMessagesDidUpdate() {
-	    this.setState(() async {
-	      print("inboxMessagesDidUpdate called");
-	      int unread = await CleverTapPlugin.getInboxMessageUnreadCount();
-	      int total = await CleverTapPlugin.getInboxMessageCount();
-	      print("Unread count = " + unread.toString());
-	      print("Total count = " + total.toString());
-	    });
-	  }
+int total = await CleverTapPlugin.getInboxMessageCount();
+print("Total count = " + total.toString());
+
 ```
 
 #### Get Total unread message count
 ```Dart
-void inboxMessagesDidUpdate() {
-	    this.setState(() async {
-	      print("inboxMessagesDidUpdate called");
-	      int unread = await CleverTapPlugin.getInboxMessageUnreadCount();
-	      int total = await CleverTapPlugin.getInboxMessageCount();
-	      print("Unread count = " + unread.toString());
-	      print("Total count = " + total.toString());
-	    });
-	  }
+int unread = await CleverTapPlugin.getInboxMessageUnreadCount();
+print("Unread count = " + unread.toString());
+	      
 ```
 
 #### Get All Inbox Messages
 ```Dart
-  void getAllInboxMessages() async {
-	    List messages = await CleverTapPlugin.getAllInboxMessages();
-	    showToast("See all inbox messages in console");
-	    print("Inbox Messages = " + messages.toString());
-	  }
+  List messages = await CleverTapPlugin.getAllInboxMessages();
+
 ```
 
 #### Get all Inbox unread messages
 ```Dart
-void getUnreadInboxMessages() async {
-	    List messages = await CleverTapPlugin.getUnreadInboxMessages();
-	    showToast("See unread inbox messages in console");
-	    print("Unread Inbox Messages = " + messages.toString());
-	  }
+  List messages = await CleverTapPlugin.getUnreadInboxMessages();
+
 ```
 
-#### Get inbox Id
+#### Get Inbox Message for given Id
 ```Dart
-void getInboxMessageForId() async {
-	    var messageId = await getFirstInboxMessageId();
-	
-
-	    if (messageId == null) {
-	      setState((() {
-	        showToast("Inbox Message id is null");
-	        print("Inbox Message id is null");
-	      }));
-	      return;
-	    }
+var messageForId = await CleverTapPlugin.getInboxMessageForId(messageId);
 				
 ```
 
 #### Delete message with id
 ```Dart
-void deleteInboxMessageForId() async {
-	    var messageId = await getFirstInboxMessageId();
-	
-
-	    if (messageId == null) {
-	      setState((() {
-	        showToast("Inbox Message id is null");
-	        print("Inbox Message id is null");
-	      }));
-	      return;
-	    }
-	
+await CleverTapPlugin.deleteInboxMessageForId(messageId);	
 ```
 
 #### Mark a message as Read for inbox Id
 ```Dart
-void markReadInboxMessageForId() async {
-	    var messageList = await CleverTapPlugin.getUnreadInboxMessages();
-	
-
+        var messageList = await CleverTapPlugin.getUnreadInboxMessages();
 	    if (messageList == null || messageList.length == 0) return;
 	    Map<dynamic, dynamic> itemFirst = messageList[0];
-	
-
 	    if (Platform.isAndroid) {
 	      await CleverTapPlugin.markReadInboxMessageForId(itemFirst["id"]);
-	      setState((() {
-	        showToast("Marked Inbox Message as read with id =  ${itemFirst["id"]}");
-	        print("Marked Inbox Message as read with id =  ${itemFirst["id"]}");
-	      }));
 	    } else if (Platform.isIOS) {
 	      await CleverTapPlugin.markReadInboxMessageForId(itemFirst["_id"]);
-	      setState((() {
-	        showToast(
-	            "Marked Inbox Message as read with id =  ${itemFirst["_id"]}");
-	        print("Marked Inbox Message as read with id =  ${itemFirst["_id"]}");
-	      }));
 	    }
-	  }
-	
 ```
 
 #### pushInbox Notification Viewed Event For Id
 ```Dart
-
-void pushInboxNotificationViewedEventForId() async {
-	    var messageId = await getFirstInboxMessageId();
-	
-
-	    if (messageId == null) {
-	      setState((() {
-	        showToast("Inbox Message id is null");
-	        print("Inbox Message id is null");
-	      }));
-	      return;
-	    }
-	
-
-	    await CleverTapPlugin.pushInboxNotificationViewedEventForId(messageId);
-	
-
-	    setState((() {
-	      showToast(
-	          "Pushed NotificationViewedEvent for Inbox Message with id =  $messageId");
-	      print(
-	          "Pushed NotificationViewedEvent for Inbox Message with id =  $messageId");
-	    }));
-	  }
-	
+await CleverTapPlugin.pushInboxNotificationViewedEventForId(messageId);
 		
 ```
 
 #### push Inbox Notification Clicked Event For Id
 ```Dart
-void pushInboxNotificationClickedEventForId() async {
-	    var messageId = await getFirstInboxMessageId();
-	
-
-	    if (messageId == null) {
-	      setState((() {
-	        showToast("Inbox Message id is null");
-	        print("Inbox Message id is null");
-	      }));
-	      return;
-	    }
-	
-
-	    await CleverTapPlugin.pushInboxNotificationClickedEventForId(messageId);
-	
-
-	    setState((() {
-	      showToast(
-	          "Pushed NotificationClickedEvent for Inbox Message with id =  $messageId");
-	      print(
-	          "Pushed NotificationClickedEvent for Inbox Message with id =  $messageId");
-	    }));
-	  }
+await CleverTapPlugin.pushInboxNotificationClickedEventForId(messageId);
 			
 ```
 ## Enable Debugging
@@ -356,15 +221,15 @@ CleverTapPlugin.deleteNotificationChannel(“channelId”);
 ```
 
 #### Creating a group notification channel
-``` Dart
+```Dart
 CleverTapPlugin.createNotificationChannelGroup(“groupId”, “groupName”);
-		
+
 ```
 
 #### Delete a group notification channel
 ```Dart
 CleverTapPlugin.deleteNotificationChannelGroup(“channelId”);
-			
+
 ```
 
 #### Registering Fcm, Baidu, Xiaomi, Huawei Token
@@ -412,9 +277,8 @@ CleverTapPlugin.pushDisplayUnitViewedEvent(“unitId”);
 
 ```
 #### Display unit clicked event for ID
-```Dart	
+```Dart
 CleverTapPlugin.pushDisplayUnitClickedEvent(“unitId”);
-
 ```
 
 ## Custom Push Amplification
@@ -442,9 +306,6 @@ void productConfigInitialized() {
 ```Dart
   void fetch() {
 	    CleverTapPlugin.fetch();
-	    showToast("check console for logs");
-	
-
 	    ///CleverTapPlugin.fetchWithMinimumIntervalInSeconds(0);
 	  }
 ```
@@ -453,7 +314,6 @@ void productConfigInitialized() {
 ```Dart
   void activate() {
 	    CleverTapPlugin.activate();
-	    showToast("check console for logs");
 	  }
 ```
 
@@ -461,9 +321,7 @@ void productConfigInitialized() {
 ```Dart
   void fetchAndActivate() {
 	    CleverTapPlugin.fetchAndActivate();
-	    showToast("check console for logs");
 	  }
-	}
 ```
 
 #### Fetch Minimum Time Interval
@@ -477,23 +335,19 @@ CleverTapPlugin.setMinimumFetchIntervalInSeconds(interval);
 
  CleverTapPlugin.getProductConfigBoolean(“key”);
 
-	
 ```
 
 #### Get last fetched timestamp in millis
 ```Dart
 CleverTapPlugin.getLastFetchTimeStampInMillis();
-		
 ```
 
 ## Feature Flag
 #### Get Feature Flag
 ```Dart
 void featureFlagsUpdated() {
-	    print("Feature Flags Updated");
 	    this.setState(() async {
 	      bool booleanVar = await CleverTapPlugin.getFeatureFlag("BoolKey", false);
-	      print("Feature flag = " + booleanVar.toString());
 	    });
 	  }
 ```
@@ -504,15 +358,13 @@ void featureFlagsUpdated() {
 ```Dart
 void enablePersonalization() {
 	    CleverTapPlugin.enablePersonalization();
-	    showToast("Personalization enabled");
-	    print("Personalization enabled");
 	  }
 ```
 
 
 ## Attributions
 
-#### Push Intall Refferer
+#### Push Install Refferer
 ```Dart
 CleverTapPlugin.pushInstallReferrer("source", "medium", "campaign");
 
@@ -543,62 +395,32 @@ CleverTapPlugin.pushInstallReferrer("source", "medium", "campaign");
 
 #### Set Opt Out
 ```Dart
-void setOptOut() {
-	    if (optOut) {
-	      CleverTapPlugin.setOptOut(false);
-	      optOut = false;
-	      showToast("You have opted in");
-	    } else {
-	      CleverTapPlugin.setOptOut(true);
-	      optOut = true;
-	      showToast("You have opted out");
-	    }
-	  }
-
+CleverTapPlugin.setOptOut(false); ///Will opt in the user to send data to CleverTap
+CleverTapPlugin.setOptOut(true); ///Will opt out the user to send data to CleverTap
 ```
 
 #### Enable Device Networking Info Reporting
 ```Dart
-void setEnableDeviceNetworkingInfo() {
-	    if (enableDeviceNetworkingInfo) {
-	      CleverTapPlugin.enableDeviceNetworkInfoReporting(false);
-	      enableDeviceNetworkingInfo = false;
-	      showToast("You have disabled device networking info");
-	    } else {
-	      CleverTapPlugin.enableDeviceNetworkInfoReporting(true);
-	      enableDeviceNetworkingInfo = true;
-	      showToast("You have enabled device networking info");
-	    }
-	  }
-
+///Will opt out the user to send Device Network data to CleverTap
+CleverTapPlugin.enableDeviceNetworkInfoReporting(false);
+///Will opt in the user to send Device Network data to CleverTap
+CleverTapPlugin.enableDeviceNetworkInfoReporting(true);
 ```
 
 ## Multi-instance 
 
 #### Enable Personalisation 
 ```Dart
-void enablePersonalization() {
-	    CleverTapPlugin.enablePersonalization();
-	    showToast("Personalization enabled");
-	    print("Personalization enabled");
-	  }
+CleverTapPlugin.enablePersonalization();
 
 ```
 
 #### Set Offline
 ```Dart
-void setOffline() {
-	    if (offLine) {
-	      CleverTapPlugin.setOffline(false);
-	      offLine = false;
-	      showToast("You are online");
-	    } else {
-	      CleverTapPlugin.setOffline(true);
-	      offLine = true;
-	      showToast("You are offline");
-	    }
-	  }
-
+///Will set the user online
+CleverTapPlugin.setOffline(false);
+///Will set the user offline
+CleverTapPlugin.setOffline(true);
 ```
 
 
