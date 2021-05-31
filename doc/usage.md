@@ -1,11 +1,5 @@
 ## Example Flutter Usage
 
-#### Grab a reference  
-```Dart
-  const CleverTap = require('clevertap-flutter');
-
-```
-
 ## User Properties
 
 #### Update User Profile(Push Profile)
