@@ -1,6 +1,6 @@
-## Example Flutter Usage
+# Example Usage
 
-#### Grab a reference  
+## Grab a reference  
 ```Dart 
 const CleverTap = require('clevertap-flutter');
 ```
@@ -132,7 +132,7 @@ void recordChargedEvent() {
 	  }
 ```
 
-## In App
+## In-Apps Messages
 
 #### On In App Button Click
 ```Dart
