@@ -1,6 +1,6 @@
-# Example Usage
+## Example Flutter Usage
 
-## Grab a reference  
+#### Grab a reference  
 ```Dart 
 const CleverTap = require('clevertap-flutter');
 ```
@@ -132,7 +132,7 @@ void recordChargedEvent() {
 	  }
 ```
 
-## In-Apps Messages
+## In App
 
 #### On In App Button Click
 ```Dart
@@ -350,97 +350,40 @@ CleverTapPlugin.createNotificationChannel("fluttertest", "Flutter Test", "Flutte
 ```
 
 #### Delete Notification Channel
-```Java
-case "deleteNotificationChannel": {
-	                String channelId = call.argument("channelId");
-	                CleverTapAPI.deleteNotificationChannel(context, channelId);
-	                result.success(null);
-	                break;
-	            }
+```Dart
+CleverTapPlugin.deleteNotificationChannel(“channelId”);
 		
 ```
 
 #### Creating a group notification channel
-```Java
-private void createNotificationChannelGroup(MethodCall call, Result result) {
-	        String groupId = call.argument("groupId");
-	        String groupName = call.argument("groupName");
-	        CleverTapAPI.createNotificationChannelGroup(context, groupId, groupName);
-	        result.success(null);
-	    }
+``` Dart
+CleverTapPlugin.createNotificationChannelGroup(“groupId”, “groupName”);
 		
 ```
 
 #### Delete a group notification channel
-```Java
-case "deleteNotificationChannelGroup": {
-	                String groupId = call.argument("groupId");
-	                CleverTapAPI.deleteNotificationChannelGroup(context, groupId);
-	                result.success(null);
-	                break;
-	            }
+```Dart
+CleverTapPlugin.deleteNotificationChannelGroup(“channelId”);
 			
 ```
 
 #### Registering Fcm, Baidu, Xiaomi, Huawei Token
-```Java
-private void setPushToken(MethodCall call, Result result, PushType type) {
-	        String token = call.argument("token");
-	        if (isCleverTapNotNull(cleverTapAPI)) {
-	            switch (type.toString()) {
-	                case "fcm":
-	                    cleverTapAPI.pushFcmRegistrationId(token, true);
-	                    break;
-	                case "xps":
-	                    cleverTapAPI.pushXiaomiRegistrationId(token, true);
-	                    break;
-	                case "hps":
-	                    cleverTapAPI.pushHuaweiRegistrationId(token, true);
-	                    break;
-	                case "bps":
-	                    cleverTapAPI.pushBaiduRegistrationId(token, true);
-	                    break;
-	            }
-	            result.success(null);
-	        } else {
-	            result.error(TAG, ERROR_MSG, null);
-	        }
-	    }
- ```
+```Dart
+CleverTapPlugin.setPushToken(“value”);
+CleverTapPlugin.setBaiduPushToken(“value”);
+CleverTapPlugin.setXiaomiPushToken(“value”);
+CleverTapPlugin.setHuaweiPushToken(“value”);
+```
 
  #### Create Notification
-```Java
-void pushAmpPayloadReceived(Map<String, dynamic> map) {
-	    print("pushAmpPayloadReceived called");
-	    this.setState(() async {
-	      var data = jsonEncode(map);
-	      print("Push Amp Payload = " + data.toString());
-	      CleverTapPlugin.createNotification(data);
-	    });
-	  }
+```Dart
+CleverTapPlugin.createNotification(data);
 
 ```
 
-#### Notification Payload Received
-```Java
-@Override
-	    public void onNotificationClickedPayloadReceived(HashMap<String, Object> hashMap) {
-	        invokeMethodOnUiThread("pushClickedPayloadReceived", hashMap);
-	    }
-
-```
-
-#### Set CT push Notification Listener
-```Java
-this.cleverTapAPI.setCTPushNotificationListener(this);
-```
 
 ## Native Display
 
-#### Set Display Unit Listner
-```Java
-this.cleverTapAPI.setDisplayUnitListener(this);
-```
 
 #### On Display Units Loaded
 ```Dart
@@ -464,61 +407,23 @@ void onDisplayUnitsLoaded(List<dynamic> displayUnits) {
 ```
 
 #### Display unit viewed event for ID
-```Java
-
-private void pushDisplayUnitViewedEvent(MethodCall call, Result result) {
-	        String unitId = call.argument("unitId");
-	        if (isCleverTapNotNull(cleverTapAPI)) {
-	            cleverTapAPI.pushDisplayUnitViewedEventForID(unitId);
-	            result.success(null);
-	        } else {
-	            result.error(TAG, ERROR_MSG, null);
-	        }
-	    }
-	
+```Dart
+CleverTapPlugin.pushDisplayUnitViewedEvent(“unitId”);
 
 ```
 #### Display unit clicked event for ID
-```Java
-
-private void pushDisplayUnitClickedEvent(MethodCall call, Result result) {
-	        String unitId = call.argument("unitId");
-	        if (isCleverTapNotNull(cleverTapAPI)) {
-	            cleverTapAPI.pushDisplayUnitClickedEventForID(unitId);
-	            result.success(null);
-	        } else {
-	            result.error(TAG, ERROR_MSG, null);
-	        }
-	    }
-	
+```Dart	
+CleverTapPlugin.pushDisplayUnitClickedEvent(“unitId”);
 
 ```
+
 ## Custom Push Amplification
 
 #### Process Push Notification
-```Java
+```Dart
 
- private void processPushNotification(MethodCall call, Result result) {
-	        JSONObject extras = call.argument("extras");
-	        if (isCleverTapNotNull(cleverTapAPI)) {
-	            try {
-	                CleverTapAPI.processPushNotification(context, Utils.jsonToBundle(extras));
-	            } catch (JSONException e) {
-	                result.error(TAG, "Unable to render notification due to JSONException - " + e.getLocalizedMessage(),
-	                        null);
-	            }
-	            result.success(null);
-	        } else {
-	            result.error(TAG, ERROR_MSG, null);
-	        }
-	    }
-	
+ CleverTapPlugin.processPushNotification(data);
 
-```
-
-#### CT Push Apm Listner
-```Java
-this.cleverTapAPI.setCTPushAmpListener(this);
 ```
 
 ## Product Config 
@@ -562,77 +467,22 @@ void productConfigInitialized() {
 ```
 
 #### Fetch Minimum Time Interval
-```Java
-private void setMinimumFetchIntervalInSeconds(MethodCall call, Result result) {
-	        long interval = call.argument("interval");
-	        if (isCleverTapNotNull(cleverTapAPI)) {
-	            cleverTapAPI.productConfig().setMinimumFetchIntervalInSeconds(interval);
-	            result.success(null);
-	        } else {
-	            result.error(TAG, ERROR_MSG, null);
-	        }
-	    }
+```Dart
+CleverTapPlugin.setMinimumFetchIntervalInSeconds(interval);
 
 ```
 
 #### Get Boolean key
-```Java
+```Dart
 
- private void getBoolean(MethodCall call, Result result) {
-	        String key = call.argument("key");
-	        if (isCleverTapNotNull(cleverTapAPI)) {
-	            result.success(cleverTapAPI.productConfig().getBoolean(key));
-	        } else {
-	            result.error(TAG, ERROR_MSG, null);
-	        }
-	    }
-	
-```
-#### Get Long
-```Java
-private void getLong(MethodCall call, Result result) {
-	        String key = call.argument("key");
-	        if (isCleverTapNotNull(cleverTapAPI)) {
-	            result.success(cleverTapAPI.productConfig().getLong(key));
-	        } else {
-	            result.error(TAG, ERROR_MSG, null);
-	        }
-	    }
-```
-#### Get Double
-```Java
-private void getDouble(MethodCall call, Result result) {
-	        String key = call.argument("key");
-	        if (isCleverTapNotNull(cleverTapAPI)) {
-	            result.success(cleverTapAPI.productConfig().getDouble(key));
-	        } else {
-	            result.error(TAG, ERROR_MSG, null);
-	        }
-	    }
-	
-```
-#### Get String
-```Java
-  private void getString(MethodCall call, Result result) {
-	        String key = call.argument("key");
-	        if (isCleverTapNotNull(cleverTapAPI)) {
-	            result.success(cleverTapAPI.productConfig().getString(key));
-	        } else {
-	            result.error(TAG, ERROR_MSG, null);
-	        }
-	    }
+ CleverTapPlugin.getProductConfigBoolean(“key”);
+
 	
 ```
 
 #### Get last fetched timestamp in millis
-```Java
-private void getLastFetchTimeStampInMillis(Result result) {
-	        if (isCleverTapNotNull(cleverTapAPI)) {
-	            result.success(cleverTapAPI.productConfig().getLastFetchTimeStampInMillis());
-	        } else {
-	            result.error(TAG, ERROR_MSG, null);
-	        }
-	    }
+```Dart
+CleverTapPlugin.getLastFetchTimeStampInMillis();
 		
 ```
 
@@ -662,19 +512,10 @@ void enablePersonalization() {
 
 ## Attributions
 
-#### Push Intall Reffer
-```Java
-private void pushInstallReferrer(MethodCall call, Result result) {
-	        String source = call.argument("source");
-	        String medium = call.argument("medium");
-	        String campaign = call.argument("campaign");
-	        if (isCleverTapNotNull(cleverTapAPI)) {
-	            cleverTapAPI.pushInstallReferrer(source, medium, campaign);
-	            result.success(null);
-	        } else {
-	            result.error(TAG, ERROR_MSG, null);
-	        }
-	    }
+#### Push Intall Refferer
+```Dart
+CleverTapPlugin.pushInstallReferrer("source", "medium", "campaign");
+
 ```
 
 
@@ -765,6 +606,5 @@ void setOffline() {
 ### For more information,
  - [see included Starter Application]( https://github.com/CleverTap/clevertap-flutter/blob/master/example/lib/main.dart) 
  - [see CleverTap Dart interface]( https://github.com/CleverTap/clevertap-flutter/blob/master/example/lib/main.dart)
- - [see CleverTap Android interface]( https://github.com/CleverTap/clevertap-flutter/blob/master/android/src/main/java/com/clevertap/clevertap_plugin/CleverTapPlugin.java)
 
 
