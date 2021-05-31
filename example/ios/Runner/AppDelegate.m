@@ -2,7 +2,6 @@
 #import "GeneratedPluginRegistrant.h"
 #import "CleverTap.h"
 #import "CleverTapPlugin.h"
-#import "CleverTap+ABTesting.h"
 #import <UserNotifications/UserNotifications.h>
 
 @implementation AppDelegate
@@ -12,7 +11,6 @@
     UNUserNotificationCenter *center = [UNUserNotificationCenter currentNotificationCenter];
     center.delegate = self;
     // Override point for customization after application launch.
-    [CleverTap setUIEditorConnectionEnabled:YES];
     [CleverTap autoIntegrate]; // integrate CleverTap SDK using the autoIntegrate option
     [[CleverTapPlugin sharedInstance] applicationDidLaunchWithOptions:launchOptions];
     return [super application:application didFinishLaunchingWithOptions:launchOptions];

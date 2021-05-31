@@ -1,9 +1,12 @@
 <p align="center">
-  <img src="https://github.com/CleverTap/clevertap-flutter/blob/master/clevertap-logo.png" width="300"/>
+  <img src="https://github.com/CleverTap/clevertap-ios-sdk/blob/master/docs/images/clevertap-logo.png" width = "50%"/>
 </p>
 
 # CleverTap Flutter SDK
 [![pub package](https://img.shields.io/pub/v/clevertap_plugin.svg)](https://pub.dartlang.org/packages/clevertap_plugin)
+<a href="https://github.com/CleverTap/clevertap-flutter/releases">
+    <img src="https://img.shields.io/github/release/CleverTap/clevertap-flutter.svg" />
+</a>
 
 ## 👋 Introduction
 The CleverTap Flutter SDK for Mobile Customer Engagement and Analytics solutions.
@@ -18,7 +21,7 @@ To get started, sign up [here](https://clevertap.com/live-product-demo/)
 
 ```yaml
 dependencies:
-clevertap_plugin: 1.2.0
+clevertap_plugin: 1.2.2
 ```
 
 - Run `flutter packages get` to install the SDK
@@ -35,8 +38,8 @@ Add the following to your `dependencies` section in `project/build.gradle`
 
 ```groovy
     dependencies {
-            classpath 'com.android.tools.build:gradle:4.0.1'
-            classpath 'com.google.gms:google-services:4.3.3' //<--- Mandatory for using Firebase Messaging, skip if not using FCM
+            classpath 'com.android.tools.build:gradle:4.1.1'
+            classpath 'com.google.gms:google-services:4.3.8' //<--- Mandatory for using Firebase Messaging, skip if not using FCM
         }
 ```
 
@@ -112,15 +115,32 @@ Add your CleverTap Account ID and Token to your `AndroidManifest.xml`, within th
     <meta-data
         android:name="CLEVERTAP_USE_GOOGLE_AD_ID"
         android:value="1"/> 
-
 ```
+To use Push Notifications out of the box using CleverTap, add the following entries to you `AndroidManifest.xml`
+
+```xml
+<application>
+         ....
+         ....
+        <service android:name="com.clevertap.android.sdk.pushnotification.fcm.FcmMessageListenerService">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
+ </application>
+```
+
+If you're upgrading to CleverTap Flutter SDK v1.2.0 and above, please find the [CHANGELOG related to CleverTap Android SDK here](https://github.com/CleverTap/clevertap-android-sdk/blob/master/docs/CTV4CHANGES.md).
+
+
 ## 👩‍💻 iOS
 
 After installation, you will need to integrate CleverTap SDK into your app.
 
 * Follow the integration instructions [starting with Step 2 here](https://developer.clevertap.com/docs/ios-quickstart-guide#section-step-2-add-clever-tap-credentials).
 * Initialize CleverTap SDK by adding the following code snippet:
-  + 2.1 Import the CleverTap header in your AppDelegate file
+  + Import the CleverTap header in your AppDelegate file
 
   ###### Objective-C
   ```objc
@@ -134,7 +154,7 @@ After installation, you will need to integrate CleverTap SDK into your app.
   import clevertap_plugin
   ```
 
-  + 2.2 In your `didFinishLaunchingWithOptions:` method notify the CleverTap Flutter SDK of application launch
+  + In your `didFinishLaunchingWithOptions:` method notify the CleverTap Flutter SDK of application launch
 
   ###### Objective-C
   ```objc
