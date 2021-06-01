@@ -168,9 +168,10 @@ After installation, you will need to integrate CleverTap SDK into your app.
   CleverTapPlugin.sharedInstance()?.applicationDidLaunch(options: launchOptions)
   ```
 
-## 📑 For more
+## 📑 Documentation & Example
 
-- Checkout our [Example Dart Usage](https://github.com/CleverTap/clevertap-flutter/tree/master/example) directory for the sample app.
+- Checkout our [Example Dart project for usage](/example)
+- Checkout our [CleverTap Flutter Usage docs](https://developer.clevertap.com/docs/)
 - Checkout our [CleverTap developer docs](https://developer.clevertap.com/docs/ "CleverTap Technical Documentation")
 
 ## 🆕 Changelog
