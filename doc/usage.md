@@ -7,14 +7,14 @@
 ```Dart
 var stuff = ["bags", "shoes"];
 var profile = {
- 'Name': 'John Wick',
- 'Identity': '100',
- 'DOB': '22-04-2000',
- ///Key always has to be "DOB" and format should always be dd-MM-yyyy
- 'Email': 'john@gmail.com',
- 'Phone': '14155551234',
- 'props': 'property1',
- 'stuff': stuff
+    'Name': 'John Wick',
+    'Identity': '100',
+    'DOB': '22-04-2000',
+    //Key always has to be "DOB" and format should always be dd-MM-yyyy
+    'Email': 'john@gmail.com',
+    'Phone': '14155551234',
+    'props': 'property1',
+    'stuff': stuff
 };
 CleverTapPlugin.profileSet(profile);
 ```
@@ -86,20 +86,20 @@ CleverTapPlugin.recordEvent("Flutter Event", eventData);
 
 ```Dart
 var item1 = {
-      // Key:    Value
-      'name': 'thing1',
-      'amount': '100'
-    };
-    var item2 = {
-      // Key:    Value
-      'name': 'thing2',
-      'amount': '100'
-    };
-    var items = [item1, item2];
-    var chargeDetails = {
-      // Key:    Value
-      'total': '200',
-      'payment': 'cash'
+    // Key:    Value
+    'name': 'thing1',
+    'amount': '100'
+};
+var item2 = {
+   // Key:    Value
+   'name': 'thing2',
+   'amount': '100'
+};
+var items = [item1, item2];
+var chargeDetails = {
+    // Key:    Value
+    'total': '200',
+    'payment': 'cash'
 };
 CleverTapPlugin.recordChargedEvent(chargeDetails, items);
 ```
@@ -414,7 +414,6 @@ void getCTAttributionId() {
       });
     });
  }
-	
 ```
 
 ## GDPR 
