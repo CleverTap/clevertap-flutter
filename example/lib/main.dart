@@ -204,7 +204,7 @@ class _MyAppState extends State<MyApp> {
                   child: Padding(
                     padding: const EdgeInsets.all(0.0),
                     child: ListTile(
-                      title: Text("User Properties"),
+                      title: Text("User Profiles"),
                     ),
                   ),
                 ),
@@ -342,7 +342,7 @@ class _MyAppState extends State<MyApp> {
                   child: Padding(
                     padding: const EdgeInsets.all(0.0),
                     child: ListTile(
-                      title: Text("Events"),
+                      title: Text("User Events"),
                     ),
                   ),
                 ),
