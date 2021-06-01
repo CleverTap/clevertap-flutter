@@ -134,13 +134,13 @@ void inAppNotificationDismissed(Map<String, dynamic> map) {
 
 ## App Inbox
 
-#### Initialize the CleverTap App Inbox Method
+#### Initialize App Inbox
 
 ```Dart
 CleverTapPlugin.initializeInbox();	
 ```
 
-#### Show the App Inbox
+#### Show App Inbox
 
 ```Dart
 var styleConfig = {
@@ -151,14 +151,14 @@ var styleConfig = {
 CleverTapPlugin.showInbox(styleConfig);
 ```
 
-#### Get Total message count
+#### Get Total Inbox Message Count
 
 ```Dart
 int total = await CleverTapPlugin.getInboxMessageCount();
 print("Total count = " + total.toString());
 ```
 
-#### Get Total unread message count
+#### Get Total Inbox Unread Count
 
 ```Dart
 int unread = await CleverTapPlugin.getInboxMessageUnreadCount();
@@ -172,25 +172,25 @@ print("Unread count = " + unread.toString());
 List messages = await CleverTapPlugin.getAllInboxMessages();
 ```
 
-#### Get all Inbox unread messages
+#### Get All Inbox Unread Messages
 
 ```Dart
 List messages = await CleverTapPlugin.getUnreadInboxMessages();
 ```
 
-#### Get Inbox Message for given message Id
+#### Get Inbox Message for the given message id
 
 ```Dart
 var messageForId = await CleverTapPlugin.getInboxMessageForId(messageId);				
 ```
 
-#### Delete message with id
+#### Delete Message for the given message id
 
 ```Dart
 await CleverTapPlugin.deleteInboxMessageForId(messageId);	
 ```
 
-#### Mark a message as Read for Inbox Id
+#### Mark Message as Read for the given message id
 
 ```Dart
 var messageList = await CleverTapPlugin.getUnreadInboxMessages();
@@ -203,13 +203,13 @@ var messageList = await CleverTapPlugin.getUnreadInboxMessages();
     }
 ```
 
-#### pushInbox Notification Viewed Event For Id
+#### Raise Notification Viewed event for Inbox Message. Message id should be a String
 
 ```Dart
 await CleverTapPlugin.pushInboxNotificationViewedEventForId(messageId);
 ```
 
-#### push Inbox Notification Clicked Event For Id
+#### Raise Notification Clicked event for Inbox Message. Message id should be a String
 
 ```Dart
 await CleverTapPlugin.pushInboxNotificationClickedEventForId(messageId);		
@@ -217,6 +217,7 @@ await CleverTapPlugin.pushInboxNotificationClickedEventForId(messageId);
 ## Debugging
 
 #### Set Debug Level
+
 ```Dart
 CleverTapPlugin.setDebugLevel(3);
 ```
@@ -224,29 +225,31 @@ CleverTapPlugin.setDebugLevel(3);
 ## Push Notifications
 
 #### Creating Notification Channel
+
 ```Dart
 CleverTapPlugin.createNotificationChannel("fluttertest", "Flutter Test", "Flutter Test", 3, true);			
 ```
 
 #### Delete Notification Channel
+
 ```Dart
 CleverTapPlugin.deleteNotificationChannel(“channelId”);
-		
 ```
 
 #### Creating a group notification channel
+
 ```Dart
 CleverTapPlugin.createNotificationChannelGroup(“groupId”, “groupName”);
-
 ```
 
 #### Delete a group notification channel
+
 ```Dart
 CleverTapPlugin.deleteNotificationChannelGroup(“channelId”);
-
 ```
 
 #### Registering Fcm, Baidu, Xiaomi, Huawei Token
+
 ```Dart
 CleverTapPlugin.setPushToken(“value”);
 CleverTapPlugin.setBaiduPushToken(“value”);
@@ -255,50 +258,54 @@ CleverTapPlugin.setHuaweiPushToken(“value”);
 ```
 
  #### Create Notification
+ 
 ```Dart
 CleverTapPlugin.createNotification(data);
-
 ```
+
+------
 
 ## Custom Push Amplification
 
 #### Process Push Notification
+
 ```Dart
-
  CleverTapPlugin.processPushNotification(data);
-
 ```
 
+---------
 
 ## Native Display
 
 #### On Display Units Loaded
+
 ```Dart
 void onDisplayUnitsLoaded(List<dynamic> displayUnits) {
-	    this.setState(() async {
-	      List displayUnits = await CleverTapPlugin.getAllDisplayUnits();
-	      print("Display Units = " + displayUnits.toString());
-	    });
-	  }
+    this.setState(() async {
+      List displayUnits = await CleverTapPlugin.getAllDisplayUnits();
+      print("Display Units = " + displayUnits.toString());
+   });
+}
 ```
 
 #### Get All Display Units
+
 ```Dart
 void onDisplayUnitsLoaded(List<dynamic> displayUnits) {
-	    this.setState(() async {
-	      List displayUnits = await CleverTapPlugin.getAllDisplayUnits();
-	      print("Display Units = " + displayUnits.toString());
-	    });
-	  }
-
+    this.setState(() async {
+      List displayUnits = await CleverTapPlugin.getAllDisplayUnits();
+      print("Display Units = " + displayUnits.toString());
+   });
+}
 ```
 
 #### Display unit viewed event for ID
+
 ```Dart
 CleverTapPlugin.pushDisplayUnitViewedEvent(“unitId”);
-
 ```
 #### Display unit clicked event for ID
+
 ```Dart
 CleverTapPlugin.pushDisplayUnitClickedEvent(“unitId”);
 ```
@@ -306,138 +313,148 @@ CleverTapPlugin.pushDisplayUnitClickedEvent(“unitId”);
 ## Product Config 
 
 #### Set Product Configuration to default
+
 ```Dart
 void productConfigInitialized() {
-	    print("Product Config Initialized");
-	    this.setState(() async {
-	      await CleverTapPlugin.fetch();
-	    });
-	  }
+    print("Product Config Initialized");
+    this.setState(() async {
+      await CleverTapPlugin.fetch();
+    });
+}
 ```
 
 #### Fetching product configs
+
 ```Dart
-  void fetch() {
-	    CleverTapPlugin.fetch();
-	    ///CleverTapPlugin.fetchWithMinimumIntervalInSeconds(0);
-	  }
+void fetch() {
+    CleverTapPlugin.fetch();
+    // CleverTapPlugin.fetchWithMinimumIntervalInSeconds(0);
+}
 ```
 
 #### Activate the most recently fetched product config
+
 ```Dart
-  void activate() {
-	    CleverTapPlugin.activate();
-	  }
+void activate() {
+    CleverTapPlugin.activate();
+}
 ```
 
 #### Fetch And Activate product config
+
 ```Dart
-  void fetchAndActivate() {
-	    CleverTapPlugin.fetchAndActivate();
-	  }
+void fetchAndActivate() {
+    CleverTapPlugin.fetchAndActivate();
+ }
 ```
 
 #### Fetch Minimum Time Interval
+
 ```Dart
 CleverTapPlugin.setMinimumFetchIntervalInSeconds(interval);
-
 ```
 
 #### Get Boolean key
+
 ```Dart
-
  CleverTapPlugin.getProductConfigBoolean(“key”);
-
 ```
 
 #### Get last fetched timestamp in millis
+
 ```Dart
 CleverTapPlugin.getLastFetchTimeStampInMillis();
 ```
 
 ## Feature Flag
+
 #### Get Feature Flag
+
 ```Dart
 void featureFlagsUpdated() {
-	    this.setState(() async {
-	      bool booleanVar = await CleverTapPlugin.getFeatureFlag("BoolKey", false);
-	    });
-	  }
+    this.setState(() async {
+      bool booleanVar = await CleverTapPlugin.getFeatureFlag("BoolKey", false);
+   });
+}
 ```
 
 ## App Personalisation
 
 #### Enable Personalization
+
 ```Dart
 void enablePersonalization() {
-	    CleverTapPlugin.enablePersonalization();
-	  }
+    CleverTapPlugin.enablePersonalization();
+}
 ```
-
 
 ## Attributions
 
 #### Push Install Refferer
+
 ```Dart
 CleverTapPlugin.pushInstallReferrer("source", "medium", "campaign");
-
 ```
 
-
 #### Get CleverTap Attribution Identifier
+
 ```Dart
 
- void getCTAttributionId() {
-	    CleverTapPlugin.profileGetCleverTapAttributionIdentifier()
-	        .then((attributionId) {
-	      if (attributionId == null) return;
-	      setState((() {
-	        showToast("Attribution Id = " + "$attributionId");
-	        print("Attribution Id = " + "$attributionId");
-	      }));
-	    }).catchError((error) {
-	      setState(() {
-	        print("$error");
-	      });
-	    });
-	  }
+void getCTAttributionId() {
+    CleverTapPlugin.profileGetCleverTapAttributionIdentifier()
+	.then((attributionId) {
+      if (attributionId == null) return;
+      setState((() {
+	showToast("Attribution Id = " + "$attributionId");
+	print("Attribution Id = " + "$attributionId");
+      }));
+    }).catchError((error) {
+      setState(() {
+	print("$error");
+      });
+    });
+ }
 	
 ```
 
 ## GDPR 
 
 #### Set Opt Out
+
 ```Dart
 CleverTapPlugin.setOptOut(false); ///Will opt in the user to send data to CleverTap
 CleverTapPlugin.setOptOut(true); ///Will opt out the user to send data to CleverTap
 ```
 
 #### Enable Device Networking Info Reporting
+
 ```Dart
-///Will opt out the user to send Device Network data to CleverTap
+// Will opt out the user to send Device Network data to CleverTap
 CleverTapPlugin.enableDeviceNetworkInfoReporting(false);
-///Will opt in the user to send Device Network data to CleverTap
+// Will opt in the user to send Device Network data to CleverTap
 CleverTapPlugin.enableDeviceNetworkInfoReporting(true);
 ```
 
 ## Multi-instance 
 
 #### Enable Personalisation 
+
 ```Dart
 CleverTapPlugin.enablePersonalization();
-
 ```
 
 #### Set Offline
+
 ```Dart
-///Will set the user online
+// Will set the user online
 CleverTapPlugin.setOffline(false);
-///Will set the user offline
+// Will set the user offline
 CleverTapPlugin.setOffline(true);
 ```
 
 
 ### For more information,
+
  - [see included Starter Application]( https://github.com/CleverTap/clevertap-flutter/blob/master/example/lib/main.dart) 
  - [see CleverTap Dart interface]( https://github.com/CleverTap/clevertap-flutter/blob/master/example/lib/main.dart)
 
