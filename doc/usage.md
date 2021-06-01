@@ -3,6 +3,7 @@
 ## User Profiles
 
 #### Update User Profile(Push Profile)
+
 ```Dart
 var stuff = ["bags", "shoes"];
 var profile = {
@@ -19,24 +20,28 @@ CleverTapPlugin.profileSet(profile);
 ```
 
 #### Set Multi Values For Key 
+
 ```Dart
 var values = ["value1", "value2"];
 CleverTapPlugin.profileSetMultiValues("props", values);
 ```
 
-#### Remove Multi Value For Key 
+#### Remove Multi Value For Key
+
 ```Dart
 var values = ["value1", "value2"];
 CleverTapPlugin.profileRemoveMultiValues("props", values);
 ```
 
 #### Add Multi Value For Key
+
 ```Dart
 var values = ["value1", "value2"];
 CleverTapPlugin.profileAddMultiValues("props", values);
 ```
 
 #### Create a User profile when user logs in (On User Login)
+
 ```Dart
 var stuff = ["bags", "shoes"];
 var profile = {
@@ -50,12 +55,13 @@ CleverTapPlugin.onUserLogin(profile);
 ```
 
 #### Get CleverTap Reference id
+
 ```Dart
 CleverTapPlugin.profileGetCleverTapID().then((clevertapId) {})
-
 ```
 
 #### Set Location to User Profile
+
 ```Dart
 var lat = 19.07;
 var long = 72.87;
@@ -65,7 +71,8 @@ CleverTapPlugin.setLocation(lat, long);
 
 ## User Events
 
-#### Record an event  
+#### Record an event 
+
 ```Dart
 var eventData = {
     // Key:    Value
@@ -76,6 +83,7 @@ CleverTapPlugin.recordEvent("Flutter Event", eventData);
 ```
 
 #### Record Charged event
+
 ```Dart
 var item1 = {
       // Key:    Value
@@ -94,12 +102,13 @@ var item1 = {
       'payment': 'cash'
 };
 CleverTapPlugin.recordChargedEvent(chargeDetails, items);
-
 ```
+-------
 
 ## In-App Notifications
 
 #### On In App Button Click
+
 ```Dart
 _clevertapPlugin.setCleverTapInAppNotificationButtonClickedHandler(inAppNotificationButtonClicked);
 
@@ -107,9 +116,11 @@ void inAppNotificationButtonClicked(Map<String, dynamic> map) {
     this.setState(() {
       print("inAppNotificationButtonClicked called = ${map.toString()}");
     });
-  }
+}
 ```
+
 #### On Dismissed
+
 ```Dart
 _clevertapPlugin.setCleverTapInAppNotificationDismissedHandler(inAppNotificationDismissed)
 
@@ -117,35 +128,38 @@ void inAppNotificationDismissed(Map<String, dynamic> map) {
     this.setState(() {
       print("inAppNotificationDismissed called");
     });
-  }
+}
 ```
+------
 
 ## App Inbox
 
 #### Initialize the CleverTap App Inbox Method
-```Dart
 
+```Dart
 CleverTapPlugin.initializeInbox();	
 ```
 
 #### Show the App Inbox
+
 ```Dart
-            var styleConfig = {
-	          'noMessageTextColor': '#ff6600',
-	          'noMessageText': 'No message(s) to show.',
-	          'navBarTitle': 'App Inbox'
-	        };
-	        CleverTapPlugin.showInbox(styleConfig);
- ```
+var styleConfig = {
+  'noMessageTextColor': '#ff6600',
+  'noMessageText': 'No message(s) to show.',
+  'navBarTitle': 'App Inbox'
+};
+CleverTapPlugin.showInbox(styleConfig);
+```
 
 #### Get Total message count
+
 ```Dart
 int total = await CleverTapPlugin.getInboxMessageCount();
 print("Total count = " + total.toString());
-
 ```
 
 #### Get Total unread message count
+
 ```Dart
 int unread = await CleverTapPlugin.getInboxMessageUnreadCount();
 print("Unread count = " + unread.toString());
@@ -153,50 +167,52 @@ print("Unread count = " + unread.toString());
 ```
 
 #### Get All Inbox Messages
-```Dart
-  List messages = await CleverTapPlugin.getAllInboxMessages();
 
+```Dart
+List messages = await CleverTapPlugin.getAllInboxMessages();
 ```
 
 #### Get all Inbox unread messages
-```Dart
-  List messages = await CleverTapPlugin.getUnreadInboxMessages();
 
+```Dart
+List messages = await CleverTapPlugin.getUnreadInboxMessages();
 ```
 
-#### Get Inbox Message for given Id
+#### Get Inbox Message for given message Id
+
 ```Dart
-var messageForId = await CleverTapPlugin.getInboxMessageForId(messageId);
-				
+var messageForId = await CleverTapPlugin.getInboxMessageForId(messageId);				
 ```
 
 #### Delete message with id
+
 ```Dart
 await CleverTapPlugin.deleteInboxMessageForId(messageId);	
 ```
 
-#### Mark a message as Read for inbox Id
+#### Mark a message as Read for Inbox Id
+
 ```Dart
-        var messageList = await CleverTapPlugin.getUnreadInboxMessages();
-	    if (messageList == null || messageList.length == 0) return;
-	    Map<dynamic, dynamic> itemFirst = messageList[0];
-	    if (Platform.isAndroid) {
-	      await CleverTapPlugin.markReadInboxMessageForId(itemFirst["id"]);
-	    } else if (Platform.isIOS) {
-	      await CleverTapPlugin.markReadInboxMessageForId(itemFirst["_id"]);
-	    }
+var messageList = await CleverTapPlugin.getUnreadInboxMessages();
+    if (messageList == null || messageList.length == 0) return;
+    Map<dynamic, dynamic> itemFirst = messageList[0];
+    if (Platform.isAndroid) {
+      await CleverTapPlugin.markReadInboxMessageForId(itemFirst["id"]);
+    } else if (Platform.isIOS) {
+      await CleverTapPlugin.markReadInboxMessageForId(itemFirst["_id"]);
+    }
 ```
 
 #### pushInbox Notification Viewed Event For Id
+
 ```Dart
 await CleverTapPlugin.pushInboxNotificationViewedEventForId(messageId);
-		
 ```
 
 #### push Inbox Notification Clicked Event For Id
+
 ```Dart
-await CleverTapPlugin.pushInboxNotificationClickedEventForId(messageId);
-			
+await CleverTapPlugin.pushInboxNotificationClickedEventForId(messageId);		
 ```
 ## Debugging
 
