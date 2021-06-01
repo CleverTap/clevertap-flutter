@@ -1,6 +1,6 @@
 # Example Usage
 
-## User Properties
+## User Profiles
 
 #### Update User Profile(Push Profile)
 ```Dart
@@ -61,6 +61,9 @@ var lat = 19.07;
 var long = 72.87;
 CleverTapPlugin.setLocation(lat, long);
 ```
+----
+
+## User Events
 
 #### Record an event  
 ```Dart
@@ -94,7 +97,7 @@ CleverTapPlugin.recordChargedEvent(chargeDetails, items);
 
 ```
 
-## In App
+## In-App Notifications
 
 #### On In App Button Click
 ```Dart
@@ -195,7 +198,7 @@ await CleverTapPlugin.pushInboxNotificationViewedEventForId(messageId);
 await CleverTapPlugin.pushInboxNotificationClickedEventForId(messageId);
 			
 ```
-## Enable Debugging
+## Debugging
 
 #### Set Debug Level
 ```Dart
@@ -241,9 +244,17 @@ CleverTapPlugin.createNotification(data);
 
 ```
 
+## Custom Push Amplification
+
+#### Process Push Notification
+```Dart
+
+ CleverTapPlugin.processPushNotification(data);
+
+```
+
 
 ## Native Display
-
 
 #### On Display Units Loaded
 ```Dart
@@ -274,15 +285,6 @@ CleverTapPlugin.pushDisplayUnitViewedEvent(“unitId”);
 #### Display unit clicked event for ID
 ```Dart
 CleverTapPlugin.pushDisplayUnitClickedEvent(“unitId”);
-```
-
-## Custom Push Amplification
-
-#### Process Push Notification
-```Dart
-
- CleverTapPlugin.processPushNotification(data);
-
 ```
 
 ## Product Config 
@@ -417,7 +419,6 @@ CleverTapPlugin.setOffline(false);
 ///Will set the user offline
 CleverTapPlugin.setOffline(true);
 ```
-
 
 
 ### For more information,
