@@ -455,7 +455,7 @@ CleverTapPlugin.setOffline(true);
 
 ### For more information,
 
- - [see included Starter Application]( https://github.com/CleverTap/clevertap-flutter/blob/master/example/lib/main.dart) 
- - [see CleverTap Dart interface]( https://github.com/CleverTap/clevertap-flutter/blob/master/example/lib/main.dart)
+ - [See Starter Application](/example/lib/main.dart) 
+ - [See CleverTap Dart interface](/lib/clevertap_plugin.dart)
 
 
