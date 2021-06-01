@@ -181,6 +181,7 @@ class _MyAppState extends State<MyApp> {
         home: Scaffold(
             appBar: AppBar(
               title: const Text('CleverTap Plugin Example App'),
+              backgroundColor: Colors.red.shade800,
             ),
             body: ListView(
               children: <Widget>[
@@ -199,7 +200,7 @@ class _MyAppState extends State<MyApp> {
                   ),
                 ),
                 Card(
-                  color: Colors.white,
+                  color: Colors.lightBlueAccent,
                   child: Padding(
                     padding: const EdgeInsets.all(0.0),
                     child: ListTile(
@@ -208,7 +209,7 @@ class _MyAppState extends State<MyApp> {
                   ),
                 ),
                 Card(
-                  color: Colors.lightBlueAccent,
+                  color: Colors.grey.shade300,
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
@@ -219,7 +220,7 @@ class _MyAppState extends State<MyApp> {
                   ),
                 ),
                 Card(
-                  color: Colors.lightBlueAccent,
+                  color: Colors.grey.shade300,
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
@@ -230,7 +231,7 @@ class _MyAppState extends State<MyApp> {
                   ),
                 ),
                 Card(
-                  color: Colors.lightBlueAccent,
+                  color: Colors.grey.shade300,
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
@@ -242,7 +243,7 @@ class _MyAppState extends State<MyApp> {
                 ),
 
                 Card(
-                  color: Colors.lightBlueAccent,
+                  color: Colors.grey.shade300,
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
@@ -253,7 +254,7 @@ class _MyAppState extends State<MyApp> {
                   ),
                 ),
                 Card(
-                  color: Colors.lightBlueAccent,
+                  color: Colors.grey.shade300,
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
@@ -264,7 +265,7 @@ class _MyAppState extends State<MyApp> {
                   ),
                 ),
                 Card(
-                  color: Colors.lightBlueAccent,
+                  color: Colors.grey.shade300,
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
@@ -275,7 +276,7 @@ class _MyAppState extends State<MyApp> {
                   ),
                 ),
                 Card(
-                  color: Colors.lightBlueAccent,
+                  color: Colors.grey.shade300,
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
@@ -286,7 +287,7 @@ class _MyAppState extends State<MyApp> {
                   ),
                 ),
                 Card(
-                  color: Colors.white,
+                  color: Colors.lightBlueAccent,
                   child: Padding(
                     padding: const EdgeInsets.all(0.0),
                     child: ListTile(
@@ -295,7 +296,7 @@ class _MyAppState extends State<MyApp> {
                   ),
                 ),
                 Card(
-                  color: Colors.lightBlueAccent,
+                  color: Colors.grey.shade300,
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
@@ -306,7 +307,7 @@ class _MyAppState extends State<MyApp> {
                   ),
                 ),
                 Card(
-                  color: Colors.lightBlueAccent,
+                  color: Colors.grey.shade300,
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
@@ -317,7 +318,7 @@ class _MyAppState extends State<MyApp> {
                   ),
                 ),
                 Card(
-                  color: Colors.white,
+                  color: Colors.lightBlueAccent,
                   child: Padding(
                     padding: const EdgeInsets.all(0.0),
                     child: ListTile(
@@ -326,7 +327,7 @@ class _MyAppState extends State<MyApp> {
                   ),
                 ),
                 Card(
-                  color: Colors.lightBlueAccent,
+                  color: Colors.grey.shade300,
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
@@ -337,7 +338,7 @@ class _MyAppState extends State<MyApp> {
                   ),
                 ),
                 Card(
-                  color: Colors.white,
+                  color: Colors.lightBlueAccent,
                   child: Padding(
                     padding: const EdgeInsets.all(0.0),
                     child: ListTile(
@@ -346,7 +347,7 @@ class _MyAppState extends State<MyApp> {
                   ),
                 ),
                 Card(
-                  color: Colors.lightBlueAccent,
+                  color: Colors.grey.shade300,
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
@@ -357,7 +358,7 @@ class _MyAppState extends State<MyApp> {
                   ),
                 ),
                 Card(
-                  color: Colors.lightBlueAccent,
+                  color: Colors.grey.shade300,
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
@@ -368,7 +369,7 @@ class _MyAppState extends State<MyApp> {
                   ),
                 ),
                 Card(
-                  color: Colors.lightBlueAccent,
+                  color: Colors.grey.shade300,
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
@@ -379,7 +380,7 @@ class _MyAppState extends State<MyApp> {
                   ),
                 ),
                 Card(
-                  color: Colors.lightBlueAccent,
+                  color: Colors.grey.shade300,
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
@@ -390,7 +391,7 @@ class _MyAppState extends State<MyApp> {
                   ),
                 ),
                 Card(
-                  color: Colors.white,
+                  color: Colors.lightBlueAccent,
                   child: Padding(
                     padding: const EdgeInsets.all(0.0),
                     child: ListTile(
@@ -399,7 +400,7 @@ class _MyAppState extends State<MyApp> {
                   ),
                 ),
                 Card(
-                  color: Colors.lightBlueAccent,
+                  color: Colors.grey.shade300,
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
@@ -410,7 +411,7 @@ class _MyAppState extends State<MyApp> {
                   ),
                 ),
                 Card(
-                  color: Colors.lightBlueAccent,
+                  color: Colors.grey.shade300,
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
@@ -421,7 +422,7 @@ class _MyAppState extends State<MyApp> {
                   ),
                 ),
                 Card(
-                  color: Colors.lightBlueAccent,
+                  color: Colors.grey.shade300,
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
@@ -432,7 +433,7 @@ class _MyAppState extends State<MyApp> {
                   ),
                 ),
                 Card(
-                  color: Colors.lightBlueAccent,
+                  color: Colors.grey.shade300,
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
@@ -443,7 +444,7 @@ class _MyAppState extends State<MyApp> {
                   ),
                 ),
                 Card(
-                  color: Colors.lightBlueAccent,
+                  color: Colors.grey.shade300,
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
@@ -454,7 +455,7 @@ class _MyAppState extends State<MyApp> {
                   ),
                 ),
                 Card(
-                  color: Colors.lightBlueAccent,
+                  color: Colors.grey.shade300,
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
@@ -465,7 +466,7 @@ class _MyAppState extends State<MyApp> {
                   ),
                 ),
                 Card(
-                  color: Colors.lightBlueAccent,
+                  color: Colors.grey.shade300,
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
@@ -477,7 +478,7 @@ class _MyAppState extends State<MyApp> {
                   ),
                 ),
                 Card(
-                  color: Colors.lightBlueAccent,
+                  color: Colors.grey.shade300,
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
@@ -489,7 +490,7 @@ class _MyAppState extends State<MyApp> {
                   ),
                 ),
                 Card(
-                  color: Colors.white,
+                  color: Colors.lightBlueAccent,
                   child: Padding(
                     padding: const EdgeInsets.all(0.0),
                     child: ListTile(
@@ -498,7 +499,7 @@ class _MyAppState extends State<MyApp> {
                   ),
                 ),
                 Card(
-                  color: Colors.lightBlueAccent,
+                  color: Colors.grey.shade300,
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
@@ -513,7 +514,7 @@ class _MyAppState extends State<MyApp> {
                   ),
                 ),
                 Card(
-                  color: Colors.white,
+                  color: Colors.lightBlueAccent,
                   child: Padding(
                     padding: const EdgeInsets.all(0.0),
                     child: ListTile(
@@ -522,7 +523,7 @@ class _MyAppState extends State<MyApp> {
                   ),
                 ),
                 Card(
-                  color: Colors.lightBlueAccent,
+                  color: Colors.grey.shade300,
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
@@ -533,7 +534,7 @@ class _MyAppState extends State<MyApp> {
                   ),
                 ),
                 Card(
-                  color: Colors.lightBlueAccent,
+                  color: Colors.grey.shade300,
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
@@ -544,7 +545,7 @@ class _MyAppState extends State<MyApp> {
                   ),
                 ),
                 Card(
-                  color: Colors.lightBlueAccent,
+                  color: Colors.grey.shade300,
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
@@ -555,7 +556,7 @@ class _MyAppState extends State<MyApp> {
                   ),
                 ),
                 Card(
-                  color: Colors.lightBlueAccent,
+                  color: Colors.grey.shade300,
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
@@ -566,7 +567,7 @@ class _MyAppState extends State<MyApp> {
                   ),
                 ),
                 Card(
-                  color: Colors.lightBlueAccent,
+                  color: Colors.grey.shade300,
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
@@ -577,7 +578,7 @@ class _MyAppState extends State<MyApp> {
                   ),
                 ),
                 Card(
-                  color: Colors.lightBlueAccent,
+                  color: Colors.grey.shade300,
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
@@ -588,7 +589,7 @@ class _MyAppState extends State<MyApp> {
                   ),
                 ),
                 Card(
-                  color: Colors.lightBlueAccent,
+                  color: Colors.grey.shade300,
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
@@ -599,7 +600,7 @@ class _MyAppState extends State<MyApp> {
                   ),
                 ),
                 Card(
-                  color: Colors.lightBlueAccent,
+                  color: Colors.grey.shade300,
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
@@ -610,7 +611,7 @@ class _MyAppState extends State<MyApp> {
                   ),
                 ),
                 Card(
-                  color: Colors.lightBlueAccent,
+                  color: Colors.grey.shade300,
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
@@ -621,7 +622,7 @@ class _MyAppState extends State<MyApp> {
                   ),
                 ),
                 Card(
-                  color: Colors.lightBlueAccent,
+                  color: Colors.grey.shade300,
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
@@ -632,7 +633,7 @@ class _MyAppState extends State<MyApp> {
                   ),
                 ),
                 Card(
-                  color: Colors.lightBlueAccent,
+                  color: Colors.grey.shade300,
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
@@ -644,7 +645,7 @@ class _MyAppState extends State<MyApp> {
                 ),
 
                 Card(
-                  color: Colors.lightBlueAccent,
+                  color: Colors.grey.shade300,
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
@@ -655,7 +656,7 @@ class _MyAppState extends State<MyApp> {
                   ),
                 ),
                 Card(
-                  color: Colors.white,
+                  color: Colors.lightBlueAccent,
                   child: Padding(
                     padding: const EdgeInsets.all(0.0),
                     child: ListTile(
@@ -664,7 +665,7 @@ class _MyAppState extends State<MyApp> {
                   ),
                 ),
                 Card(
-                  color: Colors.lightBlueAccent,
+                  color: Colors.grey.shade300,
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
@@ -676,7 +677,7 @@ class _MyAppState extends State<MyApp> {
                   ),
                 ),
                 Card(
-                  color: Colors.white,
+                  color: Colors.lightBlueAccent,
                   child: Padding(
                     padding: const EdgeInsets.all(0.0),
                     child: ListTile(
@@ -685,7 +686,7 @@ class _MyAppState extends State<MyApp> {
                   ),
                 ),
                 Card(
-                  color: Colors.lightBlueAccent,
+                  color: Colors.grey.shade300,
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
@@ -697,7 +698,7 @@ class _MyAppState extends State<MyApp> {
                   ),
                 ),
                 Card(
-                  color: Colors.lightBlueAccent,
+                  color: Colors.grey.shade300,
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
@@ -709,7 +710,7 @@ class _MyAppState extends State<MyApp> {
                   ),
                 ),
                 Card(
-                  color: Colors.white,
+                  color: Colors.lightBlueAccent,
                   child: Padding(
                     padding: const EdgeInsets.all(0.0),
                     child: ListTile(
@@ -718,7 +719,7 @@ class _MyAppState extends State<MyApp> {
                   ),
                 ),
                 Card(
-                  color: Colors.lightBlueAccent,
+                  color: Colors.grey.shade300,
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
@@ -729,7 +730,7 @@ class _MyAppState extends State<MyApp> {
                   ),
                 ),
                 Card(
-                  color: Colors.lightBlueAccent,
+                  color: Colors.grey.shade300,
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
@@ -740,7 +741,7 @@ class _MyAppState extends State<MyApp> {
                   ),
                 ),
                 Card(
-                  color: Colors.lightBlueAccent,
+                  color: Colors.grey.shade300,
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
@@ -813,12 +814,9 @@ class _MyAppState extends State<MyApp> {
           'navBarTitle': 'App Inbox'
         };
         CleverTapPlugin.showInbox(styleConfig);
-        CleverTapPlugin.pushInstallReferrer("source", "medium", "campaign");
       });
     }
   }
-  
-  
 
   void getAllInboxMessages() async {
     List messages = await CleverTapPlugin.getAllInboxMessages();
@@ -1231,7 +1229,7 @@ class _MyAppState extends State<MyApp> {
     showToast("Personalization disabled");
     print("Personalization disabled");
   }
-  
+
   void getAdUnits() async {
     List displayUnits = await CleverTapPlugin.getAllDisplayUnits();
     showToast("check console for logs");

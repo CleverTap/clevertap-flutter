@@ -1,8 +1,9 @@
 #import "AppDelegate.h"
 #import "GeneratedPluginRegistrant.h"
+#import <UserNotifications/UserNotifications.h>
+
 #import "CleverTap.h"
 #import "CleverTapPlugin.h"
-#import <UserNotifications/UserNotifications.h>
 
 @implementation AppDelegate
 
