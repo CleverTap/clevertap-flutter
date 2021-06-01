@@ -1,96 +1,97 @@
-## Example Flutter Usage
+# Example Usage
 
 ## User Properties
 
 #### Update User Profile(Push Profile)
 ```Dart
-    var stuff = ["bags", "shoes"];
-    var profile = {
-         'Name': 'S',
-         'Identity': '100',
-         'DOB': '22-04-2000',
-         ///Key always has to be "DOB" and format should always be dd-MM-yyyy
-         'Email': 's@gmail.com',
-         'Phone': '14155551234',
-         'props': 'property1',
-         'stuff': stuff
-    };
-    CleverTapPlugin.profileSet(profile);
+var stuff = ["bags", "shoes"];
+var profile = {
+ 'Name': 'John Wick',
+ 'Identity': '100',
+ 'DOB': '22-04-2000',
+ ///Key always has to be "DOB" and format should always be dd-MM-yyyy
+ 'Email': 'john@gmail.com',
+ 'Phone': '14155551234',
+ 'props': 'property1',
+ 'stuff': stuff
+};
+CleverTapPlugin.profileSet(profile);
 ```
 
 #### Set Multi Values For Key 
 ```Dart
-    var values = ["value1", "value2"];
-    CleverTapPlugin.profileSetMultiValues("props", values);
+var values = ["value1", "value2"];
+CleverTapPlugin.profileSetMultiValues("props", values);
 ```
 
 #### Remove Multi Value For Key 
 ```Dart
-    var values = ["value1", "value2"];
-    CleverTapPlugin.profileRemoveMultiValues("props", values);
+var values = ["value1", "value2"];
+CleverTapPlugin.profileRemoveMultiValues("props", values);
 ```
 
 #### Add Multi Value For Key
 ```Dart
-    var values = ["value1", "value2"];
-    CleverTapPlugin.profileAddMultiValues("props", values);
+var values = ["value1", "value2"];
+CleverTapPlugin.profileAddMultiValues("props", values);
 ```
 
 #### Create a User profile when user logs in (On User Login)
 ```Dart
-    var stuff = ["bags", "shoes"];
-    var profile = {
-      'Name': 'Captain America',
-      'Identity': '100',
-      'Email': 'captain@america.com',
-      'Phone': '+14155551234',
-      'stuff': stuff
-    };
-    CleverTapPlugin.onUserLogin(profile);
+var stuff = ["bags", "shoes"];
+var profile = {
+    'Name': 'Captain America',
+    'Identity': '100',
+    'Email': 'captain@america.com',
+    'Phone': '+14155551234',
+    'stuff': stuff
+};
+CleverTapPlugin.onUserLogin(profile);
 ```
 
 #### Get CleverTap Reference id
 ```Dart
-  CleverTapPlugin.profileGetCleverTapID().then((clevertapId) {})
+CleverTapPlugin.profileGetCleverTapID().then((clevertapId) {})
 
 ```
 
 #### Set Location to User Profile
 ```Dart
-        var lat = 19.07;
-	    var long = 72.87;
-	    CleverTapPlugin.setLocation(lat, long);
+var lat = 19.07;
+var long = 72.87;
+CleverTapPlugin.setLocation(lat, long);
 ```
 
 #### Record an event  
 ```Dart
-        var eventData = {
-	      // Key:    Value
-	      'first': 'partridge',
-	      'second': 'turtledoves'
-	    };
-	    CleverTapPlugin.recordEvent("Flutter Event", eventData);
+var eventData = {
+    // Key:    Value
+   'first': 'partridge',
+   'second': 'turtledoves'
+};
+CleverTapPlugin.recordEvent("Flutter Event", eventData);
 ```
 
 #### Record Charged event
 ```Dart
-        var item1 = {
-	      // Key:    Value
-	      'name': 'thing1',
-	      'amount': '100'
-	    };
-	    var item2 = {
-	      // Key:    Value
-	      'name': 'thing2',
-	      'amount': '100'
-	    };
-	    var items = [item1, item2];
-	    var chargeDetails = {
-	      // Key:    Value
-	      'total': '200',
-	      'payment': 'cash'
-	    };
-	    CleverTapPlugin.recordChargedEvent(chargeDetails, items);
+var item1 = {
+      // Key:    Value
+      'name': 'thing1',
+      'amount': '100'
+    };
+    var item2 = {
+      // Key:    Value
+      'name': 'thing2',
+      'amount': '100'
+    };
+    var items = [item1, item2];
+    var chargeDetails = {
+      // Key:    Value
+      'total': '200',
+      'payment': 'cash'
+};
+CleverTapPlugin.recordChargedEvent(chargeDetails, items);
+
 ```
 
 ## In App
