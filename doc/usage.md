@@ -383,9 +383,7 @@ void featureFlagsUpdated() {
 #### Enable Personalization
 
 ```Dart
-void enablePersonalization() {
-    CleverTapPlugin.enablePersonalization();
-}
+CleverTapPlugin.enablePersonalization();
 ```
 
 ## Attributions
@@ -435,12 +433,6 @@ CleverTapPlugin.enableDeviceNetworkInfoReporting(true);
 ```
 
 ## Multi-instance 
-
-#### Enable Personalisation 
-
-```Dart
-CleverTapPlugin.enablePersonalization();
-```
 
 #### Set Offline
 
