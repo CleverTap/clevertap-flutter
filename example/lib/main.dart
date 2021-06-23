@@ -14,7 +14,7 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  CleverTapPlugin _clevertapPlugin;
+  late CleverTapPlugin _clevertapPlugin;
   var inboxInitialized = false;
   var optOut = false;
   var offLine = false;
@@ -72,13 +72,13 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
-  void inAppNotificationButtonClicked(Map<String, dynamic> map) {
+  void inAppNotificationButtonClicked(Map<String, dynamic>? map) {
     this.setState(() {
       print("inAppNotificationButtonClicked called = ${map.toString()}");
     });
   }
 
-  void inboxNotificationButtonClicked(Map<String, dynamic> map) {
+  void inboxNotificationButtonClicked(Map<String, dynamic>? map) {
     this.setState(() {
       print("inboxNotificationButtonClicked called = ${map.toString()}");
     });
@@ -90,7 +90,7 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
-  void profileDidUpdate(Map<String, dynamic> map) {
+  void profileDidUpdate(Map<String, dynamic>? map) {
     this.setState(() {
       print("profileDidUpdate called");
     });
@@ -106,16 +106,16 @@ class _MyAppState extends State<MyApp> {
   void inboxMessagesDidUpdate() {
     this.setState(() async {
       print("inboxMessagesDidUpdate called");
-      int unread = await CleverTapPlugin.getInboxMessageUnreadCount();
-      int total = await CleverTapPlugin.getInboxMessageCount();
+      int? unread = await CleverTapPlugin.getInboxMessageUnreadCount();
+      int? total = await CleverTapPlugin.getInboxMessageCount();
       print("Unread count = " + unread.toString());
       print("Total count = " + total.toString());
     });
   }
 
-  void onDisplayUnitsLoaded(List<dynamic> displayUnits) {
+  void onDisplayUnitsLoaded(List<dynamic>? displayUnits) {
     this.setState(() async {
-      List displayUnits = await CleverTapPlugin.getAllDisplayUnits();
+      List? displayUnits = await CleverTapPlugin.getAllDisplayUnits();
       print("Display Units = " + displayUnits.toString());
     });
   }
@@ -123,7 +123,7 @@ class _MyAppState extends State<MyApp> {
   void featureFlagsUpdated() {
     print("Feature Flags Updated");
     this.setState(() async {
-      bool booleanVar = await CleverTapPlugin.getFeatureFlag("BoolKey", false);
+      bool? booleanVar = await CleverTapPlugin.getFeatureFlag("BoolKey", false);
       print("Feature flag = " + booleanVar.toString());
     });
   }
@@ -145,12 +145,12 @@ class _MyAppState extends State<MyApp> {
   void productConfigActivated() {
     print("Product Config Activated");
     this.setState(() async {
-      String stringvar =
+      String? stringvar =
           await CleverTapPlugin.getProductConfigString("StringKey");
       print("PC String = " + stringvar.toString());
-      int intvar = await CleverTapPlugin.getProductConfigLong("IntKey");
+      int? intvar = await CleverTapPlugin.getProductConfigLong("IntKey");
       print("PC int = " + intvar.toString());
-      double doublevar =
+      double? doublevar =
           await CleverTapPlugin.getProductConfigDouble("DoubleKey");
       print("PC double = " + doublevar.toString());
     });
@@ -819,13 +819,13 @@ class _MyAppState extends State<MyApp> {
   }
 
   void getAllInboxMessages() async {
-    List messages = await CleverTapPlugin.getAllInboxMessages();
+    List? messages = await CleverTapPlugin.getAllInboxMessages();
     showToast("See all inbox messages in console");
     print("Inbox Messages = " + messages.toString());
   }
 
   void getUnreadInboxMessages() async {
-    List messages = await CleverTapPlugin.getUnreadInboxMessages();
+    List? messages = await CleverTapPlugin.getUnreadInboxMessages();
     showToast("See unread inbox messages in console");
     print("Unread Inbox Messages = " + messages.toString());
   }
@@ -931,11 +931,10 @@ class _MyAppState extends State<MyApp> {
     }));
   }
 
-  Future<String> getFirstInboxMessageId() async {
+  Future<String>? getFirstInboxMessageId() async {
     var messageList = await CleverTapPlugin.getAllInboxMessages();
     print("inside getFirstInboxMessageId");
-    if (messageList == null || messageList.length == 0) return null;
-    Map<dynamic, dynamic> itemFirst = messageList[0];
+    Map<dynamic, dynamic> itemFirst = messageList?[0];
     print(itemFirst.toString());
 
     if (Platform.isAndroid) {
@@ -943,7 +942,7 @@ class _MyAppState extends State<MyApp> {
     } else if (Platform.isIOS) {
       return itemFirst["_id"];
     }
-    return null;
+    return "";
   }
 
   void setOptOut() {
@@ -1231,7 +1230,7 @@ class _MyAppState extends State<MyApp> {
   }
 
   void getAdUnits() async {
-    List displayUnits = await CleverTapPlugin.getAllDisplayUnits();
+    List? displayUnits = await CleverTapPlugin.getAllDisplayUnits();
     showToast("check console for logs");
     print("Display Units = " + displayUnits.toString());
   }
