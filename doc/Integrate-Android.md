@@ -50,6 +50,16 @@ In your app's Android Application class add the following code.
 
 ```
 
+#### Note
+
+To use Header & Footer InApp Notification Templates of CleverTap, change the class from which MainActivity is inherited from `FlutterActivity` to `FlutterFragmentActivity`
+
+```java
+public class MainActivity extends FlutterFragmentActivity {
+//FlutterFragmentActivity supports Header & Footer InApp Notification Templates
+}
+```
+
 If you do not have an Application class, add this to your `AndroidManifest.xml`
 
 ```xml
