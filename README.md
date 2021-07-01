@@ -36,12 +36,12 @@ See our [Technical Documentation for Android](doc/Integrate-Android.md) and [Tec
 
 ## 📑 Documentation & Example
 
-- Checkout our [CleverTap Flutter Usage docs](doc/usage.md)
-- Checkout our [Example Dart project for usage](/example)
+- Checkout our [CleverTap Flutter Usage docs](doc/Usage.md)
+- Checkout our [Example Dart project](/example)
 
 ## 🆕 Changelog
 
-Refer to the [CleverTap Flutter SDK Change Log](https://github.com/CleverTap/clevertap-flutter/blob/master/CHANGELOG.md).
+Refer to the [CleverTap Flutter SDK Change Log](/CHANGELOG.md).
 
 ## ❓Questions
 
