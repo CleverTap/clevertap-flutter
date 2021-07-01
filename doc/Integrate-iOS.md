@@ -31,3 +31,15 @@ After installation, you will need to integrate CleverTap SDK into your app.
   CleverTap.autoIntegrate() // integrate CleverTap SDK using the autoIntegrate option
   CleverTapPlugin.sharedInstance()?.applicationDidLaunch(options: launchOptions)
   ```
+  
+### Set up and register for push notifications
+
+1. [Set up push notifications for your app](https://developer.apple.com/documentation/usernotifications/registering_your_app_with_apns).
+
+2. Call the following from your Dart.
+
+  ```dart
+  CleverTapPlugin.registerForPush(); 
+  ```
+
+
