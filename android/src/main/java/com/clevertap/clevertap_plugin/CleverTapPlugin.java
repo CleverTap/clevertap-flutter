@@ -1295,7 +1295,7 @@ public class CleverTapPlugin implements ActivityAware,
     private void setPushToken(MethodCall call, Result result, PushType type) {
         String token = call.argument("token");
         if (isCleverTapNotNull(cleverTapAPI)) {
-            switch (type.toString()) {
+            switch (type.getType()) {
                 case "fcm":
                     cleverTapAPI.pushFcmRegistrationId(token, true);
                     break;
