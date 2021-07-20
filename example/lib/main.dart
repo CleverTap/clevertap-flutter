@@ -758,6 +758,7 @@ class _MyAppState extends State<MyApp> {
   }
 
   void recordEvent() {
+    var now = new DateTime.now();
     var eventData = {
       // Key:    Value
       'first': 'partridge',
