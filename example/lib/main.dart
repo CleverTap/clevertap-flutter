@@ -758,13 +758,46 @@ class _MyAppState extends State<MyApp> {
   }
 
   void recordEvent() {
+    var now = new DateTime.now();
     var eventData = {
       // Key:    Value
       'first': 'partridge',
-      'second': 'turtledoves'
+      'second': 'turtledoves',
+      'date': CleverTapPlugin.getCleverTapDate(now),
+      'number': 1
     };
     CleverTapPlugin.recordEvent("Flutter Event", eventData);
     showToast("Raised event - Flutter Event");
+  }
+
+  void recordNotificationClickedEvent() {
+    var eventData = {
+      /// Key:    Value
+      'nm': 'Notification message',
+      'nt': 'Notification title',
+      'wzrk_id': '0_0',
+      'wzrk_cid': 'Notification Channel ID'
+
+      ///other CleverTap Push Payload Key Values found in Step 3 of
+      ///https://developer.clevertap.com/docs/android#section-custom-android-push-notifications-handling
+    };
+    CleverTapPlugin.pushNotificationClickedEvent(eventData);
+    showToast("Raised event - Notification Clicked");
+  }
+
+  void recordNotificationViewedEvent() {
+    var eventData = {
+      /// Key:    Value
+      'nm': 'Notification message',
+      'nt': 'Notification title',
+      'wzrk_id': '0_0',
+      'wzrk_cid': 'Notification Channel ID'
+
+      ///other CleverTap Push Payload Key Values found in Step 3 of
+      ///https://developer.clevertap.com/docs/android#section-custom-android-push-notifications-handling
+    };
+    CleverTapPlugin.pushNotificationViewedEvent(eventData);
+    showToast("Raised event - Notification Viewed");
   }
 
   void recordChargedEvent() {

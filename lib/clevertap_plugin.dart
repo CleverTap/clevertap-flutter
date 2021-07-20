@@ -348,15 +348,15 @@ class CleverTapPlugin {
   ///Record Notification Clicked event
   static Future<void> pushNotificationClickedEvent(
       Map<String, dynamic> extras) async {
-    return await _channel
-        .invokeMethod('pushNotificationClickedEvent', {'notificationData': extras});
+    return await _channel.invokeMethod(
+        'pushNotificationClickedEvent', {'notificationData': extras});
   }
 
   ///Record Notification Viewed event
   static Future<void> pushNotificationViewedEvent(
       Map<String, dynamic> extras) async {
-    return await _channel
-        .invokeMethod('pushNotificationViewedEvent', {'notificationData': extras});
+    return await _channel.invokeMethod(
+        'pushNotificationViewedEvent', {'notificationData': extras});
   }
 
   /// Record a Screen View event
@@ -409,16 +409,14 @@ class CleverTapPlugin {
   //  and last time timestamp of the event.
   static Future<Map<String, dynamic>> eventGetDetail(String eventName) async {
     Map<dynamic, dynamic> response =
-        await (_channel.invokeMethod('eventGetDetail', {'eventName': eventName})
-            as FutureOr<Map<dynamic, dynamic>>);
+        await _channel.invokeMethod('eventGetDetail', {'eventName': eventName});
     return response.cast<String, dynamic>();
   }
 
   /// Returns a Map of event names and corresponding event details of all the events raised
   static Future<Map<String, dynamic>> getEventHistory(String eventName) async {
-    Map<dynamic, dynamic> response = await (_channel
-            .invokeMethod('getEventHistory', {'eventName': eventName})
-        as FutureOr<Map<dynamic, dynamic>>);
+    Map<dynamic, dynamic> response = await _channel
+        .invokeMethod('getEventHistory', {'eventName': eventName});
     return response.cast<String, dynamic>();
   }
 
@@ -566,8 +564,7 @@ class CleverTapPlugin {
   /// Returns a Map of UTMDetail object which consists of UTM parameters like source, medium & campaign
   static Future<Map<String, dynamic>> sessionGetUTMDetails() async {
     Map<dynamic, dynamic> response =
-        await (_channel.invokeMethod('sessionGetUTMDetails', {})
-            as FutureOr<Map<dynamic, dynamic>>);
+        await _channel.invokeMethod('sessionGetUTMDetails', {});
     return response.cast<String, dynamic>();
   }
 
@@ -606,9 +603,8 @@ class CleverTapPlugin {
   /// Returns a json string representation of CTInboxMessage for given messageId
   static Future<Map<String, dynamic>> getInboxMessageForId(
       String messageId) async {
-    Map<dynamic, dynamic> response = await (_channel
-            .invokeMethod('getInboxMessageForId', {'messageId': messageId})
-        as FutureOr<Map<dynamic, dynamic>>);
+    Map<dynamic, dynamic> response = await _channel
+        .invokeMethod('getInboxMessageForId', {'messageId': messageId});
     return response.cast<String, dynamic>();
   }
 
@@ -652,8 +648,7 @@ class CleverTapPlugin {
   ///Returns Display unit info as a Map
   static Future<Map<String, dynamic>> getDisplayUnitForId(String unitId) async {
     Map<dynamic, dynamic> response =
-        await (_channel.invokeMethod('getDisplayUnitForId', {'unitId': unitId})
-            as FutureOr<Map<dynamic, dynamic>>);
+        await _channel.invokeMethod('getDisplayUnitForId', {'unitId': unitId});
     return response.cast<String, dynamic>();
   }
 

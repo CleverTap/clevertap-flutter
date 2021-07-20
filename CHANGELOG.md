@@ -1,5 +1,10 @@
 ## CHANGE LOG
 
+### Version 1.2.3 (July 20, 2021)
+* Supports [CleverTap Android SDK v4.2.0](https://github.com/CleverTap/clevertap-android-sdk/releases/tag/core-v4.2.0)
+* Adds fix for NPE [#58](https://github.com/CleverTap/clevertap-flutter/issues/58)
+* Adds fix for `recordScreen` NPE [#54](https://github.com/CleverTap/clevertap-flutter/issues/54)
+
 ### Version 1.2.2 (May 21, 2021)
 * Supports [CleverTap Android SDK v4.1.1](https://github.com/CleverTap/clevertap-android-sdk/releases/tag/core-v4.1.1)
 * Supports [CleverTap iOS SDK v3.9.4](https://github.com/CleverTap/clevertap-ios-sdk/releases/tag/3.9.4)
