@@ -695,20 +695,21 @@ class _MyAppState extends State<MyApp> {
       /// Key:    Value
       'first': 'partridge',
       'second': 'turtledoves',
-      'date' : CleverTapPlugin.getCleverTapDate(now),
-      'number' : 1
+      'date': CleverTapPlugin.getCleverTapDate(now),
+      'number': 1
     };
     CleverTapPlugin.recordEvent("Flutter Event", eventData);
     showToast("Raised event - Flutter Event");
   }
 
-  void recordNotificationClickedEvent(){
+  void recordNotificationClickedEvent() {
     var eventData = {
       /// Key:    Value
       'nm': 'Notification message',
       'nt': 'Notification title',
       'wzrk_id': '0_0',
-      'wzrk_cid' : 'Notification Channel ID'
+      'wzrk_cid': 'Notification Channel ID'
+
       ///other CleverTap Push Payload Key Values found in Step 3 of
       ///https://developer.clevertap.com/docs/android#section-custom-android-push-notifications-handling
     };
@@ -716,13 +717,14 @@ class _MyAppState extends State<MyApp> {
     showToast("Raised event - Notification Clicked");
   }
 
-  void recordNotificationViewedEvent(){
+  void recordNotificationViewedEvent() {
     var eventData = {
       /// Key:    Value
       'nm': 'Notification message',
       'nt': 'Notification title',
       'wzrk_id': '0_0',
-      'wzrk_cid' : 'Notification Channel ID'
+      'wzrk_cid': 'Notification Channel ID'
+
       ///other CleverTap Push Payload Key Values found in Step 3 of
       ///https://developer.clevertap.com/docs/android#section-custom-android-push-notifications-handling
     };
@@ -1192,7 +1194,7 @@ class _MyAppState extends State<MyApp> {
     showToast("Personalization disabled");
     print("Personalization disabled");
   }
-  
+
   void getAdUnits() async {
     List displayUnits = await CleverTapPlugin.getAllDisplayUnits();
     showToast("check console for logs");
@@ -1202,6 +1204,7 @@ class _MyAppState extends State<MyApp> {
   void fetch() {
     CleverTapPlugin.fetch();
     showToast("check console for logs");
+
     ///CleverTapPlugin.fetchWithMinimumIntervalInSeconds(0);
   }
 
