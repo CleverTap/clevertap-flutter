@@ -1,10 +1,10 @@
-import 'dart:async';
 import 'dart:convert';
-import 'dart:io' show Platform;
 
-import 'package:clevertap_plugin/clevertap_plugin.dart';
 import 'package:flutter/material.dart';
+import 'dart:async';
+import 'dart:io' show Platform;
 import 'package:flutter_styled_toast/flutter_styled_toast.dart';
+import 'package:clevertap_plugin/clevertap_plugin.dart';
 
 void main() => runApp(MyApp());
 
@@ -14,7 +14,7 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  CleverTapPlugin _clevertapPlugin;
+  late CleverTapPlugin _clevertapPlugin;
   var inboxInitialized = false;
   var optOut = false;
   var offLine = false;
@@ -26,14 +26,13 @@ class _MyAppState extends State<MyApp> {
     initPlatformState();
     activateCleverTapFlutterPluginHandlers();
     CleverTapPlugin.setDebugLevel(3);
-    CleverTapPlugin.createNotificationChannel(
-        "fluttertest", "Flutter Test", "Flutter Test", 3, true);
+    CleverTapPlugin.createNotificationChannel("fluttertest", "Flutter Test", "Flutter Test", 3, true);
     CleverTapPlugin.initializeInbox();
     CleverTapPlugin.registerForPush(); //only for iOS
-    ///var initialUrl = CleverTapPlugin.getInitialUrl();
+    //var initialUrl = CleverTapPlugin.getInitialUrl();
   }
 
-  /// Platform messages are asynchronous, so we initialize in an async method.
+  // Platform messages are asynchronous, so we initialize in an async method.
   Future<void> initPlatformState() async {
     if (!mounted) return;
   }
@@ -73,13 +72,13 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
-  void inAppNotificationButtonClicked(Map<String, dynamic> map) {
+  void inAppNotificationButtonClicked(Map<String, dynamic>? map) {
     this.setState(() {
       print("inAppNotificationButtonClicked called = ${map.toString()}");
     });
   }
 
-  void inboxNotificationButtonClicked(Map<String, dynamic> map) {
+  void inboxNotificationButtonClicked(Map<String, dynamic>? map) {
     this.setState(() {
       print("inboxNotificationButtonClicked called = ${map.toString()}");
     });
@@ -91,7 +90,7 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
-  void profileDidUpdate(Map<String, dynamic> map) {
+  void profileDidUpdate(Map<String, dynamic>? map) {
     this.setState(() {
       print("profileDidUpdate called");
     });
@@ -107,16 +106,16 @@ class _MyAppState extends State<MyApp> {
   void inboxMessagesDidUpdate() {
     this.setState(() async {
       print("inboxMessagesDidUpdate called");
-      int unread = await CleverTapPlugin.getInboxMessageUnreadCount();
-      int total = await CleverTapPlugin.getInboxMessageCount();
+      int? unread = await CleverTapPlugin.getInboxMessageUnreadCount();
+      int? total = await CleverTapPlugin.getInboxMessageCount();
       print("Unread count = " + unread.toString());
       print("Total count = " + total.toString());
     });
   }
 
-  void onDisplayUnitsLoaded(List<dynamic> displayUnits) {
+  void onDisplayUnitsLoaded(List<dynamic>? displayUnits) {
     this.setState(() async {
-      List displayUnits = await CleverTapPlugin.getAllDisplayUnits();
+      List? displayUnits = await CleverTapPlugin.getAllDisplayUnits();
       print("Display Units = " + displayUnits.toString());
     });
   }
@@ -124,7 +123,7 @@ class _MyAppState extends State<MyApp> {
   void featureFlagsUpdated() {
     print("Feature Flags Updated");
     this.setState(() async {
-      bool booleanVar = await CleverTapPlugin.getFeatureFlag("BoolKey", false);
+      bool? booleanVar = await CleverTapPlugin.getFeatureFlag("BoolKey", false);
       print("Feature flag = " + booleanVar.toString());
     });
   }
@@ -146,12 +145,12 @@ class _MyAppState extends State<MyApp> {
   void productConfigActivated() {
     print("Product Config Activated");
     this.setState(() async {
-      String stringvar =
+      String? stringvar =
           await CleverTapPlugin.getProductConfigString("StringKey");
       print("PC String = " + stringvar.toString());
-      int intvar = await CleverTapPlugin.getProductConfigLong("IntKey");
+      int? intvar = await CleverTapPlugin.getProductConfigLong("IntKey");
       print("PC int = " + intvar.toString());
-      double doublevar =
+      double? doublevar =
           await CleverTapPlugin.getProductConfigDouble("DoubleKey");
       print("PC double = " + doublevar.toString());
     });
@@ -182,6 +181,7 @@ class _MyAppState extends State<MyApp> {
         home: Scaffold(
             appBar: AppBar(
               title: const Text('CleverTap Plugin Example App'),
+              backgroundColor: Colors.red.shade800,
             ),
             body: ListView(
               children: <Widget>[
@@ -202,6 +202,305 @@ class _MyAppState extends State<MyApp> {
                 Card(
                   color: Colors.lightBlueAccent,
                   child: Padding(
+                    padding: const EdgeInsets.all(0.0),
+                    child: ListTile(
+                      title: Text("User Profiles"),
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Push User"),
+                      subtitle: Text("Pushes/Records a user"),
+                      onTap: recordUser,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Set Profile Multi Values"),
+                      subtitle: Text("Sets a multi valued user property"),
+                      onTap: setProfileMultiValue,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Remove Profile Value For Key"),
+                      subtitle: Text("Removes user property of given key"),
+                      onTap: removeProfileValue,
+                    ),
+                  ),
+                ),
+
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Add Profile Multi Value"),
+                      subtitle: Text("Add user property"),
+                      onTap: addMultiValue,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Add Profile Multi values"),
+                      subtitle: Text("Add a multi valued user property"),
+                      onTap: addMultiValues,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Remove Multi Value"),
+                      subtitle: Text("Remove user property"),
+                      onTap: removeMultiValue,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Remove Multi Values"),
+                      subtitle: Text("Remove a multi valued user property"),
+                      onTap: removeMultiValues,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.lightBlueAccent,
+                  child: Padding(
+                    padding: const EdgeInsets.all(0.0),
+                    child: ListTile(
+                      title: Text("Identity Management"),
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Performs onUserLogin"),
+                      subtitle: Text("Used to identify multiple profiles"),
+                      onTap: onUserLogin,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Get CleverTap ID"),
+                      subtitle: Text("Returns Clevertap ID"),
+                      onTap: getCleverTapId,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.lightBlueAccent,
+                  child: Padding(
+                    padding: const EdgeInsets.all(0.0),
+                    child: ListTile(
+                      title: Text("Location"),
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Set Location"),
+                      subtitle: Text("Use to set Location of a user"),
+                      onTap: setLocation,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.lightBlueAccent,
+                  child: Padding(
+                    padding: const EdgeInsets.all(0.0),
+                    child: ListTile(
+                      title: Text("User Events"),
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Push Event"),
+                      subtitle: Text("Pushes/Records an event"),
+                      onTap: recordEvent,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Push Charged Event"),
+                      subtitle: Text("Pushes/Records a Charged event"),
+                      onTap: recordChargedEvent,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Get Event Detail"),
+                      subtitle: Text("Get details of an event"),
+                      onTap: getEventDetail,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Get Event History"),
+                      subtitle: Text("Get history of an event"),
+                      onTap: recordEvent,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.lightBlueAccent,
+                  child: Padding(
+                    padding: const EdgeInsets.all(0.0),
+                    child: ListTile(
+                      title: Text("App Inbox"),
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Show Inbox"),
+                      subtitle: Text("Opens sample App Inbox"),
+                      onTap: showInbox,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Get All Inbox Messages"),
+                      subtitle: Text("Returns all inbox messages"),
+                      onTap: getAllInboxMessages,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Get Unread Inbox Messages"),
+                      subtitle: Text("Returns unread inbox messages"),
+                      onTap: getUnreadInboxMessages,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Get Inbox Message for given ID"),
+                      subtitle: Text("Returns inbox message for given ID"),
+                      onTap: getInboxMessageForId,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Delete Inbox Message for given ID"),
+                      subtitle: Text("Deletes inbox message for given ID"),
+                      onTap: deleteInboxMessageForId,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Mark Read Inbox Message for given ID"),
+                      subtitle: Text("Mark read inbox message for given ID"),
+                      onTap: markReadInboxMessageForId,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Push Inbox Message Clicked"),
+                      subtitle:
+                      Text("Pushes/Records inbox message clicked event"),
+                      onTap: pushInboxNotificationClickedEventForId,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Push Inbox Message Viewed"),
+                      subtitle:
+                      Text("Pushes/Records inbox message viewed event"),
+                      onTap: pushInboxNotificationViewedEventForId,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.lightBlueAccent,
+                  child: Padding(
+                    padding: const EdgeInsets.all(0.0),
+                    child: ListTile(
+                      title: Text("Enable Debugging"),
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
                       title: Text("Set Debug Level"),
@@ -217,130 +516,14 @@ class _MyAppState extends State<MyApp> {
                 Card(
                   color: Colors.lightBlueAccent,
                   child: Padding(
-                    padding: const EdgeInsets.all(4.0),
+                    padding: const EdgeInsets.all(0.0),
                     child: ListTile(
-                      title: Text("Push Event"),
-                      subtitle: Text("Pushes/Records an event"),
-                      onTap: recordEvent,
+                      title: Text("Product Config"),
                     ),
                   ),
                 ),
                 Card(
-                  color: Colors.lightBlueAccent,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Push User"),
-                      subtitle: Text("Pushes/Records a user"),
-                      onTap: recordUser,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.lightBlueAccent,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Push Charged Event"),
-                      subtitle: Text("Pushes/Records a Charged event"),
-                      onTap: recordChargedEvent,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.lightBlueAccent,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Show Inbox"),
-                      subtitle: Text("Opens sample App Inbox"),
-                      onTap: showInbox,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.lightBlueAccent,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Push Notification Clicked Event"),
-                      subtitle:
-                          Text("Pushes/Records an Notification Clicked event"),
-                      onTap: recordNotificationClickedEvent,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.lightBlueAccent,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Push Notification Viewed Event"),
-                      subtitle:
-                          Text("Pushes/Records an Notification Clicked event"),
-                      onTap: recordNotificationViewedEvent,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.lightBlueAccent,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Set Opt Out"),
-                      subtitle:
-                          Text("Used to opt out of sending data to CleverTap"),
-                      onTap: setOptOut,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.lightBlueAccent,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Set Offline"),
-                      subtitle: Text("Switches CleverTap to offline mode"),
-                      onTap: setOffline,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.lightBlueAccent,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Device Networking Info"),
-                      subtitle: Text(
-                          "Enables/Disable device networking info as per GDPR"),
-                      onTap: setEnableDeviceNetworkingInfo,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.lightBlueAccent,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Enable Personalization"),
-                      subtitle: Text("Enables Personalization"),
-                      onTap: enablePersonalization,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.lightBlueAccent,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Disables Personalization"),
-                      subtitle: Text("Disables Personalization"),
-                      onTap: disablePersonalization,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.lightBlueAccent,
+                  color: Colors.grey.shade300,
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
@@ -351,7 +534,7 @@ class _MyAppState extends State<MyApp> {
                   ),
                 ),
                 Card(
-                  color: Colors.lightBlueAccent,
+                  color: Colors.grey.shade300,
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
@@ -362,40 +545,127 @@ class _MyAppState extends State<MyApp> {
                   ),
                 ),
                 Card(
-                  color: Colors.lightBlueAccent,
+                  color: Colors.grey.shade300,
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
-                      title: Text("Get Event Detail"),
-                      subtitle: Text("Get details of an event"),
-                      onTap: getEventDetail,
+                      title: Text("Get Event Last Time"),
+                      subtitle: Text("Returns last epoch value for an event"),
+                      onTap: eventGetLastTime,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Fetch"),
+                      subtitle: Text("Fetches Product Config values"),
+                      onTap: fetch,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Activate"),
+                      subtitle: Text("Activates Product Config values"),
+                      onTap: activate,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Fetch and Activate"),
+                      subtitle: Text("Fetches and Activates Config values"),
+                      onTap: fetchAndActivate,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Session Time Elapsed"),
+                      subtitle: Text("Returns session time elapsed"),
+                      onTap: getTimeElapsed,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Session Total Visits"),
+                      subtitle: Text("Returns session total visits"),
+                      onTap: getTotalVisits,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Session Screen Count"),
+                      subtitle: Text("Returns session screen count"),
+                      onTap: getScreenCount,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Session Previous Visit Time"),
+                      subtitle: Text("Returns session previous visit time"),
+                      onTap: getPreviousVisitTime,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Session UTM Details"),
+                      subtitle: Text("Returns session UTM details"),
+                      onTap: getUTMDetails,
+                    ),
+                  ),
+                ),
+
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Get Ad Units"),
+                      subtitle: Text("Returns all Display Units set"),
+                      onTap: getAdUnits,
                     ),
                   ),
                 ),
                 Card(
                   color: Colors.lightBlueAccent,
                   child: Padding(
-                    padding: const EdgeInsets.all(4.0),
+                    padding: const EdgeInsets.all(0.0),
                     child: ListTile(
-                      title: Text("Get Event History"),
-                      subtitle: Text("Get history of an event"),
-                      onTap: recordEvent,
+                      title: Text("Attribution"),
                     ),
                   ),
                 ),
                 Card(
-                  color: Colors.lightBlueAccent,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Set Location"),
-                      subtitle: Text("Use to set Location of a user"),
-                      onTap: setLocation,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.lightBlueAccent,
+                  color: Colors.grey.shade300,
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
@@ -409,277 +679,75 @@ class _MyAppState extends State<MyApp> {
                 Card(
                   color: Colors.lightBlueAccent,
                   child: Padding(
-                    padding: const EdgeInsets.all(4.0),
+                    padding: const EdgeInsets.all(0.0),
                     child: ListTile(
-                      title: Text("Get CleverTap ID"),
-                      subtitle: Text("Returns Clevertap ID"),
-                      onTap: getCleverTapId,
+                      title: Text("GDPR"),
                     ),
                   ),
                 ),
                 Card(
-                  color: Colors.lightBlueAccent,
+                  color: Colors.grey.shade300,
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
-                      title: Text("Performs onUserLogin"),
-                      subtitle: Text("Used to identify multiple profiles"),
-                      onTap: onUserLogin,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.lightBlueAccent,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Get Event Last Time"),
-                      subtitle: Text("Returns last epoch value for an event"),
-                      onTap: eventGetLastTime,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.lightBlueAccent,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Remove Profile Value For Key"),
-                      subtitle: Text("Removes user property of given key"),
-                      onTap: removeProfileValue,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.lightBlueAccent,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Set Profile Multi Values"),
-                      subtitle: Text("Sets a multi valued user property"),
-                      onTap: setProfileMultiValue,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.lightBlueAccent,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Add Profile Multi Value"),
-                      subtitle: Text("Add user property"),
-                      onTap: addMultiValue,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.lightBlueAccent,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Add Profile Multi values"),
-                      subtitle: Text("Add a multi valued user property"),
-                      onTap: addMultiValues,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.lightBlueAccent,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Remove Multi Value"),
-                      subtitle: Text("Remove user property"),
-                      onTap: removeMultiValue,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.lightBlueAccent,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Remove Multi Values"),
-                      subtitle: Text("Remove a multi valued user property"),
-                      onTap: removeMultiValues,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.lightBlueAccent,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Session Time Elapsed"),
-                      subtitle: Text("Returns session time elapsed"),
-                      onTap: getTimeElapsed,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.lightBlueAccent,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Session Total Visits"),
-                      subtitle: Text("Returns session total visits"),
-                      onTap: getTotalVisits,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.lightBlueAccent,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Session Screen Count"),
-                      subtitle: Text("Returns session screen count"),
-                      onTap: getScreenCount,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.lightBlueAccent,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Session Previous Visit Time"),
-                      subtitle: Text("Returns session previous visit time"),
-                      onTap: getPreviousVisitTime,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.lightBlueAccent,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Session UTM Details"),
-                      subtitle: Text("Returns session UTM details"),
-                      onTap: getUTMDetails,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.lightBlueAccent,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Get Ad Units"),
-                      subtitle: Text("Returns all Display Units set"),
-                      onTap: getAdUnits,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.lightBlueAccent,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Get All Inbox Messages"),
-                      subtitle: Text("Returns all inbox messages"),
-                      onTap: getAllInboxMessages,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.lightBlueAccent,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Get Unread Inbox Messages"),
-                      subtitle: Text("Returns unread inbox messages"),
-                      onTap: getUnreadInboxMessages,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.lightBlueAccent,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Get Inbox Message for given ID"),
-                      subtitle: Text("Returns inbox message for given ID"),
-                      onTap: getInboxMessageForId,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.lightBlueAccent,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Delete Inbox Message for given ID"),
-                      subtitle: Text("Deletes inbox message for given ID"),
-                      onTap: deleteInboxMessageForId,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.lightBlueAccent,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Mark Read Inbox Message for given ID"),
-                      subtitle: Text("Mark read inbox message for given ID"),
-                      onTap: markReadInboxMessageForId,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.lightBlueAccent,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Push Inbox Message Clicked"),
+                      title: Text("Set Opt Out"),
                       subtitle:
-                          Text("Pushes/Records inbox message clicked event"),
-                      onTap: pushInboxNotificationClickedEventForId,
+                      Text("Used to opt out of sending data to CleverTap"),
+                      onTap: setOptOut,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Device Networking Info"),
+                      subtitle: Text(
+                          "Enables/Disable device networking info as per GDPR"),
+                      onTap: setEnableDeviceNetworkingInfo,
                     ),
                   ),
                 ),
                 Card(
                   color: Colors.lightBlueAccent,
                   child: Padding(
-                    padding: const EdgeInsets.all(4.0),
+                    padding: const EdgeInsets.all(0.0),
                     child: ListTile(
-                      title: Text("Push Inbox Message Viewed"),
-                      subtitle:
-                          Text("Pushes/Records inbox message viewed event"),
-                      onTap: pushInboxNotificationViewedEventForId,
+                      title: Text("Multi-Instance"),
                     ),
                   ),
                 ),
                 Card(
-                  color: Colors.lightBlueAccent,
+                  color: Colors.grey.shade300,
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
-                      title: Text("Fetch"),
-                      subtitle: Text("Fetches Product Config values"),
-                      onTap: fetch,
+                      title: Text("Enable Personalization"),
+                      subtitle: Text("Enables Personalization"),
+                      onTap: enablePersonalization,
                     ),
                   ),
                 ),
                 Card(
-                  color: Colors.lightBlueAccent,
+                  color: Colors.grey.shade300,
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
-                      title: Text("Activate"),
-                      subtitle: Text("Activates Product Config values"),
-                      onTap: activate,
+                      title: Text("Disables Personalization"),
+                      subtitle: Text("Disables Personalization"),
+                      onTap: disablePersonalization,
                     ),
                   ),
                 ),
                 Card(
-                  color: Colors.lightBlueAccent,
+                  color: Colors.grey.shade300,
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
-                      title: Text("Fetch and Activate"),
-                      subtitle: Text("Fetches and Activates Config values"),
-                      onTap: fetchAndActivate,
+                      title: Text("Set Offline"),
+                      subtitle: Text("Switches CleverTap to offline mode"),
+                      onTap: setOffline,
                     ),
                   ),
                 ),
@@ -690,9 +758,8 @@ class _MyAppState extends State<MyApp> {
   }
 
   void recordEvent() {
-    var now = new DateTime.now();
     var eventData = {
-      /// Key:    Value
+      // Key:    Value
       'first': 'partridge',
       'second': 'turtledoves',
       'date': CleverTapPlugin.getCleverTapDate(now),
@@ -734,18 +801,18 @@ class _MyAppState extends State<MyApp> {
 
   void recordChargedEvent() {
     var item1 = {
-      /// Key:    Value
+      // Key:    Value
       'name': 'thing1',
       'amount': '100'
     };
     var item2 = {
-      /// Key:    Value
+      // Key:    Value
       'name': 'thing2',
       'amount': '100'
     };
     var items = [item1, item2];
     var chargeDetails = {
-      /// Key:    Value
+      // Key:    Value
       'total': '200',
       'payment': 'cash'
     };
@@ -756,12 +823,12 @@ class _MyAppState extends State<MyApp> {
   void recordUser() {
     var stuff = ["bags", "shoes"];
     var profile = {
-      'Name': 'Thor',
+      'Name': 'sarvesh',
       'Identity': '100',
       'DOB': '22-04-2000',
 
       ///Key always has to be "DOB" and format should always be dd-MM-yyyy
-      'Email': 'thor1@asgard.com',
+      'Email': 'sarveshgk10@gmail.com',
       'Phone': '14155551234',
       'props': 'property1',
       'stuff': stuff
@@ -776,7 +843,10 @@ class _MyAppState extends State<MyApp> {
         var styleConfig = {
           'noMessageTextColor': '#ff6600',
           'noMessageText': 'No message(s) to show.',
-          'navBarTitle': 'App Inbox'
+          'navBarTitle': 'App Inbox',
+          'navBarTitleColor': '#101727',
+          'navBarColor': '#EF4444',
+          'tabs': ["Offers"]
         };
         CleverTapPlugin.showInbox(styleConfig);
       });
@@ -784,13 +854,13 @@ class _MyAppState extends State<MyApp> {
   }
 
   void getAllInboxMessages() async {
-    List messages = await CleverTapPlugin.getAllInboxMessages();
+    List? messages = await CleverTapPlugin.getAllInboxMessages();
     showToast("See all inbox messages in console");
     print("Inbox Messages = " + messages.toString());
   }
 
   void getUnreadInboxMessages() async {
-    List messages = await CleverTapPlugin.getUnreadInboxMessages();
+    List? messages = await CleverTapPlugin.getUnreadInboxMessages();
     showToast("See unread inbox messages in console");
     print("Unread Inbox Messages = " + messages.toString());
   }
@@ -896,11 +966,10 @@ class _MyAppState extends State<MyApp> {
     }));
   }
 
-  Future<String> getFirstInboxMessageId() async {
+  Future<String>? getFirstInboxMessageId() async {
     var messageList = await CleverTapPlugin.getAllInboxMessages();
     print("inside getFirstInboxMessageId");
-    if (messageList == null || messageList.length == 0) return null;
-    Map<dynamic, dynamic> itemFirst = messageList[0];
+    Map<dynamic, dynamic> itemFirst = messageList?[0];
     print(itemFirst.toString());
 
     if (Platform.isAndroid) {
@@ -908,7 +977,7 @@ class _MyAppState extends State<MyApp> {
     } else if (Platform.isIOS) {
       return itemFirst["_id"];
     }
-    return null;
+    return "";
   }
 
   void setOptOut() {
@@ -1196,7 +1265,7 @@ class _MyAppState extends State<MyApp> {
   }
 
   void getAdUnits() async {
-    List displayUnits = await CleverTapPlugin.getAllDisplayUnits();
+    List? displayUnits = await CleverTapPlugin.getAllDisplayUnits();
     showToast("check console for logs");
     print("Display Units = " + displayUnits.toString());
   }
@@ -1208,7 +1277,6 @@ class _MyAppState extends State<MyApp> {
     ///CleverTapPlugin.fetchWithMinimumIntervalInSeconds(0);
   }
 
-  // ignore: must_call_super
   void activate() {
     CleverTapPlugin.activate();
     showToast("check console for logs");
