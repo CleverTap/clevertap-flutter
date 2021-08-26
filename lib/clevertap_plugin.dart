@@ -501,6 +501,26 @@ class CleverTapPlugin {
         .invokeMethod('profileAddMultiValue', {'key': key, 'value': value});
   }
 
+  static Future<void> profileIncrementIntValue(String key, int value) async {
+    return await _channel
+        .invokeMethod('profileIncrementIntValue', {'key': key, 'value': value});
+  }
+
+  static Future<void> profileDecrementIntValue(String key, int value) async {
+    return await _channel
+        .invokeMethod('profileDecrementIntValue', {'key': key, 'value': value});
+  }
+
+  static Future<void> profileIncrementDoubleValue(String key, double value) async {
+    return await _channel
+        .invokeMethod('profileIncrementDoubleValue', {'key': key, 'value': value});
+  }
+
+  static Future<void> profileDecrementDoubleValue(String key, double value) async {
+    return await _channel
+        .invokeMethod('profileDecrementDoubleValue', {'key': key, 'value': value});
+  }
+
   /// Add a collection of unique values to a multi-value user profile property
   /// If the property does not exist it will be created
   /// <p/>

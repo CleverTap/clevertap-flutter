@@ -258,6 +258,28 @@ class _MyAppState extends State<MyApp> {
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
+                      title: Text("Profile increment value"),
+                      subtitle: Text("Increment value by 10"),
+                      onTap: incrementValue,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Profile decrement value"),
+                      subtitle: Text("Decrement value by 10"),
+                      onTap: decrementValue,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
                       title: Text("Add Profile Multi values"),
                       subtitle: Text("Add a multi valued user property"),
                       onTap: addMultiValues,
@@ -1162,6 +1184,18 @@ class _MyAppState extends State<MyApp> {
   void addMultiValue() {
     var value = "value1";
     CleverTapPlugin.profileAddMultiValue("props", value);
+    showToast("check console for details");
+  }
+
+  void incrementValue() {
+    var value = 10;
+    CleverTapPlugin.profileIncrementIntValue("props", value);
+    showToast("check console for details");
+  }
+
+  void decrementValue() {
+    var value = 10.00;
+    CleverTapPlugin.profileDecrementDoubleValue("props", value);
     showToast("check console for details");
   }
 
