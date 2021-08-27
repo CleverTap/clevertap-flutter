@@ -554,6 +554,52 @@ class _MyAppState extends State<MyApp> {
                   child: Padding(
                     padding: const EdgeInsets.all(0.0),
                     child: ListTile(
+                      title: Text("In-App messaging controls"),
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Suspend InApp notifications"),
+                      subtitle:
+                          Text("Suspends display of InApp Notifications."),
+                      onTap: suspendInAppNotifications,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Discard InApp notifications"),
+                      subtitle: Text(
+                          "Suspends the display of InApp Notifications "
+                          "and discards any new InApp Notifications to be shown"
+                          " after this method is called."),
+                      onTap: discardInAppNotifications,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Resume InApp notifications"),
+                      subtitle: Text("Resumes display of InApp Notifications."),
+                      onTap: resumeInAppNotifications,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.lightBlueAccent,
+                  child: Padding(
+                    padding: const EdgeInsets.all(0.0),
+                    child: ListTile(
                       title: Text("Product Config"),
                     ),
                   ),
@@ -1299,6 +1345,21 @@ class _MyAppState extends State<MyApp> {
         print("$error");
       });
     });
+  }
+
+  void suspendInAppNotifications() {
+    CleverTapPlugin.suspendInAppNotifications();
+    showToast("InApp notification is suspended");
+  }
+
+  void discardInAppNotifications() {
+    CleverTapPlugin.discardInAppNotifications();
+    showToast("InApp notification is discarded");
+  }
+
+  void resumeInAppNotifications() {
+    CleverTapPlugin.resumeInAppNotifications();
+    showToast("InApp notification is resumed");
   }
 
   void enablePersonalization() {
