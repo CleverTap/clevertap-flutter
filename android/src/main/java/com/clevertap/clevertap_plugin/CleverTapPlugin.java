@@ -400,6 +400,19 @@ public class CleverTapPlugin implements ActivityAware,
                 sessionGetUTMDetails(result);
                 break;
             }
+            //In App controls Methods
+            case "suspendInAppNotifications": {
+                suspendInAppNotifications(result);
+                break;
+            }
+            case "discardInAppNotifications": {
+                discardInAppNotifications(result);
+                break;
+            }
+            case "resumeInAppNotifications": {
+                resumeInAppNotifications(result);
+                break;
+            }
             //App Inbox Methods
             case "initializeInbox": {
                 initializeInbox(result);
@@ -892,6 +905,33 @@ public class CleverTapPlugin implements ActivityAware,
         }
     }
 
+    private void suspendInAppNotifications(Result result) {
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            cleverTapAPI.suspendInAppNotifications();
+            result.success(null);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void discardInAppNotifications(Result result) {
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            cleverTapAPI.discardInAppNotifications();
+            result.success(null);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void resumeInAppNotifications(Result result) {
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            cleverTapAPI.resumeInAppNotifications();
+            result.success(null);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
     private void initializeInbox(Result result) {
         if (isCleverTapNotNull(cleverTapAPI)) {
             cleverTapAPI.initializeInbox();
@@ -992,7 +1032,7 @@ public class CleverTapPlugin implements ActivityAware,
         }
     }
 
-    private void    profileDecrementValue(MethodCall call, Result result) {
+    private void profileDecrementValue(MethodCall call, Result result) {
         String key = call.argument("key");
         Number value = call.argument("value");
         if (isCleverTapNotNull(cleverTapAPI)) {

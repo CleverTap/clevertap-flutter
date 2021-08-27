@@ -578,6 +578,32 @@ class CleverTapPlugin {
     return response.cast<String, dynamic>();
   }
 
+  /// In-App Controls
+
+  /// Suspends display of InApp Notifications.
+  /// The InApp Notifications are queued once this method is called
+  /// and will be displayed once resumeInAppNotifications() is called.
+  static Future<void> suspendInAppNotifications() async {
+    return await _channel.invokeMethod('suspendInAppNotifications', {});
+  }
+
+  /// Suspends the display of InApp Notifications and discards any new InApp Notifications to be shown
+  /// after this method is called.
+  /// The InApp Notifications will be displayed only once resumeInAppNotifications() is called.
+  static Future<void> discardInAppNotifications() async {
+    return await _channel.invokeMethod('discardInAppNotifications', {});
+  }
+
+  /// Resumes display of InApp Notifications.
+  /// If suspendInAppNotifications() was called previously, calling this method will instantly show
+  /// all queued InApp Notifications and also resume InApp Notifications on events raised after this
+  /// method is called.
+  /// If discardInAppNotifications() was called previously, calling this method will only resume
+  /// InApp Notifications on events raised after this method is called.
+  static Future<void> resumeInAppNotifications() async {
+    return await _channel.invokeMethod('resumeInAppNotifications', {});
+  }
+
   /// Initializes the inbox controller and sends a callback
   static Future<void> initializeInbox() async {
     return await _channel.invokeMethod('initializeInbox', {});
