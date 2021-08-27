@@ -355,22 +355,14 @@ public class CleverTapPlugin implements ActivityAware,
                 profileAddMultiValue(call, result);
                 break;
             }
-            case "profileIncrementIntValue": {
+            case "profileIncrementValue": {
                 profileIncrementValue(call, result);
                 break;
             }
-            case "profileDecrementIntValue": {
+            case "profileDecrementValue": {
                 profileDecrementValue(call, result);
                 break;
             }
-//            case "profileIncrementDoubleValue": {
-//                profileIncrementValue(call, result);
-//                break;
-//            }
-//            case "profileDecrementDoubleValue": {
-//                profileDecrementValue(call, result);
-//                break;
-//            }
             case "profileAddMultiValues": {
                 profileAddMultiValues(call, result);
                 break;
@@ -991,7 +983,7 @@ public class CleverTapPlugin implements ActivityAware,
 
     private void profileIncrementValue(MethodCall call, Result result) {
         String key = call.argument("key");
-        int value = call.argument("value");
+        Number value = call.argument("value");
         if (isCleverTapNotNull(cleverTapAPI)) {
             cleverTapAPI.incrementValue(key, value);
             result.success(null);
@@ -1000,11 +992,11 @@ public class CleverTapPlugin implements ActivityAware,
         }
     }
 
-    private void profileDecrementValue(MethodCall call, Result result) {
+    private void    profileDecrementValue(MethodCall call, Result result) {
         String key = call.argument("key");
-        int value = call.argument("value");
+        Number value = call.argument("value");
         if (isCleverTapNotNull(cleverTapAPI)) {
-            cleverTapAPI.incrementValue(key, value);
+            cleverTapAPI.decrementValue(key, value);
             result.success(null);
         } else {
             result.error(TAG, ERROR_MSG, null);

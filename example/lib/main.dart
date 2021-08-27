@@ -1,10 +1,10 @@
-import 'dart:convert';
-
-import 'package:flutter/material.dart';
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io' show Platform;
-import 'package:flutter_styled_toast/flutter_styled_toast.dart';
+
 import 'package:clevertap_plugin/clevertap_plugin.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_styled_toast/flutter_styled_toast.dart';
 
 void main() => runApp(MyApp());
 
@@ -146,12 +146,12 @@ class _MyAppState extends State<MyApp> {
     print("Product Config Activated");
     this.setState(() async {
       String? stringvar =
-          await CleverTapPlugin.getProductConfigString("StringKey");
+      await CleverTapPlugin.getProductConfigString("StringKey");
       print("PC String = " + stringvar.toString());
       int? intvar = await CleverTapPlugin.getProductConfigLong("IntKey");
       print("PC int = " + intvar.toString());
       double? doublevar =
-          await CleverTapPlugin.getProductConfigDouble("DoubleKey");
+      await CleverTapPlugin.getProductConfigDouble("DoubleKey");
       print("PC double = " + doublevar.toString());
     });
   }
@@ -1188,14 +1188,14 @@ class _MyAppState extends State<MyApp> {
   }
 
   void incrementValue() {
-    var value = 10;
-    CleverTapPlugin.profileIncrementIntValue("props", value);
+    var value = 15;
+    CleverTapPlugin.profileIncrementValue("props", value);
     showToast("check console for details");
   }
 
   void decrementValue() {
-    var value = 10.00;
-    CleverTapPlugin.profileDecrementDoubleValue("props", value);
+    var value = 10;
+    CleverTapPlugin.profileDecrementValue("props", value);
     showToast("check console for details");
   }
 
