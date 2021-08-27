@@ -26,24 +26,10 @@ class _MyAppState extends State<MyApp> {
     initPlatformState();
     activateCleverTapFlutterPluginHandlers();
     CleverTapPlugin.setDebugLevel(3);
-    CleverTapPlugin.createNotificationChannel(
-        "fluttertest", "Flutter Test", "Flutter Test", 3, true);
+    CleverTapPlugin.createNotificationChannel("fluttertest", "Flutter Test", "Flutter Test", 3, true);
     CleverTapPlugin.initializeInbox();
     CleverTapPlugin.registerForPush(); //only for iOS
     //var initialUrl = CleverTapPlugin.getInitialUrl();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    print(state);
-    if (state == AppLifecycleState.resumed) {
-      Future.delayed(
-        const Duration(milliseconds: 1000),
-        () {
-          activateCleverTapFlutterPluginHandlers(); //Clever tap call
-        },
-      );
-    }
   }
 
   // Platform messages are asynchronous, so we initialize in an async method.
