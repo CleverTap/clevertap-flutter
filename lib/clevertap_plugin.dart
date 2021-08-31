@@ -501,11 +501,13 @@ class CleverTapPlugin {
         .invokeMethod('profileAddMultiValue', {'key': key, 'value': value});
   }
 
+  ///Increment given num value. The value should be in positive range
   static Future<void> profileIncrementValue(String key, num value) async {
     return await _channel
         .invokeMethod('profileIncrementValue', {'key': key, 'value': value});
   }
 
+  ///Decrement given num value. The value should be in positive range
   static Future<void> profileDecrementValue(String key, num value) async {
     return await _channel
         .invokeMethod('profileDecrementValue', {'key': key, 'value': value});
