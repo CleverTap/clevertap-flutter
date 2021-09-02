@@ -1190,7 +1190,7 @@ class _MyAppState extends State<MyApp> {
   }
 
   void getCleverTapId() {
-    CleverTapPlugin.profileGetCleverTapID().then((clevertapId) {
+    CleverTapPlugin.getCleverTapID().then((clevertapId) {
       if (clevertapId == null) return;
       setState((() {
         showToast("$clevertapId");

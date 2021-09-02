@@ -23,6 +23,7 @@ import com.clevertap.android.sdk.displayunits.DisplayUnitListener;
 import com.clevertap.android.sdk.displayunits.model.CleverTapDisplayUnit;
 import com.clevertap.android.sdk.events.EventDetail;
 import com.clevertap.android.sdk.inbox.CTInboxMessage;
+import com.clevertap.android.sdk.interfaces.OnInitCleverTapIDListener;
 import com.clevertap.android.sdk.product_config.CTProductConfigListener;
 import com.clevertap.android.sdk.pushnotification.CTPushNotificationListener;
 import com.clevertap.android.sdk.pushnotification.PushConstants.PushType;
@@ -329,6 +330,10 @@ public class CleverTapPlugin implements ActivityAware,
             }
             case "profileGetCleverTapID": {
                 profileGetCleverTapID(result);
+                break;
+            }
+            case "getCleverTapID": {
+                getCleverTapID(result);
                 break;
             }
             case "onUserLogin": {
@@ -1065,6 +1070,24 @@ public class CleverTapPlugin implements ActivityAware,
     private void profileGetCleverTapID(Result result) {
         if (isCleverTapNotNull(cleverTapAPI)) {
             result.success(cleverTapAPI.getCleverTapID());
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void getCleverTapID(Result result) {
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            cleverTapAPI.getCleverTapID(new OnInitCleverTapIDListener() {
+                @Override
+                public void onInitCleverTapID(String cleverTapID) {
+                    runOnMainThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            result.success(cleverTapID);
+                        }
+                    });
+                }
+            });
         } else {
             result.error(TAG, ERROR_MSG, null);
         }

@@ -426,15 +426,22 @@ class CleverTapPlugin {
         'setLocation', {'latitude': latitude, 'longitude': longitude});
   }
 
+  @Deprecated("This method is deprecated since v1.2.4. Use getCleverTapID() instead")
   /// Returns a unique CleverTap identifier suitable for use with install attribution providers.
   static Future<String?> profileGetCleverTapAttributionIdentifier() async {
     return await _channel
         .invokeMethod('profileGetCleverTapAttributionIdentifier', {});
   }
 
+  @Deprecated("This method is deprecated since v1.2.4. Use getCleverTapID() instead")
   /// Returns a unique identifier by which CleverTap identifies this user.
   static Future<String?> profileGetCleverTapID() async {
     return await _channel.invokeMethod('profileGetCleverTapID', {});
+  }
+
+  /// Returns a unique identifier through callback by which CleverTap identifies this user
+  static Future<String?> getCleverTapID() async {
+    return await _channel.invokeMethod('getCleverTapID', {});
   }
 
   ///  Creates a separate and distinct user profile identified by one or more of Identity,
