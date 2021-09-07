@@ -1,8 +1,10 @@
 ## CHANGE LOG
 
-### Version 1.3.0 (September xx, 2021)
+### Version 1.3.0 (September 7, 2021)
 * Adds support for increment/decrement operators in profile 
 * Adds support for InApp controls
+* Deprecates `profileGetCleverTapID()` and `profileGetCleverTapAttributionIdentifier()` methods
+* Adds a new public method `getCleverTapID()` as an alternative to above deprecated methods
 * Supports [CleverTap iOS SDK v3.10.0](https://github.com/CleverTap/clevertap-ios-sdk/releases/tag/3.10.0)
 
 ### Version 1.2.3 (July 20, 2021)
