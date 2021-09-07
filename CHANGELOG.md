@@ -1,8 +1,9 @@
 ## CHANGE LOG
 
-### Version 1.2.4 (July xx, 2021)
+### Version 1.3.0 (September xx, 2021)
 * Adds support for increment/decrement operators in profile 
 * Adds support for InApp controls
+* Supports [CleverTap iOS SDK v3.10.0](https://github.com/CleverTap/clevertap-ios-sdk/releases/tag/3.10.0)
 
 ### Version 1.2.3 (July 20, 2021)
 * Supports [CleverTap Android SDK v4.2.0](https://github.com/CleverTap/clevertap-android-sdk/releases/tag/core-v4.2.0)
