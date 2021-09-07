@@ -426,15 +426,22 @@ class CleverTapPlugin {
         'setLocation', {'latitude': latitude, 'longitude': longitude});
   }
 
+  @Deprecated("This method is deprecated since v1.3.0. Use getCleverTapID() instead")
   /// Returns a unique CleverTap identifier suitable for use with install attribution providers.
   static Future<String?> profileGetCleverTapAttributionIdentifier() async {
     return await _channel
         .invokeMethod('profileGetCleverTapAttributionIdentifier', {});
   }
 
+  @Deprecated("This method is deprecated since v1.3.0. Use getCleverTapID() instead")
   /// Returns a unique identifier by which CleverTap identifies this user.
   static Future<String?> profileGetCleverTapID() async {
     return await _channel.invokeMethod('profileGetCleverTapID', {});
+  }
+
+  /// Returns a unique identifier through callback by which CleverTap identifies this user
+  static Future<String?> getCleverTapID() async {
+    return await _channel.invokeMethod('getCleverTapID', {});
   }
 
   ///  Creates a separate and distinct user profile identified by one or more of Identity,
@@ -499,6 +506,18 @@ class CleverTapPlugin {
   static Future<void> profileAddMultiValue(String key, String value) async {
     return await _channel
         .invokeMethod('profileAddMultiValue', {'key': key, 'value': value});
+  }
+
+  ///Increment given num value. The value should be in positive range
+  static Future<void> profileIncrementValue(String key, num value) async {
+    return await _channel
+        .invokeMethod('profileIncrementValue', {'key': key, 'value': value});
+  }
+
+  ///Decrement given num value. The value should be in positive range
+  static Future<void> profileDecrementValue(String key, num value) async {
+    return await _channel
+        .invokeMethod('profileDecrementValue', {'key': key, 'value': value});
   }
 
   /// Add a collection of unique values to a multi-value user profile property
@@ -566,6 +585,32 @@ class CleverTapPlugin {
     Map<dynamic, dynamic> response =
         await _channel.invokeMethod('sessionGetUTMDetails', {});
     return response.cast<String, dynamic>();
+  }
+
+  /// In-App Controls
+
+  /// Suspends display of InApp Notifications.
+  /// The InApp Notifications are queued once this method is called
+  /// and will be displayed once resumeInAppNotifications() is called.
+  static Future<void> suspendInAppNotifications() async {
+    return await _channel.invokeMethod('suspendInAppNotifications', {});
+  }
+
+  /// Suspends the display of InApp Notifications and discards any new InApp Notifications to be shown
+  /// after this method is called.
+  /// The InApp Notifications will be displayed only once resumeInAppNotifications() is called.
+  static Future<void> discardInAppNotifications() async {
+    return await _channel.invokeMethod('discardInAppNotifications', {});
+  }
+
+  /// Resumes display of InApp Notifications.
+  /// If suspendInAppNotifications() was called previously, calling this method will instantly show
+  /// all queued InApp Notifications and also resume InApp Notifications on events raised after this
+  /// method is called.
+  /// If discardInAppNotifications() was called previously, calling this method will only resume
+  /// InApp Notifications on events raised after this method is called.
+  static Future<void> resumeInAppNotifications() async {
+    return await _channel.invokeMethod('resumeInAppNotifications', {});
   }
 
   /// Initializes the inbox controller and sends a callback

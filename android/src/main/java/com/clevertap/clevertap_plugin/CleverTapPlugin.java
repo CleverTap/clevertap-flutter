@@ -23,6 +23,7 @@ import com.clevertap.android.sdk.displayunits.DisplayUnitListener;
 import com.clevertap.android.sdk.displayunits.model.CleverTapDisplayUnit;
 import com.clevertap.android.sdk.events.EventDetail;
 import com.clevertap.android.sdk.inbox.CTInboxMessage;
+import com.clevertap.android.sdk.interfaces.OnInitCleverTapIDListener;
 import com.clevertap.android.sdk.product_config.CTProductConfigListener;
 import com.clevertap.android.sdk.pushnotification.CTPushNotificationListener;
 import com.clevertap.android.sdk.pushnotification.PushConstants.PushType;
@@ -331,6 +332,10 @@ public class CleverTapPlugin implements ActivityAware,
                 profileGetCleverTapID(result);
                 break;
             }
+            case "getCleverTapID": {
+                getCleverTapID(result);
+                break;
+            }
             case "onUserLogin": {
                 onUserLogin(call, result);
                 break;
@@ -353,6 +358,14 @@ public class CleverTapPlugin implements ActivityAware,
             }
             case "profileAddMultiValue": {
                 profileAddMultiValue(call, result);
+                break;
+            }
+            case "profileIncrementValue": {
+                profileIncrementValue(call, result);
+                break;
+            }
+            case "profileDecrementValue": {
+                profileDecrementValue(call, result);
                 break;
             }
             case "profileAddMultiValues": {
@@ -390,6 +403,19 @@ public class CleverTapPlugin implements ActivityAware,
             }
             case "sessionGetUTMDetails": {
                 sessionGetUTMDetails(result);
+                break;
+            }
+            //In App controls Methods
+            case "suspendInAppNotifications": {
+                suspendInAppNotifications(result);
+                break;
+            }
+            case "discardInAppNotifications": {
+                discardInAppNotifications(result);
+                break;
+            }
+            case "resumeInAppNotifications": {
+                resumeInAppNotifications(result);
                 break;
             }
             //App Inbox Methods
@@ -884,6 +910,33 @@ public class CleverTapPlugin implements ActivityAware,
         }
     }
 
+    private void suspendInAppNotifications(Result result) {
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            cleverTapAPI.suspendInAppNotifications();
+            result.success(null);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void discardInAppNotifications(Result result) {
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            cleverTapAPI.discardInAppNotifications();
+            result.success(null);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void resumeInAppNotifications(Result result) {
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            cleverTapAPI.resumeInAppNotifications();
+            result.success(null);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
     private void initializeInbox(Result result) {
         if (isCleverTapNotNull(cleverTapAPI)) {
             cleverTapAPI.initializeInbox();
@@ -973,6 +1026,28 @@ public class CleverTapPlugin implements ActivityAware,
         }
     }
 
+    private void profileIncrementValue(MethodCall call, Result result) {
+        String key = call.argument("key");
+        Number value = call.argument("value");
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            cleverTapAPI.incrementValue(key, value);
+            result.success(null);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void profileDecrementValue(MethodCall call, Result result) {
+        String key = call.argument("key");
+        Number value = call.argument("value");
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            cleverTapAPI.decrementValue(key, value);
+            result.success(null);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
     private void profileAddMultiValues(MethodCall call, Result result) {
         String key = call.argument("key");
         ArrayList<String> values = call.argument("values");
@@ -995,6 +1070,24 @@ public class CleverTapPlugin implements ActivityAware,
     private void profileGetCleverTapID(Result result) {
         if (isCleverTapNotNull(cleverTapAPI)) {
             result.success(cleverTapAPI.getCleverTapID());
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void getCleverTapID(Result result) {
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            cleverTapAPI.getCleverTapID(new OnInitCleverTapIDListener() {
+                @Override
+                public void onInitCleverTapID(String cleverTapID) {
+                    runOnMainThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            result.success(cleverTapID);
+                        }
+                    });
+                }
+            });
         } else {
             result.error(TAG, ERROR_MSG, null);
         }
