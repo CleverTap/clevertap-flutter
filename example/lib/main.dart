@@ -259,7 +259,7 @@ class _MyAppState extends State<MyApp> {
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
                       title: Text("Profile increment value"),
-                      subtitle: Text("Increment value by 10"),
+                      subtitle: Text("Increment value by 15"),
                       onTap: incrementValue,
                     ),
                   ),
@@ -1235,13 +1235,13 @@ class _MyAppState extends State<MyApp> {
 
   void incrementValue() {
     var value = 15;
-    CleverTapPlugin.profileIncrementValue("props", value);
+    CleverTapPlugin.profileIncrementValue("score", value);
     showToast("check console for details");
   }
 
   void decrementValue() {
     var value = 10;
-    CleverTapPlugin.profileDecrementValue("props", value);
+    CleverTapPlugin.profileDecrementValue("score", value);
     showToast("check console for details");
   }
 
