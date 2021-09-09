@@ -121,6 +121,8 @@ static NSDateFormatter *dateFormatter;
         [self profileGetCleverTapAttributionIdentifier:call withResult:result];
     else if ([@"profileGetCleverTapID" isEqualToString:call.method])
         [self profileGetCleverTapID:call withResult:result];
+    else if ([@"getCleverTapID" isEqualToString:call.method])
+        [self getCleverTapID:call withResult:result];
     else if ([@"profileGetProperty" isEqualToString:call.method])
         [self profileGetProperty:call withResult:result];
     else if ([@"profileRemoveValueForKey" isEqualToString:call.method])
@@ -405,6 +407,11 @@ static NSDateFormatter *dateFormatter;
     result([[CleverTap sharedInstance] profileGetCleverTapID]);
 }
 
+- (void)getCleverTapID:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    
+    result([[CleverTap sharedInstance] profileGetCleverTapID]);
+}
+
 - (void)profileGetProperty:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     
     result([[CleverTap sharedInstance] profileGet:call.arguments[@"propertyName"]]);
@@ -495,17 +502,20 @@ static NSDateFormatter *dateFormatter;
     result(res);
 }
 
-#pragma mark - InApp Controls
+#pragma mark - InApp Notification Controls
 
-- (void) suspendInAppNotifications {
+- (void)suspendInAppNotifications {
+    
     [[CleverTap sharedInstance] suspendInAppNotifications];
 }
 
-- (void) discardInAppNotifications {
+- (void)discardInAppNotifications {
+    
     [[CleverTap sharedInstance] discardInAppNotifications];
 }
 
-- (void) resumeInAppNotifications {
+- (void)resumeInAppNotifications {
+    
     [[CleverTap sharedInstance] resumeInAppNotifications];
 }
 
