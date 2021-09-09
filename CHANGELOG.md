@@ -1,6 +1,6 @@
 ## CHANGE LOG
 
-### Version 1.3.0 (September 7, 2021)
+### Version 1.3.0 (September 13, 2021)
 * Adds public methods for suspending, discarding & resuming InApp Notifications
 * Adds public methods to increment/decrement values set via User properties
 * Deprecates `profileGetCleverTapID()` and `profileGetCleverTapAttributionIdentifier()` methods
