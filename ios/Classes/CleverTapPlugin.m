@@ -10,6 +10,7 @@
 #import "CleverTap+ProductConfig.h"
 #import "CleverTapPushNotificationDelegate.h"
 #import "CleverTapInAppNotificationDelegate.h"
+#import "CleverTap+InAppNotifications.h"
 
 @interface CleverTapPlugin () <CleverTapSyncDelegate, CleverTapInAppNotificationDelegate, CleverTapDisplayUnitDelegate, CleverTapInboxViewControllerDelegate, CleverTapProductConfigDelegate, CleverTapFeatureFlagsDelegate, CleverTapPushNotificationDelegate>
 
@@ -120,6 +121,8 @@ static NSDateFormatter *dateFormatter;
         [self profileGetCleverTapAttributionIdentifier:call withResult:result];
     else if ([@"profileGetCleverTapID" isEqualToString:call.method])
         [self profileGetCleverTapID:call withResult:result];
+    else if ([@"getCleverTapID" isEqualToString:call.method])
+        [self getCleverTapID:call withResult:result];
     else if ([@"profileGetProperty" isEqualToString:call.method])
         [self profileGetProperty:call withResult:result];
     else if ([@"profileRemoveValueForKey" isEqualToString:call.method])
@@ -134,6 +137,10 @@ static NSDateFormatter *dateFormatter;
         [self profileRemoveMultiValue:call withResult:result];
     else if ([@"profileRemoveMultiValues" isEqualToString:call.method])
         [self profileRemoveMultiValues:call withResult:result];
+    else if ([@"profileIncrementValue" isEqualToString:call.method])
+        [self profileIncrementValue:call withResult:result];
+    else if ([@"profileDecrementValue" isEqualToString:call.method])
+        [self profileDecrementValue:call withResult:result];
     else if ([@"pushInstallReferrer" isEqualToString:call.method])
         [self pushInstallReferrer:call withResult:result];
     else if ([@"sessionGetTimeElapsed" isEqualToString:call.method])
@@ -146,6 +153,12 @@ static NSDateFormatter *dateFormatter;
         [self sessionGetPreviousVisitTime:call withResult:result];
     else if ([@"sessionGetUTMDetails" isEqualToString:call.method])
         [self sessionGetUTMDetails:call withResult:result];
+    else if ([@"suspendInAppNotifications" isEqualToString:call.method])
+        [self suspendInAppNotifications];
+    else if ([@"discardInAppNotifications" isEqualToString:call.method])
+        [self discardInAppNotifications];
+    else if ([@"resumeInAppNotifications" isEqualToString:call.method])
+        [self resumeInAppNotifications];
     else if ([@"getInboxMessageCount" isEqualToString:call.method])
         [self getInboxMessageCount:call withResult:result];
     else if ([@"getInboxMessageUnreadCount" isEqualToString:call.method])
@@ -394,6 +407,11 @@ static NSDateFormatter *dateFormatter;
     result([[CleverTap sharedInstance] profileGetCleverTapID]);
 }
 
+- (void)getCleverTapID:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    
+    result([[CleverTap sharedInstance] profileGetCleverTapID]);
+}
+
 - (void)profileGetProperty:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     
     result([[CleverTap sharedInstance] profileGet:call.arguments[@"propertyName"]]);
@@ -435,6 +453,18 @@ static NSDateFormatter *dateFormatter;
     result(nil);
 }
 
+- (void)profileIncrementValue:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    
+    [[CleverTap sharedInstance] profileIncrementValueBy:call.arguments[@"value"] forKey:call.arguments[@"key"]];
+    result(nil);
+}
+
+- (void)profileDecrementValue:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    
+    [[CleverTap sharedInstance] profileDecrementValueBy:call.arguments[@"value"] forKey:call.arguments[@"key"]];
+    result(nil);
+}
+
 - (void)pushInstallReferrer:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     
     [[CleverTap sharedInstance] pushInstallReferrerSource:call.arguments[@"source"] medium:call.arguments[@"medium"] campaign:call.arguments[@"campaign"]];
@@ -472,6 +502,22 @@ static NSDateFormatter *dateFormatter;
     result(res);
 }
 
+#pragma mark - InApp Notification Controls
+
+- (void)suspendInAppNotifications {
+    
+    [[CleverTap sharedInstance] suspendInAppNotifications];
+}
+
+- (void)discardInAppNotifications {
+    
+    [[CleverTap sharedInstance] discardInAppNotifications];
+}
+
+- (void)resumeInAppNotifications {
+    
+    [[CleverTap sharedInstance] resumeInAppNotifications];
+}
 
 #pragma mark - Inbox
 

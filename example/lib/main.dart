@@ -1,10 +1,10 @@
-import 'dart:convert';
-
-import 'package:flutter/material.dart';
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io' show Platform;
-import 'package:flutter_styled_toast/flutter_styled_toast.dart';
+
 import 'package:clevertap_plugin/clevertap_plugin.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_styled_toast/flutter_styled_toast.dart';
 
 void main() => runApp(MyApp());
 
@@ -146,12 +146,12 @@ class _MyAppState extends State<MyApp> {
     print("Product Config Activated");
     this.setState(() async {
       String? stringvar =
-          await CleverTapPlugin.getProductConfigString("StringKey");
+      await CleverTapPlugin.getProductConfigString("StringKey");
       print("PC String = " + stringvar.toString());
       int? intvar = await CleverTapPlugin.getProductConfigLong("IntKey");
       print("PC int = " + intvar.toString());
       double? doublevar =
-          await CleverTapPlugin.getProductConfigDouble("DoubleKey");
+      await CleverTapPlugin.getProductConfigDouble("DoubleKey");
       print("PC double = " + doublevar.toString());
     });
   }
@@ -250,6 +250,28 @@ class _MyAppState extends State<MyApp> {
                       title: Text("Add Profile Multi Value"),
                       subtitle: Text("Add user property"),
                       onTap: addMultiValue,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Profile increment value"),
+                      subtitle: Text("Increment value by 15"),
+                      onTap: incrementValue,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Profile decrement value"),
+                      subtitle: Text("Decrement value by 10"),
+                      onTap: decrementValue,
                     ),
                   ),
                 ),
@@ -510,6 +532,52 @@ class _MyAppState extends State<MyApp> {
                         CleverTapPlugin.setDebugLevel(3);
                       },
                       trailing: Icon(Icons.info),
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.lightBlueAccent,
+                  child: Padding(
+                    padding: const EdgeInsets.all(0.0),
+                    child: ListTile(
+                      title: Text("In-App messaging controls"),
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Suspend InApp notifications"),
+                      subtitle:
+                          Text("Suspends display of InApp Notifications."),
+                      onTap: suspendInAppNotifications,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Discard InApp notifications"),
+                      subtitle: Text(
+                          "Suspends the display of InApp Notifications "
+                          "and discards any new InApp Notifications to be shown"
+                          " after this method is called."),
+                      onTap: discardInAppNotifications,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Resume InApp notifications"),
+                      subtitle: Text("Resumes display of InApp Notifications."),
+                      onTap: resumeInAppNotifications,
                     ),
                   ),
                 ),
@@ -1122,7 +1190,7 @@ class _MyAppState extends State<MyApp> {
   }
 
   void getCleverTapId() {
-    CleverTapPlugin.profileGetCleverTapID().then((clevertapId) {
+    CleverTapPlugin.getCleverTapID().then((clevertapId) {
       if (clevertapId == null) return;
       setState((() {
         showToast("$clevertapId");
@@ -1162,6 +1230,18 @@ class _MyAppState extends State<MyApp> {
   void addMultiValue() {
     var value = "value1";
     CleverTapPlugin.profileAddMultiValue("props", value);
+    showToast("check console for details");
+  }
+
+  void incrementValue() {
+    var value = 15;
+    CleverTapPlugin.profileIncrementValue("score", value);
+    showToast("check console for details");
+  }
+
+  void decrementValue() {
+    var value = 10;
+    CleverTapPlugin.profileDecrementValue("score", value);
     showToast("check console for details");
   }
 
@@ -1251,6 +1331,21 @@ class _MyAppState extends State<MyApp> {
         print("$error");
       });
     });
+  }
+
+  void suspendInAppNotifications() {
+    CleverTapPlugin.suspendInAppNotifications();
+    showToast("InApp notification is suspended");
+  }
+
+  void discardInAppNotifications() {
+    CleverTapPlugin.discardInAppNotifications();
+    showToast("InApp notification is discarded");
+  }
+
+  void resumeInAppNotifications() {
+    CleverTapPlugin.resumeInAppNotifications();
+    showToast("InApp notification is resumed");
   }
 
   void enablePersonalization() {

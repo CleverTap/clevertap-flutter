@@ -40,6 +40,18 @@ var values = ["value1", "value2"];
 CleverTapPlugin.profileAddMultiValues("props", values);
 ```
 
+#### Increment Value For Key
+
+```Dart
+CleverTapPlugin.profileIncrementValue("score", value);
+```
+
+#### Decrement Value For Key
+
+```Dart
+CleverTapPlugin.profileDecrementValue("score", value);
+```
+
 #### Create a User profile when user logs in (On User Login)
 
 ```Dart
@@ -57,7 +69,7 @@ CleverTapPlugin.onUserLogin(profile);
 #### Get CleverTap Reference id
 
 ```Dart
-CleverTapPlugin.profileGetCleverTapID().then((clevertapId) {})
+CleverTapPlugin.getCleverTapID().then((clevertapId) {})
 ```
 
 #### Set Location to User Profile
@@ -129,6 +141,24 @@ void inAppNotificationDismissed(Map<String, dynamic> map) {
       print("inAppNotificationDismissed called");
     });
 }
+```
+
+#### Suspend InApp Notifications
+
+```Dart
+CleverTapPlugin.suspendInAppNotifications();
+```
+
+#### Discard InApp Notifications
+
+```Dart
+CleverTapPlugin.discardInAppNotifications();
+```
+
+#### Resume InApp Notifications
+
+```Dart
+CleverTapPlugin.resumeInAppNotifications();
 ```
 ------
 
@@ -398,26 +428,6 @@ CleverTapPlugin.disablePersonalization();
 
 ```Dart
 CleverTapPlugin.pushInstallReferrer("source", "medium", "campaign");
-```
-
-#### Get CleverTap Attribution Identifier
-
-```Dart
-
-void getCTAttributionId() {
-    CleverTapPlugin.profileGetCleverTapAttributionIdentifier()
-	.then((attributionId) {
-      if (attributionId == null) return;
-      setState((() {
-	showToast("Attribution Id = " + "$attributionId");
-	print("Attribution Id = " + "$attributionId");
-      }));
-    }).catchError((error) {
-      setState(() {
-	print("$error");
-      });
-    });
- }
 ```
 
 ## GDPR 
