@@ -992,8 +992,11 @@ public class CleverTapPlugin implements ActivityAware,
 
     private void onUserLogin(MethodCall call, Result result) {
         Map<String, Object> profile = Utils.dartMapToProfileMap(call.argument("profile"));
+        String cleverTapId = call.argument("cleverTapId");
         if (isCleverTapNotNull(cleverTapAPI)) {
-            cleverTapAPI.onUserLogin(profile);
+            if (cleverTapId != null && !cleverTapId.isEmpty()) {
+                cleverTapAPI.onUserLogin(profile, cleverTapId);
+            } else cleverTapAPI.onUserLogin(profile);
             result.success(null);
         } else {
             result.error(TAG, ERROR_MSG, null);
