@@ -706,6 +706,7 @@ public class CleverTapPlugin implements ActivityAware,
         boolean value = call.argument("value");
         if (isCleverTapNotNull(cleverTapAPI)) {
             cleverTapAPI.enableDeviceNetworkInfoReporting(value);
+            result.success(null);
         } else {
             result.error(TAG, ERROR_MSG, null);
         }
@@ -1228,6 +1229,7 @@ public class CleverTapPlugin implements ActivityAware,
         Bundle extras = Utils.mapToBundle(extrasMap);
         if (isCleverTapNotNull(cleverTapAPI)) {
             this.cleverTapAPI.pushNotificationClickedEvent(extras);
+            result.success(null);
         } else {
             result.error(TAG, ERROR_MSG, null);
         }
@@ -1238,6 +1240,7 @@ public class CleverTapPlugin implements ActivityAware,
         Bundle extras = Utils.mapToBundle(extrasMap);
         if (isCleverTapNotNull(cleverTapAPI)) {
             this.cleverTapAPI.pushNotificationViewedEvent(extras);
+            result.success(null);
         } else {
             result.error(TAG, ERROR_MSG, null);
         }
@@ -1248,6 +1251,7 @@ public class CleverTapPlugin implements ActivityAware,
         ArrayList<HashMap<String, Object>> items = call.argument("items");
         if (isCleverTapNotNull(cleverTapAPI)) {
             cleverTapAPI.pushChargedEvent(chargeDetails, items);
+            result.success(null);
         } else {
             result.error(TAG, ERROR_MSG, null);
         }
@@ -1258,6 +1262,7 @@ public class CleverTapPlugin implements ActivityAware,
         String eventName = call.argument("eventName");
         if (isCleverTapNotNull(cleverTapAPI)) {
             this.cleverTapAPI.pushEvent(eventName, eventData);
+            result.success(null);
         } else {
             result.error(TAG, ERROR_MSG, null);
         }
@@ -1267,6 +1272,7 @@ public class CleverTapPlugin implements ActivityAware,
         String name = call.argument("screenName");
         if (isCleverTapNotNull(cleverTapAPI)) {
             cleverTapAPI.recordScreen(name);
+            result.success(null);
         } else {
             result.error(TAG, ERROR_MSG, null);
         }
@@ -1367,6 +1373,7 @@ public class CleverTapPlugin implements ActivityAware,
         boolean value = call.argument("value");
         if (isCleverTapNotNull(cleverTapAPI)) {
             cleverTapAPI.setOffline(value);
+            result.success(null);
         } else {
             result.error(TAG, ERROR_MSG, null);
         }
@@ -1376,6 +1383,7 @@ public class CleverTapPlugin implements ActivityAware,
         boolean value = call.argument("value");
         if (isCleverTapNotNull(cleverTapAPI)) {
             cleverTapAPI.setOptOut(value);
+            result.success(null);
         } else {
             result.error(TAG, ERROR_MSG, null);
         }
@@ -1388,6 +1396,7 @@ public class CleverTapPlugin implements ActivityAware,
             } else {
                 cleverTapAPI.disablePersonalization();
             }
+            result.success(null);
         } else {
             result.error(TAG, ERROR_MSG, null);
         }
