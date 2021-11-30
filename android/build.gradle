@@ -1,5 +1,5 @@
 group 'com.clevertap.clevertap_plugin'
-version '1.2.3'
+version '1.4.0'
 
 buildscript {
     repositories {

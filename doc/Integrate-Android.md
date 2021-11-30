@@ -4,7 +4,7 @@ Add the following to your `dependencies` section in `project/build.gradle`
 
 ```groovy
     dependencies {
-            classpath 'com.android.tools.build:gradle:4.1.1'
+            classpath 'com.android.tools.build:gradle:4.2.1'
             classpath 'com.google.gms:google-services:4.3.8' //<--- Mandatory for using Firebase Messaging, skip if not using FCM
         }
 ```
@@ -13,22 +13,22 @@ Add the following to your `dependencies` section in `app/build.gradle`
 ```groovy
         implementation 'com.google.firebase:firebase-messaging:20.2.4'
         implementation 'androidx.core:core:1.3.0'
-        implementation 'androidx.fragment:fragment:1.1.0'
+        implementation 'androidx.fragment:fragment:1.3.6'
         
         //MANDATORY for App Inbox
-        implementation 'androidx.appcompat:appcompat:1.2.0'
-        implementation 'androidx.recyclerview:recyclerview:1.1.0'
+        implementation 'androidx.appcompat:appcompat:1.3.1'
+        implementation 'androidx.recyclerview:recyclerview:1.2.1'
         implementation 'androidx.viewpager:viewpager:1.0.0'
-        implementation 'com.google.android.material:material:1.2.1'
-        implementation 'com.github.bumptech.glide:glide:4.11.0'
+        implementation 'com.google.android.material:material:1.4.0'
+        implementation 'com.github.bumptech.glide:glide:4.12.0'
         
         //For CleverTap Android SDK v3.6.4 and above add the following -
-        implementation 'com.android.installreferrer:installreferrer:2.1'
+        implementation 'com.android.installreferrer:installreferrer:2.2'
         
         //Optional ExoPlayer Libraries for Audio/Video Inbox Messages. Audio/Video messages will be dropped without these dependencies
-        implementation 'com.google.android.exoplayer:exoplayer:2.11.5'
-        implementation 'com.google.android.exoplayer:exoplayer-hls:2.11.5'
-        implementation 'com.google.android.exoplayer:exoplayer-ui:2.11.5'
+        implementation 'com.google.android.exoplayer:exoplayer:2.15.1'
+        implementation 'com.google.android.exoplayer:exoplayer-hls:2.15.1'
+        implementation 'com.google.android.exoplayer:exoplayer-ui:2.15.1'
 ```
 
 At the end of the `app/build.gradle` file add the following 
@@ -98,7 +98,8 @@ To use Push Notifications out of the box using CleverTap, add the following entr
 <application>
          ....
          ....
-        <service android:name="com.clevertap.android.sdk.pushnotification.fcm.FcmMessageListenerService">
+        <service android:name="com.clevertap.android.sdk.pushnotification.fcm.FcmMessageListenerService"
+                 android:exported="true">
             <intent-filter>
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
             </intent-filter>

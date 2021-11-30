@@ -1,5 +1,10 @@
 ## CHANGE LOG
 
+### Version 1.4.0 (December 1, 2021)
+* Adds fix for NPE [#61](https://github.com/CleverTap/clevertap-flutter/issues/61)
+* Adds `result.success(null)` for all method calls [#81](https://github.com/CleverTap/clevertap-flutter/issues/81)
+* Supports [CleverTap Android SDK v4.3.1](https://github.com/CleverTap/clevertap-android-sdk/releases/tag/core-v4.3.1)
+
 ### Version 1.3.0 (September 13, 2021)
 * Adds public methods for suspending, discarding & resuming InApp Notifications
 * Adds public methods to increment/decrement values set via User properties
