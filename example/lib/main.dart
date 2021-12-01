@@ -26,7 +26,8 @@ class _MyAppState extends State<MyApp> {
     initPlatformState();
     activateCleverTapFlutterPluginHandlers();
     CleverTapPlugin.setDebugLevel(3);
-    CleverTapPlugin.createNotificationChannel("fluttertest", "Flutter Test", "Flutter Test", 3, true);
+    CleverTapPlugin.createNotificationChannel(
+        "fluttertest", "Flutter Test", "Flutter Test", 3, true);
     CleverTapPlugin.initializeInbox();
     CleverTapPlugin.registerForPush(); //only for iOS
     //var initialUrl = CleverTapPlugin.getInitialUrl();
@@ -146,12 +147,12 @@ class _MyAppState extends State<MyApp> {
     print("Product Config Activated");
     this.setState(() async {
       String? stringvar =
-      await CleverTapPlugin.getProductConfigString("StringKey");
+          await CleverTapPlugin.getProductConfigString("StringKey");
       print("PC String = " + stringvar.toString());
       int? intvar = await CleverTapPlugin.getProductConfigLong("IntKey");
       print("PC int = " + intvar.toString());
       double? doublevar =
-      await CleverTapPlugin.getProductConfigDouble("DoubleKey");
+          await CleverTapPlugin.getProductConfigDouble("DoubleKey");
       print("PC double = " + doublevar.toString());
     });
   }
@@ -241,7 +242,6 @@ class _MyAppState extends State<MyApp> {
                     ),
                   ),
                 ),
-
                 Card(
                   color: Colors.grey.shade300,
                   child: Padding(
@@ -494,7 +494,7 @@ class _MyAppState extends State<MyApp> {
                     child: ListTile(
                       title: Text("Push Inbox Message Clicked"),
                       subtitle:
-                      Text("Pushes/Records inbox message clicked event"),
+                          Text("Pushes/Records inbox message clicked event"),
                       onTap: pushInboxNotificationClickedEventForId,
                     ),
                   ),
@@ -506,7 +506,7 @@ class _MyAppState extends State<MyApp> {
                     child: ListTile(
                       title: Text("Push Inbox Message Viewed"),
                       subtitle:
-                      Text("Pushes/Records inbox message viewed event"),
+                          Text("Pushes/Records inbox message viewed event"),
                       onTap: pushInboxNotificationViewedEventForId,
                     ),
                   ),
@@ -711,7 +711,6 @@ class _MyAppState extends State<MyApp> {
                     ),
                   ),
                 ),
-
                 Card(
                   color: Colors.grey.shade300,
                   child: Padding(
@@ -760,7 +759,7 @@ class _MyAppState extends State<MyApp> {
                     child: ListTile(
                       title: Text("Set Opt Out"),
                       subtitle:
-                      Text("Used to opt out of sending data to CleverTap"),
+                          Text("Used to opt out of sending data to CleverTap"),
                       onTap: setOptOut,
                     ),
                   ),
