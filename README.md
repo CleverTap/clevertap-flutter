@@ -13,7 +13,7 @@ The CleverTap Flutter SDK for Mobile Customer Engagement and Analytics solutions
 
 For more information check out our [website](https://clevertap.com/ "CleverTap")  and  [documentation](https://developer.clevertap.com/docs/ "CleverTap Technical Documentation").
 
-To get started, sign up [here](https://clevertap.com/live-product-demo/)
+To get started, sign up [here](https://clevertap.com/live-product-demo/).
 
 ## 🚀 Installation and Quick Start
 
@@ -36,12 +36,12 @@ See our [Technical Documentation for Android](doc/Integrate-Android.md) and [Tec
 
 ## 📑 Documentation & Example
 
-- Checkout our [CleverTap Flutter Usage docs](doc/Usage.md)
-- Checkout our [Example Dart project](/example)
+- Checkout our [CleverTap Flutter Usage documentation](doc/Usage.md)
+- Checkout our [Example Dart project](./example)
 
 ## 🆕 Changelog
 
-Refer to the [CleverTap Flutter SDK Change Log](/CHANGELOG.md).
+Refer to the [CleverTap Flutter SDK Change Log](./CHANGELOG.md).
 
 ## ❓Questions
 
