@@ -10,28 +10,29 @@ Add the following to your `dependencies` section in `project/build.gradle`
 ```
 
 Add the following to your `dependencies` section in `app/build.gradle`
+
 ```groovy
-        implementation 'com.google.firebase:firebase-messaging:20.2.4'
+        implementation 'com.google.firebase:firebase-messaging:21.0.0'
         implementation 'androidx.core:core:1.3.0'
         implementation 'androidx.fragment:fragment:1.3.6'
-        
+
         //MANDATORY for App Inbox
         implementation 'androidx.appcompat:appcompat:1.3.1'
         implementation 'androidx.recyclerview:recyclerview:1.2.1'
         implementation 'androidx.viewpager:viewpager:1.0.0'
         implementation 'com.google.android.material:material:1.4.0'
         implementation 'com.github.bumptech.glide:glide:4.12.0'
-        
+
         //For CleverTap Android SDK v3.6.4 and above add the following -
         implementation 'com.android.installreferrer:installreferrer:2.2'
-        
+
         //Optional ExoPlayer Libraries for Audio/Video Inbox Messages. Audio/Video messages will be dropped without these dependencies
         implementation 'com.google.android.exoplayer:exoplayer:2.15.1'
         implementation 'com.google.android.exoplayer:exoplayer-hls:2.15.1'
         implementation 'com.google.android.exoplayer:exoplayer-ui:2.15.1'
 ```
 
-At the end of the `app/build.gradle` file add the following 
+At the end of the `app/build.gradle` file add the following
 
 ```groovy
     apply plugin: 'com.google.gms.google-services' //skip if not using FCM
@@ -66,7 +67,7 @@ If you do not have an Application class, add this to your `AndroidManifest.xml`
     <application
         android:label="@string/app_name"
         android:icon="@drawable/ic_launcher"
-        android:name="com.clevertap.android.sdk.Application"> 
+        android:name="com.clevertap.android.sdk.Application">
 ```
 
 Add the following permissions which are needed by the CleverTap SDK
@@ -90,8 +91,9 @@ Add your CleverTap Account ID and Token to your `AndroidManifest.xml`, within th
     <!-- IMPORTANT: To force use Google AD ID to uniquely identify  users, use the following meta tag. GDPR mandates that if you are using this tag, there is prominent disclousure to your end customer in their application. Read more about GDPR here - https://clevertap.com/blog/in-preparation-of-gdpr-compliance/ -->
     <meta-data
         android:name="CLEVERTAP_USE_GOOGLE_AD_ID"
-        android:value="1"/> 
+        android:value="1"/>
 ```
+
 To use Push Notifications out of the box using CleverTap, add the following entries to you `AndroidManifest.xml`
 
 ```xml
