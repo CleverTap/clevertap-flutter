@@ -33,19 +33,19 @@ void main() {
   Map<String, String> mockStringMap = new Map();
   mockStringMap.putIfAbsent("key1", () => "mock");
 
-  List<dynamic> testList = List();
+  List<dynamic> testList = [];
   testList.add("message1");
 
-  List<bool> defaultBoolList = List();
+  List<bool> defaultBoolList = [];
   defaultBoolList.add(true);
 
-  List<double> defaultDoubleList = List();
+  List<double> defaultDoubleList = [];
   defaultDoubleList.add(9.9);
 
-  List<int> defaultIntegerList = List();
+  List<int> defaultIntegerList = [];
   defaultIntegerList.add(9);
 
-  List<String> defaultStringList = List();
+  List<String> defaultStringList = [];
   defaultStringList.add("defaultStrings");
 
   var eventName = 'Flutter Event';
@@ -122,42 +122,6 @@ void main() {
           break;
         case "getInitialUrl":
           return mockString;
-          break;
-        case "getBooleanVariable":
-          return mockBool;
-          break;
-        case "getDoubleVariable":
-          return mockDouble;
-          break;
-        case "getIntegerVariable":
-          return mockInteger;
-          break;
-        case "getStringVariable":
-          return mockString;
-          break;
-        case "getListOfBooleanVariable":
-          return testList;
-          break;
-        case "getListOfDoubleVariable":
-          return testList;
-          break;
-        case "getListOfIntegerVariable":
-          return testList;
-          break;
-        case "getListOfStringVariable":
-          return testList;
-          break;
-        case "getMapOfBooleanVariable":
-          return mockBoolMap;
-          break;
-        case "getMapOfDoubleVariable":
-          return mockDoubleMap;
-          break;
-        case "getMapOfIntegerVariable":
-          return mockIntegerMap;
-          break;
-        case "getMapOfStringVariable":
-          return mockStringMap;
           break;
         case "getAllDisplayUnits":
           return testList;
@@ -311,90 +275,6 @@ void main() {
   test('testing getInitialUrl method', () async {
     await CleverTapPlugin.getInitialUrl().then((url) {
       expect(url, mockString);
-    });
-  });
-
-  test('testing getBooleanVariable method', () async {
-    await CleverTapPlugin.getBooleanVariable(varName, defaultBoolValue)
-        .then((boolValue) {
-      expect(boolValue, mockBool);
-    });
-  });
-
-  test('testing getDoubleVariable method', () async {
-    await CleverTapPlugin.getDoubleVariable(varName, defaultDoubleValue)
-        .then((doubleValue) {
-      expect(doubleValue, mockDouble);
-    });
-  });
-
-  test('testing getIntegerVariable method', () async {
-    await CleverTapPlugin.getIntegerVariable(varName, defaultIntegerValue)
-        .then((intValue) {
-      expect(intValue, mockInteger);
-    });
-  });
-
-  test('testing getStringVariable method', () async {
-    await CleverTapPlugin.getStringVariable(varName, defaultStringValue)
-        .then((stringValue) {
-      expect(stringValue, mockString);
-    });
-  });
-
-  test('testing getListOfBooleanVariable method', () async {
-    await CleverTapPlugin.getListOfBooleanVariable(varName, defaultBoolList)
-        .then((boolList) {
-      expect(boolList, testList);
-    });
-  });
-
-  test('testing getListOfDoubleVariable method', () async {
-    await CleverTapPlugin.getListOfDoubleVariable(varName, defaultDoubleList)
-        .then((doubleList) {
-      expect(doubleList, testList);
-    });
-  });
-
-  test('testing getListOfIntegerVariable method', () async {
-    await CleverTapPlugin.getListOfIntegerVariable(varName, defaultIntegerList)
-        .then((intList) {
-      expect(intList, testList);
-    });
-  });
-
-  test('testing getListOfStringVariable method', () async {
-    await CleverTapPlugin.getListOfStringVariable(varName, defaultStringList)
-        .then((stringList) {
-      expect(stringList, testList);
-    });
-  });
-
-  test('testing getMapOfBooleanVariable method', () async {
-    await CleverTapPlugin.getMapOfBooleanVariable(varName, defaultBoolMap)
-        .then((boolMap) {
-      expect(boolMap, mockBoolMap);
-    });
-  });
-
-  test('testing getMapOfDoubleVariable method', () async {
-    await CleverTapPlugin.getMapOfDoubleVariable(varName, defaultDoubleMap)
-        .then((doubleMap) {
-      expect(doubleMap, mockDoubleMap);
-    });
-  });
-
-  test('testing getMapOfIntegerVariable method', () async {
-    await CleverTapPlugin.getMapOfIntegerVariable(varName, defaultIntegerMap)
-        .then((intMap) {
-      expect(intMap, mockIntegerMap);
-    });
-  });
-
-  test('testing getMapOfStringVariable method', () async {
-    await CleverTapPlugin.getMapOfStringVariable(varName, defaultStringMap)
-        .then((stringMap) {
-      expect(stringMap, mockStringMap);
     });
   });
 

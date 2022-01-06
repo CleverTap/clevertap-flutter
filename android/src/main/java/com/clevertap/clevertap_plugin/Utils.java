@@ -2,11 +2,11 @@ package com.clevertap.clevertap_plugin;
 
 import android.os.Bundle;
 import android.util.Log;
-import com.clevertap.android.sdk.CTInboxMessage;
 import com.clevertap.android.sdk.CTInboxStyleConfig;
-import com.clevertap.android.sdk.EventDetail;
 import com.clevertap.android.sdk.UTMDetail;
 import com.clevertap.android.sdk.displayunits.model.CleverTapDisplayUnit;
+import com.clevertap.android.sdk.events.EventDetail;
+import com.clevertap.android.sdk.inbox.CTInboxMessage;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -187,6 +187,10 @@ public class Utils {
                     String noMessageTextColor = styleConfigJson.getString(styleConfigKey);
                     styleConfig.setNoMessageViewTextColor(noMessageTextColor);
                 }
+                if ("firstTabTitle".equals(styleConfigKey)) {
+                    String firstTabTitle = styleConfigJson.getString(styleConfigKey);
+                    styleConfig.setFirstTabTitle(firstTabTitle);
+                }
                 if ("tabs".equals(styleConfigKey)) {
                     try {
                         ArrayList<String> tabsList = arrayListStringFromJSONArray(
@@ -241,6 +245,14 @@ public class Utils {
             ret.put("medium", details.getMedium());
         }
         return ret;
+    }
+
+    static Bundle mapToBundle(HashMap<String,Object> hashMap){
+        Bundle bundle = new Bundle();
+        for (Map.Entry<String, Object> entry : hashMap.entrySet()) {
+            bundle.putString(entry.getKey(), entry.getValue().toString());
+        }
+        return bundle;
     }
 
     private static ArrayList<String> arrayListStringFromJSONArray(JSONArray jsonArray) {
