@@ -23,6 +23,9 @@ To get started, sign up [here](https://clevertap.com/live-product-demo/).
 dependencies:
 clevertap_plugin: 1.4.0
 ```
+```
+fluer pub get 
+```
 
 - Run `flutter packages get` to install the SDK
 
