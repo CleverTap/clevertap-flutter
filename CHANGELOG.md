@@ -1,5 +1,8 @@
 ## CHANGE LOG
 
+### Version 1.5.0 (March 4, 2022)
+* Supports [CleverTap Android SDK v4.4.0](https://github.com/CleverTap/clevertap-android-sdk/releases/tag/core-v4.4.0) 
+
 ### Version 1.4.0 (December 1, 2021)
 * Adds fix for NPE [#61](https://github.com/CleverTap/clevertap-flutter/issues/61)
 * Adds `result.success(null)` for all method calls [#81](https://github.com/CleverTap/clevertap-flutter/issues/81)
