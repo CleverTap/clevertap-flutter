@@ -39,7 +39,7 @@ See our [Technical Documentation for Android](doc/Integrate-Android.md) and [Tec
 - Checkout our [CleverTap Flutter Usage documentation](doc/Usage.md)
 - Checkout our [Example Dart project](./example)
 
-## 📲 CleverTap Push Templates SDK(Available only for Android OS)
+## 📲 CleverTap Push Templates SDK (Available only for Android OS)
 [(Back to top)](#-table-of-contents)
 
 CleverTap Push Templates SDK helps you engage with your users using fancy push notification templates built specifically to work with [CleverTap](https://www.clevertap.com).
