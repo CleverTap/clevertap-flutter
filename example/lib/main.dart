@@ -818,10 +818,344 @@ class _MyAppState extends State<MyApp> {
                     ),
                   ),
                 ),
+                Card(
+                  color: Colors.lightBlueAccent,
+                  child: Padding(
+                    padding: const EdgeInsets.all(0.0),
+                    child: ListTile(
+                      title: Text("Push Templates"),
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Basic Push"),
+                      onTap: sendBasicPush,
+                    ),
+                  ),
+                ),Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Carousel Push"),
+                      onTap: sendAutoCarouselPush,
+                    ),
+                  ),
+                ),Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Manual Carousel Push"),
+                      onTap: sendManualCarouselPush,
+                    ),
+                  ),
+                ),Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("FilmStrip Carousel Push"),
+                      onTap: sendFilmStripCarouselPush,
+                    ),
+                  ),
+                ),Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Rating Push"),
+                      onTap: sendRatingCarouselPush,
+                    ),
+                  ),
+                ),Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Product Display"),
+                      onTap: sendProductDisplayPush,
+                    ),
+                  ),
+                ),Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Linear Product Display"),
+                      onTap: sendLinearProductDisplayPush,
+                    ),
+                  ),
+                ),Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Five CTA"),
+                      onTap: sendCTAPush,
+                    ),
+                  ),
+                ),Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Zero Bezel"),
+                      onTap: sendZeroBezelPush,
+                    ),
+                  ),
+                ),Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Zero Bezel Text Only"),
+                      onTap: sendZeroBezelTextOnlyPush,
+                    ),
+                  ),
+                ),Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Timer Push"),
+                      onTap: sendTimerPush,
+                    ),
+                  ),
+                ),Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Input Box - CTA + reminder Push Campaign - DOC true"),
+                      onTap: sendInputBoxPush,
+                    ),
+                  ),
+                ),Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Input Box - Reply with Event"),
+                      onTap: sendInputBoxReplyEventPush,
+                    ),
+                  ),
+                ),Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Input Box - Reply with Intent"),
+                      onTap: sendInputBoxReplyAutoOpenPush,
+                    ),
+                  ),
+                ),Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Input Box - CTA + reminder Push Campaign - DOC false"),
+                      onTap: sendInputBoxRemindDOCFalsePush,
+                    ),
+                  ),
+                ),Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Input Box - CTA - DOC true"),
+                      onTap: sendInputBoxCTADOCTruePush,
+                    ),
+                  ),
+                ),Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Input Box - CTA - DOC false"),
+                      onTap: sendInputBoxCTADOCFalsePush,
+                    ),
+                  ),
+                ),Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Input Box - reminder - DOC true"),
+                      onTap: sendInputBoxReminderDOCTruePush,
+                    ),
+                  ),
+                ),Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Input Box - reminder - DOC false"),
+                      onTap: sendInputBoxReminderDOCFalsePush,
+                    ),
+                  ),
+                ),
               ],
             )),
       ),
     );
+  }
+
+  void sendBasicPush() {
+    var eventData = {
+      // Key:    Value
+      'first': 'partridge',
+      'second': 'turtledoves'
+    };
+    CleverTapPlugin.recordEvent("Send Basic Push",eventData);
+  }
+
+  void sendAutoCarouselPush() {
+    var eventData = {
+      // Key:    Value
+      '': ''
+    };
+    CleverTapPlugin.recordEvent("Send Carousel Push",eventData);
+  }
+
+  void sendManualCarouselPush() {
+    var eventData = {
+      // Key:    Value
+      '': ''
+    };
+    CleverTapPlugin.recordEvent("Send Manual Carousel Push",eventData);
+  }
+
+  void sendFilmStripCarouselPush() {
+    var eventData = {
+      // Key:    Value
+      '': ''
+    };
+    CleverTapPlugin.recordEvent("Send Filmstrip Carousel Push",eventData);
+  }
+
+  void sendRatingCarouselPush() {
+    var eventData = {
+      // Key:    Value
+      '': ''
+    };
+    CleverTapPlugin.recordEvent("Send Rating Push",eventData);
+  }
+
+  void sendProductDisplayPush() {
+    var eventData = {
+      // Key:    Value
+      '': ''
+    };
+    CleverTapPlugin.recordEvent("Send Product Display Notification",eventData);
+  }
+
+  void sendLinearProductDisplayPush() {
+    var eventData = {
+      // Key:    Value
+      '': ''
+    };
+    CleverTapPlugin.recordEvent("Send Linear Product Display Push",eventData);
+  }
+
+  void sendCTAPush() {
+    var eventData = {
+      // Key:    Value
+      '': ''
+    };
+    CleverTapPlugin.recordEvent("Send CTA Notification",eventData);
+  }
+
+  void sendZeroBezelPush() {
+    var eventData = {
+      // Key:    Value
+      '': ''
+    };
+    CleverTapPlugin.recordEvent("Send Zero Bezel Notification",eventData);
+  }
+
+  void sendZeroBezelTextOnlyPush() {
+    var eventData = {
+      // Key:    Value
+      '': ''
+    };
+    CleverTapPlugin.recordEvent("Send Zero Bezel Text Only Notification",eventData);
+  }
+
+  void sendTimerPush() {
+    var eventData = {
+      // Key:    Value
+      '': ''
+    };
+    CleverTapPlugin.recordEvent("Send Timer Notification",eventData);
+  }
+
+  void sendInputBoxPush() {
+    var eventData = {
+      // Key:    Value
+      '': ''
+    };
+    CleverTapPlugin.recordEvent("Send Input Box Notification",eventData);
+  }
+
+  void sendInputBoxReplyEventPush() {
+    var eventData = {
+      // Key:    Value
+      '': ''
+    };
+    CleverTapPlugin.recordEvent("Send Input Box Reply with Event Notification",eventData);
+  }
+
+  void sendInputBoxReplyAutoOpenPush() {
+    var eventData = {
+      // Key:    Value
+      '': ''
+    };
+    CleverTapPlugin.recordEvent("Send Input Box Reply with Auto Open Notification",eventData);
+  }
+
+  void sendInputBoxRemindDOCFalsePush() {
+    var eventData = {
+      // Key:    Value
+      '': ''
+    };
+    CleverTapPlugin.recordEvent("Send Input Box Remind Notification DOC FALSE",eventData);
+  }
+
+  void sendInputBoxCTADOCTruePush() {
+    var eventData = {
+      // Key:    Value
+      '': ''
+    };
+    CleverTapPlugin.recordEvent("Send Input Box CTA DOC true",eventData);
+  }
+
+  void sendInputBoxCTADOCFalsePush() {
+    var eventData = {
+      // Key:    Value
+      '': ''
+    };
+    CleverTapPlugin.recordEvent("Send Input Box CTA DOC false",eventData);
+  }
+
+  void sendInputBoxReminderDOCTruePush() {
+    var eventData = {
+      // Key:    Value
+      '': ''
+    };
+    CleverTapPlugin.recordEvent("Send Input Box Reminder DOC true",eventData);
+  }
+
+  void sendInputBoxReminderDOCFalsePush() {
+    var eventData = {
+      // Key:    Value
+      '': ''
+    };
+    CleverTapPlugin.recordEvent("Send Input Box Reminder DOC false",eventData);
   }
 
   void recordEvent() {
