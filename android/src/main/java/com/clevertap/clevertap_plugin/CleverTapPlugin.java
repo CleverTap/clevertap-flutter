@@ -10,6 +10,7 @@ import android.os.Looper;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
+
 import com.clevertap.android.sdk.CTFeatureFlagsListener;
 import com.clevertap.android.sdk.CTInboxListener;
 import com.clevertap.android.sdk.CTInboxStyleConfig;
@@ -239,7 +240,7 @@ public class CleverTapPlugin implements ActivityAware,
                     String channelId = call.argument("channelId");
                     CleverTapAPI.deleteNotificationChannel(context, channelId);
                     result.success(null);
-                }else{
+                } else {
                     result.error(TAG, ANDROID_O_DELETE_NOTIFICATION_ERROR_MSG, null);
                 }
                 break;
@@ -249,7 +250,7 @@ public class CleverTapPlugin implements ActivityAware,
                     String groupId = call.argument("groupId");
                     CleverTapAPI.deleteNotificationChannelGroup(context, groupId);
                     result.success(null);
-                }else{
+                } else {
                     result.error(TAG, ANDROID_O_DELETE_NOTIFICATION_ERROR_MSG, null);
                 }
                 break;
@@ -635,7 +636,7 @@ public class CleverTapPlugin implements ActivityAware,
             String groupName = call.argument("groupName");
             CleverTapAPI.createNotificationChannelGroup(context, groupId, groupName);
             result.success(null);
-        }else{
+        } else {
             result.error(TAG, ANDROID_O_CREATE_CHANNEL_ERROR_MSG, null);
         }
     }
@@ -651,7 +652,7 @@ public class CleverTapPlugin implements ActivityAware,
                     call.argument("groupId"),
                     showBadge);
             result.success(null);
-        }else{
+        } else {
             result.error(TAG, ANDROID_O_CREATE_CHANNEL_ERROR_MSG, null);
         }
     }
@@ -667,7 +668,7 @@ public class CleverTapPlugin implements ActivityAware,
                     call.argument("showBadge"),
                     call.argument("sound"));
             result.success(null);
-        }else{
+        } else {
             result.error(TAG, ANDROID_O_CREATE_CHANNEL_ERROR_MSG, null);
         }
     }
@@ -683,7 +684,7 @@ public class CleverTapPlugin implements ActivityAware,
                     call.argument("showBadge"),
                     sound);
             result.success(null);
-        }else{
+        } else {
             result.error(TAG, ANDROID_O_CREATE_CHANNEL_ERROR_MSG, null);
         }
     }

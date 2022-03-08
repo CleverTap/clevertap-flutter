@@ -836,7 +836,8 @@ class _MyAppState extends State<MyApp> {
                       onTap: sendBasicPush,
                     ),
                   ),
-                ),Card(
+                ),
+                Card(
                   color: Colors.grey.shade300,
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
@@ -845,7 +846,8 @@ class _MyAppState extends State<MyApp> {
                       onTap: sendAutoCarouselPush,
                     ),
                   ),
-                ),Card(
+                ),
+                Card(
                   color: Colors.grey.shade300,
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
@@ -854,7 +856,8 @@ class _MyAppState extends State<MyApp> {
                       onTap: sendManualCarouselPush,
                     ),
                   ),
-                ),Card(
+                ),
+                Card(
                   color: Colors.grey.shade300,
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
@@ -863,7 +866,8 @@ class _MyAppState extends State<MyApp> {
                       onTap: sendFilmStripCarouselPush,
                     ),
                   ),
-                ),Card(
+                ),
+                Card(
                   color: Colors.grey.shade300,
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
@@ -872,7 +876,8 @@ class _MyAppState extends State<MyApp> {
                       onTap: sendRatingCarouselPush,
                     ),
                   ),
-                ),Card(
+                ),
+                Card(
                   color: Colors.grey.shade300,
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
@@ -881,7 +886,8 @@ class _MyAppState extends State<MyApp> {
                       onTap: sendProductDisplayPush,
                     ),
                   ),
-                ),Card(
+                ),
+                Card(
                   color: Colors.grey.shade300,
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
@@ -890,7 +896,8 @@ class _MyAppState extends State<MyApp> {
                       onTap: sendLinearProductDisplayPush,
                     ),
                   ),
-                ),Card(
+                ),
+                Card(
                   color: Colors.grey.shade300,
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
@@ -899,7 +906,8 @@ class _MyAppState extends State<MyApp> {
                       onTap: sendCTAPush,
                     ),
                   ),
-                ),Card(
+                ),
+                Card(
                   color: Colors.grey.shade300,
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
@@ -908,7 +916,8 @@ class _MyAppState extends State<MyApp> {
                       onTap: sendZeroBezelPush,
                     ),
                   ),
-                ),Card(
+                ),
+                Card(
                   color: Colors.grey.shade300,
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
@@ -917,7 +926,8 @@ class _MyAppState extends State<MyApp> {
                       onTap: sendZeroBezelTextOnlyPush,
                     ),
                   ),
-                ),Card(
+                ),
+                Card(
                   color: Colors.grey.shade300,
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
@@ -926,16 +936,19 @@ class _MyAppState extends State<MyApp> {
                       onTap: sendTimerPush,
                     ),
                   ),
-                ),Card(
+                ),
+                Card(
                   color: Colors.grey.shade300,
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
-                      title: Text("Input Box - CTA + reminder Push Campaign - DOC true"),
+                      title: Text(
+                          "Input Box - CTA + reminder Push Campaign - DOC true"),
                       onTap: sendInputBoxPush,
                     ),
                   ),
-                ),Card(
+                ),
+                Card(
                   color: Colors.grey.shade300,
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
@@ -944,7 +957,8 @@ class _MyAppState extends State<MyApp> {
                       onTap: sendInputBoxReplyEventPush,
                     ),
                   ),
-                ),Card(
+                ),
+                Card(
                   color: Colors.grey.shade300,
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
@@ -953,16 +967,19 @@ class _MyAppState extends State<MyApp> {
                       onTap: sendInputBoxReplyAutoOpenPush,
                     ),
                   ),
-                ),Card(
+                ),
+                Card(
                   color: Colors.grey.shade300,
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
-                      title: Text("Input Box - CTA + reminder Push Campaign - DOC false"),
+                      title: Text(
+                          "Input Box - CTA + reminder Push Campaign - DOC false"),
                       onTap: sendInputBoxRemindDOCFalsePush,
                     ),
                   ),
-                ),Card(
+                ),
+                Card(
                   color: Colors.grey.shade300,
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
@@ -971,7 +988,8 @@ class _MyAppState extends State<MyApp> {
                       onTap: sendInputBoxCTADOCTruePush,
                     ),
                   ),
-                ),Card(
+                ),
+                Card(
                   color: Colors.grey.shade300,
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
@@ -980,7 +998,8 @@ class _MyAppState extends State<MyApp> {
                       onTap: sendInputBoxCTADOCFalsePush,
                     ),
                   ),
-                ),Card(
+                ),
+                Card(
                   color: Colors.grey.shade300,
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
@@ -989,7 +1008,8 @@ class _MyAppState extends State<MyApp> {
                       onTap: sendInputBoxReminderDOCTruePush,
                     ),
                   ),
-                ),Card(
+                ),
+                Card(
                   color: Colors.grey.shade300,
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
@@ -1011,7 +1031,7 @@ class _MyAppState extends State<MyApp> {
       'first': 'partridge',
       'second': 'turtledoves'
     };
-    CleverTapPlugin.recordEvent("Send Basic Push",eventData);
+    CleverTapPlugin.recordEvent("Send Basic Push", eventData);
   }
 
   void sendAutoCarouselPush() {
@@ -1019,7 +1039,7 @@ class _MyAppState extends State<MyApp> {
       // Key:    Value
       '': ''
     };
-    CleverTapPlugin.recordEvent("Send Carousel Push",eventData);
+    CleverTapPlugin.recordEvent("Send Carousel Push", eventData);
   }
 
   void sendManualCarouselPush() {
@@ -1027,7 +1047,7 @@ class _MyAppState extends State<MyApp> {
       // Key:    Value
       '': ''
     };
-    CleverTapPlugin.recordEvent("Send Manual Carousel Push",eventData);
+    CleverTapPlugin.recordEvent("Send Manual Carousel Push", eventData);
   }
 
   void sendFilmStripCarouselPush() {
@@ -1035,7 +1055,7 @@ class _MyAppState extends State<MyApp> {
       // Key:    Value
       '': ''
     };
-    CleverTapPlugin.recordEvent("Send Filmstrip Carousel Push",eventData);
+    CleverTapPlugin.recordEvent("Send Filmstrip Carousel Push", eventData);
   }
 
   void sendRatingCarouselPush() {
@@ -1043,7 +1063,7 @@ class _MyAppState extends State<MyApp> {
       // Key:    Value
       '': ''
     };
-    CleverTapPlugin.recordEvent("Send Rating Push",eventData);
+    CleverTapPlugin.recordEvent("Send Rating Push", eventData);
   }
 
   void sendProductDisplayPush() {
@@ -1051,7 +1071,7 @@ class _MyAppState extends State<MyApp> {
       // Key:    Value
       '': ''
     };
-    CleverTapPlugin.recordEvent("Send Product Display Notification",eventData);
+    CleverTapPlugin.recordEvent("Send Product Display Notification", eventData);
   }
 
   void sendLinearProductDisplayPush() {
@@ -1059,7 +1079,7 @@ class _MyAppState extends State<MyApp> {
       // Key:    Value
       '': ''
     };
-    CleverTapPlugin.recordEvent("Send Linear Product Display Push",eventData);
+    CleverTapPlugin.recordEvent("Send Linear Product Display Push", eventData);
   }
 
   void sendCTAPush() {
@@ -1067,7 +1087,7 @@ class _MyAppState extends State<MyApp> {
       // Key:    Value
       '': ''
     };
-    CleverTapPlugin.recordEvent("Send CTA Notification",eventData);
+    CleverTapPlugin.recordEvent("Send CTA Notification", eventData);
   }
 
   void sendZeroBezelPush() {
@@ -1075,7 +1095,7 @@ class _MyAppState extends State<MyApp> {
       // Key:    Value
       '': ''
     };
-    CleverTapPlugin.recordEvent("Send Zero Bezel Notification",eventData);
+    CleverTapPlugin.recordEvent("Send Zero Bezel Notification", eventData);
   }
 
   void sendZeroBezelTextOnlyPush() {
@@ -1083,7 +1103,8 @@ class _MyAppState extends State<MyApp> {
       // Key:    Value
       '': ''
     };
-    CleverTapPlugin.recordEvent("Send Zero Bezel Text Only Notification",eventData);
+    CleverTapPlugin.recordEvent(
+        "Send Zero Bezel Text Only Notification", eventData);
   }
 
   void sendTimerPush() {
@@ -1091,7 +1112,7 @@ class _MyAppState extends State<MyApp> {
       // Key:    Value
       '': ''
     };
-    CleverTapPlugin.recordEvent("Send Timer Notification",eventData);
+    CleverTapPlugin.recordEvent("Send Timer Notification", eventData);
   }
 
   void sendInputBoxPush() {
@@ -1099,7 +1120,7 @@ class _MyAppState extends State<MyApp> {
       // Key:    Value
       '': ''
     };
-    CleverTapPlugin.recordEvent("Send Input Box Notification",eventData);
+    CleverTapPlugin.recordEvent("Send Input Box Notification", eventData);
   }
 
   void sendInputBoxReplyEventPush() {
@@ -1107,7 +1128,8 @@ class _MyAppState extends State<MyApp> {
       // Key:    Value
       '': ''
     };
-    CleverTapPlugin.recordEvent("Send Input Box Reply with Event Notification",eventData);
+    CleverTapPlugin.recordEvent(
+        "Send Input Box Reply with Event Notification", eventData);
   }
 
   void sendInputBoxReplyAutoOpenPush() {
@@ -1115,7 +1137,8 @@ class _MyAppState extends State<MyApp> {
       // Key:    Value
       '': ''
     };
-    CleverTapPlugin.recordEvent("Send Input Box Reply with Auto Open Notification",eventData);
+    CleverTapPlugin.recordEvent(
+        "Send Input Box Reply with Auto Open Notification", eventData);
   }
 
   void sendInputBoxRemindDOCFalsePush() {
@@ -1123,7 +1146,8 @@ class _MyAppState extends State<MyApp> {
       // Key:    Value
       '': ''
     };
-    CleverTapPlugin.recordEvent("Send Input Box Remind Notification DOC FALSE",eventData);
+    CleverTapPlugin.recordEvent(
+        "Send Input Box Remind Notification DOC FALSE", eventData);
   }
 
   void sendInputBoxCTADOCTruePush() {
@@ -1131,7 +1155,7 @@ class _MyAppState extends State<MyApp> {
       // Key:    Value
       '': ''
     };
-    CleverTapPlugin.recordEvent("Send Input Box CTA DOC true",eventData);
+    CleverTapPlugin.recordEvent("Send Input Box CTA DOC true", eventData);
   }
 
   void sendInputBoxCTADOCFalsePush() {
@@ -1139,7 +1163,7 @@ class _MyAppState extends State<MyApp> {
       // Key:    Value
       '': ''
     };
-    CleverTapPlugin.recordEvent("Send Input Box CTA DOC false",eventData);
+    CleverTapPlugin.recordEvent("Send Input Box CTA DOC false", eventData);
   }
 
   void sendInputBoxReminderDOCTruePush() {
@@ -1147,7 +1171,7 @@ class _MyAppState extends State<MyApp> {
       // Key:    Value
       '': ''
     };
-    CleverTapPlugin.recordEvent("Send Input Box Reminder DOC true",eventData);
+    CleverTapPlugin.recordEvent("Send Input Box Reminder DOC true", eventData);
   }
 
   void sendInputBoxReminderDOCFalsePush() {
@@ -1155,7 +1179,7 @@ class _MyAppState extends State<MyApp> {
       // Key:    Value
       '': ''
     };
-    CleverTapPlugin.recordEvent("Send Input Box Reminder DOC false",eventData);
+    CleverTapPlugin.recordEvent("Send Input Box Reminder DOC false", eventData);
   }
 
   void recordEvent() {
