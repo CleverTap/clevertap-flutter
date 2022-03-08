@@ -2,11 +2,17 @@ package com.clevertap.clevertap_plugin;
 
 import android.os.Bundle;
 import android.util.Log;
+
 import com.clevertap.android.sdk.CTInboxStyleConfig;
 import com.clevertap.android.sdk.UTMDetail;
 import com.clevertap.android.sdk.displayunits.model.CleverTapDisplayUnit;
 import com.clevertap.android.sdk.events.EventDetail;
 import com.clevertap.android.sdk.inbox.CTInboxMessage;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -15,9 +21,6 @@ import java.util.Iterator;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 
 public class Utils {
 
@@ -247,7 +250,7 @@ public class Utils {
         return ret;
     }
 
-    static Bundle mapToBundle(HashMap<String,Object> hashMap){
+    static Bundle mapToBundle(HashMap<String, Object> hashMap) {
         Bundle bundle = new Bundle();
         for (Map.Entry<String, Object> entry : hashMap.entrySet()) {
             bundle.putString(entry.getKey(), entry.getValue().toString());
