@@ -4,3 +4,4 @@
 .DS_Store
 example/build
 example/android/app/google-services.json
+build/
