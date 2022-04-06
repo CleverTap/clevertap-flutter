@@ -764,25 +764,25 @@ static NSDateFormatter *dateFormatter;
 
 - (void)getBoolean:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     NSString *key = call.arguments[@"key"];
-    BOOL value = [[[CleverTap sharedInstance] productConfig] get:key];
+    BOOL value = [[[[CleverTap sharedInstance] productConfig] get:key]boolValue];
     result(@(value));
 }
 
 - (void)getString:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     NSString *key = call.arguments[@"key"];
-    NSString *value = [[[CleverTap sharedInstance] productConfig] get:key];
+    NSString *value = [[[[CleverTap sharedInstance] productConfig] get:key]stringValue];
     result(value);
 }
 
 - (void)getLong:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     NSString *key = call.arguments[@"key"];
-    long value = [[[CleverTap sharedInstance] productConfig] get:key];
+    long value = [[[[CleverTap sharedInstance] productConfig] get:key] numberValue].longValue;
     result(@(value));
 }
 
 - (void)getDouble:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     NSString *key = call.arguments[@"key"];
-    double value = [[[CleverTap sharedInstance] productConfig] get:key];
+    double value = [[[[CleverTap sharedInstance] productConfig] get:key]numberValue].doubleValue;
     result(@(value));
 }
 
