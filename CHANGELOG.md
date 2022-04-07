@@ -1,5 +1,8 @@
 ## CHANGE LOG
 
+### Version 1.5.1 (April 7, 2022)
+* Adds the missing getter methods for Product Config in iOS.
+
 ### Version 1.5.0 (March 8, 2022)
 * Supports [CleverTap Android SDK v4.4.0](https://github.com/CleverTap/clevertap-android-sdk/releases/tag/core-v4.4.0)
 * Supports [CleverTap iOS SDK v4.0.0](https://github.com/CleverTap/clevertap-ios-sdk/releases/tag/4.0.0) 
