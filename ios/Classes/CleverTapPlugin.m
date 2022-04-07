@@ -201,6 +201,14 @@ static NSDateFormatter *dateFormatter;
         [self setDefaultsMap:call withResult:result];
     else if ([@"getLastFetchTimeStampInMillis" isEqualToString:call.method])
         [self getLastFetchTimeStampInMillis:call withResult:result];
+    else if ([@"getBoolean" isEqualToString:call.method])
+        [self getBoolean:call withResult:result];
+    else if ([@"getString" isEqualToString:call.method])
+        [self getString:call withResult:result];
+    else if ([@"getLong" isEqualToString:call.method])
+        [self getLong:call withResult:result];
+    else if ([@"getDouble" isEqualToString:call.method])
+        [self getDouble:call withResult:result];
     else if ([@"getFeatureFlag" isEqualToString:call.method])
         [self getFeatureFlag:call withResult:result];
     else if ([@"pushNotificationViewedEvent" isEqualToString:call.method])
@@ -752,6 +760,30 @@ static NSDateFormatter *dateFormatter;
     NSDate *date = [[[CleverTap sharedInstance] productConfig] getLastFetchTimeStamp];
     double interval = date.timeIntervalSince1970;
     result(@(interval));
+}
+
+- (void)getBoolean:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    NSString *key = call.arguments[@"key"];
+    BOOL value = [[[[CleverTap sharedInstance] productConfig] get:key]boolValue];
+    result(@(value));
+}
+
+- (void)getString:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    NSString *key = call.arguments[@"key"];
+    NSString *value = [[[[CleverTap sharedInstance] productConfig] get:key]stringValue];
+    result(value);
+}
+
+- (void)getLong:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    NSString *key = call.arguments[@"key"];
+    long value = [[[[CleverTap sharedInstance] productConfig] get:key] numberValue].longValue;
+    result(@(value));
+}
+
+- (void)getDouble:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    NSString *key = call.arguments[@"key"];
+    double value = [[[[CleverTap sharedInstance] productConfig] get:key]numberValue].doubleValue;
+    result(@(value));
 }
 
 
