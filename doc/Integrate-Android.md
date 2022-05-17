@@ -5,13 +5,13 @@ Add the following to your `dependencies` section in `project/build.gradle`
 ```groovy
     dependencies {
             classpath 'com.android.tools.build:gradle:4.2.1'
-            classpath 'com.google.gms:google-services:4.3.8' //<--- Mandatory for using Firebase Messaging, skip if not using FCM
+            classpath 'com.google.gms:google-services:4.3.3' //<--- Mandatory for using Firebase Messaging, skip if not using FCM
         }
 ```
 
 Add the following to your `dependencies` section in `app/build.gradle`
 ```groovy
-        implementation 'com.google.firebase:firebase-messaging:20.2.4'
+        implementation 'com.google.firebase:firebase-messaging:21.0.0'
         implementation 'androidx.core:core:1.3.0'
         implementation 'androidx.fragment:fragment:1.3.6'
         
