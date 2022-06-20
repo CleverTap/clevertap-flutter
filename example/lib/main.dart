@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io' show Platform;
 
 import 'package:clevertap_plugin/clevertap_plugin.dart';
+import 'package:example/AppInboxModel.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_styled_toast/flutter_styled_toast.dart';
 
@@ -19,6 +20,7 @@ class _MyAppState extends State<MyApp> {
   var optOut = false;
   var offLine = false;
   var enableDeviceNetworkingInfo = false;
+  late List<AppInboxModel> notificationParsedList = [];
 
   @override
   void initState() {
@@ -1279,10 +1281,49 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
-  void getAllInboxMessages() async {
+  Future<List<AppInboxModel>> getAllInboxMessages() async {
     List? messages = await CleverTapPlugin.getAllInboxMessages();
     showToast("See all inbox messages in console");
     print("Inbox Messages = " + messages.toString());
+
+    //parses messageList into AppInboxModel and returns a List<AppInboxModel>
+    List<dynamic> messageList = [];
+    var appInboxIds = [];
+    var isAppInboxread = [];
+
+    if(Platform.isAndroid && messages != null && messages.length != 0) {
+      for (int i =0; i < messages.length; i++){
+        appInboxIds.add(messages[i]["id"]);
+        isAppInboxread.add(messages[i]["isRead"]);
+        messageList.add(messages[i]["msg"]);
+      }
+    }
+
+    if(Platform.isIOS && messages!= null) {
+      messages.forEach((element) {
+        if(element is Map){
+          element.forEach((key, value) {
+            element[key] = json.encode(value);
+          });
+        }
+      });
+
+      for (int i =0; i < messages.length; i++){
+        appInboxIds.add(messages[i]["_id"]);
+        isAppInboxread.add(messages[i]["isRead"]);
+        messageList.add(messages[i]["msg"]);
+      }
+    }
+
+    notificationParsedList = allInboxFromJson(messageList.toString());
+
+    return notificationParsedList;
+  }
+
+  List<AppInboxModel> allInboxFromJson(String string) {
+    return List<AppInboxModel>.from(json.decode(string).map((x) {
+      return AppInboxModel.fromJson(x);
+    }));
   }
 
   void getUnreadInboxMessages() async {
