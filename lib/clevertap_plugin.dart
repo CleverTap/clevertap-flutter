@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:clevertap_plugin/TestInboxMessage.dart';
 import 'package:flutter/services.dart';
 
 typedef void CleverTapInAppNotificationDismissedHandler(
@@ -641,7 +642,18 @@ class CleverTapPlugin {
   /// Returns a list of json string representation of all CTInboxMessage
 
   static Future<List?> getAllInboxMessages() async {
-    return await _channel.invokeMethod('getAllInboxMessages', {});
+    return await _channel.invokeMethod('getAllInboxMessages', {});//list object to POJO
+  }
+
+   static void getAllInboxMessageList() async {
+    var response = await _channel.invokeMethod('getAllInboxMessagesList', {});
+
+    var obj = TestInboxMessage.fromList(response);
+
+
+    // String test = jsonEncode(response);
+    // var obj = ctInboxMessageFromJson(test);
+    return null;
   }
 
   /// Returns a list of json string representation of unread CTInboxMessage

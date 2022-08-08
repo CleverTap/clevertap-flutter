@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'dart:io' show Platform;
 
 import 'package:clevertap_plugin/clevertap_plugin.dart';
-import 'package:example/AppInboxModel.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_styled_toast/flutter_styled_toast.dart';
 
@@ -20,7 +19,7 @@ class _MyAppState extends State<MyApp> {
   var optOut = false;
   var offLine = false;
   var enableDeviceNetworkingInfo = false;
-  late List<AppInboxModel> notificationParsedList = [];
+  // late List<AppInboxModel> notificationParsedList = [];
 
   @override
   void initState() {
@@ -441,7 +440,7 @@ class _MyAppState extends State<MyApp> {
                     child: ListTile(
                       title: Text("Get All Inbox Messages"),
                       subtitle: Text("Returns all inbox messages"),
-                      onTap: getAllInboxMessages,
+                      onTap: getAllInboxMessagesList,
                     ),
                   ),
                 ),
@@ -1281,7 +1280,7 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
-  Future<List<AppInboxModel>> getAllInboxMessages() async {
+  /*Future<List<AppInboxModel>> getAllInboxMessages() async {
     List? messages = await CleverTapPlugin.getAllInboxMessages();
     showToast("See all inbox messages in console");
     print("Inbox Messages = " + messages.toString());
@@ -1324,6 +1323,24 @@ class _MyAppState extends State<MyApp> {
     return List<AppInboxModel>.from(json.decode(string).map((x) {
       return AppInboxModel.fromJson(x);
     }));
+  }*/
+
+  void getAllInboxMessages() async {
+    List? messages = await CleverTapPlugin.getAllInboxMessages();
+    showToast("See all inbox messages in console");
+    print("Inbox Messages = " + messages.toString());
+  }
+
+  // Future<List<CTInboxMessage>> getAllInboxMessagesList() async {
+  //   List<CTInboxMessage> messages = await CleverTapPlugin.getAllInboxMessageList();
+  //   return messages;
+  // }
+
+  void getAllInboxMessagesList() async{
+    CleverTapPlugin.getAllInboxMessageList();//List of POJO class
+
+    // print("CT" + messages.id);
+    // print("CT" + messages.wzrkId);
   }
 
   void getUnreadInboxMessages() async {

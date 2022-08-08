@@ -441,6 +441,11 @@ public class CleverTapPlugin implements ActivityAware,
                 break;
             }
 
+            case "getAllInboxMessagesList": {
+                getAllInboxMessages(result);
+                break;
+            }
+
             case "getUnreadInboxMessages": {
                 getUnreadInboxMessages(result);
                 break;
