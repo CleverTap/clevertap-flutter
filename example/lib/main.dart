@@ -58,6 +58,8 @@ class _MyAppState extends State<MyApp> {
         inAppNotificationButtonClicked);
     _clevertapPlugin.setCleverTapInboxNotificationButtonClickedHandler(
         inboxNotificationButtonClicked);
+    _clevertapPlugin.setCleverTapInboxNotificationMessageClickedHandler(
+        inboxNotificationMessageClicked);
     _clevertapPlugin.setCleverTapFeatureFlagUpdatedHandler(featureFlagsUpdated);
     _clevertapPlugin
         .setCleverTapProductConfigInitializedHandler(productConfigInitialized);
@@ -82,6 +84,12 @@ class _MyAppState extends State<MyApp> {
   void inboxNotificationButtonClicked(Map<String, dynamic>? map) {
     this.setState(() {
       print("inboxNotificationButtonClicked called = ${map.toString()}");
+    });
+  }
+
+  void inboxNotificationMessageClicked(Map<String, dynamic>? map) {
+    this.setState(() {
+      print("inboxNotificationMessageClicked called = ${map.toString()}");
     });
   }
 
