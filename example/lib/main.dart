@@ -1331,8 +1331,7 @@ class _MyAppState extends State<MyApp> {
           'noMessageText': 'No message(s) to show.',
           'navBarTitle': 'App Inbox',
           'navBarTitleColor': '#101727',
-          'navBarColor': '#EF4444',
-          'tabs': ["Offers"]
+          'navBarColor': '#EF4444'
         };
         CleverTapPlugin.showInbox(styleConfig);
       });
