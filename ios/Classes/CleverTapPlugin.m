@@ -970,6 +970,11 @@ static NSDateFormatter *dateFormatter;
     
     [[NSNotificationCenter defaultCenter] addObserver:self
                                              selector:@selector(emitEventInternal:)
+                                                 name:kCleverTapInboxMessageTapped
+                                               object:nil];
+    
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(emitEventInternal:)
                                                  name:kCleverTapProductConfigFetched
                                                object:nil];
     
@@ -1053,9 +1058,16 @@ static NSDateFormatter *dateFormatter;
     if (customExtras != nil) {
         body[@"customExtras"] = customExtras;
     }
-    [self postNotificationWithName:kCleverTapInboxMessageButtonTapped andBody:customExtras];
+    [self postNotificationWithName:kCleverTapInboxMessageButtonTapped andBody:body];
 }
 
+- (void)messageDidSelect:(CleverTapInboxMessage *_Nonnull)message atIndex:(int)index withButtonIndex:(int)buttonIndex {
+    NSMutableDictionary *body = [NSMutableDictionary new];
+    if (message != nil) {
+        body[@"message"] = [message customData];
+    }
+    [self postNotificationWithName:kCleverTapInboxMessageTapped andBody:body];
+}
 
 #pragma mark CleverTapPushNotificationDelegate
 
