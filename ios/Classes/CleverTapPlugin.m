@@ -1053,18 +1053,17 @@ static NSDateFormatter *dateFormatter;
 #pragma mark CleverTapInboxViewControllerDelegate
 
 - (void)messageButtonTappedWithCustomExtras:(NSDictionary *_Nullable)customExtras {
-    
     NSMutableDictionary *body = [NSMutableDictionary new];
     if (customExtras != nil) {
-        body[@"customExtras"] = customExtras;
+        body = [NSMutableDictionary dictionaryWithDictionary:customExtras];
     }
     [self postNotificationWithName:kCleverTapInboxMessageButtonTapped andBody:body];
 }
 
 - (void)messageDidSelect:(CleverTapInboxMessage *_Nonnull)message atIndex:(int)index withButtonIndex:(int)buttonIndex {
     NSMutableDictionary *body = [NSMutableDictionary new];
-    if (message != nil) {
-        body[@"message"] = [message customData];
+    if ([message json] != nil) {
+        body = [NSMutableDictionary dictionaryWithDictionary:[message json]];
     }
     [self postNotificationWithName:kCleverTapInboxMessageTapped andBody:body];
 }
