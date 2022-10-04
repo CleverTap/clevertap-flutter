@@ -8,6 +8,7 @@ static NSString *const kCleverTapInboxMessagesDidUpdate           = @"inboxMessa
 static NSString *const kCleverTapDisplayUnitsLoaded               = @"onDisplayUnitsLoaded";
 static NSString *const kCleverTapInAppNotificationButtonTapped    = @"onInAppButtonClick";
 static NSString *const kCleverTapInboxMessageButtonTapped         = @"onInboxButtonClick";
+static NSString *const kCleverTapInboxMessageTapped               = @"onInboxMessageClick";
 static NSString *const kCleverTapProductConfigFetched             = @"productConfigFetched";
 static NSString *const kCleverTapProductConfigActivated           = @"productConfigActivated";
 static NSString *const kCleverTapProductConfigInitialized         = @"productConfigInitialized";
