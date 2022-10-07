@@ -451,7 +451,6 @@ class _MyAppState extends State<MyApp> {
                     ),
                   ),
                 ),
-
                 Card(
                   color: Colors.grey.shade300,
                   child: Padding(
@@ -779,7 +778,7 @@ class _MyAppState extends State<MyApp> {
                     child: ListTile(
                       title: Text("Set Opt Out"),
                       subtitle:
-                      Text("Used to opt out of sending data to CleverTap"),
+                          Text("Used to opt out of sending data to CleverTap"),
                       onTap: setOptOut,
                     ),
                   ),
@@ -1235,9 +1234,11 @@ class _MyAppState extends State<MyApp> {
   void setPushTokenFCM() {
     CleverTapPlugin.setPushToken("token_fcm");
   }
+
   void setPushTokenXPS() {
-    CleverTapPlugin.setXiaomiPushToken("token_xps","Europe");
+    CleverTapPlugin.setXiaomiPushToken("token_xps", "Europe");
   }
+
   void setPushTokenHMS() {
     CleverTapPlugin.setHuaweiPushToken("token_fcm");
   }
@@ -1338,7 +1339,6 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
-
   void showInboxWithTabs() {
     if (inboxInitialized) {
       showToast("Opening App Inbox", onDismiss: () {
@@ -1348,13 +1348,12 @@ class _MyAppState extends State<MyApp> {
           'navBarTitle': 'App Inbox',
           'navBarTitleColor': '#101727',
           'navBarColor': '#EF4444',
-          'tabs': ["promos","offers"]
+          'tabs': ["promos", "offers"]
         };
         CleverTapPlugin.showInbox(styleConfig);
       });
     }
   }
-
 
   void getAllInboxMessages() async {
     List? messages = await CleverTapPlugin.getAllInboxMessages();
