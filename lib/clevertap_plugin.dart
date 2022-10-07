@@ -162,7 +162,7 @@ class CleverTapPlugin {
 
   /// Define a method to handle inbox notification message clicked
   void setCleverTapInboxNotificationMessageClickedHandler(
-      CleverTapInboxNotificationMessageClickedHandler handler) =>
+          CleverTapInboxNotificationMessageClickedHandler handler) =>
       cleverTapInboxNotificationMessageClickedHandler = handler;
 
   /// Define a method to handle Native Display Unit updates
@@ -217,7 +217,8 @@ class CleverTapPlugin {
 
   /// Set the Xiaomi Token for Push Notifications
   static Future<void> setXiaomiPushToken(String value, String region) async {
-    return await _channel.invokeMethod('setXiaomiPushToken', {'token': value, 'region': region});
+    return await _channel
+        .invokeMethod('setXiaomiPushToken', {'token': value, 'region': region});
   }
 
   /// Set the Baidu Token for Push Notifications

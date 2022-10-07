@@ -10,6 +10,7 @@ import com.clevertap.android.sdk.events.EventDetail;
 import com.clevertap.android.sdk.inbox.CTInboxMessage;
 
 import java.util.Objects;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -218,10 +219,10 @@ public class Utils {
         if (map != null) {
             for (String key : map.keySet()) {
                 try {
-                    if(!(map.get(key) instanceof ArrayList)) {
+                    if (!(map.get(key) instanceof ArrayList)) {
                         json.put(key, map.get(key));
-                    }else{
-                        if(map.get(key) != null && ((ArrayList<?>) Objects.requireNonNull(map.get(key))).size() > 0) {
+                    } else {
+                        if (map.get(key) != null && ((ArrayList<?>) Objects.requireNonNull(map.get(key))).size() > 0) {
                             JSONArray tabArray = new JSONArray();
                             for (int i = 0; i < ((ArrayList<?>) Objects.requireNonNull(map.get(key))).size(); i++) {
                                 tabArray.put(((ArrayList<?>) Objects.requireNonNull(map.get(key))).get(i));
