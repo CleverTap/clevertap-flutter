@@ -12,6 +12,8 @@ typedef void CleverTapInboxDidInitializeHandler();
 typedef void CleverTapInboxMessagesDidUpdateHandler();
 typedef void CleverTapInboxNotificationButtonClickedHandler(
     Map<String, dynamic>? mapList);
+typedef void CleverTapInboxNotificationMessageClickedHandler(
+    Map<String, dynamic>? map);
 typedef void CleverTapDisplayUnitsLoadedHandler(List<dynamic>? displayUnitList);
 typedef void CleverTapFeatureFlagUpdatedHandler();
 typedef void CleverTapProductConfigInitializedHandler();
@@ -34,6 +36,8 @@ class CleverTapPlugin {
       cleverTapInboxMessagesDidUpdateHandler;
   late CleverTapInboxNotificationButtonClickedHandler
       cleverTapInboxNotificationButtonClickedHandler;
+  late CleverTapInboxNotificationMessageClickedHandler
+      cleverTapInboxNotificationMessageClickedHandler;
   late CleverTapDisplayUnitsLoadedHandler cleverTapDisplayUnitsLoadedHandler;
   late CleverTapFeatureFlagUpdatedHandler cleverTapFeatureFlagUpdatedHandler;
   late CleverTapProductConfigInitializedHandler
@@ -86,6 +90,11 @@ class CleverTapPlugin {
       case "onInboxButtonClick":
         Map<dynamic, dynamic> args = call.arguments;
         cleverTapInboxNotificationButtonClickedHandler(
+            args.cast<String, dynamic>());
+        break;
+      case "onInboxMessageClick":
+        Map<dynamic, dynamic> args = call.arguments;
+        cleverTapInboxNotificationMessageClickedHandler(
             args.cast<String, dynamic>());
         break;
       case "onDisplayUnitsLoaded":
@@ -151,6 +160,11 @@ class CleverTapPlugin {
           CleverTapInboxNotificationButtonClickedHandler handler) =>
       cleverTapInboxNotificationButtonClickedHandler = handler;
 
+  /// Define a method to handle inbox notification message clicked
+  void setCleverTapInboxNotificationMessageClickedHandler(
+          CleverTapInboxNotificationMessageClickedHandler handler) =>
+      cleverTapInboxNotificationMessageClickedHandler = handler;
+
   /// Define a method to handle Native Display Unit updates
   void setCleverTapDisplayUnitsLoadedHandler(
           CleverTapDisplayUnitsLoadedHandler handler) =>
@@ -202,8 +216,9 @@ class CleverTapPlugin {
   }
 
   /// Set the Xiaomi Token for Push Notifications
-  static Future<void> setXiaomiPushToken(String value) async {
-    return await _channel.invokeMethod('setXiaomiPushToken', {'token': value});
+  static Future<void> setXiaomiPushToken(String value, String region) async {
+    return await _channel
+        .invokeMethod('setXiaomiPushToken', {'token': value, 'region': region});
   }
 
   /// Set the Baidu Token for Push Notifications

@@ -58,6 +58,8 @@ class _MyAppState extends State<MyApp> {
         inAppNotificationButtonClicked);
     _clevertapPlugin.setCleverTapInboxNotificationButtonClickedHandler(
         inboxNotificationButtonClicked);
+    _clevertapPlugin.setCleverTapInboxNotificationMessageClickedHandler(
+        inboxNotificationMessageClicked);
     _clevertapPlugin.setCleverTapFeatureFlagUpdatedHandler(featureFlagsUpdated);
     _clevertapPlugin
         .setCleverTapProductConfigInitializedHandler(productConfigInitialized);
@@ -82,6 +84,12 @@ class _MyAppState extends State<MyApp> {
   void inboxNotificationButtonClicked(Map<String, dynamic>? map) {
     this.setState(() {
       print("inboxNotificationButtonClicked called = ${map.toString()}");
+    });
+  }
+
+  void inboxNotificationMessageClicked(Map<String, dynamic>? map) {
+    this.setState(() {
+      print("inboxNotificationMessageClicked called = ${map.toString()}");
     });
   }
 
@@ -429,6 +437,17 @@ class _MyAppState extends State<MyApp> {
                       title: Text("Show Inbox"),
                       subtitle: Text("Opens sample App Inbox"),
                       onTap: showInbox,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Show Inbox with sections"),
+                      subtitle: Text("Opens sample App Inbox"),
+                      onTap: showInboxWithTabs,
                     ),
                   ),
                 ),
@@ -1019,6 +1038,36 @@ class _MyAppState extends State<MyApp> {
                     ),
                   ),
                 ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Set Push token : FCM"),
+                      onTap: setPushTokenFCM,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Set Push token : XPS"),
+                      onTap: setPushTokenXPS,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Set Push token : HMS"),
+                      onTap: setPushTokenHMS,
+                    ),
+                  ),
+                ),
               ],
             )),
       ),
@@ -1182,6 +1231,18 @@ class _MyAppState extends State<MyApp> {
     CleverTapPlugin.recordEvent("Send Input Box Reminder DOC false", eventData);
   }
 
+  void setPushTokenFCM() {
+    CleverTapPlugin.setPushToken("token_fcm");
+  }
+
+  void setPushTokenXPS() {
+    CleverTapPlugin.setXiaomiPushToken("token_xps", "Europe");
+  }
+
+  void setPushTokenHMS() {
+    CleverTapPlugin.setHuaweiPushToken("token_fcm");
+  }
+
   void recordEvent() {
     var now = new DateTime.now();
     var eventData = {
@@ -1271,8 +1332,23 @@ class _MyAppState extends State<MyApp> {
           'noMessageText': 'No message(s) to show.',
           'navBarTitle': 'App Inbox',
           'navBarTitleColor': '#101727',
+          'navBarColor': '#EF4444'
+        };
+        CleverTapPlugin.showInbox(styleConfig);
+      });
+    }
+  }
+
+  void showInboxWithTabs() {
+    if (inboxInitialized) {
+      showToast("Opening App Inbox", onDismiss: () {
+        var styleConfig = {
+          'noMessageTextColor': '#ff6600',
+          'noMessageText': 'No message(s) to show.',
+          'navBarTitle': 'App Inbox',
+          'navBarTitleColor': '#101727',
           'navBarColor': '#EF4444',
-          'tabs': ["Offers"]
+          'tabs': ["promos", "offers"]
         };
         CleverTapPlugin.showInbox(styleConfig);
       });
