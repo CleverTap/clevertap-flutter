@@ -444,8 +444,7 @@ static NSDateFormatter *dateFormatter;
 }
 
 - (void)profileAddMultiValues:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    
-    [[CleverTap sharedInstance] profileSetMultiValues:call.arguments[@"values"] forKey:call.arguments[@"key"]];
+    [[CleverTap sharedInstance] profileAddMultiValues:call.arguments[@"values"] forKey:call.arguments[@"key"]];
     result(nil);
 }
 
