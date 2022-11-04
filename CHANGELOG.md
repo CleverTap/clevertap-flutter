@@ -1,5 +1,8 @@
 ## CHANGE LOG
 
+### Version 1.5.4 (November 4, 2022)
+* Supports [CleverTap iOS SDK v4.1.4](https://github.com/CleverTap/clevertap-ios-sdk/blob/master/CHANGELOG.md#version-414-october-24-2022)
+
 ### Version 1.5.3 (October 28, 2022)
 * Fixes incorrect API being called in `profileAddMultiValues` in iOS.
 
