@@ -659,6 +659,7 @@ public class CleverTapPlugin implements ActivityAware,
             } catch (JSONException e) {
                 result.error(TAG, "Unable to render notification due to JSONException - " + e.getLocalizedMessage(),
                         null);
+                return;
             }
             result.success(null);
         } else {
@@ -1107,13 +1108,14 @@ public class CleverTapPlugin implements ActivityAware,
     }
 
     private void processPushNotification(MethodCall call, Result result) {
-        JSONObject extras = call.argument("extras");
+        String extras = call.argument("extras");
         if (isCleverTapNotNull(cleverTapAPI)) {
             try {
-                CleverTapAPI.processPushNotification(context, Utils.jsonToBundle(extras));
+                CleverTapAPI.processPushNotification(context, Utils.stringToBundle(extras));
             } catch (JSONException e) {
                 result.error(TAG, "Unable to render notification due to JSONException - " + e.getLocalizedMessage(),
                         null);
+                return;
             }
             result.success(null);
         } else {
