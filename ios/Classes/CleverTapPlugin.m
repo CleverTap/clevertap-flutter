@@ -1060,11 +1060,47 @@ static NSDateFormatter *dateFormatter;
 }
 
 - (void)messageDidSelect:(CleverTapInboxMessage *_Nonnull)message atIndex:(int)index withButtonIndex:(int)buttonIndex {
+    BOOL dismissInbox = [self shouldDismissInboxController:message.content[index] withButtonIndex:buttonIndex];
+    // Close the inbox controller if deeplink url is present on message or button tap.
+    if (dismissInbox) {
+        [self dismissCleverTapInboxViewController];
+    }
+    
     NSMutableDictionary *body = [NSMutableDictionary new];
     if ([message json] != nil) {
         body = [NSMutableDictionary dictionaryWithDictionary:[message json]];
     }
     [self postNotificationWithName:kCleverTapInboxMessageTapped andBody:body];
+}
+
+- (BOOL)shouldDismissInboxController:(CleverTapInboxMessageContent *)content withButtonIndex:(int)buttonIndex {
+    if (buttonIndex < 0 && content.actionHasUrl) {
+        if (content.actionUrl && content.actionUrl.length > 0) {
+            return YES;
+        }
+    }
+    if (buttonIndex > 0 && content.actionHasLinks) {
+        NSDictionary *customExtras = [content customDataForLinkAtIndex:buttonIndex];
+        if (customExtras && customExtras.count > 0) {
+            return NO;
+        }
+        NSString *linkUrl = [content urlForLinkAtIndex:buttonIndex];
+        if (linkUrl && linkUrl.length > 0) {
+            return YES;
+        }
+    }
+    return NO;
+}
+
+- (void)dismissCleverTapInboxViewController {
+    UIWindow *keyWindow = [[UIApplication sharedApplication] keyWindow];
+    UIViewController *presentedController = [[keyWindow rootViewController] presentedViewController];
+    if ([presentedController isKindOfClass:[UINavigationController class]]) {
+        UINavigationController *navigationController = (UINavigationController *)presentedController;
+        if ([[navigationController topViewController] isKindOfClass:[CleverTapInboxViewController class]]) {
+            [presentedController dismissViewControllerAnimated:YES completion:nil];
+        }
+    }
 }
 
 #pragma mark CleverTapPushNotificationDelegate
