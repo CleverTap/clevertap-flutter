@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 
 typedef void CleverTapInAppNotificationDismissedHandler(
     Map<String, dynamic> mapList);
+typedef void CleverTapInAppNotificationShowHandler(
+    Map<String, dynamic> map);
 typedef void CleverTapInAppNotificationButtonClickedHandler(
     Map<String, dynamic>? mapList);
 typedef void CleverTapProfileDidInitializeHandler();
@@ -26,6 +28,8 @@ typedef void CleverTapPushClickedPayloadReceivedHandler(
 class CleverTapPlugin {
   late CleverTapInAppNotificationDismissedHandler
       cleverTapInAppNotificationDismissedHandler;
+  late CleverTapInAppNotificationShowHandler
+      cleverTapInAppNotificationShowHandler;
   late CleverTapInAppNotificationButtonClickedHandler
       cleverTapInAppNotificationButtonClickedHandler;
   late CleverTapProfileDidInitializeHandler
@@ -68,6 +72,11 @@ class CleverTapPlugin {
       case "inAppNotificationDismissed":
         Map<dynamic, dynamic> args = call.arguments;
         cleverTapInAppNotificationDismissedHandler(
+            args.cast<String, dynamic>());
+        break;
+      case "inAppNotificationShow":
+        Map<dynamic, dynamic> args = call.arguments;
+        cleverTapInAppNotificationShowHandler(
             args.cast<String, dynamic>());
         break;
       case "onInAppButtonClick":
@@ -130,6 +139,11 @@ class CleverTapPlugin {
   void setCleverTapInAppNotificationDismissedHandler(
           CleverTapInAppNotificationDismissedHandler handler) =>
       cleverTapInAppNotificationDismissedHandler = handler;
+
+  /// only Android - Define a method to handle inApp notification shown
+  void setCleverTapInAppNotificationShowHandler(
+          CleverTapInAppNotificationShowHandler handler) =>
+      cleverTapInAppNotificationShowHandler = handler;
 
   /// Define a method to handle inApp notification button clicked
   void setCleverTapInAppNotificationButtonClickedHandler(

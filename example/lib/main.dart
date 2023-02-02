@@ -46,6 +46,8 @@ class _MyAppState extends State<MyApp> {
         pushClickedPayloadReceived);
     _clevertapPlugin.setCleverTapInAppNotificationDismissedHandler(
         inAppNotificationDismissed);
+    _clevertapPlugin.setCleverTapInAppNotificationShowHandler(
+        inAppNotificationShow);
     _clevertapPlugin
         .setCleverTapProfileDidInitializeHandler(profileDidInitialize);
     _clevertapPlugin.setCleverTapProfileSyncHandler(profileDidUpdate);
@@ -72,6 +74,12 @@ class _MyAppState extends State<MyApp> {
   void inAppNotificationDismissed(Map<String, dynamic> map) {
     this.setState(() {
       print("inAppNotificationDismissed called");
+    });
+  }
+
+  void inAppNotificationShow(Map<String, dynamic> map) {
+    this.setState(() {
+      print("inAppNotificationShow called = ${map.toString()}");
     });
   }
 

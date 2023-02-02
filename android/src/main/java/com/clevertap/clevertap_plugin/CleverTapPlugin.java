@@ -1,5 +1,6 @@
 package com.clevertap.clevertap_plugin;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
 import android.location.Location;
@@ -24,6 +25,7 @@ import com.clevertap.android.sdk.UTMDetail;
 import com.clevertap.android.sdk.displayunits.DisplayUnitListener;
 import com.clevertap.android.sdk.displayunits.model.CleverTapDisplayUnit;
 import com.clevertap.android.sdk.events.EventDetail;
+import com.clevertap.android.sdk.inapp.CTInAppNotification;
 import com.clevertap.android.sdk.inbox.CTInboxMessage;
 import com.clevertap.android.sdk.interfaces.OnInitCleverTapIDListener;
 import com.clevertap.android.sdk.product_config.CTProductConfigListener;
@@ -97,6 +99,13 @@ public class CleverTapPlugin implements ActivityAware,
     public boolean beforeShow(Map<String, Object> extras) {
         invokeMethodOnUiThread("beforeShow", extras);
         return true;
+    }
+
+    @SuppressLint("RestrictedApi")
+    @Override
+    public void onShow(CTInAppNotification ctInAppNotification) {
+        invokeMethodOnUiThread("inAppNotificationShow",
+                Utils.jsonObjectToMap(ctInAppNotification.getJsonDescription()));
     }
 
     @Override
