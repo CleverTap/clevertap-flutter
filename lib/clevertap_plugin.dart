@@ -52,6 +52,7 @@ class CleverTapPlugin {
       cleverTapPushClickedPayloadReceivedHandler;
 
   static const MethodChannel _channel = const MethodChannel('clevertap_plugin');
+  static const MethodChannel _nativeToDartMethodChannel = const MethodChannel('clevertap_plugin/native_to_dart');
 
   static final CleverTapPlugin _clevertapPlugin =
       new CleverTapPlugin._internal();
@@ -59,7 +60,7 @@ class CleverTapPlugin {
   factory CleverTapPlugin() => _clevertapPlugin;
 
   CleverTapPlugin._internal() {
-    _channel.setMethodCallHandler(_platformCallHandler);
+    _nativeToDartMethodChannel.setMethodCallHandler(_platformCallHandler);
   }
 
   Future _platformCallHandler(MethodCall call) async {

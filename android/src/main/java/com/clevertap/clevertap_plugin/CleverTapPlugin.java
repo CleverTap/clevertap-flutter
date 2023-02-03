@@ -76,7 +76,9 @@ public class CleverTapPlugin implements ActivityAware,
 
     private Activity activity;
 
-    private MethodChannel channel;
+    private MethodChannel methodChannel;
+
+    private static MethodChannel nativeToDartMethodChannel;
 
     private CleverTapAPI cleverTapAPI;
 
@@ -88,6 +90,7 @@ public class CleverTapPlugin implements ActivityAware,
     public static void registerWith(Registrar registrar) {
         CleverTapPlugin plugin = new CleverTapPlugin();
         plugin.setupPlugin(registrar.context(), null, registrar);
+        plugin.activity = ((Activity) registrar.activeContext());
     }
 
     public CleverTapPlugin() {
@@ -141,7 +144,8 @@ public class CleverTapPlugin implements ActivityAware,
 
     @Override
     public void onDetachedFromEngine(@NonNull FlutterPluginBinding binding) {
-        channel = null;
+        methodChannel = null;
+        nativeToDartMethodChannel = null;
     }
 
     @Override
@@ -955,7 +959,7 @@ public class CleverTapPlugin implements ActivityAware,
     }
 
     private void invokeMethodOnUiThread(final String methodName, final String cleverTapID) {
-        final MethodChannel channel = this.channel;
+        final MethodChannel channel = nativeToDartMethodChannel;
         if (channel == null) {
             Log.d(TAG, "methodChannel in invokeMethodOnUiThread(String) is null");
             return;
@@ -970,7 +974,7 @@ public class CleverTapPlugin implements ActivityAware,
     }
 
     private void invokeMethodOnUiThread(final String methodName, final Map map) {
-        final MethodChannel channel = this.channel;
+        final MethodChannel channel = nativeToDartMethodChannel;
         if (channel == null) {
             Log.d(TAG, "methodChannel in invokeMethodOnUiThread(Map) is null");
             return;
@@ -980,7 +984,7 @@ public class CleverTapPlugin implements ActivityAware,
 
     @SuppressWarnings("SameParameterValue")
     private void invokeMethodOnUiThread(final String methodName, final ArrayList list) {
-        final MethodChannel channel = this.channel;
+        final MethodChannel channel = nativeToDartMethodChannel;
         if (channel == null) {
             Log.d(TAG, "methodChannel in invokeMethodOnUiThread(ArrayList) is null");
             return;
@@ -1433,16 +1437,25 @@ public class CleverTapPlugin implements ActivityAware,
         }
     }
 
-    private void setupPlugin(Context context, BinaryMessenger messenger, Registrar registrar) {
+    private MethodChannel getMethodChannel(String channelName, BinaryMessenger messenger, Registrar registrar) {
         if (registrar != null) {
             //V1 setup
-            this.channel = new MethodChannel(registrar.messenger(), "clevertap_plugin");
-            this.activity = ((Activity) registrar.activeContext());
+            return new MethodChannel(registrar.messenger(), channelName);
         } else {
             //V2 setup
-            this.channel = new MethodChannel(messenger, "clevertap_plugin");
+            return new MethodChannel(messenger, channelName);
         }
-        this.channel.setMethodCallHandler(this);
+    }
+
+    private void setupPlugin(Context context, BinaryMessenger messenger, Registrar registrar) {
+        this.methodChannel = getMethodChannel("clevertap_plugin", messenger, registrar);
+        if (nativeToDartMethodChannel == null) {
+            // set nativeToDartMethodChannel channel once, as it has to be static field
+            // and per https://github.com/firebase/flutterfire/issues/9689 because other
+            // plugins can create multiple instances of the plugin.
+            nativeToDartMethodChannel = getMethodChannel("clevertap_plugin/native_to_dart", messenger, registrar);
+        }
+        this.methodChannel.setMethodCallHandler(this);
         this.context = context.getApplicationContext();
         this.cleverTapAPI = CleverTapAPI.getDefaultInstance(this.context);
         if (this.cleverTapAPI != null) {
