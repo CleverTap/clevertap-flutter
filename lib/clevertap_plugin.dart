@@ -24,6 +24,7 @@ typedef void CleverTapProductConfigActivatedHandler();
 typedef void CleverTapPushAmpPayloadReceivedHandler(Map<String, dynamic> map);
 typedef void CleverTapPushClickedPayloadReceivedHandler(
     Map<String, dynamic> map);
+typedef void CleverTapPushPermissionResponseReceivedHandler(bool accepted);
 
 class CleverTapPlugin {
   late CleverTapInAppNotificationDismissedHandler
@@ -54,6 +55,7 @@ class CleverTapPlugin {
       cleverTapPushAmpPayloadReceivedHandler;
   late CleverTapPushClickedPayloadReceivedHandler
       cleverTapPushClickedPayloadReceivedHandler;
+  late CleverTapPushPermissionResponseReceivedHandler? cleverTapPushPermissionResponseReceivedHandler;
 
   static const MethodChannel _channel = const MethodChannel('clevertap_plugin');
 
@@ -131,6 +133,10 @@ class CleverTapPlugin {
         Map<dynamic, dynamic> args = call.arguments;
         cleverTapPushClickedPayloadReceivedHandler(
             args.cast<String, dynamic>());
+        break;
+      case "pushPermissionResponseReceived":
+        bool accepted = call.arguments;
+        cleverTapPushPermissionResponseReceivedHandler!(accepted);
         break;
     }
   }
@@ -213,6 +219,15 @@ class CleverTapPlugin {
   void setCleverTapPushClickedPayloadReceivedHandler(
           CleverTapPushClickedPayloadReceivedHandler handler) =>
       cleverTapPushClickedPayloadReceivedHandler = handler;
+
+  /// Define a method to register Push permission response
+  void registerCleverTapPushPermissionResponseReceivedHandler(
+          CleverTapPushPermissionResponseReceivedHandler handler) =>
+      cleverTapPushPermissionResponseReceivedHandler = handler;
+
+  /// Only for Android - Define a method to register Push permission response
+  void unRegisterCleverTapPushPermissionResponseReceivedHandler() =>
+      cleverTapPushPermissionResponseReceivedHandler = null;
 
   /// Sets debug level to show logs on Android Studio/Xcode console
   static Future<void> setDebugLevel(int value) async {
@@ -815,5 +830,21 @@ class CleverTapPlugin {
 
   static String getCleverTapDate(DateTime dateTime) {
     return '\$D_' + dateTime.millisecondsSinceEpoch.toString();
+  }
+
+  // Push Primer
+  ///Creates a push primer asking user to enable push notification.
+  static Future<void> promptPushPrimer(Map<String, dynamic> pushPrimerJSON) async {
+    return await _channel.invokeMethod('promptPushPrimer', pushPrimerJSON);
+  }
+
+  ///Directly calls OS hard dialog for requesting push permission.
+  static Future<void> promptForPushNotification(bool fallbackToSettings) async {
+    return await _channel.invokeMethod('promptForPushNotification', fallbackToSettings);
+  }
+
+  ///Returns true if push permission is enabled.
+  static Future<bool?> getPushNotificationPermissionStatus() async {
+    return await _channel.invokeMethod('getPushNotificationPermissionStatus', {});
   }
 }

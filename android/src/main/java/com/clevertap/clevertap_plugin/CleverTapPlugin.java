@@ -20,6 +20,7 @@ import com.clevertap.android.sdk.InAppNotificationButtonListener;
 import com.clevertap.android.sdk.InAppNotificationListener;
 import com.clevertap.android.sdk.InboxMessageButtonListener;
 import com.clevertap.android.sdk.InboxMessageListener;
+import com.clevertap.android.sdk.PushPermissionResponseListener;
 import com.clevertap.android.sdk.SyncListener;
 import com.clevertap.android.sdk.UTMDetail;
 import com.clevertap.android.sdk.displayunits.DisplayUnitListener;
@@ -60,7 +61,7 @@ public class CleverTapPlugin implements ActivityAware,
         InAppNotificationButtonListener, InboxMessageListener,
         InboxMessageButtonListener, DisplayUnitListener,
         CTFeatureFlagsListener, CTProductConfigListener,
-        CTPushAmpListener, CTPushNotificationListener {
+        CTPushAmpListener, CTPushNotificationListener, PushPermissionResponseListener {
 
     private static final String TAG = "CleverTapPlugin";
 
@@ -270,6 +271,22 @@ public class CleverTapPlugin implements ActivityAware,
                 }
                 break;
             }
+            //Android 13 push primer methods
+            case "promptPushPrimer": {
+                promptPushPrimer(call, result);
+                break;
+            }
+
+            case "promptForPushNotification": {
+                promptForPushNotification(call, result);
+                break;
+            }
+
+            case "getPushNotificationPermissionStatus": {
+                getPushNotificationPermissionStatus(result);
+                break;
+            }
+
             //Enables tracking opt out for the currently active user.
             case "setOptOut": {
                 setOptOut(call, result);
@@ -610,6 +627,11 @@ public class CleverTapPlugin implements ActivityAware,
         invokeMethodOnUiThread("profileDidInitialize", CleverTapID);
     }
 
+    @Override
+    public void onPushPermissionResponse(boolean accepted) {
+        invokeMethodOnUiThread("pushPermissionResponseReceived", accepted);
+    }
+
     private void activate(Result result) {
         if (isCleverTapNotNull(cleverTapAPI)) {
             cleverTapAPI.productConfig().activate();
@@ -701,6 +723,35 @@ public class CleverTapPlugin implements ActivityAware,
             result.success(null);
         } else {
             result.error(TAG, ANDROID_O_CREATE_CHANNEL_ERROR_MSG, null);
+        }
+    }
+
+    private void promptPushPrimer(MethodCall call, Result result) {
+        Map<String, Object> localInAppAttributeMap = call.arguments();
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            JSONObject jsonObject = Utils.localInAppFromMap(localInAppAttributeMap);
+            cleverTapAPI.promptPushPrimer(jsonObject);
+            result.success(null);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void promptForPushNotification(MethodCall call, Result result) {
+        boolean fallbackToSettings = call.arguments();
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            cleverTapAPI.promptForPushPermission(fallbackToSettings);
+            result.success(null);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void getPushNotificationPermissionStatus(Result result) {
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            result.success(cleverTapAPI.isPushPermissionGranted());
+        } else {
+            result.error(TAG, ERROR_MSG, null);
         }
     }
 
@@ -975,6 +1026,18 @@ public class CleverTapPlugin implements ActivityAware,
             } else {
                 channel.invokeMethod(methodName, null);
             }
+        });
+    }
+
+    @SuppressWarnings("SameParameterValue")
+    private void invokeMethodOnUiThread(final String methodName, final boolean params) {
+        final MethodChannel channel = this.channel;
+        if (channel == null) {
+            Log.d(TAG, "params in invokeMethodOnUiThread(boolean) is null");
+            return;
+        }
+        runOnMainThread(() -> {
+            channel.invokeMethod(methodName, params);
         });
     }
 
@@ -1467,6 +1530,7 @@ public class CleverTapPlugin implements ActivityAware,
             this.cleverTapAPI.setCTProductConfigListener(this);
             this.cleverTapAPI.setCTPushAmpListener(this);
             this.cleverTapAPI.setLibrary("Flutter");
+            this.cleverTapAPI.registerPushPermissionNotificationResponseListener(this);
         }
     }
 
