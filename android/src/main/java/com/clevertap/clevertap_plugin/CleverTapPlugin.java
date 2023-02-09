@@ -287,6 +287,11 @@ public class CleverTapPlugin implements ActivityAware,
                 break;
             }
 
+            case "unregisterPushPermissionNotificationResponseListener": {
+                unregisterPushPermissionNotificationResponseListener(result);
+                break;
+            }
+
             //Enables tracking opt out for the currently active user.
             case "setOptOut": {
                 setOptOut(call, result);
@@ -750,6 +755,15 @@ public class CleverTapPlugin implements ActivityAware,
     private void getPushNotificationPermissionStatus(Result result) {
         if (isCleverTapNotNull(cleverTapAPI)) {
             result.success(cleverTapAPI.isPushPermissionGranted());
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void unregisterPushPermissionNotificationResponseListener(Result result){
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            cleverTapAPI.unregisterPushPermissionNotificationResponseListener(this);
+            result.success(null);
         } else {
             result.error(TAG, ERROR_MSG, null);
         }

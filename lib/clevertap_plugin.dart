@@ -146,7 +146,7 @@ class CleverTapPlugin {
           CleverTapInAppNotificationDismissedHandler handler) =>
       cleverTapInAppNotificationDismissedHandler = handler;
 
-  /// only Android - Define a method to handle inApp notification shown
+  /// Only for Android - Define a method to handle inApp notification shown
   void setCleverTapInAppNotificationShowHandler(
           CleverTapInAppNotificationShowHandler handler) =>
       cleverTapInAppNotificationShowHandler = handler;
@@ -224,10 +224,6 @@ class CleverTapPlugin {
   void registerCleverTapPushPermissionResponseReceivedHandler(
           CleverTapPushPermissionResponseReceivedHandler handler) =>
       cleverTapPushPermissionResponseReceivedHandler = handler;
-
-  /// Only for Android - Define a method to register Push permission response
-  void unRegisterCleverTapPushPermissionResponseReceivedHandler() =>
-      cleverTapPushPermissionResponseReceivedHandler = null;
 
   /// Sets debug level to show logs on Android Studio/Xcode console
   static Future<void> setDebugLevel(int value) async {
@@ -846,5 +842,10 @@ class CleverTapPlugin {
   ///Returns true if push permission is enabled.
   static Future<bool?> getPushNotificationPermissionStatus() async {
     return await _channel.invokeMethod('getPushNotificationPermissionStatus', {});
+  }
+
+  ///Only for Android - Unregisters PushPermissionNotificationResponseListener
+  static Future<void> unregisterPushPermissionNotificationResponseListener() async {
+    return await _channel.invokeMethod('unregisterPushPermissionNotificationResponseListener', {});
   }
 }

@@ -36,7 +36,7 @@ class _MyAppState extends State<MyApp> {
   @override
   void dispose() {
     super.dispose();
-    _clevertapPlugin.unRegisterCleverTapPushPermissionResponseReceivedHandler();
+    // CleverTapPlugin.unregisterPushPermissionNotificationResponseListener();
   }
 
   // Platform messages are asynchronous, so we initialize in an async method.
