@@ -75,8 +75,7 @@ class _MyAppState extends State<MyApp> {
         .setCleverTapProductConfigFetchedHandler(productConfigFetched);
     _clevertapPlugin
         .setCleverTapProductConfigActivatedHandler(productConfigActivated);
-    _clevertapPlugin.registerCleverTapPushPermissionResponseReceivedHandler(
-        pushPermissionResponseReceived);
+    _clevertapPlugin.setCleverTapPushPermissionResponseReceivedHandler(pushPermissionResponseReceived);
   }
 
   void inAppNotificationDismissed(Map<String, dynamic> map) {
@@ -1856,7 +1855,14 @@ class _MyAppState extends State<MyApp> {
   void getAdUnits() async {
     List? displayUnits = await CleverTapPlugin.getAllDisplayUnits();
     showToast("check console for logs");
-    print("Display Units = " + displayUnits.toString());
+    print("Display Units Payload = " + displayUnits.toString());
+
+    displayUnits?.forEach((element) {
+      var customExtras = element["custom_kv"];
+      if (customExtras != null) {
+         print("Display Units CustomExtras: " +  customExtras.toString());
+       }
+    });
   }
 
   void fetch() {

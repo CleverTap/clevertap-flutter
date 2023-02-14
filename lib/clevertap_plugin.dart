@@ -55,7 +55,7 @@ class CleverTapPlugin {
       cleverTapPushAmpPayloadReceivedHandler;
   late CleverTapPushClickedPayloadReceivedHandler
       cleverTapPushClickedPayloadReceivedHandler;
-  late CleverTapPushPermissionResponseReceivedHandler? cleverTapPushPermissionResponseReceivedHandler;
+  late CleverTapPushPermissionResponseReceivedHandler cleverTapPushPermissionResponseReceivedHandler;
 
   static const MethodChannel _channel = const MethodChannel('clevertap_plugin');
 
@@ -136,7 +136,7 @@ class CleverTapPlugin {
         break;
       case "pushPermissionResponseReceived":
         bool accepted = call.arguments;
-        cleverTapPushPermissionResponseReceivedHandler!(accepted);
+        cleverTapPushPermissionResponseReceivedHandler(accepted);
         break;
     }
   }
@@ -220,8 +220,8 @@ class CleverTapPlugin {
           CleverTapPushClickedPayloadReceivedHandler handler) =>
       cleverTapPushClickedPayloadReceivedHandler = handler;
 
-  /// Define a method to register Push permission response
-  void registerCleverTapPushPermissionResponseReceivedHandler(
+  /// Define a method to handle Push permission response
+  void setCleverTapPushPermissionResponseReceivedHandler(
           CleverTapPushPermissionResponseReceivedHandler handler) =>
       cleverTapPushPermissionResponseReceivedHandler = handler;
 

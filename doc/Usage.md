@@ -457,6 +457,11 @@ CleverTapPlugin.setOffline(false);
 CleverTapPlugin.setOffline(true);
 ```
 
+-----------
+
+## Push primer for notification Permission (Android and iOS)
+Follow the [Push Primer integration doc](PushPrimer.md).
+
 
 ### For more information,
 

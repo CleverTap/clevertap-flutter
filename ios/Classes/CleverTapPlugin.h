@@ -14,6 +14,7 @@ static NSString *const kCleverTapProductConfigActivated           = @"productCon
 static NSString *const kCleverTapProductConfigInitialized         = @"productConfigInitialized";
 static NSString *const kCleverTapFeatureFlagsUpdated              = @"featureFlagsUpdated";
 static NSString *const kCleverTapPushNotificationClicked          = @"pushClickedPayloadReceived";
+static NSString *const kCleverTapPushPermissionResponseReceived   = @"pushPermissionResponseReceived";
 
 @interface CleverTapPlugin : NSObject <FlutterPlugin>
 
