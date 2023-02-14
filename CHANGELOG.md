@@ -1,5 +1,11 @@
 ## CHANGE LOG
 
+### Version 1.6.0 (February 14, 2023)
+* Adds below new public APIs to support [CleverTap Android SDK v4.7.4](https://github.com/CleverTap/clevertap-android-sdk/blob/master/docs/CTCORECHANGELOG.md#version-474-january-27-2023) and [CleverTap iOS SDK v4.2.0](https://github.com/CleverTap/clevertap-ios-sdk/blob/master/CHANGELOG.md#version-420-december-13-2022)
+    - `isPushPermissionGranted()`, `promptPushPrimer(object)`, `promptForPushPermission(boolean)`
+* Adds push permission callback method which returns true/false after user allow/deny the notification permission.
+* Adds `onShow(CTInAppNotification)` callback for `InAppNotificationListener` - Only for Android.
+
 ### Version 1.5.5 (January 23, 2023)
 * Adds fix for closing App Inbox controller when deeplink is present in iOS.
 * Supports [add-to-app](https://docs.flutter.dev/development/add-to-app) feature for Android platform to embed the CleverTap plugin in a flutter module.

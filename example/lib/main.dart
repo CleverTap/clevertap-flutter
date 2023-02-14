@@ -33,6 +33,12 @@ class _MyAppState extends State<MyApp> {
     //var initialUrl = CleverTapPlugin.getInitialUrl();
   }
 
+  @override
+  void dispose() {
+    super.dispose();
+    // CleverTapPlugin.unregisterPushPermissionNotificationResponseListener();
+  }
+
   // Platform messages are asynchronous, so we initialize in an async method.
   Future<void> initPlatformState() async {
     if (!mounted) return;
@@ -46,6 +52,8 @@ class _MyAppState extends State<MyApp> {
         pushClickedPayloadReceived);
     _clevertapPlugin.setCleverTapInAppNotificationDismissedHandler(
         inAppNotificationDismissed);
+    _clevertapPlugin.setCleverTapInAppNotificationShowHandler(
+        inAppNotificationShow);
     _clevertapPlugin
         .setCleverTapProfileDidInitializeHandler(profileDidInitialize);
     _clevertapPlugin.setCleverTapProfileSyncHandler(profileDidUpdate);
@@ -73,6 +81,12 @@ class _MyAppState extends State<MyApp> {
   void inAppNotificationDismissed(Map<String, dynamic> map) {
     this.setState(() {
       print("inAppNotificationDismissed called");
+    });
+  }
+
+  void inAppNotificationShow(Map<String, dynamic> map) {
+    this.setState(() {
+      print("inAppNotificationShow called = ${map.toString()}");
     });
   }
 
@@ -156,12 +170,12 @@ class _MyAppState extends State<MyApp> {
     print("Product Config Activated");
     this.setState(() async {
       String? stringvar =
-          await CleverTapPlugin.getProductConfigString("StringKey");
+      await CleverTapPlugin.getProductConfigString("StringKey");
       print("PC String = " + stringvar.toString());
       int? intvar = await CleverTapPlugin.getProductConfigLong("IntKey");
       print("PC int = " + intvar.toString());
       double? doublevar =
-          await CleverTapPlugin.getProductConfigDouble("DoubleKey");
+      await CleverTapPlugin.getProductConfigDouble("DoubleKey");
       print("PC double = " + doublevar.toString());
     });
   }
@@ -184,7 +198,8 @@ class _MyAppState extends State<MyApp> {
   }
 
   void pushPermissionResponseReceived(bool accepted) {
-    print("Push Permission response called ---> accepted = " + (accepted ? "true" : "false"));
+    print("Push Permission response called ---> accepted = " +
+        (accepted ? "true" : "false"));
   }
 
   @override
@@ -783,7 +798,7 @@ class _MyAppState extends State<MyApp> {
                     child: ListTile(
                       title: Text("Set Opt Out"),
                       subtitle:
-                          Text("Used to opt out of sending data to CleverTap"),
+                      Text("Used to opt out of sending data to CleverTap"),
                       onTap: setOptOut,
                     ),
                   ),
@@ -1868,7 +1883,7 @@ class _MyAppState extends State<MyApp> {
   }
 
   void promptForPushNotification() {
-    var fallbackToSettings = false;
+    var fallbackToSettings = true;
     CleverTapPlugin.promptForPushNotification(fallbackToSettings);
     showToast("Prompt Push Permission");
   }
@@ -1897,7 +1912,8 @@ class _MyAppState extends State<MyApp> {
 
   void localAlertPushPrimer() {
     this.setState(() async {
-      bool? isPushPermissionEnabled = await CleverTapPlugin.getPushNotificationPermissionStatus();
+      bool? isPushPermissionEnabled = await CleverTapPlugin
+          .getPushNotificationPermissionStatus();
       if (isPushPermissionEnabled == null) return;
 
       // Check Push Permission status and then call `promptPushPrimer` if not enabled.
@@ -1917,6 +1933,5 @@ class _MyAppState extends State<MyApp> {
         print("Push Permission is already enabled.");
       }
     });
-
   }
 }
