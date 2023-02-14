@@ -33,6 +33,12 @@ class _MyAppState extends State<MyApp> {
     //var initialUrl = CleverTapPlugin.getInitialUrl();
   }
 
+  @override
+  void dispose() {
+    super.dispose();
+    // CleverTapPlugin.unregisterPushPermissionNotificationResponseListener();
+  }
+
   // Platform messages are asynchronous, so we initialize in an async method.
   Future<void> initPlatformState() async {
     if (!mounted) return;
@@ -46,6 +52,8 @@ class _MyAppState extends State<MyApp> {
         pushClickedPayloadReceived);
     _clevertapPlugin.setCleverTapInAppNotificationDismissedHandler(
         inAppNotificationDismissed);
+    _clevertapPlugin.setCleverTapInAppNotificationShowHandler(
+        inAppNotificationShow);
     _clevertapPlugin
         .setCleverTapProfileDidInitializeHandler(profileDidInitialize);
     _clevertapPlugin.setCleverTapProfileSyncHandler(profileDidUpdate);
@@ -67,11 +75,18 @@ class _MyAppState extends State<MyApp> {
         .setCleverTapProductConfigFetchedHandler(productConfigFetched);
     _clevertapPlugin
         .setCleverTapProductConfigActivatedHandler(productConfigActivated);
+    _clevertapPlugin.setCleverTapPushPermissionResponseReceivedHandler(pushPermissionResponseReceived);
   }
 
   void inAppNotificationDismissed(Map<String, dynamic> map) {
     this.setState(() {
       print("inAppNotificationDismissed called");
+    });
+  }
+
+  void inAppNotificationShow(Map<String, dynamic> map) {
+    this.setState(() {
+      print("inAppNotificationShow called = ${map.toString()}");
     });
   }
 
@@ -155,12 +170,12 @@ class _MyAppState extends State<MyApp> {
     print("Product Config Activated");
     this.setState(() async {
       String? stringvar =
-          await CleverTapPlugin.getProductConfigString("StringKey");
+      await CleverTapPlugin.getProductConfigString("StringKey");
       print("PC String = " + stringvar.toString());
       int? intvar = await CleverTapPlugin.getProductConfigLong("IntKey");
       print("PC int = " + intvar.toString());
       double? doublevar =
-          await CleverTapPlugin.getProductConfigDouble("DoubleKey");
+      await CleverTapPlugin.getProductConfigDouble("DoubleKey");
       print("PC double = " + doublevar.toString());
     });
   }
@@ -180,6 +195,11 @@ class _MyAppState extends State<MyApp> {
       var data = jsonEncode(map);
       print("on Push Click Payload = " + data.toString());
     });
+  }
+
+  void pushPermissionResponseReceived(bool accepted) {
+    print("Push Permission response called ---> accepted = " +
+        (accepted ? "true" : "false"));
   }
 
   @override
@@ -778,7 +798,7 @@ class _MyAppState extends State<MyApp> {
                     child: ListTile(
                       title: Text("Set Opt Out"),
                       subtitle:
-                          Text("Used to opt out of sending data to CleverTap"),
+                      Text("Used to opt out of sending data to CleverTap"),
                       onTap: setOptOut,
                     ),
                   ),
@@ -1065,6 +1085,45 @@ class _MyAppState extends State<MyApp> {
                     child: ListTile(
                       title: Text("Set Push token : HMS"),
                       onTap: setPushTokenHMS,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.lightBlueAccent,
+                  child: Padding(
+                    padding: const EdgeInsets.all(0.0),
+                    child: ListTile(
+                      title: Text("Push Primer"),
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Prompt for Push Notification"),
+                      onTap: promptForPushNotification,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Local Half Interstitial Push Primer"),
+                      onTap: localHalfInterstitialPushPrimer,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Local Alert Push Primer"),
+                      onTap: localAlertPushPrimer,
                     ),
                   ),
                 ),
@@ -1796,7 +1855,14 @@ class _MyAppState extends State<MyApp> {
   void getAdUnits() async {
     List? displayUnits = await CleverTapPlugin.getAllDisplayUnits();
     showToast("check console for logs");
-    print("Display Units = " + displayUnits.toString());
+    print("Display Units Payload = " + displayUnits.toString());
+
+    displayUnits?.forEach((element) {
+      var customExtras = element["custom_kv"];
+      if (customExtras != null) {
+         print("Display Units CustomExtras: " +  customExtras.toString());
+       }
+    });
   }
 
   void fetch() {
@@ -1814,5 +1880,58 @@ class _MyAppState extends State<MyApp> {
   void fetchAndActivate() {
     CleverTapPlugin.fetchAndActivate();
     showToast("check console for logs");
+  }
+
+  void promptForPushNotification() {
+    var fallbackToSettings = true;
+    CleverTapPlugin.promptForPushNotification(fallbackToSettings);
+    showToast("Prompt Push Permission");
+  }
+
+  void localHalfInterstitialPushPrimer() {
+    var pushPrimerJSON = {
+      'inAppType': 'half-interstitial',
+      'titleText': 'Get Notified',
+      'messageText': 'Please enable notifications on your device to use Push Notifications.',
+      'followDeviceOrientation': false,
+      'positiveBtnText': 'Allow',
+      'negativeBtnText': 'Cancel',
+      'fallbackToSettings': true,
+      'backgroundColor': '#FFFFFF',
+      'btnBorderColor': '#000000',
+      'titleTextColor': '#000000',
+      'messageTextColor': '#000000',
+      'btnTextColor': '#000000',
+      'btnBackgroundColor': '#FFFFFF',
+      'btnBorderRadius': '4',
+      'imageUrl': 'https://icons.iconarchive.com/icons/treetog/junior/64/camera-icon.png'
+    };
+    CleverTapPlugin.promptPushPrimer(pushPrimerJSON);
+    showToast("Half-Interstitial Push Primer");
+  }
+
+  void localAlertPushPrimer() {
+    this.setState(() async {
+      bool? isPushPermissionEnabled = await CleverTapPlugin
+          .getPushNotificationPermissionStatus();
+      if (isPushPermissionEnabled == null) return;
+
+      // Check Push Permission status and then call `promptPushPrimer` if not enabled.
+      if (!isPushPermissionEnabled) {
+        var pushPrimerJSON = {
+          'inAppType': 'alert',
+          'titleText': 'Get Notified',
+          'messageText': 'Enable Notification permission',
+          'followDeviceOrientation': true,
+          'positiveBtnText': 'Allow',
+          'negativeBtnText': 'Cancel',
+          'fallbackToSettings': true
+        };
+        CleverTapPlugin.promptPushPrimer(pushPrimerJSON);
+        showToast("Alert Push Primer");
+      } else {
+        print("Push Permission is already enabled.");
+      }
+    });
   }
 }

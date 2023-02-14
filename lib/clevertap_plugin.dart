@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 
 typedef void CleverTapInAppNotificationDismissedHandler(
     Map<String, dynamic> mapList);
+typedef void CleverTapInAppNotificationShowHandler(
+    Map<String, dynamic> map);
 typedef void CleverTapInAppNotificationButtonClickedHandler(
     Map<String, dynamic>? mapList);
 typedef void CleverTapProfileDidInitializeHandler();
@@ -22,10 +24,13 @@ typedef void CleverTapProductConfigActivatedHandler();
 typedef void CleverTapPushAmpPayloadReceivedHandler(Map<String, dynamic> map);
 typedef void CleverTapPushClickedPayloadReceivedHandler(
     Map<String, dynamic> map);
+typedef void CleverTapPushPermissionResponseReceivedHandler(bool accepted);
 
 class CleverTapPlugin {
   late CleverTapInAppNotificationDismissedHandler
       cleverTapInAppNotificationDismissedHandler;
+  late CleverTapInAppNotificationShowHandler
+      cleverTapInAppNotificationShowHandler;
   late CleverTapInAppNotificationButtonClickedHandler
       cleverTapInAppNotificationButtonClickedHandler;
   late CleverTapProfileDidInitializeHandler
@@ -50,6 +55,7 @@ class CleverTapPlugin {
       cleverTapPushAmpPayloadReceivedHandler;
   late CleverTapPushClickedPayloadReceivedHandler
       cleverTapPushClickedPayloadReceivedHandler;
+  late CleverTapPushPermissionResponseReceivedHandler cleverTapPushPermissionResponseReceivedHandler;
 
   static const MethodChannel _dartToNativeMethodChannel = const MethodChannel('clevertap_plugin/dart_to_native');
   static const MethodChannel _nativeToDartMethodChannel = const MethodChannel('clevertap_plugin/native_to_dart');
@@ -69,6 +75,11 @@ class CleverTapPlugin {
       case "inAppNotificationDismissed":
         Map<dynamic, dynamic> args = call.arguments;
         cleverTapInAppNotificationDismissedHandler(
+            args.cast<String, dynamic>());
+        break;
+      case "inAppNotificationShow":
+        Map<dynamic, dynamic> args = call.arguments;
+        cleverTapInAppNotificationShowHandler(
             args.cast<String, dynamic>());
         break;
       case "onInAppButtonClick":
@@ -124,6 +135,10 @@ class CleverTapPlugin {
         cleverTapPushClickedPayloadReceivedHandler(
             args.cast<String, dynamic>());
         break;
+      case "pushPermissionResponseReceived":
+        bool accepted = call.arguments;
+        cleverTapPushPermissionResponseReceivedHandler(accepted);
+        break;
     }
   }
 
@@ -131,6 +146,11 @@ class CleverTapPlugin {
   void setCleverTapInAppNotificationDismissedHandler(
           CleverTapInAppNotificationDismissedHandler handler) =>
       cleverTapInAppNotificationDismissedHandler = handler;
+
+  /// Only for Android - Define a method to handle inApp notification shown
+  void setCleverTapInAppNotificationShowHandler(
+          CleverTapInAppNotificationShowHandler handler) =>
+      cleverTapInAppNotificationShowHandler = handler;
 
   /// Define a method to handle inApp notification button clicked
   void setCleverTapInAppNotificationButtonClickedHandler(
@@ -200,6 +220,11 @@ class CleverTapPlugin {
   void setCleverTapPushClickedPayloadReceivedHandler(
           CleverTapPushClickedPayloadReceivedHandler handler) =>
       cleverTapPushClickedPayloadReceivedHandler = handler;
+
+  /// Define a method to handle Push permission response
+  void setCleverTapPushPermissionResponseReceivedHandler(
+          CleverTapPushPermissionResponseReceivedHandler handler) =>
+      cleverTapPushPermissionResponseReceivedHandler = handler;
 
   /// Sets debug level to show logs on Android Studio/Xcode console
   static Future<void> setDebugLevel(int value) async {
@@ -802,5 +827,26 @@ class CleverTapPlugin {
 
   static String getCleverTapDate(DateTime dateTime) {
     return '\$D_' + dateTime.millisecondsSinceEpoch.toString();
+  }
+
+  // Push Primer
+  ///Creates a push primer asking user to enable push notification.
+  static Future<void> promptPushPrimer(Map<String, dynamic> pushPrimerJSON) async {
+    return await _dartToNativeMethodChannel.invokeMethod('promptPushPrimer', pushPrimerJSON);
+  }
+
+  ///Directly calls OS hard dialog for requesting push permission.
+  static Future<void> promptForPushNotification(bool fallbackToSettings) async {
+    return await _dartToNativeMethodChannel.invokeMethod('promptForPushNotification', fallbackToSettings);
+  }
+
+  ///Returns true if push permission is enabled.
+  static Future<bool?> getPushNotificationPermissionStatus() async {
+    return await _dartToNativeMethodChannel.invokeMethod('getPushNotificationPermissionStatus', {});
+  }
+
+  ///Only for Android - Unregisters PushPermissionNotificationResponseListener
+  static Future<void> unregisterPushPermissionNotificationResponseListener() async {
+    return await _dartToNativeMethodChannel.invokeMethod('unregisterPushPermissionNotificationResponseListener', {});
   }
 }
