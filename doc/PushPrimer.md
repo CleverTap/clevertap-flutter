@@ -2,7 +2,7 @@
 
 Push Primer allows you to enable runtime push permission for sending notifications from an app.
 
-Starting with the v2.0.0 release, CleverTap Flutter SDK supports Push primer for push notification runtime permission through local in-app.
+Starting with the v1.6.0 release, CleverTap Flutter SDK supports Push primer for push notification runtime permission through local in-app.
 
 For Push Primer, minimum supported version for iOS platform is 10.0 while android 13 for the android platform.
 
