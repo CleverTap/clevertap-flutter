@@ -9,6 +9,7 @@ import com.clevertap.android.sdk.displayunits.model.CleverTapDisplayUnit;
 import com.clevertap.android.sdk.events.EventDetail;
 import com.clevertap.android.sdk.inbox.CTInboxMessage;
 
+import java.util.List;
 import java.util.Objects;
 
 import org.json.JSONArray;
@@ -66,7 +67,7 @@ public class Utils {
         ArrayList<Map<String, Object>> displayUnitList = new ArrayList<>();
         if (units != null) {
             for (CleverTapDisplayUnit unit : units) {
-                displayUnitList.add(Utils.jsonObjectToMap(unit.getJsonObject()));
+                displayUnitList.add(Utils.jsonToMap(unit.getJsonObject()));
             }
         }
         return displayUnitList;
@@ -126,6 +127,48 @@ public class Utils {
         }
         return stringObjectMap;
     }
+
+    /**
+     * Converts the entire Json(includes nested objects/array) into a Dart compatible Map type.
+     * @param json - target json
+     * @return - the converted Dart compatible Map type
+     */
+    public static Map<String, Object> jsonToMap(JSONObject json) {
+        Map<String, Object> map = new HashMap<>();
+        Iterator<String> keys = json.keys();
+        while (keys.hasNext()) {
+            String key = keys.next();
+            Object value;
+            try {
+                value = json.get(key);
+                if (value instanceof JSONArray) {
+                    value = jsonArrayToList((JSONArray) value);
+                } else if (value instanceof JSONObject) {
+                    value = jsonToMap((JSONObject) value);
+                }
+                map.put(key, value);
+            } catch (JSONException | NullPointerException e) {
+                Log.e("CleverTapError", "Map to JSON error", e);
+                return map;
+            }
+        }
+        return map;
+    }
+
+    private static List<Object> jsonArrayToList(JSONArray array) throws JSONException {
+        List<Object> list = new ArrayList<>();
+        for (int i = 0; i < array.length(); i++) {
+            Object value = array.get(i);
+            if (value instanceof JSONArray) {
+                value = jsonArrayToList((JSONArray) value);
+            } else if (value instanceof JSONObject) {
+                value = jsonToMap((JSONObject) value);
+            }
+            list.add(value);
+        }
+        return list;
+    }
+
 
     @SuppressWarnings("rawtypes")
     static Bundle jsonToBundle(JSONObject jsonObject) throws JSONException {
