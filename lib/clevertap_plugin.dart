@@ -57,7 +57,8 @@ class CleverTapPlugin {
       cleverTapPushClickedPayloadReceivedHandler;
   late CleverTapPushPermissionResponseReceivedHandler cleverTapPushPermissionResponseReceivedHandler;
 
-  static const MethodChannel _channel = const MethodChannel('clevertap_plugin');
+  static const MethodChannel _dartToNativeMethodChannel = const MethodChannel('clevertap_plugin/dart_to_native');
+  static const MethodChannel _nativeToDartMethodChannel = const MethodChannel('clevertap_plugin/native_to_dart');
 
   static final CleverTapPlugin _clevertapPlugin =
       new CleverTapPlugin._internal();
@@ -65,7 +66,7 @@ class CleverTapPlugin {
   factory CleverTapPlugin() => _clevertapPlugin;
 
   CleverTapPlugin._internal() {
-    _channel.setMethodCallHandler(_platformCallHandler);
+    _nativeToDartMethodChannel.setMethodCallHandler(_platformCallHandler);
   }
 
   Future _platformCallHandler(MethodCall call) async {
@@ -227,33 +228,33 @@ class CleverTapPlugin {
 
   /// Sets debug level to show logs on Android Studio/Xcode console
   static Future<void> setDebugLevel(int value) async {
-    return await _channel.invokeMethod('setDebugLevel', {'debugLevel': value});
+    return await _dartToNativeMethodChannel.invokeMethod('setDebugLevel', {'debugLevel': value});
   }
 
   /// Only for iOS - Registers the application to receive push notifications
   static Future<void> registerForPush() async {
-    return await _channel.invokeMethod('registerForPush', {});
+    return await _dartToNativeMethodChannel.invokeMethod('registerForPush', {});
   }
 
   /// Set the FCM Token for Push Notifications
   static Future<void> setPushToken(String value) async {
-    return await _channel.invokeMethod('setPushToken', {'token': value});
+    return await _dartToNativeMethodChannel.invokeMethod('setPushToken', {'token': value});
   }
 
   /// Set the Xiaomi Token for Push Notifications
   static Future<void> setXiaomiPushToken(String value, String region) async {
-    return await _channel
+    return await _dartToNativeMethodChannel
         .invokeMethod('setXiaomiPushToken', {'token': value, 'region': region});
   }
 
   /// Set the Baidu Token for Push Notifications
   static Future<void> setBaiduPushToken(String value) async {
-    return await _channel.invokeMethod('setBaiduPushToken', {'token': value});
+    return await _dartToNativeMethodChannel.invokeMethod('setBaiduPushToken', {'token': value});
   }
 
   /// Set the Huawei Token for Push Notifications
   static Future<void> setHuaweiPushToken(String value) async {
-    return await _channel.invokeMethod('setHuaweiPushToken', {'token': value});
+    return await _dartToNativeMethodChannel.invokeMethod('setHuaweiPushToken', {'token': value});
   }
 
   /// Method to create Notification Channel
@@ -263,7 +264,7 @@ class CleverTapPlugin {
       String channelDescription,
       int importance,
       bool showBadge) async {
-    return await _channel.invokeMethod('createNotificationChannel', {
+    return await _dartToNativeMethodChannel.invokeMethod('createNotificationChannel', {
       'channelId': channelId,
       'channelName': channelName,
       'channelDescription': channelDescription,
@@ -280,7 +281,7 @@ class CleverTapPlugin {
       int importance,
       bool showBadge,
       String sound) async {
-    return await _channel.invokeMethod('createNotificationChannelWithSound', {
+    return await _dartToNativeMethodChannel.invokeMethod('createNotificationChannelWithSound', {
       'channelId': channelId,
       'channelName': channelName,
       'channelDescription': channelDescription,
@@ -298,7 +299,7 @@ class CleverTapPlugin {
       int importance,
       String groupId,
       bool showBadge) async {
-    return await _channel.invokeMethod('createNotificationChannelWithGroupId', {
+    return await _dartToNativeMethodChannel.invokeMethod('createNotificationChannelWithGroupId', {
       'channelId': channelId,
       'channelName': channelName,
       'channelDescription': channelDescription,
@@ -317,7 +318,7 @@ class CleverTapPlugin {
       String groupId,
       bool showBadge,
       String sound) async {
-    return await _channel.invokeMethod('createNotificationChannelWithGroupId', {
+    return await _dartToNativeMethodChannel.invokeMethod('createNotificationChannelWithGroupId', {
       'channelId': channelId,
       'channelName': channelName,
       'channelDescription': channelDescription,
@@ -331,84 +332,84 @@ class CleverTapPlugin {
   /// Method to create Notification Channel Group
   static Future<void> createNotificationChannelGroup(
       String groupId, String groupName) async {
-    return await _channel.invokeMethod('createNotificationChannelGroup',
+    return await _dartToNativeMethodChannel.invokeMethod('createNotificationChannelGroup',
         {'groupId': groupId, 'groupName': groupName});
   }
 
   /// Method to delete Notification Channel
   static Future<void> deleteNotificationChannel(String channelId) async {
-    return await _channel
+    return await _dartToNativeMethodChannel
         .invokeMethod('deleteNotificationChannel', {'channelId': channelId});
   }
 
   /// Method to delete Notification Channel Group
   static Future<void> deleteNotificationChannelGroup(String groupId) async {
-    return await _channel
+    return await _dartToNativeMethodChannel
         .invokeMethod('deleteNotificationChannelGroup', {'groupId': groupId});
   }
 
   /// Method to create Notification using CleverTap
   static Future<void> createNotification(dynamic data) async {
     print("inside createNotification Dart");
-    return await _channel.invokeMethod('createNotification', {'extras': data});
+    return await _dartToNativeMethodChannel.invokeMethod('createNotification', {'extras': data});
   }
 
   /// Method to process Notification using CleverTap to avoid duplicates using Push Amplification
   static Future<void> processPushNotification(dynamic data) async {
-    return await _channel
+    return await _dartToNativeMethodChannel
         .invokeMethod('processPushNotification', {'extras': data});
   }
 
   /// Method to allow user to Opt out of sending data to CleverTap as per GDPR rules
   static Future<void> setOptOut(bool value) async {
-    return await _channel.invokeMethod('setOptOut', {'value': value});
+    return await _dartToNativeMethodChannel.invokeMethod('setOptOut', {'value': value});
   }
 
   /// Sets the CleverTap SDK to offline
   static Future<void> setOffline(bool value) async {
-    return await _channel.invokeMethod('setOffline', {'value': value});
+    return await _dartToNativeMethodChannel.invokeMethod('setOffline', {'value': value});
   }
 
   /// Enables Device & Networking Information Reporting to CleverTap
   static Future<void> enableDeviceNetworkInfoReporting(bool value) async {
-    return await _channel
+    return await _dartToNativeMethodChannel
         .invokeMethod('enableDeviceNetworkInfoReporting', {'value': value});
   }
 
   /// Enables the Profile/Events Read and Synchronization API
   static Future<void> enablePersonalization() async {
-    return await _channel.invokeMethod('enablePersonalization', {});
+    return await _dartToNativeMethodChannel.invokeMethod('enablePersonalization', {});
   }
 
   /// Disables the Profile/Events Read and Synchronization API
   static Future<void> disablePersonalization() async {
-    return await _channel.invokeMethod('disablePersonalization', {});
+    return await _dartToNativeMethodChannel.invokeMethod('disablePersonalization', {});
   }
 
   ///Record Notification Clicked event
   static Future<void> pushNotificationClickedEvent(
       Map<String, dynamic> extras) async {
-    return await _channel.invokeMethod(
+    return await _dartToNativeMethodChannel.invokeMethod(
         'pushNotificationClickedEvent', {'notificationData': extras});
   }
 
   ///Record Notification Viewed event
   static Future<void> pushNotificationViewedEvent(
       Map<String, dynamic> extras) async {
-    return await _channel.invokeMethod(
+    return await _dartToNativeMethodChannel.invokeMethod(
         'pushNotificationViewedEvent', {'notificationData': extras});
   }
 
   /// Record a Screen View event
   static Future<void> recordScreenView(String screenName) async {
-    return await _channel
+    return await _dartToNativeMethodChannel
         .invokeMethod('recordScreenView', {'screenName': screenName});
   }
 
   /// Pushes a basic event.
   static Future<void> recordEvent(
       String eventName, Map<String, dynamic> properties) async {
-    return await _channel.invokeMethod(
+    return await _dartToNativeMethodChannel.invokeMethod(
         'recordEvent', {'eventName': eventName, 'eventData': properties});
   }
 
@@ -423,25 +424,25 @@ class CleverTapPlugin {
   ///
   static Future<void> recordChargedEvent(Map<String, dynamic> chargeDetails,
       List<Map<String, dynamic>> items) async {
-    return await _channel.invokeMethod(
+    return await _dartToNativeMethodChannel.invokeMethod(
         'recordChargedEvent', {'chargeDetails': chargeDetails, 'items': items});
   }
 
   /// Returns the timestamp of the first time the given event was raised
   static Future<dynamic> eventGetFirstTime(String eventName) async {
-    return await _channel
+    return await _dartToNativeMethodChannel
         .invokeMethod('eventGetFirstTime', {'eventName': eventName});
   }
 
   /// Returns the timestamp of the last time the given event was raised
   static Future<dynamic> eventGetLastTime(String eventName) async {
-    return await _channel
+    return await _dartToNativeMethodChannel
         .invokeMethod('eventGetLastTime', {'eventName': eventName});
   }
 
   /// Returns the total count of the specified event
   static Future<int?> eventGetOccurrences(String eventName) async {
-    return await _channel
+    return await _dartToNativeMethodChannel
         .invokeMethod('eventGetOccurrences', {'eventName': eventName});
   }
 
@@ -449,20 +450,20 @@ class CleverTapPlugin {
   //  and last time timestamp of the event.
   static Future<Map<String, dynamic>> eventGetDetail(String eventName) async {
     Map<dynamic, dynamic> response =
-        await _channel.invokeMethod('eventGetDetail', {'eventName': eventName});
+        await _dartToNativeMethodChannel.invokeMethod('eventGetDetail', {'eventName': eventName});
     return response.cast<String, dynamic>();
   }
 
   /// Returns a Map of event names and corresponding event details of all the events raised
   static Future<Map<String, dynamic>> getEventHistory(String eventName) async {
-    Map<dynamic, dynamic> response = await _channel
+    Map<dynamic, dynamic> response = await _dartToNativeMethodChannel
         .invokeMethod('getEventHistory', {'eventName': eventName});
     return response.cast<String, dynamic>();
   }
 
   /// Set the user profile location in CleverTap
   static Future<void> setLocation(double latitude, double longitude) async {
-    return await _channel.invokeMethod(
+    return await _dartToNativeMethodChannel.invokeMethod(
         'setLocation', {'latitude': latitude, 'longitude': longitude});
   }
 
@@ -471,7 +472,7 @@ class CleverTapPlugin {
 
   /// Returns a unique CleverTap identifier suitable for use with install attribution providers.
   static Future<String?> profileGetCleverTapAttributionIdentifier() async {
-    return await _channel
+    return await _dartToNativeMethodChannel
         .invokeMethod('profileGetCleverTapAttributionIdentifier', {});
   }
 
@@ -480,12 +481,12 @@ class CleverTapPlugin {
 
   /// Returns a unique identifier by which CleverTap identifies this user.
   static Future<String?> profileGetCleverTapID() async {
-    return await _channel.invokeMethod('profileGetCleverTapID', {});
+    return await _dartToNativeMethodChannel.invokeMethod('profileGetCleverTapID', {});
   }
 
   /// Returns a unique identifier through callback by which CleverTap identifies this user
   static Future<String?> getCleverTapID() async {
-    return await _channel.invokeMethod('getCleverTapID', {});
+    return await _dartToNativeMethodChannel.invokeMethod('getCleverTapID', {});
   }
 
   ///  Creates a separate and distinct user profile identified by one or more of Identity,
@@ -517,17 +518,17 @@ class CleverTapPlugin {
   ///  @param profile The map keyed by the type of identity, with the value as the identity
   ///
   static Future<void> onUserLogin(Map<String, dynamic> profile) async {
-    return await _channel.invokeMethod('onUserLogin', {'profile': profile});
+    return await _dartToNativeMethodChannel.invokeMethod('onUserLogin', {'profile': profile});
   }
 
   /// Push a profile update.
   static Future<void> profileSet(Map<String, dynamic> profile) async {
-    return await _channel.invokeMethod('profileSet', {'profile': profile});
+    return await _dartToNativeMethodChannel.invokeMethod('profileSet', {'profile': profile});
   }
 
   ///Remove the user profile property value specified by key from the user profile
   static Future<void> profileRemoveValueForKey(String key) async {
-    return await _channel
+    return await _dartToNativeMethodChannel
         .invokeMethod('profileRemoveValueForKey', {'key': key});
   }
 
@@ -535,7 +536,7 @@ class CleverTapPlugin {
   /// Max 100 values, on reaching 100 cap, oldest value(s) will be removed.
   /// Values must be Strings and are limited to 512 characters.
   static Future<void> profileSetMultiValues(String key, List values) async {
-    return await _channel
+    return await _dartToNativeMethodChannel
         .invokeMethod('profileSetMultiValues', {'key': key, 'values': values});
   }
 
@@ -548,19 +549,19 @@ class CleverTapPlugin {
   /// If the key currently contains a scalar value, the key will be promoted to a multi-value property
   /// with the current value cast to a string and the new value(s) added
   static Future<void> profileAddMultiValue(String key, String value) async {
-    return await _channel
+    return await _dartToNativeMethodChannel
         .invokeMethod('profileAddMultiValue', {'key': key, 'value': value});
   }
 
   ///Increment given num value. The value should be in positive range
   static Future<void> profileIncrementValue(String key, num value) async {
-    return await _channel
+    return await _dartToNativeMethodChannel
         .invokeMethod('profileIncrementValue', {'key': key, 'value': value});
   }
 
   ///Decrement given num value. The value should be in positive range
   static Future<void> profileDecrementValue(String key, num value) async {
-    return await _channel
+    return await _dartToNativeMethodChannel
         .invokeMethod('profileDecrementValue', {'key': key, 'value': value});
   }
 
@@ -573,7 +574,7 @@ class CleverTapPlugin {
   /// If the key currently contains a scalar value, the key will be promoted to a multi-value property
   /// with the current value cast to a string and the new value(s) added
   static Future<void> profileAddMultiValues(String key, List values) async {
-    return await _channel
+    return await _dartToNativeMethodChannel
         .invokeMethod('profileAddMultiValues', {'key': key, 'values': values});
   }
 
@@ -583,7 +584,7 @@ class CleverTapPlugin {
   /// the key will be promoted to a multi-value property with the current value cast to a string.
   /// If the multi-value property is empty after the remove operation, the key will be removed.
   static Future<void> profileRemoveMultiValue(String key, String value) async {
-    return await _channel
+    return await _dartToNativeMethodChannel
         .invokeMethod('profileRemoveMultiValue', {'key': key, 'value': value});
   }
 
@@ -593,41 +594,41 @@ class CleverTapPlugin {
   /// the key will be promoted to a multi-value property with the current value cast to a string.
   /// If the multi-value property is empty after the remove operation, the key will be removed.
   static Future<void> profileRemoveMultiValues(String key, List values) async {
-    return await _channel.invokeMethod(
+    return await _dartToNativeMethodChannel.invokeMethod(
         'profileRemoveMultiValues', {'key': key, 'values': values});
   }
 
   /// This method is used to push install referrer via UTM source, medium & campaign parameters
   static Future<void> pushInstallReferrer(
       String source, String medium, String campaign) async {
-    return await _channel.invokeMethod('pushInstallReferrer',
+    return await _dartToNativeMethodChannel.invokeMethod('pushInstallReferrer',
         {'source': source, 'medium': medium, 'campaign': campaign});
   }
 
   /// Returns the time elapsed by the user on the app
   static Future<dynamic> sessionGetTimeElapsed() async {
-    return await _channel.invokeMethod('sessionGetTimeElapsed', {});
+    return await _dartToNativeMethodChannel.invokeMethod('sessionGetTimeElapsed', {});
   }
 
   /// Returns the total number of times the app has been launched
   static Future<int?> sessionGetTotalVisits() async {
-    return await _channel.invokeMethod('sessionGetTotalVisits', {});
+    return await _dartToNativeMethodChannel.invokeMethod('sessionGetTotalVisits', {});
   }
 
   /// Returns the number of screens which have been displayed by the app
   static Future<int?> sessionGetScreenCount() async {
-    return await _channel.invokeMethod('sessionGetScreenCount', {});
+    return await _dartToNativeMethodChannel.invokeMethod('sessionGetScreenCount', {});
   }
 
   /// Returns the timestamp of the previous visit
   static Future<dynamic> sessionGetPreviousVisitTime() async {
-    return await _channel.invokeMethod('sessionGetPreviousVisitTime', {});
+    return await _dartToNativeMethodChannel.invokeMethod('sessionGetPreviousVisitTime', {});
   }
 
   /// Returns a Map of UTMDetail object which consists of UTM parameters like source, medium & campaign
   static Future<Map<String, dynamic>> sessionGetUTMDetails() async {
     Map<dynamic, dynamic> response =
-        await _channel.invokeMethod('sessionGetUTMDetails', {});
+        await _dartToNativeMethodChannel.invokeMethod('sessionGetUTMDetails', {});
     return response.cast<String, dynamic>();
   }
 
@@ -637,14 +638,14 @@ class CleverTapPlugin {
   /// The InApp Notifications are queued once this method is called
   /// and will be displayed once resumeInAppNotifications() is called.
   static Future<void> suspendInAppNotifications() async {
-    return await _channel.invokeMethod('suspendInAppNotifications', {});
+    return await _dartToNativeMethodChannel.invokeMethod('suspendInAppNotifications', {});
   }
 
   /// Suspends the display of InApp Notifications and discards any new InApp Notifications to be shown
   /// after this method is called.
   /// The InApp Notifications will be displayed only once resumeInAppNotifications() is called.
   static Future<void> discardInAppNotifications() async {
-    return await _channel.invokeMethod('discardInAppNotifications', {});
+    return await _dartToNativeMethodChannel.invokeMethod('discardInAppNotifications', {});
   }
 
   /// Resumes display of InApp Notifications.
@@ -654,174 +655,174 @@ class CleverTapPlugin {
   /// If discardInAppNotifications() was called previously, calling this method will only resume
   /// InApp Notifications on events raised after this method is called.
   static Future<void> resumeInAppNotifications() async {
-    return await _channel.invokeMethod('resumeInAppNotifications', {});
+    return await _dartToNativeMethodChannel.invokeMethod('resumeInAppNotifications', {});
   }
 
   /// Initializes the inbox controller and sends a callback
   static Future<void> initializeInbox() async {
-    return await _channel.invokeMethod('initializeInbox', {});
+    return await _dartToNativeMethodChannel.invokeMethod('initializeInbox', {});
   }
 
   /// Opens CTInboxActivity to display Inbox Messages
   static Future<void> showInbox(Map<String, dynamic> styleConfig) async {
-    return await _channel
+    return await _dartToNativeMethodChannel
         .invokeMethod('showInbox', {'styleConfig': styleConfig});
   }
 
   /// Returns the count of all inbox messages for the user
   static Future<int?> getInboxMessageCount() async {
-    return await _channel.invokeMethod('getInboxMessageCount', {});
+    return await _dartToNativeMethodChannel.invokeMethod('getInboxMessageCount', {});
   }
 
   /// Returns the count of total number of unread inbox messages for the user
   static Future<int?> getInboxMessageUnreadCount() async {
-    return await _channel.invokeMethod('getInboxMessageUnreadCount', {});
+    return await _dartToNativeMethodChannel.invokeMethod('getInboxMessageUnreadCount', {});
   }
 
   /// Returns a list of json string representation of all CTInboxMessage
 
   static Future<List?> getAllInboxMessages() async {
-    return await _channel.invokeMethod('getAllInboxMessages', {});
+    return await _dartToNativeMethodChannel.invokeMethod('getAllInboxMessages', {});
   }
 
   /// Returns a list of json string representation of unread CTInboxMessage
   static Future<List?> getUnreadInboxMessages() async {
-    return await _channel.invokeMethod('getUnreadInboxMessages', {});
+    return await _dartToNativeMethodChannel.invokeMethod('getUnreadInboxMessages', {});
   }
 
   /// Returns a json string representation of CTInboxMessage for given messageId
   static Future<Map<String, dynamic>> getInboxMessageForId(
       String messageId) async {
-    Map<dynamic, dynamic> response = await _channel
+    Map<dynamic, dynamic> response = await _dartToNativeMethodChannel
         .invokeMethod('getInboxMessageForId', {'messageId': messageId});
     return response.cast<String, dynamic>();
   }
 
   /// Deletes the CTInboxMessage object for given messageId
   static Future<void> deleteInboxMessageForId(String messageId) async {
-    return await _channel
+    return await _dartToNativeMethodChannel
         .invokeMethod('deleteInboxMessageForId', {'messageId': messageId});
   }
 
   /// Marks the given messageId of CTInboxMessage object as read
   static Future<void> markReadInboxMessageForId(String messageId) async {
-    return await _channel
+    return await _dartToNativeMethodChannel
         .invokeMethod('markReadInboxMessageForId', {'messageId': messageId});
   }
 
   /// Pushes the Notification Clicked event for App Inbox to CleverTap.
   static Future<void> pushInboxNotificationClickedEventForId(
       String messageId) async {
-    return await _channel.invokeMethod(
+    return await _dartToNativeMethodChannel.invokeMethod(
         'pushInboxNotificationClickedEventForId', {'messageId': messageId});
   }
 
   /// Pushes the Notification Viewed event for App Inbox to CleverTap.
   static Future<void> pushInboxNotificationViewedEventForId(
       String messageId) async {
-    return await _channel.invokeMethod(
+    return await _dartToNativeMethodChannel.invokeMethod(
         'pushInboxNotificationViewedEventForId', {'messageId': messageId});
   }
 
   /// only iOS - If an application is launched from a push notification click, returns the CleverTap deep link included in the push notification
   static Future<String?> getInitialUrl() async {
-    return await _channel.invokeMethod('getInitialUrl', {});
+    return await _dartToNativeMethodChannel.invokeMethod('getInitialUrl', {});
   }
 
   ///Display units
   ///Returns a List of Display units as a Map
   static Future<List?> getAllDisplayUnits() async {
-    return await _channel.invokeMethod('getAllDisplayUnits', {});
+    return await _dartToNativeMethodChannel.invokeMethod('getAllDisplayUnits', {});
   }
 
   ///Returns Display unit info as a Map
   static Future<Map<String, dynamic>> getDisplayUnitForId(String unitId) async {
     Map<dynamic, dynamic> response =
-        await _channel.invokeMethod('getDisplayUnitForId', {'unitId': unitId});
+        await _dartToNativeMethodChannel.invokeMethod('getDisplayUnitForId', {'unitId': unitId});
     return response.cast<String, dynamic>();
   }
 
   ///Raise Notification Viewed for Display Unit id passed
   static Future<void> pushDisplayUnitViewedEvent(String unitId) async {
-    return await _channel
+    return await _dartToNativeMethodChannel
         .invokeMethod('pushDisplayUnitViewedEvent', {'unitId': unitId});
   }
 
   ///Raise Notification Clicked for Display Unit id passed
   static Future<void> pushDisplayUnitClickedEvent(String unitId) async {
-    return await _channel
+    return await _dartToNativeMethodChannel
         .invokeMethod('pushDisplayUnitClickedEvent', {'unitId': unitId});
   }
 
   ///Feature Flags
   ///Returns boolean value of Feature Flag
   static Future<bool?> getFeatureFlag(String key, bool defaultValue) async {
-    return await _channel.invokeMethod(
+    return await _dartToNativeMethodChannel.invokeMethod(
         'getFeatureFlag', {'key': key, 'defaultValue': defaultValue});
   }
 
   ///Product Config
   ///Sets Default Values for Product Config using the passed Map
   static Future<void> setDefaultsMap(Map<String, dynamic> defaults) async {
-    return await _channel
+    return await _dartToNativeMethodChannel
         .invokeMethod('setDefaultsMap', {'defaults': defaults});
   }
 
   ///Fetches the Product Configs from CleverTap
   static Future<void> fetch() async {
-    return await _channel.invokeMethod('fetch', {});
+    return await _dartToNativeMethodChannel.invokeMethod('fetch', {});
   }
 
   ///Fetches Product configs, adhering to the specified minimum fetch interval in seconds.
   static Future<void> fetchWithMinimumIntervalInSeconds(int interval) async {
-    return await _channel.invokeMethod(
+    return await _dartToNativeMethodChannel.invokeMethod(
         'fetchWithMinimumFetchIntervalInSeconds', {'interval': interval});
   }
 
   ///Activates the most recently fetched Product configs
   static Future<void> activate() async {
-    return await _channel.invokeMethod('activate', {});
+    return await _dartToNativeMethodChannel.invokeMethod('activate', {});
   }
 
   ///Fetches and then activates the fetched Product configs.
   static Future<void> fetchAndActivate() async {
-    return await _channel.invokeMethod('fetchAndActivate', {});
+    return await _dartToNativeMethodChannel.invokeMethod('fetchAndActivate', {});
   }
 
   ///Sets the minimum interval between successive fetch calls.
   static Future<void> setMinimumFetchIntervalInSeconds(int interval) async {
-    return await _channel.invokeMethod(
+    return await _dartToNativeMethodChannel.invokeMethod(
         'setMinimumFetchIntervalInSeconds', {'interval': interval});
   }
 
   ///Returns the last fetched timestamp in millis.
   static Future<int?> getLastFetchTimeStampInMillis() async {
-    return await _channel.invokeMethod('getLastFetchTimeStampInMillis', {});
+    return await _dartToNativeMethodChannel.invokeMethod('getLastFetchTimeStampInMillis', {});
   }
 
   ///Returns the parameter value for the given key as a String.
   static Future<String?> getProductConfigString(String key) async {
-    return await _channel.invokeMethod('getString', {'key': key});
+    return await _dartToNativeMethodChannel.invokeMethod('getString', {'key': key});
   }
 
   ///Returns the parameter value for the given key as a boolean.
   static Future<bool?> getProductConfigBoolean(String key) async {
-    return await _channel.invokeMethod('getBoolean', {'key': key});
+    return await _dartToNativeMethodChannel.invokeMethod('getBoolean', {'key': key});
   }
 
   ///Returns the parameter value for the given key as a long (int for Dart).
   static Future<int?> getProductConfigLong(String key) async {
-    return await _channel.invokeMethod('getLong', {'key': key});
+    return await _dartToNativeMethodChannel.invokeMethod('getLong', {'key': key});
   }
 
   ///Returns the parameter value for the given key as a double.
   static Future<double?> getProductConfigDouble(String key) async {
-    return await _channel.invokeMethod('getDouble', {'key': key});
+    return await _dartToNativeMethodChannel.invokeMethod('getDouble', {'key': key});
   }
 
   ///Deletes all activated, fetched and defaults configs as well as all Product Config settings.
   static Future<void> resetProductConfig() async {
-    return await _channel.invokeMethod('reset', {});
+    return await _dartToNativeMethodChannel.invokeMethod('reset', {});
   }
 
   static String getCleverTapDate(DateTime dateTime) {
@@ -831,21 +832,21 @@ class CleverTapPlugin {
   // Push Primer
   ///Creates a push primer asking user to enable push notification.
   static Future<void> promptPushPrimer(Map<String, dynamic> pushPrimerJSON) async {
-    return await _channel.invokeMethod('promptPushPrimer', pushPrimerJSON);
+    return await _dartToNativeMethodChannel.invokeMethod('promptPushPrimer', pushPrimerJSON);
   }
 
   ///Directly calls OS hard dialog for requesting push permission.
   static Future<void> promptForPushNotification(bool fallbackToSettings) async {
-    return await _channel.invokeMethod('promptForPushNotification', fallbackToSettings);
+    return await _dartToNativeMethodChannel.invokeMethod('promptForPushNotification', fallbackToSettings);
   }
 
   ///Returns true if push permission is enabled.
   static Future<bool?> getPushNotificationPermissionStatus() async {
-    return await _channel.invokeMethod('getPushNotificationPermissionStatus', {});
+    return await _dartToNativeMethodChannel.invokeMethod('getPushNotificationPermissionStatus', {});
   }
 
   ///Only for Android - Unregisters PushPermissionNotificationResponseListener
   static Future<void> unregisterPushPermissionNotificationResponseListener() async {
-    return await _channel.invokeMethod('unregisterPushPermissionNotificationResponseListener', {});
+    return await _dartToNativeMethodChannel.invokeMethod('unregisterPushPermissionNotificationResponseListener', {});
   }
 }
