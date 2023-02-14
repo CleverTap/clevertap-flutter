@@ -7,8 +7,11 @@ import com.clevertap.android.sdk.CTInboxStyleConfig;
 import com.clevertap.android.sdk.UTMDetail;
 import com.clevertap.android.sdk.displayunits.model.CleverTapDisplayUnit;
 import com.clevertap.android.sdk.events.EventDetail;
+import com.clevertap.android.sdk.inapp.CTLocalInApp;
 import com.clevertap.android.sdk.inbox.CTInboxMessage;
 
+
+import java.util.List;
 import java.util.Objects;
 
 import org.json.JSONArray;
@@ -22,6 +25,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 public class Utils {
@@ -66,7 +70,7 @@ public class Utils {
         ArrayList<Map<String, Object>> displayUnitList = new ArrayList<>();
         if (units != null) {
             for (CleverTapDisplayUnit unit : units) {
-                displayUnitList.add(Utils.jsonObjectToMap(unit.getJsonObject()));
+                displayUnitList.add(Utils.jsonToMap(unit.getJsonObject()));
             }
         }
         return displayUnitList;
@@ -126,6 +130,48 @@ public class Utils {
         }
         return stringObjectMap;
     }
+
+    /**
+     * Converts the entire Json(includes nested objects/array) into a Dart compatible Map type.
+     * @param json - target json
+     * @return - the converted Dart compatible Map type
+     */
+    public static Map<String, Object> jsonToMap(JSONObject json) {
+        Map<String, Object> map = new HashMap<>();
+        Iterator<String> keys = json.keys();
+        while (keys.hasNext()) {
+            String key = keys.next();
+            Object value;
+            try {
+                value = json.get(key);
+                if (value instanceof JSONArray) {
+                    value = jsonArrayToList((JSONArray) value);
+                } else if (value instanceof JSONObject) {
+                    value = jsonToMap((JSONObject) value);
+                }
+                map.put(key, value);
+            } catch (JSONException | NullPointerException e) {
+                Log.e("CleverTapError", "Map to JSON error", e);
+                return map;
+            }
+        }
+        return map;
+    }
+
+    private static List<Object> jsonArrayToList(JSONArray array) throws JSONException {
+        List<Object> list = new ArrayList<>();
+        for (int i = 0; i < array.length(); i++) {
+            Object value = array.get(i);
+            if (value instanceof JSONArray) {
+                value = jsonArrayToList((JSONArray) value);
+            } else if (value instanceof JSONObject) {
+                value = jsonToMap((JSONObject) value);
+            }
+            list.add(value);
+        }
+        return list;
+    }
+
 
     @SuppressWarnings("rawtypes")
     static Bundle jsonToBundle(JSONObject jsonObject) throws JSONException {
@@ -212,6 +258,154 @@ public class Utils {
             return styleConfig;
         }
     }
+
+    static JSONObject localInAppFromMap(Map<String, Object> objectMap) {
+        if (objectMap == null) {
+            Log.e("CleverTapError", "LocalInApp map is null or empty");
+            return null;
+        }
+        CTLocalInApp.InAppType inAppType = null;
+        String titleText = null, messageText = null, positiveBtnText = null,
+            negativeBtnText = null, backgroundColor = null, btnBorderColor = null,
+            titleTextColor = null, messageTextColor = null,
+            btnTextColor = null, imageUrl = null, btnBackgroundColor = null, btnBorderRadius = null;
+        boolean fallbackToSettings = false, followDeviceOrientation = false;
+
+        for (Map.Entry<String, Object> entry : objectMap.entrySet()) {
+            try {
+                String configKey = entry.getKey();
+                if ("inAppType".equals(configKey)) {
+                    inAppType = inAppTypeFromString((String) entry.getValue());
+                }
+                if ("titleText".equals(configKey)) {
+                    titleText = (String) entry.getValue();
+                }
+                if ("messageText".equals(configKey)) {
+                    messageText = (String) entry.getValue();
+                }
+                if ("followDeviceOrientation".equals(configKey)) {
+                    followDeviceOrientation = (Boolean) entry.getValue();
+                }
+                if ("positiveBtnText".equals(configKey)) {
+                    positiveBtnText = (String) entry.getValue();
+                }
+                if ("negativeBtnText".equals(configKey)) {
+                    negativeBtnText = (String) entry.getValue();
+                }
+                if ("fallbackToSettings".equals(configKey)) {
+                    fallbackToSettings = (Boolean) entry.getValue();
+                }
+                if ("backgroundColor".equals(configKey)) {
+                    backgroundColor = (String) entry.getValue();
+                }
+                if ("btnBorderColor".equals(configKey)) {
+                    btnBorderColor = (String) entry.getValue();
+                }
+                if ("titleTextColor".equals(configKey)) {
+                    titleTextColor = (String) entry.getValue();
+                }
+                if ("messageTextColor".equals(configKey)) {
+                    messageTextColor = (String) entry.getValue();
+                }
+                if ("btnTextColor".equals(configKey)) {
+                    btnTextColor = (String) entry.getValue();
+                }
+                if ("imageUrl".equals(configKey)) {
+                    imageUrl = (String) entry.getValue();
+                }
+                if ("btnBackgroundColor".equals(configKey)) {
+                    btnBackgroundColor = (String) entry.getValue();
+                }
+                if ("btnBorderRadius".equals(configKey)) {
+                    btnBorderRadius = (String) entry.getValue();
+                }
+            } catch (Throwable t) {
+                Log.e("CleverTapError", "Invalid parameters in LocalInApp config"
+                        + t.getLocalizedMessage());
+                return null;
+            }
+        }
+
+
+        //creates the builder instance of localInApp with all the required parameters
+        CTLocalInApp.Builder.Builder6 builderWithRequiredParams = getLocalInAppBuilderWithRequiredParam(
+                inAppType, titleText, messageText, followDeviceOrientation, positiveBtnText,
+                negativeBtnText
+        );
+
+        //adds the optional parameters to the builder instance
+        if (backgroundColor != null) {
+            builderWithRequiredParams.setBackgroundColor(backgroundColor);
+        }
+        if (btnBorderColor != null) {
+            builderWithRequiredParams.setBtnBorderColor(btnBorderColor);
+        }
+        if (titleTextColor != null) {
+            builderWithRequiredParams.setTitleTextColor(titleTextColor);
+        }
+        if (messageTextColor != null) {
+            builderWithRequiredParams.setMessageTextColor(messageTextColor);
+        }
+        if (btnTextColor != null) {
+            builderWithRequiredParams.setBtnTextColor(btnTextColor);
+        }
+        if (imageUrl != null) {
+            builderWithRequiredParams.setImageUrl(imageUrl);
+        }
+        if (btnBackgroundColor != null) {
+            builderWithRequiredParams.setBtnBackgroundColor(btnBackgroundColor);
+        }
+        if (btnBorderRadius != null) {
+            builderWithRequiredParams.setBtnBorderRadius(btnBorderRadius);
+        }
+        builderWithRequiredParams.setFallbackToSettings(fallbackToSettings);
+
+        JSONObject localInAppConfig = builderWithRequiredParams.build();
+        Log.i("CTLocalInAppConfig", "LocalInAppConfig for push primer prompt: "
+                + localInAppConfig);
+        return localInAppConfig;
+    }
+
+    /**
+     * Creates an instance of the {@link CTLocalInApp.Builder.Builder6} with the required parameters.
+     *
+     * @return the {@link CTLocalInApp.Builder.Builder6} instance
+     */
+    private static CTLocalInApp.Builder.Builder6
+    getLocalInAppBuilderWithRequiredParam(CTLocalInApp.InAppType inAppType,
+                                          String titleText, String messageText,
+                                          boolean followDeviceOrientation, String positiveBtnText,
+                                          String negativeBtnText) {
+
+        //throws exception if any of the required parameter is missing
+        if (inAppType == null || titleText == null || messageText == null || positiveBtnText == null
+                || negativeBtnText == null) {
+            throw new IllegalArgumentException("Mandatory parameters are missing for LocalInApp config");
+        }
+
+        CTLocalInApp.Builder builder = CTLocalInApp.builder();
+        return builder.setInAppType(inAppType)
+                .setTitleText(titleText)
+                .setMessageText(messageText)
+                .followDeviceOrientation(followDeviceOrientation)
+                .setPositiveBtnText(positiveBtnText)
+                .setNegativeBtnText(negativeBtnText);
+    }
+
+    private static CTLocalInApp.InAppType inAppTypeFromString(String inAppType) {
+        if (inAppType == null) {
+            return null;
+        }
+        switch (inAppType) {
+            case "half-interstitial":
+                return CTLocalInApp.InAppType.HALF_INTERSTITIAL;
+            case "alert":
+                return CTLocalInApp.InAppType.ALERT;
+            default:
+                return null;
+        }
+    }
+
 
     static JSONObject mapToJSONObject(Map<String, Object> map) {
         JSONObject json = new JSONObject();
