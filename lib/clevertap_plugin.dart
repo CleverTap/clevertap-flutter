@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ffi';
 
 import 'package:flutter/services.dart';
 
@@ -15,7 +16,7 @@ typedef void CleverTapInboxMessagesDidUpdateHandler();
 typedef void CleverTapInboxNotificationButtonClickedHandler(
     Map<String, dynamic>? mapList);
 typedef void CleverTapInboxNotificationMessageClickedHandler(
-    Map<String, dynamic>? map);
+    Map<String, dynamic>? message, int index, int buttonIndex);
 typedef void CleverTapDisplayUnitsLoadedHandler(List<dynamic>? displayUnitList);
 typedef void CleverTapFeatureFlagUpdatedHandler();
 typedef void CleverTapProductConfigInitializedHandler();
@@ -106,8 +107,11 @@ class CleverTapPlugin {
         break;
       case "onInboxMessageClick":
         Map<dynamic, dynamic> args = call.arguments;
+        Map<dynamic, dynamic> message = args["message"];
+        int index = args["index"];
+        int buttonIndex = args["buttonIndex"];
         cleverTapInboxNotificationMessageClickedHandler(
-            args.cast<String, dynamic>());
+            message.cast<String, dynamic>(),index,buttonIndex);
         break;
       case "onDisplayUnitsLoaded":
         List<dynamic>? args = call.arguments;
@@ -848,5 +852,10 @@ class CleverTapPlugin {
   ///Only for Android - Unregisters PushPermissionNotificationResponseListener
   static Future<void> unregisterPushPermissionNotificationResponseListener() async {
     return await _dartToNativeMethodChannel.invokeMethod('unregisterPushPermissionNotificationResponseListener', {});
+  }
+
+  ///Dismiss the app inbox controller
+  static Future<void> dismissAppInbox() async {
+    return await _dartToNativeMethodChannel.invokeMethod('dismissAppInbox', {});
   }
 }

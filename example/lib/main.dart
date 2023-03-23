@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:ffi';
 import 'dart:io' show Platform;
 
 import 'package:clevertap_plugin/clevertap_plugin.dart';
@@ -102,9 +103,14 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
-  void inboxNotificationMessageClicked(Map<String, dynamic>? map) {
+  void inboxNotificationMessageClicked(Map<String, dynamic>? message, int index, int buttonIndex) {
     this.setState(() {
-      print("inboxNotificationMessageClicked called = ${map.toString()}");
+      print("inboxNotificationMessageClicked called = ${message.toString()}");
+      print("Index = $index");
+      print("ButtonIndex = $buttonIndex");
+      if (buttonIndex < 0) {
+        CleverTapPlugin.dismissAppInbox();
+      }
     });
   }
 
