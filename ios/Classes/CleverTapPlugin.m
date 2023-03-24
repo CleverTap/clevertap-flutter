@@ -940,6 +940,11 @@ static NSDateFormatter *dateFormatter;
     [self.nativeToDartMethodChannel invokeMethod:notification.name arguments:notification.userInfo[@"accepted"]];
 }
 
+- (void)emitEventDisplayUnitsLoaded:(NSNotification *)notification {
+    // Passed CleverTapDisplayUnit Array directly.
+    [self.nativeToDartMethodChannel invokeMethod:notification.name arguments:notification.userInfo[@"adUnits"]];
+}
+
 - (void)addObservers {
     
     [[NSNotificationCenter defaultCenter] addObserver:self
@@ -968,7 +973,7 @@ static NSDateFormatter *dateFormatter;
                                                object:nil];
     
     [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(emitEventInternal:)
+                                             selector:@selector(emitEventDisplayUnitsLoaded:)
                                                  name:kCleverTapDisplayUnitsLoaded
                                                object:nil];
     
