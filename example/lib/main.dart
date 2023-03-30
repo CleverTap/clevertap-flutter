@@ -87,10 +87,55 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
-  void inboxNotificationMessageClicked(Map<String, dynamic>? map) {
+  void inboxNotificationMessageClicked(
+      Map<String, dynamic>? data, int itemIndex, int buttonIndex) {
     this.setState(() {
-      print("inboxNotificationMessageClicked called = ${map.toString()}");
+      print(
+          "inboxNotificationMessageClicked called = InboxItemClicked at $itemIndex position with button-index: $buttonIndex");
+
+      //The buttonIndex corresponds to the CTA button clicked (0, 1, or 2). A value of -1 indicates the app inbox body/message clicked.
+      if (buttonIndex != -1) {
+        //button is clicked
+        var message = json.decode(data?["msg"]);
+        if (message != null) {
+          List? messageContentList = message["content"];
+          if (messageContentList != null && messageContentList.length > 0) {
+            var content = messageContentList[0];
+            var buttonObject = content["action"]["links"][buttonIndex];
+            var buttonType = buttonObject["type"];
+            switch (buttonType) {
+              case "copy":
+                //this type copies the associated text to the clipboard
+                var copiedText = buttonObject["copyText"]?["text"];
+                print("copied text to Clipboard: $copiedText");
+                //dismissAppInbox();
+                break;
+              case "url":
+                //this type fires the deeplink
+                var firedDeepLinkUrl = buttonObject["url"]?["android"]?["text"];
+                print("fired deeplink url: $firedDeepLinkUrl");
+                //dismissAppInbox();
+                break;
+              case "kv":
+                {
+                  //this type contains the custom key-value pairs
+                  var kvPair = buttonObject["kv"];
+                  print("custom key-value pair: $kvPair");
+                  //dismissAppInbox();
+                }
+            }
+          }
+        }
+      } else {
+        //Item's body is clicked
+        print("type/template of App Inbox item: ${data.toString()}");
+        //dismissAppInbox();
+      }
     });
+  }
+
+  void dismissAppInbox() {
+    CleverTapPlugin.dismissInbox();
   }
 
   void profileDidInitialize() {

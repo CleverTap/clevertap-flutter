@@ -173,8 +173,12 @@ public class CleverTapPlugin implements ActivityAware,
     }
 
     @Override
-    public void onInboxItemClicked(final CTInboxMessage message) {
-        invokeMethodOnUiThread("onInboxMessageClick", Utils.jsonObjectToMap(message.getData()));
+    public void onInboxItemClicked(CTInboxMessage message, int itemIndex, int buttonIndex) {
+        Map<String, Object> payloadMap = new HashMap<>();
+        payloadMap.put("data", Utils.jsonObjectToMap(message.getData()));
+        payloadMap.put("itemIndex", itemIndex);
+        payloadMap.put("buttonIndex", buttonIndex);
+        invokeMethodOnUiThread("onInboxMessageClick", payloadMap);
     }
 
     @Override
@@ -432,6 +436,10 @@ public class CleverTapPlugin implements ActivityAware,
             }
             case "showInbox": {
                 showInbox(call, result);
+                break;
+            }
+            case "dismissInbox": {
+                dismissInbox(result);
                 break;
             }
             case "getInboxMessageCount": {
@@ -1468,6 +1476,15 @@ public class CleverTapPlugin implements ActivityAware,
         styleConfig = Utils.jsonToStyleConfig(styleConfigJson);
         if (isCleverTapNotNull(cleverTapAPI)) {
             cleverTapAPI.showAppInbox(styleConfig);
+            result.success(null);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void dismissInbox(Result result) {
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            cleverTapAPI.dismissAppInbox();
             result.success(null);
         } else {
             result.error(TAG, ERROR_MSG, null);
