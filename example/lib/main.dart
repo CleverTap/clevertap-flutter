@@ -170,7 +170,20 @@ class _MyAppState extends State<MyApp> {
 
   void onDisplayUnitsLoaded(List<dynamic>? displayUnits) {
     this.setState(() {
-      print("Display Units = " + displayUnits.toString());
+      print("onDisplayUnitsLoaded called");
+      processDisplayUnits(displayUnits);
+    });
+  }
+
+  void processDisplayUnits(List<dynamic>? displayUnits) {
+    showToast("check console for logs");
+    print("Display Units Payload = " + displayUnits.toString());
+
+    displayUnits?.forEach((element) {
+      var customExtras = element["custom_kv"];
+      if (customExtras != null) {
+        print("Display Units CustomExtras: " +  customExtras.toString());
+      }
     });
   }
 
@@ -1840,8 +1853,7 @@ class _MyAppState extends State<MyApp> {
 
   void getAdUnits() async {
     List? displayUnits = await CleverTapPlugin.getAllDisplayUnits();
-    showToast("check console for logs");
-    print("Display Units = " + displayUnits.toString());
+    processDisplayUnits(displayUnits);
   }
 
   void fetch() {
