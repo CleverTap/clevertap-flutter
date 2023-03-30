@@ -168,8 +168,7 @@ class _MyAppState extends State<MyApp> {
   }
 
   void onDisplayUnitsLoaded(List<dynamic>? displayUnits) {
-    this.setState(() async {
-      List? displayUnits = await CleverTapPlugin.getAllDisplayUnits();
+    this.setState(() {
       print("Display Units = " + displayUnits.toString());
     });
   }

@@ -927,6 +927,11 @@ static NSDateFormatter *dateFormatter;
     [self.channel invokeMethod:notification.name arguments:notification.userInfo];
 }
 
+- (void)emitEventDisplayUnitsLoaded:(NSNotification *)notification {
+    // Passed CleverTapDisplayUnit Array directly.
+    [self.channel invokeMethod:notification.name arguments:notification.userInfo[@"adUnits"]];
+}
+
 - (void)addObservers {
     
     [[NSNotificationCenter defaultCenter] addObserver:self
@@ -955,7 +960,7 @@ static NSDateFormatter *dateFormatter;
                                                object:nil];
     
     [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(emitEventInternal:)
+                                             selector:@selector(emitEventDisplayUnitsLoaded:)
                                                  name:kCleverTapDisplayUnitsLoaded
                                                object:nil];
     
