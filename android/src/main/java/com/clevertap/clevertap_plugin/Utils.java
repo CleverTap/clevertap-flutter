@@ -67,7 +67,7 @@ public class Utils {
         ArrayList<Map<String, Object>> displayUnitList = new ArrayList<>();
         if (units != null) {
             for (CleverTapDisplayUnit unit : units) {
-                displayUnitList.add(Utils.jsonObjectToMap(unit.getJsonObject()));
+                displayUnitList.add(Utils.jsonToMapWithRecursion(unit.getJsonObject()));
             }
         }
         return displayUnitList;
