@@ -96,7 +96,7 @@ class _MyAppState extends State<MyApp> {
       //The buttonIndex corresponds to the CTA button clicked (0, 1, or 2). A value of -1 indicates the app inbox body/message clicked.
       if (buttonIndex != -1) {
         //button is clicked
-        var message = json.decode(data?["msg"]);
+        var message = data?["msg"];
         if (message != null) {
           List? messageContentList = message["content"];
           if (messageContentList != null && messageContentList.length > 0) {
