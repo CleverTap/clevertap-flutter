@@ -175,7 +175,7 @@ public class CleverTapPlugin implements ActivityAware,
     @Override
     public void onInboxItemClicked(CTInboxMessage message, int itemIndex, int buttonIndex) {
         Map<String, Object> payloadMap = new HashMap<>();
-        payloadMap.put("data", Utils.jsonObjectToMap(message.getData()));
+        payloadMap.put("data", Utils.jsonToMapWithRecursion(message.getData()));
         payloadMap.put("itemIndex", itemIndex);
         payloadMap.put("buttonIndex", buttonIndex);
         invokeMethodOnUiThread("onInboxMessageClick", payloadMap);

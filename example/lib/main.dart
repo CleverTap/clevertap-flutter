@@ -93,10 +93,11 @@ class _MyAppState extends State<MyApp> {
       print(
           "inboxNotificationMessageClicked called = InboxItemClicked at $itemIndex position with button-index: $buttonIndex");
 
+      var message = data?["msg"];
+
       //The buttonIndex corresponds to the CTA button clicked (0, 1, or 2). A value of -1 indicates the app inbox body/message clicked.
       if (buttonIndex != -1) {
         //button is clicked
-        var message = data?["msg"];
         if (message != null) {
           List? messageContentList = message["content"];
           if (messageContentList != null && messageContentList.length > 0) {
@@ -128,7 +129,7 @@ class _MyAppState extends State<MyApp> {
         }
       } else {
         //Item's body is clicked
-        print("type/template of App Inbox item: ${data.toString()}");
+        print("type/template of App Inbox item: ${message["type"]}");
         //dismissAppInbox();
       }
     });
