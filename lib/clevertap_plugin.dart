@@ -95,7 +95,7 @@ class CleverTapPlugin {
       case "onInboxMessageClick":
         Map<dynamic, dynamic> args = call.arguments;
         Map<dynamic, dynamic> message = args["data"];
-        int index = args["itemIndex"];
+        int index = args["contentPageIndex"];
         int buttonIndex = args["buttonIndex"];
         cleverTapInboxNotificationMessageClickedHandler(
             message.cast<String, dynamic>(),index,buttonIndex);
