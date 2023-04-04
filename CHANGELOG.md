@@ -1,5 +1,10 @@
 ## CHANGE LOG
 
+### Version 1.6.1 (April 4, 2023)
+* Fixed compilation errors in Xcode 14.3+ in iOS.
+* Streamlined the argument of `onDisplayUnitsLoaded` callback method in iOS to directly pass display unit array.
+* Supports [CleverTap iOS SDK v4.2.2](https://github.com/CleverTap/clevertap-ios-sdk/blob/master/CHANGELOG.md#version-422-april-03-2023)
+
 ### Version 1.6.0 (February 14, 2023)
 * Adds below new public APIs to support [CleverTap Android SDK v4.7.4](https://github.com/CleverTap/clevertap-android-sdk/blob/master/docs/CTCORECHANGELOG.md#version-474-january-27-2023) and [CleverTap iOS SDK v4.2.0](https://github.com/CleverTap/clevertap-ios-sdk/blob/master/CHANGELOG.md#version-420-december-13-2022)
     - `getPushNotificationPermissionStatus()`, `promptPushPrimer(object)`, `promptForPushNotification(boolean)`
