@@ -14,7 +14,8 @@
 
 @interface CleverTapPlugin () <CleverTapSyncDelegate, CleverTapInAppNotificationDelegate, CleverTapDisplayUnitDelegate, CleverTapInboxViewControllerDelegate, CleverTapProductConfigDelegate, CleverTapFeatureFlagsDelegate, CleverTapPushNotificationDelegate>
 
-@property (strong, nonatomic) FlutterMethodChannel *channel;
+@property (strong, nonatomic) FlutterMethodChannel *dartToNativeMethodChannel;
+@property (strong, nonatomic) FlutterMethodChannel *nativeToDartMethodChannel;
 
 @end
 
@@ -24,10 +25,10 @@ static NSDateFormatter *dateFormatter;
 
 + (void)registerWithRegistrar:(NSObject<FlutterPluginRegistrar>*)registrar {
     
-    CleverTapPlugin.sharedInstance.channel = [FlutterMethodChannel
-                                              methodChannelWithName:@"clevertap_plugin"
-                                              binaryMessenger:[registrar messenger]];
-    [registrar addMethodCallDelegate:CleverTapPlugin.sharedInstance channel:CleverTapPlugin.sharedInstance.channel];
+    CleverTapPlugin.sharedInstance.dartToNativeMethodChannel = [FlutterMethodChannel methodChannelWithName:@"clevertap_plugin/dart_to_native" binaryMessenger:[registrar messenger]];
+    [registrar addMethodCallDelegate:CleverTapPlugin.sharedInstance channel:CleverTapPlugin.sharedInstance.dartToNativeMethodChannel];
+    
+    CleverTapPlugin.sharedInstance.nativeToDartMethodChannel = [FlutterMethodChannel methodChannelWithName:@"clevertap_plugin/native_to_dart" binaryMessenger:[registrar messenger]];
 }
 
 + (instancetype)sharedInstance {
@@ -237,6 +238,8 @@ static NSDateFormatter *dateFormatter;
         result(nil);
     else if ([@"setHuaweiPushToken" isEqualToString:call.method])
         result(nil);
+    else if ([@"dismissInbox" isEqualToString:call.method])
+        [self dismissInbox];
     else
         result(FlutterMethodNotImplemented);
 }
@@ -922,7 +925,12 @@ static NSDateFormatter *dateFormatter;
 
 - (void)emitEventInternal:(NSNotification *)notification {
     
-    [self.channel invokeMethod:notification.name arguments:notification.userInfo];
+    [self.nativeToDartMethodChannel invokeMethod:notification.name arguments:notification.userInfo];
+}
+
+- (void)emitEventDisplayUnitsLoaded:(NSNotification *)notification {
+    // Passed CleverTapDisplayUnit Array directly.
+    [self.nativeToDartMethodChannel invokeMethod:notification.name arguments:notification.userInfo[@"adUnits"]];
 }
 
 - (void)addObservers {
@@ -953,7 +961,7 @@ static NSDateFormatter *dateFormatter;
                                                object:nil];
     
     [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(emitEventInternal:)
+                                             selector:@selector(emitEventDisplayUnitsLoaded:)
                                                  name:kCleverTapDisplayUnitsLoaded
                                                object:nil];
     
@@ -1060,47 +1068,17 @@ static NSDateFormatter *dateFormatter;
 }
 
 - (void)messageDidSelect:(CleverTapInboxMessage *_Nonnull)message atIndex:(int)index withButtonIndex:(int)buttonIndex {
-    BOOL dismissInbox = [self shouldDismissInboxController:message.content[index] withButtonIndex:buttonIndex];
-    // Close the inbox controller if deeplink url is present on message or button tap.
-    if (dismissInbox) {
-        [self dismissCleverTapInboxViewController];
-    }
-    
     NSMutableDictionary *body = [NSMutableDictionary new];
     if ([message json] != nil) {
-        body = [NSMutableDictionary dictionaryWithDictionary:[message json]];
+        body[@"data"] = [NSMutableDictionary dictionaryWithDictionary:[message json]];
     }
+    body[@"contentPageIndex"] = @(index);
+    body[@"buttonIndex"] = @(buttonIndex);
     [self postNotificationWithName:kCleverTapInboxMessageTapped andBody:body];
 }
 
-- (BOOL)shouldDismissInboxController:(CleverTapInboxMessageContent *)content withButtonIndex:(int)buttonIndex {
-    if (buttonIndex < 0 && content.actionHasUrl) {
-        if (content.actionUrl && content.actionUrl.length > 0) {
-            return YES;
-        }
-    }
-    if (buttonIndex > 0 && content.actionHasLinks) {
-        NSDictionary *customExtras = [content customDataForLinkAtIndex:buttonIndex];
-        if (customExtras && customExtras.count > 0) {
-            return NO;
-        }
-        NSString *linkUrl = [content urlForLinkAtIndex:buttonIndex];
-        if (linkUrl && linkUrl.length > 0) {
-            return YES;
-        }
-    }
-    return NO;
-}
-
-- (void)dismissCleverTapInboxViewController {
-    UIWindow *keyWindow = [[UIApplication sharedApplication] keyWindow];
-    UIViewController *presentedController = [[keyWindow rootViewController] presentedViewController];
-    if ([presentedController isKindOfClass:[UINavigationController class]]) {
-        UINavigationController *navigationController = (UINavigationController *)presentedController;
-        if ([[navigationController topViewController] isKindOfClass:[CleverTapInboxViewController class]]) {
-            [presentedController dismissViewControllerAnimated:YES completion:nil];
-        }
-    }
+- (void)dismissInbox {
+    [[CleverTap sharedInstance] dismissAppInbox];
 }
 
 #pragma mark CleverTapPushNotificationDelegate

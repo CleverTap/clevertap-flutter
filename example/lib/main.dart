@@ -87,10 +87,57 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
-  void inboxNotificationMessageClicked(Map<String, dynamic>? map) {
+  void inboxNotificationMessageClicked(
+      Map<String, dynamic>? data, int contentPageIndex, int buttonIndex) {
     this.setState(() {
-      print("inboxNotificationMessageClicked called = ${map.toString()}");
+      print(
+          "inboxNotificationMessageClicked called = InboxItemClicked at page-index $contentPageIndex with button-index $buttonIndex");
+
+      var inboxMessageClicked = data?["msg"];
+      if (inboxMessageClicked == null) {
+        return;
+      }
+
+      //The contentPageIndex corresponds to the page index of the content, which ranges from 0 to the total number of pages for carousel templates. For non-carousel templates, the value is always 0, as they only have one page of content.
+      var messageContentObject =
+      inboxMessageClicked["content"][contentPageIndex];
+
+      //The buttonIndex corresponds to the CTA button clicked (0, 1, or 2). A value of -1 indicates the app inbox body/message clicked.
+      if (buttonIndex != -1) {
+        //button is clicked
+        var buttonObject = messageContentObject["action"]["links"][buttonIndex];
+        var buttonType = buttonObject?["type"];
+        switch (buttonType) {
+          case "copy":
+          //this type copies the associated text to the clipboard
+            var copiedText = buttonObject["copyText"]?["text"];
+            print("copied text to Clipboard: $copiedText");
+            //dismissAppInbox();
+            break;
+          case "url":
+          //this type fires the deeplink
+            var firedDeepLinkUrl = buttonObject["url"]?["android"]?["text"];
+            print("fired deeplink url: $firedDeepLinkUrl");
+            //dismissAppInbox();
+            break;
+          case "kv":
+          //this type contains the custom key-value pairs
+            var kvPair = buttonObject["kv"];
+            print("custom key-value pair: $kvPair");
+            //dismissAppInbox();
+            break;
+        }
+      } else {
+        //Item's body is clicked
+        print(
+            "type/template of App Inbox item: ${inboxMessageClicked["type"]}");
+        //dismissAppInbox();
+      }
     });
+  }
+
+  void dismissAppInbox() {
+    CleverTapPlugin.dismissInbox();
   }
 
   void profileDidInitialize() {
@@ -123,9 +170,21 @@ class _MyAppState extends State<MyApp> {
   }
 
   void onDisplayUnitsLoaded(List<dynamic>? displayUnits) {
-    this.setState(() async {
-      List? displayUnits = await CleverTapPlugin.getAllDisplayUnits();
-      print("Display Units = " + displayUnits.toString());
+    this.setState(() {
+      print("onDisplayUnitsLoaded called");
+      processDisplayUnits(displayUnits);
+    });
+  }
+
+  void processDisplayUnits(List<dynamic>? displayUnits) {
+    showToast("check console for logs");
+    print("Display Units Payload = " + displayUnits.toString());
+
+    displayUnits?.forEach((element) {
+      var customExtras = element["custom_kv"];
+      if (customExtras != null) {
+        print("Display Units CustomExtras: " +  customExtras.toString());
+      }
     });
   }
 
@@ -1795,8 +1854,7 @@ class _MyAppState extends State<MyApp> {
 
   void getAdUnits() async {
     List? displayUnits = await CleverTapPlugin.getAllDisplayUnits();
-    showToast("check console for logs");
-    print("Display Units = " + displayUnits.toString());
+    processDisplayUnits(displayUnits);
   }
 
   void fetch() {
