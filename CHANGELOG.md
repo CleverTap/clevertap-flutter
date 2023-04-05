@@ -2,15 +2,17 @@
 
 ### Version 1.5.6 (April 5, 2023)
 #### Added
+* Adds the new public API `dismissInbox()` to dismiss the App Inbox.
 * Supports [CleverTap Android SDK v4.6.9](https://github.com/CleverTap/clevertap-android-sdk/blob/master/docs/CTCORECHANGELOG.md#version-469-march-31-2023)
 * Supports [CleverTap iOS SDK v4.2.2](https://github.com/CleverTap/clevertap-ios-sdk/blob/master/CHANGELOG.md#version-422-april-03-2023)
 
 #### Changes
 * **[Breaking change to the signature of the `CleverTapInboxNotificationMessageClickedHandler` callback]**:
   It is changed from `CleverTapInboxNotificationMessageClickedHandler(Map<String, dynamic>? data)` to `CleverTapInboxNotificationMessageClickedHandler(Map<String, dynamic>? data, int contentPageIndex, int buttonIndex)`. The `contentPageIndex` corresponds to the page index of the content, which ranges from 0 to the total number of pages for carousel templates. For non-carousel templates, the `contentPageIndex` value is always 0, as they only have one page of content. The `buttonIndex` corresponds to the the App Inbox button clicked (0, 1, or 2). A value of -1 in `buttonIndex` field indicates the entire App Inbox Item is clicked.
-
 * **[Behavioral change of the `CleverTapInboxNotificationMessageClickedHandler` callback]**:
   Previously, the callback was raised when the App Inbox Item is clicked. Now, it is also raised when the App Inbox button is clicked besides the item click.
+* Fixed compilation errors in Xcode 14.3+ in iOS.
+* Streamlined the argument of `onDisplayUnitsLoaded` callback method in iOS to directly pass display unit array.
 
 ### Version 1.5.5 (January 23, 2023)
 * Adds fix for closing App Inbox controller when deeplink is present in iOS.

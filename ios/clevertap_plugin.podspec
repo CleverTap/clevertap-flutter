@@ -3,7 +3,7 @@
 #
 Pod::Spec.new do |s|
   s.name                     = 'clevertap_plugin'
-  s.version                  = '1.5.5'
+  s.version                  = '1.5.6'
   s.summary                  = 'CleverTap Flutter plugin.'
   s.description              = 'The CleverTap iOS SDK for App Analytics and Engagement.'                   
   s.homepage                 = 'https://github.com/CleverTap/clevertap-ios-sdk'
@@ -13,7 +13,7 @@ Pod::Spec.new do |s|
   s.source_files             = 'Classes/**/*'
   s.public_header_files      = 'Classes/**/*.h'
   s.dependency               'Flutter'
-  s.dependency               'CleverTap-iOS-SDK', '4.2.1'
+  s.dependency               'CleverTap-iOS-SDK', '4.2.2'
   s.ios.deployment_target    = '9.0'
 end
 

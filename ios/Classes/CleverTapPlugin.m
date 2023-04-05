@@ -14,7 +14,8 @@
 
 @interface CleverTapPlugin () <CleverTapSyncDelegate, CleverTapInAppNotificationDelegate, CleverTapDisplayUnitDelegate, CleverTapInboxViewControllerDelegate, CleverTapProductConfigDelegate, CleverTapFeatureFlagsDelegate, CleverTapPushNotificationDelegate>
 
-@property (strong, nonatomic) FlutterMethodChannel *channel;
+@property (strong, nonatomic) FlutterMethodChannel *dartToNativeMethodChannel;
+@property (strong, nonatomic) FlutterMethodChannel *nativeToDartMethodChannel;
 
 @end
 
@@ -24,10 +25,10 @@ static NSDateFormatter *dateFormatter;
 
 + (void)registerWithRegistrar:(NSObject<FlutterPluginRegistrar>*)registrar {
     
-    CleverTapPlugin.sharedInstance.channel = [FlutterMethodChannel
-                                              methodChannelWithName:@"clevertap_plugin"
-                                              binaryMessenger:[registrar messenger]];
-    [registrar addMethodCallDelegate:CleverTapPlugin.sharedInstance channel:CleverTapPlugin.sharedInstance.channel];
+    CleverTapPlugin.sharedInstance.dartToNativeMethodChannel = [FlutterMethodChannel methodChannelWithName:@"clevertap_plugin/dart_to_native" binaryMessenger:[registrar messenger]];
+    [registrar addMethodCallDelegate:CleverTapPlugin.sharedInstance channel:CleverTapPlugin.sharedInstance.dartToNativeMethodChannel];
+    
+    CleverTapPlugin.sharedInstance.nativeToDartMethodChannel = [FlutterMethodChannel methodChannelWithName:@"clevertap_plugin/native_to_dart" binaryMessenger:[registrar messenger]];
 }
 
 + (instancetype)sharedInstance {
@@ -924,12 +925,12 @@ static NSDateFormatter *dateFormatter;
 
 - (void)emitEventInternal:(NSNotification *)notification {
     
-    [self.channel invokeMethod:notification.name arguments:notification.userInfo];
+    [self.nativeToDartMethodChannel invokeMethod:notification.name arguments:notification.userInfo];
 }
 
 - (void)emitEventDisplayUnitsLoaded:(NSNotification *)notification {
     // Passed CleverTapDisplayUnit Array directly.
-    [self.channel invokeMethod:notification.name arguments:notification.userInfo[@"adUnits"]];
+    [self.nativeToDartMethodChannel invokeMethod:notification.name arguments:notification.userInfo[@"adUnits"]];
 }
 
 - (void)addObservers {
@@ -1071,7 +1072,7 @@ static NSDateFormatter *dateFormatter;
     if ([message json] != nil) {
         body[@"data"] = [NSMutableDictionary dictionaryWithDictionary:[message json]];
     }
-    body[@"itemIndex"] = @(index);
+    body[@"contentPageIndex"] = @(index);
     body[@"buttonIndex"] = @(buttonIndex);
     [self postNotificationWithName:kCleverTapInboxMessageTapped andBody:body];
 }
