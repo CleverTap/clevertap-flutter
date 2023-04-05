@@ -5,6 +5,8 @@
 * Supports [CleverTap Android SDK v4.6.9](https://github.com/CleverTap/clevertap-android-sdk/blob/master/docs/CTCORECHANGELOG.md#version-469-march-31-2023)
 * Supports [CleverTap iOS SDK v4.2.2](https://github.com/CleverTap/clevertap-ios-sdk/blob/master/CHANGELOG.md#version-422-april-03-2023)
 * Adds the new public API `dismissInbox()` to dismiss the App Inbox.
+* **Note**: This release is being done for Android 12 targeted users.
+
 
 #### Changed
 * **[Breaking change to the signature of the `CleverTapInboxNotificationMessageClickedHandler` callback]**:
