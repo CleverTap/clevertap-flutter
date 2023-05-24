@@ -24,6 +24,8 @@
 	<string>7Z8-W9R-876Z</string>
 	<key>CleverTapToken</key>
 	<string>2c0-b1a</string>
+	<key>CleverTapRegion</key>
+	<string>sk1-staging-25</string>
 	<key>CleverTapUseIFA</key>
 	<false/>
 	<key>LSRequiresIPhoneOS</key>

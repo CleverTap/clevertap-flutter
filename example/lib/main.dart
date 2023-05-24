@@ -242,7 +242,6 @@ class _MyAppState extends State<MyApp> {
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
                       title: Text("Sync Variables"),
-                      subtitle: Text("Pushes/Records a user"),
                       onTap: syncVariables,
                     ),
                   ),
@@ -253,7 +252,6 @@ class _MyAppState extends State<MyApp> {
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
                       title: Text("Fetch Variables"),
-                      subtitle: Text("Pushes/Records a user"),
                       onTap: fetchVariables,
                     ),
                   ),
@@ -264,7 +262,6 @@ class _MyAppState extends State<MyApp> {
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
                       title: Text("Define Variables"),
-                      subtitle: Text("Pushes/Records a user"),
                       onTap: defineVariables,
                     ),
                   ),
@@ -274,8 +271,7 @@ class _MyAppState extends State<MyApp> {
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
-                      title: Text("Get All Variables"),
-                      subtitle: Text("Pushes/Records a user"),
+                      title: Text("Get Variables"),
                       onTap: getVariables,
                     ),
                   ),
@@ -285,9 +281,28 @@ class _MyAppState extends State<MyApp> {
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
-                      title: Text("Get Variable"),
-                      subtitle: Text("Pushes/Records a user"),
+                      title: Text('Get Variable Value for name \'reactnative_var_string\''),                      
                       onTap: getVariable,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text('Add \'OnVariablesChanged\' listener'),
+                      onTap: onVariablesChanged,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text('Add \'OnValueChanged\' listener for name \'flutter_var_string\''),
+                      onTap: onValueChanged,
                     ),
                   ),
                 ),
@@ -2007,7 +2022,7 @@ class _MyAppState extends State<MyApp> {
     showToast("Fetch Variables");
     this.setState(() async {
       bool? success = await CleverTapPlugin.fetchVariables();
-      print("Fetch Messages: " + success.toString());
+      print("fetchVariables result: " + success.toString());
     });
   }
 
@@ -2029,7 +2044,7 @@ class _MyAppState extends State<MyApp> {
     showToast("Get Variables");
     this.setState(() async {
       Map<Object?, Object?> variables = await CleverTapPlugin.getVariables();
-      print("Get Variables: " + variables.toString());
+      print('getVariables: ' + variables.toString());
     });
   }
 
@@ -2037,7 +2052,21 @@ class _MyAppState extends State<MyApp> {
     showToast("Get Variable");
     this.setState(() async {
       var variable = await CleverTapPlugin.getVariable('flutter_var_string');
-      print("Get Variable: " + variable.toString());
+      print('variable value for key \'flutter_var_string\': ' + variable.toString());
     });
+  }
+
+  void onVariablesChanged() {
+    showToast("onVariablesChanged");
+      CleverTapPlugin.onVariablesChanged((variables) {
+        print("onVariablesChanged: " + variables.toString());
+      });
+  }
+
+  void onValueChanged() {
+    showToast("onValueChanged");
+      CleverTapPlugin.onValueChanged('flutter_var_string', (variable) {
+        print("onValueChanged: " + variable.toString());
+      });
   }
 }

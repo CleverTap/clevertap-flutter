@@ -25,6 +25,8 @@ typedef void CleverTapPushAmpPayloadReceivedHandler(Map<String, dynamic> map);
 typedef void CleverTapPushClickedPayloadReceivedHandler(
     Map<String, dynamic> map);
 typedef void CleverTapPushPermissionResponseReceivedHandler(bool accepted);
+typedef void CleverTapOnVariablesChangedHandler(Map<String, dynamic> variables);
+typedef void CleverTapOnValueChangedHandler(Map<String, dynamic> variable);
 
 class CleverTapPlugin {
   late CleverTapInAppNotificationDismissedHandler
@@ -56,6 +58,10 @@ class CleverTapPlugin {
   late CleverTapPushClickedPayloadReceivedHandler
       cleverTapPushClickedPayloadReceivedHandler;
   late CleverTapPushPermissionResponseReceivedHandler cleverTapPushPermissionResponseReceivedHandler;
+  static List<CleverTapOnVariablesChangedHandler>
+      cleverTapOnVariablesChangedHandlers = [];
+  static List<CleverTapOnValueChangedHandler>
+      cleverTapOnValueChangedHandlers = [];    
 
   static const MethodChannel _dartToNativeMethodChannel = const MethodChannel('clevertap_plugin/dart_to_native');
   static const MethodChannel _nativeToDartMethodChannel = const MethodChannel('clevertap_plugin/native_to_dart');
@@ -138,6 +144,18 @@ class CleverTapPlugin {
       case "pushPermissionResponseReceived":
         bool accepted = call.arguments;
         cleverTapPushPermissionResponseReceivedHandler(accepted);
+        break;
+      case "onVariablesChanged":
+        Map<dynamic, dynamic> args = call.arguments;
+        cleverTapOnVariablesChangedHandlers.forEach((cleverTapOnVariablesChangedHandler) {
+          cleverTapOnVariablesChangedHandler(args.cast<String, dynamic>());
+        });
+        break;
+      case "onValueChanged":
+        Map<dynamic, dynamic> args = call.arguments;
+        cleverTapOnValueChangedHandlers.forEach((cleverTapOnValueChangedHandler) {
+          cleverTapOnValueChangedHandler(args.cast<String, dynamic>());
+        });
         break;
     }
   }
@@ -922,5 +940,15 @@ class CleverTapPlugin {
   /// * @param {string} name - name.
   static Future<dynamic> getVariable(String name) async {
     return await _dartToNativeMethodChannel.invokeMethod('getVariable', {'name': name});
+  }
+
+  static void onVariablesChanged(CleverTapOnVariablesChangedHandler handler) {
+      cleverTapOnVariablesChangedHandlers.add(handler);
+      _dartToNativeMethodChannel.invokeMethod('onVariablesChanged', {});
+  }
+
+  static void onValueChanged(String name, CleverTapOnValueChangedHandler handler) {
+      cleverTapOnValueChangedHandlers.add(handler);
+      _dartToNativeMethodChannel.invokeMethod('onValueChanged', {'name': name});
   }
 }

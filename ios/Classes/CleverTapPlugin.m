@@ -263,6 +263,10 @@ static NSDateFormatter *dateFormatter;
         [self getVariables:call withResult:result];
     else if ([@"getVariable" isEqualToString:call.method])
         [self getVariable:call withResult:result];
+    else if ([@"onVariablesChanged" isEqualToString:call.method])
+        [self onVariablesChanged:call withResult:result];
+    else if ([@"onValueChanged" isEqualToString:call.method])
+        [self onValueChanged:call withResult:result];
     else
         result(FlutterMethodNotImplemented);
 }
@@ -1067,6 +1071,16 @@ static NSDateFormatter *dateFormatter;
                                              selector:@selector(emitEventPushPermissionResponse:)
                                                  name:kCleverTapPushPermissionResponseReceived
                                                object:nil];
+    
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(emitEventInternal:)
+                                                 name:kCleverTapOnVariablesChanged
+                                               object:nil];
+    
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(emitEventInternal:)
+                                                 name:kCleverTapOnValueChanged
+                                               object:nil];
 }
 
 - (void)postNotificationWithName:(NSString *)name andBody:(NSDictionary *)body {
@@ -1343,6 +1357,24 @@ static NSDateFormatter *dateFormatter;
 - (void)getVariable:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     CTVar *var = self.allVariables[call.arguments[@"name"]];
     result(var.value);
+}
+
+- (void)onVariablesChanged:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    [[CleverTap sharedInstance]onVariablesChanged:^{
+        [self postNotificationWithName:kCleverTapOnVariablesChanged andBody:[self getVariableValues]];
+    }];
+}
+
+- (void)onValueChanged:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CTVar *var = self.allVariables[call.arguments[@"name"]];
+    if (var) {
+        [var onValueChanged:^{
+            NSDictionary *varResult = @{
+                var.name: var.value
+            };
+            [self postNotificationWithName:kCleverTapOnValueChanged andBody:varResult];
+        }];
+    }
 }
 
 @end
