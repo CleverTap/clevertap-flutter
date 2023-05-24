@@ -232,6 +232,70 @@ class _MyAppState extends State<MyApp> {
                   child: Padding(
                     padding: const EdgeInsets.all(0.0),
                     child: ListTile(
+                      title: Text("Product Experiences"),
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Sync Variables"),
+                      subtitle: Text("Pushes/Records a user"),
+                      onTap: syncVariables,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Fetch Variables"),
+                      subtitle: Text("Pushes/Records a user"),
+                      onTap: fetchVariables,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Define Variables"),
+                      subtitle: Text("Pushes/Records a user"),
+                      onTap: defineVariables,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Get All Variables"),
+                      subtitle: Text("Pushes/Records a user"),
+                      onTap: getVariables,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Get Variable"),
+                      subtitle: Text("Pushes/Records a user"),
+                      onTap: getVariable,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.lightBlueAccent,
+                  child: Padding(
+                    padding: const EdgeInsets.all(0.0),
+                    child: ListTile(
                       title: Text("User Profiles"),
                     ),
                   ),
@@ -1931,6 +1995,49 @@ class _MyAppState extends State<MyApp> {
       } else {
         print("Push Permission is already enabled.");
       }
+    });
+  }
+
+  void syncVariables() {
+    CleverTapPlugin.syncVariables();
+    showToast("Sync Variables");
+  }
+
+  void fetchVariables() {
+    showToast("Fetch Variables");
+    this.setState(() async {
+      bool? success = await CleverTapPlugin.fetchVariables();
+      print("Fetch Messages: " + success.toString());
+    });
+  }
+
+  void defineVariables() {
+    var variables = {
+              'flutter_var_string': 'flutter_var_string_value',
+              'flutter_var_map': {
+                'flutter_var_map_string': 'flutter_var_map_value'
+              },
+              'flutter_var_int': 6,
+              'flutter_var_float': 6.9,
+              'flutter_var_boolean': true
+            };
+    CleverTapPlugin.defineVariables(variables);
+    showToast("Define Variables");
+  }
+
+  void getVariables() {
+    showToast("Get Variables");
+    this.setState(() async {
+      Map<Object?, Object?> variables = await CleverTapPlugin.getVariables();
+      print("Get Variables: " + variables.toString());
+    });
+  }
+
+  void getVariable() {
+    showToast("Get Variable");
+    this.setState(() async {
+      var variable = await CleverTapPlugin.getVariable('flutter_var_string');
+      print("Get Variable: " + variable.toString());
     });
   }
 }
