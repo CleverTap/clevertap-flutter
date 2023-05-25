@@ -784,7 +784,7 @@ class CleverTapPlugin {
 
   ///Product Config
     @Deprecated(
-      "This method is deprecated since version 1.5.7 and will be removed in the future versions of this SDK.")
+      "This method is deprecated since version 1.6.0 and will be removed in the future versions of this SDK.")
 
   ///Sets Default Values for Product Config using the passed Map
   static Future<void> setDefaultsMap(Map<String, dynamic> defaults) async {
@@ -793,7 +793,7 @@ class CleverTapPlugin {
   }
 
   @Deprecated(
-      "This method is deprecated since version 1.5.7 and will be removed in the future versions of this SDK.")
+      "This method is deprecated since version 1.6.0 and will be removed in the future versions of this SDK.")
 
   ///Fetches the Product Configs from CleverTap
   static Future<void> fetch() async {
@@ -801,7 +801,7 @@ class CleverTapPlugin {
   }
 
   @Deprecated(
-      "This method is deprecated since version 1.5.7 and will be removed in the future versions of this SDK.")
+      "This method is deprecated since version 1.6.0 and will be removed in the future versions of this SDK.")
 
   ///Fetches Product configs, adhering to the specified minimum fetch interval in seconds.
   static Future<void> fetchWithMinimumIntervalInSeconds(int interval) async {
@@ -810,7 +810,7 @@ class CleverTapPlugin {
   }
 
   @Deprecated(
-      "This method is deprecated since version 1.5.7 and will be removed in the future versions of this SDK.")
+      "This method is deprecated since version 1.6.0 and will be removed in the future versions of this SDK.")
 
   ///Activates the most recently fetched Product configs
   static Future<void> activate() async {
@@ -818,7 +818,7 @@ class CleverTapPlugin {
   }
 
   @Deprecated(
-      "This method is deprecated since version 1.5.7 and will be removed in the future versions of this SDK.")
+      "This method is deprecated since version 1.6.0 and will be removed in the future versions of this SDK.")
 
   ///Fetches and then activates the fetched Product configs.
   static Future<void> fetchAndActivate() async {
@@ -826,7 +826,7 @@ class CleverTapPlugin {
   }
 
   @Deprecated(
-      "This method is deprecated since version 1.5.7 and will be removed in the future versions of this SDK.")
+      "This method is deprecated since version 1.6.0 and will be removed in the future versions of this SDK.")
 
   ///Sets the minimum interval between successive fetch calls.
   static Future<void> setMinimumFetchIntervalInSeconds(int interval) async {
@@ -835,7 +835,7 @@ class CleverTapPlugin {
   }
 
   @Deprecated(
-      "This method is deprecated since version 1.5.7 and will be removed in the future versions of this SDK.")
+      "This method is deprecated since version 1.6.0 and will be removed in the future versions of this SDK.")
 
   ///Returns the last fetched timestamp in millis.
   static Future<int?> getLastFetchTimeStampInMillis() async {
@@ -843,7 +843,7 @@ class CleverTapPlugin {
   }
 
   @Deprecated(
-      "This method is deprecated since version 1.5.7 and will be removed in the future versions of this SDK.")
+      "This method is deprecated since version 1.6.0 and will be removed in the future versions of this SDK.")
 
   ///Returns the parameter value for the given key as a String.
   static Future<String?> getProductConfigString(String key) async {
@@ -851,7 +851,7 @@ class CleverTapPlugin {
   }
 
   @Deprecated(
-      "This method is deprecated since version 1.5.7 and will be removed in the future versions of this SDK.")
+      "This method is deprecated since version 1.6.0 and will be removed in the future versions of this SDK.")
 
   ///Returns the parameter value for the given key as a boolean.
   static Future<bool?> getProductConfigBoolean(String key) async {
@@ -859,7 +859,7 @@ class CleverTapPlugin {
   }
 
   @Deprecated(
-      "This method is deprecated since version 1.5.7 and will be removed in the future versions of this SDK.")
+      "This method is deprecated since version 1.6.0 and will be removed in the future versions of this SDK.")
 
   ///Returns the parameter value for the given key as a long (int for Dart).
   static Future<int?> getProductConfigLong(String key) async {
@@ -867,7 +867,7 @@ class CleverTapPlugin {
   }
 
   @Deprecated(
-      "This method is deprecated since version 1.5.7 and will be removed in the future versions of this SDK.")
+      "This method is deprecated since version 1.6.0 and will be removed in the future versions of this SDK.")
 
   ///Returns the parameter value for the given key as a double.
   static Future<double?> getProductConfigDouble(String key) async {
@@ -875,7 +875,7 @@ class CleverTapPlugin {
   }
 
   @Deprecated(
-      "This method is deprecated since version 1.5.7 and will be removed in the future versions of this SDK.")
+      "This method is deprecated since version 1.6.0 and will be removed in the future versions of this SDK.")
 
   ///Deletes all activated, fetched and defaults configs as well as all Product Config settings.
   static Future<void> resetProductConfig() async {
