@@ -35,7 +35,7 @@ The CleverTap Flutter plugin provides several callbacks for the developer to rec
 
 - Status of fetch variables request
 - `onVariablesChanged`
-- `onceVariablesChanged`
+- `onValueChanged`
 
 ## Status of Variables Fetch Request
 
