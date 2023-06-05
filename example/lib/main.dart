@@ -81,7 +81,21 @@ class _MyAppState extends State<MyApp> {
   void inAppNotificationDismissed(Map<String, dynamic> map) {
     this.setState(() {
       print("inAppNotificationDismissed called");
+      // Uncomment to print payload.
+      // printInAppNotificationDismissedPayload(map);
     });
+  }
+
+  void printInAppNotificationDismissedPayload(Map<String, dynamic>? map) {
+    if (map != null) {
+      var extras = map['extras'];
+      var actionExtras = map['actionExtras'];
+      print("InApp -> dismissed with extras map: ${extras.toString()}");
+      print("InApp -> dismissed with actionExtras map: ${actionExtras.toString()}");
+      actionExtras.forEach((key, value) {
+        print("Value for key: ${key.toString()} is: ${value.toString()}");
+      });
+    }
   }
 
   void inAppNotificationShow(Map<String, dynamic> map) {
@@ -93,13 +107,35 @@ class _MyAppState extends State<MyApp> {
   void inAppNotificationButtonClicked(Map<String, dynamic>? map) {
     this.setState(() {
       print("inAppNotificationButtonClicked called = ${map.toString()}");
+      // Uncomment to print payload.
+      // printInAppButtonClickedPayload(map);
     });
+  }
+
+  void printInAppButtonClickedPayload(Map<String, dynamic>? map) {
+    if (map != null) {
+      print("InApp -> button clicked with map: ${map.toString()}");
+      map.forEach((key, value) {
+        print("Value for key: ${key.toString()} is: ${value.toString()}");
+      });
+    }
   }
 
   void inboxNotificationButtonClicked(Map<String, dynamic>? map) {
     this.setState(() {
       print("inboxNotificationButtonClicked called = ${map.toString()}");
+      // Uncomment to print payload.
+      // printInboxMessageButtonClickedPayload(map);
     });
+  }
+
+  void printInboxMessageButtonClickedPayload(Map<String, dynamic>? map) {
+    if (map != null) {
+      print("App Inbox -> message button tapped with customExtras key/value:");
+      map.forEach((key, value) {
+        print("Value for key: ${key.toString()} is: ${value.toString()}");
+      });
+    }
   }
 
   void inboxNotificationMessageClicked(Map<String, dynamic>? map) {
@@ -126,7 +162,6 @@ class _MyAppState extends State<MyApp> {
         var buttonType = buttonObject['type'];
         switch (buttonType) {
           case 'copy':
-            print("Inside copy");
             var copiedText = buttonObject['copyText'];
             print("App Inbox -> copied text to Clipboard: ${copiedText['text'].toString()}");
             break;
