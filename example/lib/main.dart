@@ -105,7 +105,46 @@ class _MyAppState extends State<MyApp> {
   void inboxNotificationMessageClicked(Map<String, dynamic>? map) {
     this.setState(() {
       print("inboxNotificationMessageClicked called = ${map.toString()}");
+      // Uncomment to print payload.
+      // printInboxMessageClickedPayload(map);
     });
+  }
+
+  void printInboxMessageClickedPayload(Map<String, dynamic>? map) {
+    if (map != null) {
+      var data = map['data'];
+      var contentPageIndex = map['contentPageIndex'];
+      var buttonIndex = map['buttonIndex'];
+      print("App Inbox -> InboxMessageClicked at page-index ${contentPageIndex.toString()} with button-index ${buttonIndex.toString()}");
+
+      var inboxMessageClicked = data['msg'];
+      var messageContentObject = inboxMessageClicked['content'][contentPageIndex];
+      if (buttonIndex != -1) {
+        //button is clicked
+        var links = messageContentObject['action']['links'];
+        var buttonObject = links[buttonIndex];
+        var buttonType = buttonObject['type'];
+        switch (buttonType) {
+          case 'copy':
+            print("Inside copy");
+            var copiedText = buttonObject['copyText'];
+            print("App Inbox -> copied text to Clipboard: ${copiedText['text'].toString()}");
+            break;
+          case 'url':
+            var firedDeepLinkUrl = buttonObject['url'];
+            print("App Inbox -> fired DeepLink url: ${firedDeepLinkUrl['android']['text'].toString()}");
+            break;
+          case 'kv':
+            var kvPair = buttonObject['kv'];
+            print("App Inbox -> custom key-value pair: ${kvPair.toString()}");
+            break;
+          default:
+        }
+      } else {
+        //Item's body is clicked
+        print("App Inbox -> type/template of App Inbox item: ${inboxMessageClicked['type']}");
+      }
+    }
   }
 
   void profileDidInitialize() {

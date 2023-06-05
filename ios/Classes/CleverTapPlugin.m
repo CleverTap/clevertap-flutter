@@ -1088,8 +1088,12 @@ static NSDateFormatter *dateFormatter;
     
     NSMutableDictionary *body = [NSMutableDictionary new];
     if ([message json] != nil) {
-        body = [NSMutableDictionary dictionaryWithDictionary:[message json]];
+        body[@"data"] = [NSMutableDictionary dictionaryWithDictionary:[message json]];
+    } else {
+        body[@"data"] = [NSMutableDictionary new];
     }
+    body[@"contentPageIndex"] = @(index);
+    body[@"buttonIndex"] = @(buttonIndex);
     [self postNotificationWithName:kCleverTapInboxMessageTapped andBody:body];
 }
 
