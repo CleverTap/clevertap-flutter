@@ -214,7 +214,33 @@ class _MyAppState extends State<MyApp> {
   void onDisplayUnitsLoaded(List<dynamic>? displayUnits) {
     this.setState(() {
       print("Display Units = " + displayUnits.toString());
+      // Uncomment to print payload.
+      // printDisplayUnitPayload(displayUnits);
     });
+  }
+
+  void printDisplayUnitPayload(List<dynamic>? displayUnits) {
+    if (displayUnits != null) {
+      print("Total Display unit count = ${(displayUnits.length).toString()}");
+      displayUnits.forEach((element) {
+        printDisplayUnit(element);
+      });
+    }
+  }
+
+  void printDisplayUnit(Map<dynamic, dynamic> displayUnit) {
+    var content = displayUnit['content'];
+    content.forEach((contentElement) {
+      print("Title text of display unit is ${contentElement['title']['text']}");
+      print("Message text of display unit is ${contentElement['message']['text']}");
+    });
+    var customKV = displayUnit['custom_kv'];
+    if (customKV != null) {
+      print("Display units custom key-values:");
+      customKV.forEach((key, value) {
+        print("Value for key: ${key.toString()} is: ${value.toString()}");
+      });
+    }
   }
 
   void featureFlagsUpdated() {
@@ -1491,12 +1517,38 @@ class _MyAppState extends State<MyApp> {
     List? messages = await CleverTapPlugin.getAllInboxMessages();
     showToast("See all inbox messages in console");
     print("Inbox Messages = " + messages.toString());
+    // Uncomment to print payload.
+    // printInboxMessagesArray(messages);
   }
 
   void getUnreadInboxMessages() async {
     List? messages = await CleverTapPlugin.getUnreadInboxMessages();
     showToast("See unread inbox messages in console");
     print("Unread Inbox Messages = " + messages.toString());
+    // Uncomment to print payload.
+    // printInboxMessagesArray(messages);
+  }
+
+  void printInboxMessagesArray(List? messages) {
+    if (messages != null) {
+      print("Total Inbox messages count = ${(messages.length).toString()}");
+      messages.forEach((element) {
+        printInboxMessageMap(element);
+      });
+    }
+  }
+
+  void printInboxMessageMap(Map<dynamic,dynamic> inboxMessage) {
+    print("Inbox Message wzrk_id = ${inboxMessage['wzrk_id'].toString()}");
+    print("Type of Inbox = ${inboxMessage['msg']['type']}");
+    var content = inboxMessage['msg']['content'];
+    content.forEach((element) {
+      print("Inbox Message Title = ${element['title']['text']} and message = ${element['message']['text']}");
+      var links = element['action']['links'];
+      links.forEach((link) {
+        print("Inbox Message have link type = ${link['type'].toString()}");
+      });
+    });
   }
 
   void getInboxMessageForId() async {
@@ -1514,6 +1566,8 @@ class _MyAppState extends State<MyApp> {
     setState((() {
       showToast("Inbox Message for id =  ${messageForId.toString()}");
       print("Inbox Message for id =  ${messageForId.toString()}");
+      // Uncomment to print payload.
+      // printInboxMessageMap(messageForId);
     }));
   }
 
@@ -1930,12 +1984,8 @@ class _MyAppState extends State<MyApp> {
     showToast("check console for logs");
     print("Display Units Payload = " + displayUnits.toString());
 
-    displayUnits?.forEach((element) {
-      var customExtras = element["custom_kv"];
-      if (customExtras != null) {
-         print("Display Units CustomExtras: " +  customExtras.toString());
-       }
-    });
+    // Uncomment to print payload.
+    // printDisplayUnitPayload(displayUnits);
   }
 
   void fetch() {
