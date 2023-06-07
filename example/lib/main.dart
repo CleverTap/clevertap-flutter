@@ -102,10 +102,57 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
-  void inboxNotificationMessageClicked(Map<String, dynamic>? map) {
+  void inboxNotificationMessageClicked(
+      Map<String, dynamic>? data, int contentPageIndex, int buttonIndex) {
     this.setState(() {
-      print("inboxNotificationMessageClicked called = ${map.toString()}");
+      print(
+          "inboxNotificationMessageClicked called = InboxItemClicked at page-index $contentPageIndex with button-index $buttonIndex");
+
+      var inboxMessageClicked = data?["msg"];
+      if (inboxMessageClicked == null) {
+        return;
+      }
+
+      //The contentPageIndex corresponds to the page index of the content, which ranges from 0 to the total number of pages for carousel templates. For non-carousel templates, the value is always 0, as they only have one page of content.
+      var messageContentObject =
+      inboxMessageClicked["content"][contentPageIndex];
+
+      //The buttonIndex corresponds to the CTA button clicked (0, 1, or 2). A value of -1 indicates the app inbox body/message clicked.
+      if (buttonIndex != -1) {
+        //button is clicked
+        var buttonObject = messageContentObject["action"]["links"][buttonIndex];
+        var buttonType = buttonObject?["type"];
+        switch (buttonType) {
+          case "copy":
+          //this type copies the associated text to the clipboard
+            var copiedText = buttonObject["copyText"]?["text"];
+            print("copied text to Clipboard: $copiedText");
+            //dismissAppInbox();
+            break;
+          case "url":
+          //this type fires the deeplink
+            var firedDeepLinkUrl = buttonObject["url"]?["android"]?["text"];
+            print("fired deeplink url: $firedDeepLinkUrl");
+            //dismissAppInbox();
+            break;
+          case "kv":
+          //this type contains the custom key-value pairs
+            var kvPair = buttonObject["kv"];
+            print("custom key-value pair: $kvPair");
+            //dismissAppInbox();
+            break;
+        }
+      } else {
+        //Item's body is clicked
+        print(
+            "type/template of App Inbox item: ${inboxMessageClicked["type"]}");
+        //dismissAppInbox();
+      }
     });
+  }
+
+  void dismissAppInbox() {
+    CleverTapPlugin.dismissInbox();
   }
 
   void profileDidInitialize() {
@@ -598,9 +645,31 @@ class _MyAppState extends State<MyApp> {
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
+                      title: Text("Delete Inbox Messages for list of IDs"),
+                      subtitle: Text("Deletes inbox messages for list of IDs"),
+                      onTap: deleteInboxMessageForIds,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
                       title: Text("Mark Read Inbox Message for given ID"),
                       subtitle: Text("Mark read inbox message for given ID"),
                       onTap: markReadInboxMessageForId,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Mark Read Inbox Messagess for list of IDs"),
+                      subtitle: Text("Mark read inbox messages for list of IDs"),
+                      onTap: markReadInboxMessageForIds,
                     ),
                   ),
                 ),
@@ -1542,25 +1611,22 @@ class _MyAppState extends State<MyApp> {
   }
 
   void markReadInboxMessageForId() async {
-    var messageList = await CleverTapPlugin.getUnreadInboxMessages();
+    var messageId = await getFirstUnreadInboxMessageId();
 
-    if (messageList == null || messageList.length == 0) return;
-    Map<dynamic, dynamic> itemFirst = messageList[0];
-
-    if (Platform.isAndroid) {
-      await CleverTapPlugin.markReadInboxMessageForId(itemFirst["id"]);
+    if (messageId == null) {
       setState((() {
-        showToast("Marked Inbox Message as read with id =  ${itemFirst["id"]}");
-        print("Marked Inbox Message as read with id =  ${itemFirst["id"]}");
+        showToast("Inbox Message id is null");
+        print("Inbox Message id is null");
       }));
-    } else if (Platform.isIOS) {
-      await CleverTapPlugin.markReadInboxMessageForId(itemFirst["_id"]);
-      setState((() {
-        showToast(
-            "Marked Inbox Message as read with id =  ${itemFirst["_id"]}");
-        print("Marked Inbox Message as read with id =  ${itemFirst["_id"]}");
-      }));
+      return;
     }
+
+    await CleverTapPlugin.markReadInboxMessageForId(messageId);
+
+    setState((() {
+      showToast("Marked Inbox Message as read with id =  $messageId");
+      print("Marked Inbox Message as read with id =  $messageId");
+    }));
   }
 
   void pushInboxNotificationClickedEventForId() async {
@@ -1618,6 +1684,22 @@ class _MyAppState extends State<MyApp> {
     }
     return "";
   }
+
+  Future<String>? getFirstUnreadInboxMessageId() async {
+    var messageList = await CleverTapPlugin.getUnreadInboxMessages();
+    print("inside getFirstUnreadInboxMessageId");
+
+    Map<dynamic, dynamic> itemFirst = messageList?[0];
+    print(itemFirst.toString());
+
+    if (Platform.isAndroid) {
+      return itemFirst["id"];
+    } else if (Platform.isIOS) {
+      return itemFirst["_id"];
+    }
+    return "";
+  }
+
 
   void setOptOut() {
     if (optOut) {
@@ -2068,5 +2150,43 @@ class _MyAppState extends State<MyApp> {
       CleverTapPlugin.onValueChanged('flutter_var_string', (variable) {
         print("onValueChanged: " + variable.toString());
       });
+  }
+
+  void deleteInboxMessageForIds() async {
+    var messageId = await getFirstInboxMessageId();
+
+    if (messageId == null) {
+      setState((() {
+        showToast("Inbox Message id is null");
+        print("Inbox Message id is null");
+      }));
+      return;
+    }
+
+    await CleverTapPlugin.deleteInboxMessageForIds([messageId]);
+
+    setState((() {
+      showToast("Deleted Inbox Messages with ids =  $messageId");
+      print("Deleted Inbox Messages with ids =  $messageId");
+    }));
+  }
+
+  void markReadInboxMessageForIds() async{
+    var messageId = await getFirstUnreadInboxMessageId();
+
+    if (messageId == null) {
+      setState((() {
+        showToast("Inbox Message id is null");
+        print("Inbox Message id is null");
+      }));
+      return;
+    }
+
+    await CleverTapPlugin.markReadInboxMessageForIds([messageId]);
+
+    setState((() {
+      showToast("Marked Inbox Messages as read with ids =  ${[messageId]}");
+      print("Marked Inbox Messages as read with ids =  ${[messageId]}");
+    }));
   }
 }

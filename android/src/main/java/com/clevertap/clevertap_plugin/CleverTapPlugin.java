@@ -512,8 +512,18 @@ public class CleverTapPlugin implements ActivityAware,
                 break;
             }
 
+            case "deleteInboxMessagesForIds": {
+                deleteInboxMessagesForIds(call, result);
+                break;
+            }
+
             case "markReadInboxMessageForId": {
                 markReadInboxMessageForId(call, result);
+                break;
+            }
+
+            case "markReadInboxMessagesForIds": {
+                markReadInboxMessagesForIds(call, result);
                 break;
             }
 
@@ -998,6 +1008,40 @@ public class CleverTapPlugin implements ActivityAware,
         }
     }
 
+    public void deleteInboxMessagesForIds(MethodCall call, Result result) {
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            ArrayList<String> messageIds = call.argument("messageIds");
+            cleverTapAPI.deleteInboxMessagesForIDs(messageIds);
+            result.success(null);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void markReadInboxMessageForId(MethodCall call, Result result) {
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            String messageId = call.argument("messageId");
+            if (messageId == null || messageId.isEmpty()) {
+                result.error(TAG, ERROR_MSG_ID, null);
+                return;
+            }
+            cleverTapAPI.markReadInboxMessage(messageId);
+            result.success(null);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    public void markReadInboxMessagesForIds(MethodCall call, Result result) {
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            ArrayList<String> messageIds = call.argument("messageIds");
+            cleverTapAPI.markReadInboxMessagesForIDs(messageIds);
+            result.success(null);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
     private void enableDeviceNetworkInfoReporting(MethodCall call, Result result) {
         boolean value = call.argument("value");
         if (isCleverTapNotNull(cleverTapAPI)) {
@@ -1291,20 +1335,6 @@ public class CleverTapPlugin implements ActivityAware,
 
     private boolean isCleverTapNotNull(CleverTapAPI cleverTapAPI) {
         return cleverTapAPI != null;
-    }
-
-    private void markReadInboxMessageForId(MethodCall call, Result result) {
-        if (isCleverTapNotNull(cleverTapAPI)) {
-            String messageId = call.argument("messageId");
-            if (messageId == null || messageId.isEmpty()) {
-                result.error(TAG, ERROR_MSG_ID, null);
-                return;
-            }
-            cleverTapAPI.markReadInboxMessage(messageId);
-            result.success(null);
-        } else {
-            result.error(TAG, ERROR_MSG, null);
-        }
     }
 
     private void onUserLogin(MethodCall call, Result result) {

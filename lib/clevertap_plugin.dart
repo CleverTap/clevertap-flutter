@@ -730,10 +730,22 @@ class CleverTapPlugin {
         .invokeMethod('deleteInboxMessageForId', {'messageId': messageId});
   }
 
+  /// Deletes the CTInboxMessage objects for given messageIds
+  static Future<void> deleteInboxMessageForIds(List<String> messageIds) async {
+    return await _dartToNativeMethodChannel
+        .invokeMethod('deleteInboxMessagesForIds', {'messageIds': messageIds});
+  }
+
   /// Marks the given messageId of CTInboxMessage object as read
   static Future<void> markReadInboxMessageForId(String messageId) async {
     return await _dartToNativeMethodChannel
         .invokeMethod('markReadInboxMessageForId', {'messageId': messageId});
+  }
+
+  /// Marks the given messageIds of CTInboxMessage objects as read
+  static Future<void> markReadInboxMessageForIds(List<String> messageIds) async {
+    return await _dartToNativeMethodChannel
+        .invokeMethod('markReadInboxMessagesForIds', {'messageIds': messageIds});
   }
 
   /// Pushes the Notification Clicked event for App Inbox to CleverTap.
