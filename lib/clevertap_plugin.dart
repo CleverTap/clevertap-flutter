@@ -15,7 +15,7 @@ typedef void CleverTapInboxMessagesDidUpdateHandler();
 typedef void CleverTapInboxNotificationButtonClickedHandler(
     Map<String, dynamic>? mapList);
 typedef void CleverTapInboxNotificationMessageClickedHandler(
-    Map<String, dynamic>? map);
+    Map<String, dynamic>? message, int index, int buttonIndex);
 typedef void CleverTapDisplayUnitsLoadedHandler(List<dynamic>? displayUnitList);
 typedef void CleverTapFeatureFlagUpdatedHandler();
 typedef void CleverTapProductConfigInitializedHandler();
@@ -106,8 +106,11 @@ class CleverTapPlugin {
         break;
       case "onInboxMessageClick":
         Map<dynamic, dynamic> args = call.arguments;
+        Map<dynamic, dynamic> message = args["data"];
+        int contentPageIndex = args["contentPageIndex"];
+        int buttonIndex = args["buttonIndex"];
         cleverTapInboxNotificationMessageClickedHandler(
-            args.cast<String, dynamic>());
+            message.cast<String, dynamic>(), contentPageIndex, buttonIndex);
         break;
       case "onDisplayUnitsLoaded":
         List<dynamic>? args = call.arguments;
@@ -667,6 +670,11 @@ class CleverTapPlugin {
   static Future<void> showInbox(Map<String, dynamic> styleConfig) async {
     return await _dartToNativeMethodChannel
         .invokeMethod('showInbox', {'styleConfig': styleConfig});
+  }
+
+  ///Dismisses the App Inbox screen
+  static Future<void> dismissInbox() async {
+    return await _dartToNativeMethodChannel.invokeMethod('dismissInbox', {});
   }
 
   /// Returns the count of all inbox messages for the user

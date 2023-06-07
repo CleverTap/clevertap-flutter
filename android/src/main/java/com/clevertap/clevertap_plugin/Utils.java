@@ -103,32 +103,10 @@ public class Utils {
         ArrayList<Map<String, Object>> inboxMessageList = new ArrayList<>();
         if (inboxMessageArrayList != null) {
             for (CTInboxMessage message : inboxMessageArrayList) {
-                inboxMessageList.add(Utils.jsonObjectToMap(message.getData()));
+                inboxMessageList.add(Utils.jsonToMap(message.getData()));
             }
         }
         return inboxMessageList;
-    }
-
-    @SuppressWarnings("rawtypes")
-    static Map<String, Object> jsonObjectToMap(JSONObject jsonObject) {
-        Map<String, Object> stringObjectMap = new HashMap<>();
-        String key;
-        Object value;
-
-        if (jsonObject != null) {
-            Iterator iterator = jsonObject.keys();
-            while (iterator.hasNext()) {
-                key = iterator.next().toString();
-                try {
-                    value = jsonObject.get(key);
-                } catch (JSONException ex) {
-                    Log.e("CleverTapError", "JSON to Map error", ex);
-                    return stringObjectMap;
-                }
-                stringObjectMap.put(key, value.toString());
-            }
-        }
-        return stringObjectMap;
     }
 
     /**

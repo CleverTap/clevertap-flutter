@@ -138,48 +138,58 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
-  void inboxNotificationMessageClicked(Map<String, dynamic>? map) {
+  void inboxNotificationMessageClicked(
+      Map<String, dynamic>? data, int contentPageIndex, int buttonIndex) {
     this.setState(() {
-      print("inboxNotificationMessageClicked called = ${map.toString()}");
-      // Uncomment to print payload.
-      // printInboxMessageClickedPayload(map);
-    });
-  }
+      print("App Inbox -> "
+          "inboxNotificationMessageClicked called = InboxItemClicked at page-index "
+          "$contentPageIndex with button-index $buttonIndex" + data.toString());
 
-  void printInboxMessageClickedPayload(Map<String, dynamic>? map) {
-    if (map != null) {
-      var data = map['data'];
-      var contentPageIndex = map['contentPageIndex'];
-      var buttonIndex = map['buttonIndex'];
-      print("App Inbox -> InboxMessageClicked at page-index ${contentPageIndex.toString()} with button-index ${buttonIndex.toString()}");
+      var inboxMessageClicked = data?["msg"];
+      if (inboxMessageClicked == null) {
+        return;
+      }
 
-      var inboxMessageClicked = data['msg'];
-      var messageContentObject = inboxMessageClicked['content'][contentPageIndex];
+      //The contentPageIndex corresponds to the page index of the content, which ranges from 0 to the total number of pages for carousel templates. For non-carousel templates, the value is always 0, as they only have one page of content.
+      var messageContentObject =
+      inboxMessageClicked["content"][contentPageIndex];
+
+      //The buttonIndex corresponds to the CTA button clicked (0, 1, or 2). A value of -1 indicates the app inbox body/message clicked.
       if (buttonIndex != -1) {
         //button is clicked
-        var links = messageContentObject['action']['links'];
-        var buttonObject = links[buttonIndex];
-        var buttonType = buttonObject['type'];
+        var buttonObject = messageContentObject["action"]["links"][buttonIndex];
+        var buttonType = buttonObject?["type"];
         switch (buttonType) {
-          case 'copy':
-            var copiedText = buttonObject['copyText'];
-            print("App Inbox -> copied text to Clipboard: ${copiedText['text'].toString()}");
+          case "copy":
+          //this type copies the associated text to the clipboard
+            var copiedText = buttonObject["copyText"]?["text"];
+            print("App Inbox -> copied text to Clipboard: $copiedText");
+            //dismissAppInbox();
             break;
-          case 'url':
-            var firedDeepLinkUrl = buttonObject['url'];
-            print("App Inbox -> fired DeepLink url: ${firedDeepLinkUrl['android']['text'].toString()}");
+          case "url":
+          //this type fires the deeplink
+            var firedDeepLinkUrl = buttonObject["url"]?["android"]?["text"];
+            print("App Inbox -> fired deeplink url: $firedDeepLinkUrl");
+            //dismissAppInbox();
             break;
-          case 'kv':
-            var kvPair = buttonObject['kv'];
-            print("App Inbox -> custom key-value pair: ${kvPair.toString()}");
+          case "kv":
+          //this type contains the custom key-value pairs
+            var kvPair = buttonObject["kv"];
+            print("App Inbox -> custom key-value pair: $kvPair");
+            //dismissAppInbox();
             break;
-          default:
         }
       } else {
         //Item's body is clicked
-        print("App Inbox -> type/template of App Inbox item: ${inboxMessageClicked['type']}");
+        print(
+            "App Inbox -> type/template of App Inbox item: ${inboxMessageClicked["type"]}");
+        //dismissAppInbox();
       }
-    }
+    });
+  }
+
+  void dismissAppInbox() {
+    CleverTapPlugin.dismissInbox();
   }
 
   void profileDidInitialize() {
@@ -535,7 +545,7 @@ class _MyAppState extends State<MyApp> {
                     child: ListTile(
                       title: Text("Get Event History"),
                       subtitle: Text("Get history of an event"),
-                      onTap: recordEvent,
+                      onTap: getEventHistory,
                     ),
                   ),
                 ),

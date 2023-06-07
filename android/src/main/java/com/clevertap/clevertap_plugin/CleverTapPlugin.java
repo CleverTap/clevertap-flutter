@@ -109,7 +109,7 @@ public class CleverTapPlugin implements ActivityAware,
     @Override
     public void onShow(CTInAppNotification ctInAppNotification) {
         invokeMethodOnUiThread("inAppNotificationShow",
-                Utils.jsonObjectToMap(ctInAppNotification.getJsonDescription()));
+                Utils.jsonToMap(ctInAppNotification.getJsonDescription()));
     }
 
     @Override
@@ -187,8 +187,12 @@ public class CleverTapPlugin implements ActivityAware,
     }
 
     @Override
-    public void onInboxItemClicked(final CTInboxMessage message) {
-        invokeMethodOnUiThread("onInboxMessageClick", Utils.jsonObjectToMap(message.getData()));
+    public void onInboxItemClicked(CTInboxMessage message, int contentPageIndex, int buttonIndex) {
+        Map<String, Object> payloadMap = new HashMap<>();
+        payloadMap.put("data", Utils.jsonToMap(message.getData()));
+        payloadMap.put("contentPageIndex", contentPageIndex);
+        payloadMap.put("buttonIndex", buttonIndex);
+        invokeMethodOnUiThread("onInboxMessageClick", payloadMap);
     }
 
     @Override
@@ -469,6 +473,10 @@ public class CleverTapPlugin implements ActivityAware,
                 showInbox(call, result);
                 break;
             }
+            case "dismissInbox": {
+                dismissInbox(result);
+                break;
+            }
             case "getInboxMessageCount": {
                 getInboxMessageCount(result);
                 break;
@@ -628,7 +636,7 @@ public class CleverTapPlugin implements ActivityAware,
 
     @Override
     public void profileDataUpdated(JSONObject updates) {
-        invokeMethodOnUiThread("profileDataUpdated", Utils.jsonObjectToMap(updates));
+        invokeMethodOnUiThread("profileDataUpdated", Utils.jsonToMap(updates));
     }
 
     @Override
@@ -893,7 +901,7 @@ public class CleverTapPlugin implements ActivityAware,
             if (cleverTapAPI.getDisplayUnitForId(unitId) != null) {
                 JSONObject displayUnit = cleverTapAPI.getDisplayUnitForId(unitId).getJsonObject();
                 if (displayUnit != null) {
-                    result.success(Utils.jsonObjectToMap(displayUnit));
+                    result.success(Utils.jsonToMap(displayUnit));
                 }
             } else {
                 result.error(TAG, "Display Unit is NULL", null);
@@ -947,7 +955,7 @@ public class CleverTapPlugin implements ActivityAware,
             }
             CTInboxMessage inboxMessage = cleverTapAPI.getInboxMessageForId(messageId);
             if (inboxMessage != null) {
-                result.success(Utils.jsonObjectToMap(inboxMessage.getData()));
+                result.success(Utils.jsonToMap(inboxMessage.getData()));
             }
         } else {
             result.error(TAG, ERROR_MSG, null);
@@ -1569,6 +1577,15 @@ public class CleverTapPlugin implements ActivityAware,
         styleConfig = Utils.jsonToStyleConfig(styleConfigJson);
         if (isCleverTapNotNull(cleverTapAPI)) {
             cleverTapAPI.showAppInbox(styleConfig);
+            result.success(null);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void dismissInbox(Result result) {
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            cleverTapAPI.dismissAppInbox();
             result.success(null);
         } else {
             result.error(TAG, ERROR_MSG, null);
