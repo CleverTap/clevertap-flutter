@@ -1,6 +1,5 @@
 package com.clevertap.clevertap_plugin;
 
-import android.util.Log;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -9,9 +8,9 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-public class CleverTapUtils {
+public class CleverTapTypeUtils {
 
-    private static final String TAG = "CleverTapUtils";
+    private static final String TAG = "CleverTapTypeUtils";
 
     public static class MapUtil {
         public static JSONObject toJSONObject(Map<String, Object> map) throws JSONException {

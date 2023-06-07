@@ -195,7 +195,11 @@ public class CleverTapPlugin implements ActivityAware,
 
     @Override
     public void onInboxItemClicked(CTInboxMessage message, int contentPageIndex, int buttonIndex) {
-        //TODO
+        Map<String, Object> payloadMap = new HashMap<>();
+        payloadMap.put("data", Utils.jsonToMap(message.getData()));
+        payloadMap.put("contentPageIndex", contentPageIndex);
+        payloadMap.put("buttonIndex", buttonIndex);
+        invokeMethodOnUiThread("onInboxMessageClick", payloadMap);
     }
 
     @Override
@@ -476,6 +480,10 @@ public class CleverTapPlugin implements ActivityAware,
                 showInbox(call, result);
                 break;
             }
+            case "dismissInbox": {
+                dismissInbox(result);
+                break;
+            }
             case "getInboxMessageCount": {
                 getInboxMessageCount(result);
                 break;
@@ -671,15 +679,6 @@ public class CleverTapPlugin implements ActivityAware,
         }
     }
 
-    /*public void fetchVariables(Result result) {
-        if (isCleverTapNotNull(cleverTapAPI)) {
-            cleverTapAPI.fetchVariables();
-            result.success(null);
-        } else {
-            result.error(TAG, ERROR_MSG, null);
-        }
-    }*/
-
     public void defineVariables(MethodCall call, Result result) {
         if (isCleverTapNotNull(cleverTapAPI)) {
             Map<String, Object> variablesMap = call.argument("variables");
@@ -806,7 +805,7 @@ public class CleverTapPlugin implements ActivityAware,
             String key = entry.getKey();
             Var<?> variable = (Var<?>) entry.getValue();
 
-            Map<String, Object> variableWritableMap = CleverTapUtils.MapUtil.addValue(key, variable.value());
+            Map<String, Object> variableWritableMap = CleverTapTypeUtils.MapUtil.addValue(key, variable.value());
             variablesMapObject.putAll(variableWritableMap);
         }
         return variablesMapObject;
@@ -817,7 +816,7 @@ public class CleverTapPlugin implements ActivityAware,
         if (variables.containsKey(name)) {
             Var<?> variable = (Var<?>) variables.get(name);
             Object variableValue = variable.value();
-            return CleverTapUtils.MapUtil.addValue(name, variable.value());
+            return CleverTapTypeUtils.MapUtil.addValue(name, variable.value());
         }
         throw new IllegalArgumentException(
                 "Variable name = " + name + " does not exist.");
@@ -1749,7 +1748,7 @@ public class CleverTapPlugin implements ActivityAware,
         this.dartToNativeMethodChannel = getMethodChannel("clevertap_plugin/dart_to_native", messenger, registrar);
         if (nativeToDartMethodChannel == null) {
             // set nativeToDartMethodChannel channel once and it has to be static field
-            // and per https://github.com/firebase/flutterfire/issues/9689 because multiple
+            // as per https://github.com/firebase/flutterfire/issues/9689 because multiple
             // instances of the CleverTap plugin can be created in case onBackgroundMessage handler
             // of FCM plugin.
             nativeToDartMethodChannel = getMethodChannel("clevertap_plugin/native_to_dart", messenger, registrar);
@@ -1781,6 +1780,15 @@ public class CleverTapPlugin implements ActivityAware,
         styleConfig = Utils.jsonToStyleConfig(styleConfigJson);
         if (isCleverTapNotNull(cleverTapAPI)) {
             cleverTapAPI.showAppInbox(styleConfig);
+            result.success(null);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    private void dismissInbox(Result result) {
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            cleverTapAPI.dismissAppInbox();
             result.success(null);
         } else {
             result.error(TAG, ERROR_MSG, null);
