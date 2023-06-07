@@ -647,7 +647,7 @@ class _MyAppState extends State<MyApp> {
                     child: ListTile(
                       title: Text("Delete Inbox Messages for list of IDs"),
                       subtitle: Text("Deletes inbox messages for list of IDs"),
-                      onTap: deleteInboxMessageForIds,
+                      onTap: deleteInboxMessagesForIds,
                     ),
                   ),
                 ),
@@ -669,7 +669,7 @@ class _MyAppState extends State<MyApp> {
                     child: ListTile(
                       title: Text("Mark Read Inbox Messagess for list of IDs"),
                       subtitle: Text("Mark read inbox messages for list of IDs"),
-                      onTap: markReadInboxMessageForIds,
+                      onTap: markReadInboxMessagesForIds,
                     ),
                   ),
                 ),
@@ -1610,6 +1610,25 @@ class _MyAppState extends State<MyApp> {
     }));
   }
 
+  void deleteInboxMessagesForIds() async {
+    var messageId = await getFirstInboxMessageId();
+
+    if (messageId == null) {
+      setState((() {
+        showToast("Inbox Message id is null");
+        print("Inbox Message id is null");
+      }));
+      return;
+    }
+
+    await CleverTapPlugin.deleteInboxMessagesForIds([messageId]);
+
+    setState((() {
+      showToast("Deleted Inbox Messages with ids =  $messageId");
+      print("Deleted Inbox Messages with ids =  $messageId");
+    }));
+  }
+
   void markReadInboxMessageForId() async {
     var messageId = await getFirstUnreadInboxMessageId();
 
@@ -1626,6 +1645,25 @@ class _MyAppState extends State<MyApp> {
     setState((() {
       showToast("Marked Inbox Message as read with id =  $messageId");
       print("Marked Inbox Message as read with id =  $messageId");
+    }));
+  }
+
+  void markReadInboxMessagesForIds() async{
+    var messageId = await getFirstUnreadInboxMessageId();
+
+    if (messageId == null) {
+      setState((() {
+        showToast("Inbox Message id is null");
+        print("Inbox Message id is null");
+      }));
+      return;
+    }
+
+    await CleverTapPlugin.markReadInboxMessagesForIds([messageId]);
+
+    setState((() {
+      showToast("Marked Inbox Messages as read with ids =  ${[messageId]}");
+      print("Marked Inbox Messages as read with ids =  ${[messageId]}");
     }));
   }
 
@@ -2150,43 +2188,5 @@ class _MyAppState extends State<MyApp> {
       CleverTapPlugin.onValueChanged('flutter_var_string', (variable) {
         print("onValueChanged: " + variable.toString());
       });
-  }
-
-  void deleteInboxMessageForIds() async {
-    var messageId = await getFirstInboxMessageId();
-
-    if (messageId == null) {
-      setState((() {
-        showToast("Inbox Message id is null");
-        print("Inbox Message id is null");
-      }));
-      return;
-    }
-
-    await CleverTapPlugin.deleteInboxMessageForIds([messageId]);
-
-    setState((() {
-      showToast("Deleted Inbox Messages with ids =  $messageId");
-      print("Deleted Inbox Messages with ids =  $messageId");
-    }));
-  }
-
-  void markReadInboxMessageForIds() async{
-    var messageId = await getFirstUnreadInboxMessageId();
-
-    if (messageId == null) {
-      setState((() {
-        showToast("Inbox Message id is null");
-        print("Inbox Message id is null");
-      }));
-      return;
-    }
-
-    await CleverTapPlugin.markReadInboxMessageForIds([messageId]);
-
-    setState((() {
-      showToast("Marked Inbox Messages as read with ids =  ${[messageId]}");
-      print("Marked Inbox Messages as read with ids =  ${[messageId]}");
-    }));
   }
 }

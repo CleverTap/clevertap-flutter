@@ -731,7 +731,7 @@ class CleverTapPlugin {
   }
 
   /// Deletes the CTInboxMessage objects for given messageIds
-  static Future<void> deleteInboxMessageForIds(List<String> messageIds) async {
+  static Future<void> deleteInboxMessagesForIds(List<String> messageIds) async {
     return await _dartToNativeMethodChannel
         .invokeMethod('deleteInboxMessagesForIds', {'messageIds': messageIds});
   }
@@ -743,7 +743,7 @@ class CleverTapPlugin {
   }
 
   /// Marks the given messageIds of CTInboxMessage objects as read
-  static Future<void> markReadInboxMessageForIds(List<String> messageIds) async {
+  static Future<void> markReadInboxMessagesForIds(List<String> messageIds) async {
     return await _dartToNativeMethodChannel
         .invokeMethod('markReadInboxMessagesForIds', {'messageIds': messageIds});
   }
