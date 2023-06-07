@@ -181,6 +181,12 @@ static NSDateFormatter *dateFormatter;
         [self deleteInboxMessageForId:call withResult:result];
     else if ([@"markReadInboxMessageForId" isEqualToString:call.method])
         [self markReadInboxMessageForId:call withResult:result];
+    else if ([@"markReadInboxMessagesForIds" isEqualToString:call.method])
+        [self markReadInboxMessagesForIds:call withResult:result];
+    else if ([@"deleteInboxMessagesForIds" isEqualToString:call.method])
+        [self deleteInboxMessagesForIds:call withResult:result];
+    else if ([@"dismissInbox" isEqualToString:call.method])
+        [self dismissInbox:call withResult:result];
     else if ([@"pushInboxNotificationClickedEventForId" isEqualToString:call.method])
         [self pushInboxNotificationClickedEventForId:call withResult:result];
     else if ([@"pushInboxNotificationViewedEventForId" isEqualToString:call.method])
@@ -576,6 +582,16 @@ static NSDateFormatter *dateFormatter;
     result(nil);
 }
 
+- (void)markReadInboxMessagesForIds:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    [[CleverTap sharedInstance]markReadInboxMessagesForIDs:call.arguments[@"messageIds"]];
+    result(nil);
+}
+
+- (void)deleteInboxMessagesForIds:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    [[CleverTap sharedInstance]deleteInboxMessagesForIDs:call.arguments[@"messageIds"]];
+    result(nil);
+}
+
 - (void)deleteInboxMessageForId:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     
     [[CleverTap sharedInstance] deleteInboxMessageForID:call.arguments[@"messageId"]];
@@ -640,6 +656,10 @@ static NSDateFormatter *dateFormatter;
         UIViewController *mainViewController = keyWindow.rootViewController;
         [mainViewController presentViewController:navigationController animated:YES completion:nil];
     }
+}
+
+- (void)dismissInbox:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    [[CleverTap sharedInstance]dismissAppInbox];
 }
 
 - (CleverTapInboxStyleConfig*)_dictToInboxStyleConfig: (NSDictionary *)dict {
