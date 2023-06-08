@@ -37,8 +37,9 @@
 - ***[Android Platform] Behavioral change of CleverTap.CleverTapInboxMessageTapped listener:*** Previously, the callback was raised when the App Inbox item is clicked. Now, it is also raised when the App Inbox button is clicked. It matches the behavior in iOS platform.
 
 **Bug Fixes**
-- Fixes a bug where App Inbox was not respecting the App Inbox background color when no tabs are provided.
-- Fixes the non-EU retry mechanism bug.
+* Fixes a bug where App Inbox was not respecting the App Inbox background color when no tabs are provided.
+* Fixes the non-EU retry mechanism bug.
+* Fixes the data handling exception that is thrown by the `processPushNotification(dynamic data)` API.
 
 ### Version 1.6.1 (April 4, 2023)
 * Fixed compilation errors in Xcode 14.3+ in iOS.
