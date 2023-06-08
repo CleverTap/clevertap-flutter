@@ -2,21 +2,43 @@
 
 ### Version 1.7.0 *(8th June 2023)*
 -------------------------------------------
-- Adds support for Remote Config Variables. Please refer to the [Remote Config Variables doc](/docs/Variables.md) to read more on how to integrate this to your app.
-- The following methods related to Product Config and Feature Flags have been marked as deprecated in this release. These methods will be removed in the future with prior notice
-    - Feature Flags
-        - `getFeatureFlag`
-    - Product Config
-        - `setDefaultsMap`
-        - `fetch`
-        - `activate`
-        - `fetchAndActivate`
-        - `setMinimumFetchIntervalInSeconds`
-        - `resetProductConfig`
-        - `getProductConfigString`
-        - `getProductConfigBoolean`
-        - `getNumber`
-        - `getLastFetchTimeStampInMillis`
+**What's new**
+* Adds support for **Remote Config Variables**. Please refer to the [Remote Config Variables doc](https://github.com/CleverTap/clevertap-flutter/blob/master/doc/Variables.md) to read more on how to integrate this to your app.
+* Adds new API `dismissInbox()` to dismiss the App Inbox screen.
+* Adds new APIs, `markReadInboxMessagesForIDs(List<String>)` and `deleteInboxMessagesForIDs(List<String>)` to mark read and delete an array of Inbox Messages respectively.
+* Supports [CleverTap Android SDK v5.0.0](https://github.com/CleverTap/clevertap-android-sdk/blob/master/docs/CTCORECHANGELOG.md#version-500-may-5-2023)
+* Supports [CleverTap iOS SDK v5.0.1](https://github.com/CleverTap/clevertap-ios-sdk/blob/master/CHANGELOG.md#version-501-may-17-2023)
+
+**API Changes**
+
+***Deprecated:*** The following methods and classes related to Product Config and Feature Flags have been marked as deprecated in this release, instead use new Remote Config Variables feature. These methods and classes will be removed in the future versions with prior notice.
+
+* Product config
+    * `setDefaultsMap`
+    * `fetch`
+    * `activate`
+    * `fetchAndActivate`
+    * `setMinimumFetchIntervalInSeconds`
+    * `resetProductConfig`
+    * `getProductConfigString`
+    * `getProductConfigBoolean`
+    * `getNumber`
+    * `getLastFetchTimeStampInMillis`
+
+* Feature flags
+    * `getFeatureFlag`
+
+**Breaking Change**
+* Streamlines the payload for various callbacks across Android and iOS platform. Refer [doc](https://github.com/CleverTap/clevertap-flutter/blob/master/doc/callbackPayloadFormat.md) for detailed changes.
+* ***[Android and iOS platforms] Signature change of the `CleverTapInboxNotificationMessageClickedHandler` callback]***:
+  It is changed from `CleverTapInboxNotificationMessageClickedHandler(Map<String, dynamic>? data)` to `CleverTapInboxNotificationMessageClickedHandler(Map<String, dynamic>? data, int contentPageIndex, int buttonIndex)`. The `contentPageIndex` corresponds to the page index of the content, which ranges from 0 to the total number of pages for carousel templates. For non-carousel templates, the `contentPageIndex` value is always 0, as they only have one page of content. The `buttonIndex` corresponds to the the App Inbox button clicked (0, 1, or 2). A value of -1 in `buttonIndex` field indicates the entire App Inbox Item is clicked.
+
+**Changes**
+- ***[Android Platform] Behavioral change of CleverTap.CleverTapInboxMessageTapped listener:*** Previously, the callback was raised when the App Inbox item is clicked. Now, it is also raised when the App Inbox button is clicked. It matches the behavior in iOS platform.
+
+**Bug Fixes**
+- Fixes a bug where App Inbox was not respecting the App Inbox background color when no tabs are provided.
+- Fixes the non-EU retry mechanism bug.
 
 ### Version 1.6.1 (April 4, 2023)
 * Fixed compilation errors in Xcode 14.3+ in iOS.
