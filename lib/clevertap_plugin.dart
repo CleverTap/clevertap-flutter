@@ -15,7 +15,7 @@ typedef void CleverTapInboxMessagesDidUpdateHandler();
 typedef void CleverTapInboxNotificationButtonClickedHandler(
     Map<String, dynamic>? mapList);
 typedef void CleverTapInboxNotificationMessageClickedHandler(
-    Map<String, dynamic>? message, int contentPageIndex, int buttonIndex);
+    Map<String, dynamic>? message, int index, int buttonIndex);
 typedef void CleverTapDisplayUnitsLoadedHandler(List<dynamic>? displayUnitList);
 typedef void CleverTapFeatureFlagUpdatedHandler();
 typedef void CleverTapProductConfigInitializedHandler();
@@ -61,7 +61,7 @@ class CleverTapPlugin {
   static List<CleverTapOnVariablesChangedHandler>
       cleverTapOnVariablesChangedHandlers = [];
   static List<CleverTapOnValueChangedHandler>
-      cleverTapOnValueChangedHandlers = [];    
+      cleverTapOnValueChangedHandlers = [];
 
   static const MethodChannel _dartToNativeMethodChannel = const MethodChannel('clevertap_plugin/dart_to_native');
   static const MethodChannel _nativeToDartMethodChannel = const MethodChannel('clevertap_plugin/native_to_dart');
@@ -933,7 +933,7 @@ class CleverTapPlugin {
   }
 
   // Product Experiences - Vars
-  
+
   ///Uploads variables to the server. Requires Development/Debug build/configuration.
   static Future<void> syncVariables() async {
     return await _dartToNativeMethodChannel.invokeMethod('syncVariables', {});

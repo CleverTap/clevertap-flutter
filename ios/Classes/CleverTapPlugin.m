@@ -1140,13 +1140,8 @@ static NSDateFormatter *dateFormatter;
 - (void)inAppNotificationDismissedWithExtras:(NSDictionary *)extras andActionExtras:(NSDictionary *)actionExtras {
     
     NSMutableDictionary *body = [NSMutableDictionary new];
-    if (extras != nil) {
-        body[@"extras"] = extras;
-    }
-    
-    if (actionExtras != nil) {
-        body[@"actionExtras"] = actionExtras;
-    }
+    body[@"extras"] = (extras != nil) ? extras : [NSMutableDictionary new];
+    body[@"actionExtras"] = (actionExtras != nil) ? actionExtras : [NSMutableDictionary new];
     [self postNotificationWithName:kCleverTapInAppNotificationDismissed andBody:body];
 }
 
@@ -1179,8 +1174,12 @@ static NSDateFormatter *dateFormatter;
     
     NSMutableDictionary *body = [NSMutableDictionary new];
     if ([message json] != nil) {
-        body = [NSMutableDictionary dictionaryWithDictionary:[message json]];
+        body[@"data"] = [NSMutableDictionary dictionaryWithDictionary:[message json]];
+    } else {
+        body[@"data"] = [NSMutableDictionary new];
     }
+    body[@"contentPageIndex"] = @(index);
+    body[@"buttonIndex"] = @(buttonIndex);
     [self postNotificationWithName:kCleverTapInboxMessageTapped andBody:body];
 }
 
@@ -1217,12 +1216,11 @@ static NSDateFormatter *dateFormatter;
 #pragma mark CleverTapPushNotificationDelegate
 
 - (void)pushNotificationTappedWithCustomExtras:(NSDictionary *)customExtras {
-    
-    NSMutableDictionary *body = [NSMutableDictionary new];
+    NSMutableDictionary *pushNotificationExtras = [NSMutableDictionary new];
     if (customExtras != nil) {
-        body[@"customExtras"] = customExtras;
+        pushNotificationExtras = [NSMutableDictionary dictionaryWithDictionary:customExtras];
     }
-    [self postNotificationWithName:kCleverTapPushNotificationClicked andBody:customExtras];
+    [self postNotificationWithName:kCleverTapPushNotificationClicked andBody:pushNotificationExtras];
 }
 
 #pragma mark - Push Notifications

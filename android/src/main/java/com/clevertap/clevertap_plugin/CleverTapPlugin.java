@@ -116,7 +116,7 @@ public class CleverTapPlugin implements ActivityAware,
     @Override
     public void onShow(CTInAppNotification ctInAppNotification) {
         invokeMethodOnUiThread("inAppNotificationShow",
-                Utils.jsonObjectToMap(ctInAppNotification.getJsonDescription()));
+                Utils.jsonToMap(ctInAppNotification.getJsonDescription()));
     }
 
     @Override
@@ -864,7 +864,7 @@ public class CleverTapPlugin implements ActivityAware,
 
     @Override
     public void profileDataUpdated(JSONObject updates) {
-        invokeMethodOnUiThread("profileDataUpdated", Utils.jsonObjectToMap(updates));
+        invokeMethodOnUiThread("profileDataUpdated", Utils.jsonToMap(updates));
     }
 
     @Override
@@ -1163,7 +1163,7 @@ public class CleverTapPlugin implements ActivityAware,
             if (cleverTapAPI.getDisplayUnitForId(unitId) != null) {
                 JSONObject displayUnit = cleverTapAPI.getDisplayUnitForId(unitId).getJsonObject();
                 if (displayUnit != null) {
-                    result.success(Utils.jsonObjectToMap(displayUnit));
+                    result.success(Utils.jsonToMap(displayUnit));
                 }
             } else {
                 result.error(TAG, "Display Unit is NULL", null);
@@ -1217,7 +1217,7 @@ public class CleverTapPlugin implements ActivityAware,
             }
             CTInboxMessage inboxMessage = cleverTapAPI.getInboxMessageForId(messageId);
             if (inboxMessage != null) {
-                result.success(Utils.jsonObjectToMap(inboxMessage.getData()));
+                result.success(Utils.jsonToMap(inboxMessage.getData()));
             }
         } else {
             result.error(TAG, ERROR_MSG, null);
