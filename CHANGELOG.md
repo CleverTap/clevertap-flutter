@@ -1,6 +1,6 @@
 ## CHANGE LOG
 
-### Version 1.7.0 *(7th June 2023)*
+### Version 1.7.0 *(8th June 2023)*
 -------------------------------------------
 - Adds support for Remote Config Variables. Please refer to the [Remote Config Variables doc](/docs/Variables.md) to read more on how to integrate this to your app.
 - The following methods related to Product Config and Feature Flags have been marked as deprecated in this release. These methods will be removed in the future with prior notice
