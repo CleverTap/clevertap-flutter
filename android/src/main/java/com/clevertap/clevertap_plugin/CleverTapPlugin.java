@@ -1813,6 +1813,7 @@ public class CleverTapPlugin implements ActivityAware,
             this.cleverTapAPI.setCTFeatureFlagsListener(this);
             this.cleverTapAPI.setCTProductConfigListener(this);
             this.cleverTapAPI.setCTPushAmpListener(this);
+            this.cleverTapAPI.setLibrary("Flutter");
             this.cleverTapAPI.registerPushPermissionNotificationResponseListener(this);
         }
     }

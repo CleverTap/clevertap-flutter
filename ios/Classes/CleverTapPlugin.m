@@ -974,7 +974,7 @@ static NSDateFormatter *dateFormatter;
 }
 
 - (CTVar *)createVarForName:(NSString *)name andValue:(id)value {
-    
+
     if ([value isKindOfClass:[NSString class]]) {
         return [[CleverTap sharedInstance]defineVar:name withString:value];
     }
@@ -1092,17 +1092,17 @@ static NSDateFormatter *dateFormatter;
                                              selector:@selector(emitEventInternal:)
                                                  name:kCleverTapPushNotificationClicked
                                                object:nil];
-    
+
     [[NSNotificationCenter defaultCenter] addObserver:self
                                              selector:@selector(emitEventPushPermissionResponse:)
                                                  name:kCleverTapPushPermissionResponseReceived
                                                object:nil];
-    
+
     [[NSNotificationCenter defaultCenter] addObserver:self
                                              selector:@selector(emitEventInternal:)
                                                  name:kCleverTapOnVariablesChanged
                                                object:nil];
-    
+
     [[NSNotificationCenter defaultCenter] addObserver:self
                                              selector:@selector(emitEventInternal:)
                                                  name:kCleverTapOnValueChanged
@@ -1166,12 +1166,6 @@ static NSDateFormatter *dateFormatter;
 }
 
 - (void)messageDidSelect:(CleverTapInboxMessage *_Nonnull)message atIndex:(int)index withButtonIndex:(int)buttonIndex {
-    BOOL dismissInbox = [self shouldDismissInboxController:message.content[index] withButtonIndex:buttonIndex];
-    // Close the inbox controller if deeplink url is present on message or button tap.
-    if (dismissInbox) {
-        [self dismissCleverTapInboxViewController];
-    }
-    
     NSMutableDictionary *body = [NSMutableDictionary new];
     if ([message json] != nil) {
         body[@"data"] = [NSMutableDictionary dictionaryWithDictionary:[message json]];
@@ -1181,36 +1175,6 @@ static NSDateFormatter *dateFormatter;
     body[@"contentPageIndex"] = @(index);
     body[@"buttonIndex"] = @(buttonIndex);
     [self postNotificationWithName:kCleverTapInboxMessageTapped andBody:body];
-}
-
-- (BOOL)shouldDismissInboxController:(CleverTapInboxMessageContent *)content withButtonIndex:(int)buttonIndex {
-    if (buttonIndex < 0 && content.actionHasUrl) {
-        if (content.actionUrl && content.actionUrl.length > 0) {
-            return YES;
-        }
-    }
-    if (buttonIndex > 0 && content.actionHasLinks) {
-        NSDictionary *customExtras = [content customDataForLinkAtIndex:buttonIndex];
-        if (customExtras && customExtras.count > 0) {
-            return NO;
-        }
-        NSString *linkUrl = [content urlForLinkAtIndex:buttonIndex];
-        if (linkUrl && linkUrl.length > 0) {
-            return YES;
-        }
-    }
-    return NO;
-}
-
-- (void)dismissCleverTapInboxViewController {
-    UIWindow *keyWindow = [[UIApplication sharedApplication] keyWindow];
-    UIViewController *presentedController = [[keyWindow rootViewController] presentedViewController];
-    if ([presentedController isKindOfClass:[UINavigationController class]]) {
-        UINavigationController *navigationController = (UINavigationController *)presentedController;
-        if ([[navigationController topViewController] isKindOfClass:[CleverTapInboxViewController class]]) {
-            [presentedController dismissViewControllerAnimated:YES completion:nil];
-        }
-    }
 }
 
 #pragma mark CleverTapPushNotificationDelegate
@@ -1361,13 +1325,13 @@ static NSDateFormatter *dateFormatter;
 }
 
 - (void)defineVariables:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    
+
     NSDictionary *variables = call.arguments[@"variables"];
     if (!variables) return;
-    
+
     [variables enumerateKeysAndObjectsUsingBlock:^(NSString*  _Nonnull key, id  _Nonnull value, BOOL * _Nonnull stop) {
         CTVar *var = [self createVarForName:key andValue:value];
-        
+
         if (var) {
             self.allVariables[key] = var;
         }
