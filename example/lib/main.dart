@@ -232,6 +232,85 @@ class _MyAppState extends State<MyApp> {
                   child: Padding(
                     padding: const EdgeInsets.all(0.0),
                     child: ListTile(
+                      title: Text("Product Experiences"),
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Sync Variables"),
+                      onTap: syncVariables,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Fetch Variables"),
+                      onTap: fetchVariables,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Define Variables"),
+                      onTap: defineVariables,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Get Variables"),
+                      onTap: getVariables,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text('Get Variable Value for name \'reactnative_var_string\''),                      
+                      onTap: getVariable,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text('Add \'OnVariablesChanged\' listener'),
+                      onTap: onVariablesChanged,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text('Add \'OnValueChanged\' listener for name \'flutter_var_string\''),
+                      onTap: onValueChanged,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.lightBlueAccent,
+                  child: Padding(
+                    padding: const EdgeInsets.all(0.0),
+                    child: ListTile(
                       title: Text("User Profiles"),
                     ),
                   ),
@@ -1932,5 +2011,62 @@ class _MyAppState extends State<MyApp> {
         print("Push Permission is already enabled.");
       }
     });
+  }
+
+  void syncVariables() {
+    CleverTapPlugin.syncVariables();
+    showToast("Sync Variables");
+  }
+
+  void fetchVariables() {
+    showToast("Fetch Variables");
+    this.setState(() async {
+      bool? success = await CleverTapPlugin.fetchVariables();
+      print("fetchVariables result: " + success.toString());
+    });
+  }
+
+  void defineVariables() {
+    var variables = {
+              'flutter_var_string': 'flutter_var_string_value',
+              'flutter_var_map': {
+                'flutter_var_map_string': 'flutter_var_map_value'
+              },
+              'flutter_var_int': 6,
+              'flutter_var_float': 6.9,
+              'flutter_var_boolean': true
+            };
+    CleverTapPlugin.defineVariables(variables);
+    showToast("Define Variables");
+  }
+
+  void getVariables() {
+    showToast("Get Variables");
+    this.setState(() async {
+      Map<Object?, Object?> variables = await CleverTapPlugin.getVariables();
+      print('getVariables: ' + variables.toString());
+    });
+  }
+
+  void getVariable() {
+    showToast("Get Variable");
+    this.setState(() async {
+      var variable = await CleverTapPlugin.getVariable('flutter_var_string');
+      print('variable value for key \'flutter_var_string\': ' + variable.toString());
+    });
+  }
+
+  void onVariablesChanged() {
+    showToast("onVariablesChanged");
+      CleverTapPlugin.onVariablesChanged((variables) {
+        print("onVariablesChanged: " + variables.toString());
+      });
+  }
+
+  void onValueChanged() {
+    showToast("onValueChanged");
+      CleverTapPlugin.onValueChanged('flutter_var_string', (variable) {
+        print("onValueChanged: " + variable.toString());
+      });
   }
 }
