@@ -181,6 +181,36 @@ var styleConfig = {
 CleverTapPlugin.showInbox(styleConfig);
 ```
 
+#### App Inbox Item Click Callback
+
+```Dart
+_clevertapPlugin.setCleverTapInboxNotificationMessageClickedHandler(inboxNotificationMessageClicked);
+
+void inboxNotificationMessageClicked(Map<String, dynamic>? data, int contentPageIndex, int buttonIndex) {
+    this.setState(() {
+      print("App Inbox item: ${data.toString()}");
+      print("Content Page index: $contentPageIndex");
+      print("Button index: $buttonIndex");
+    });
+}
+```
+
+#### App Inbox Button Click Callback
+```Dart
+_clevertapPlugin.setCleverTapInboxNotificationButtonClickedHandler(inboxNotificationButtonClicked);
+
+void inboxNotificationButtonClicked(Map<String, dynamic>? map) {
+  this.setState(() {
+    print("inboxNotificationButtonClicked called = ${map.toString()}");
+  });
+}
+```
+
+#### Dismiss the App Inbox
+```Dart
+CleverTapPlugin.dismissInbox();
+```
+
 #### Get Total Inbox Message Count
 
 ```Dart
@@ -311,8 +341,7 @@ CleverTapPlugin.createNotification(data);
 
 ```Dart
 void onDisplayUnitsLoaded(List<dynamic> displayUnits) {
-    this.setState(() async {
-      List displayUnits = await CleverTapPlugin.getAllDisplayUnits();
+    this.setState(() {
       print("Display Units = " + displayUnits.toString());
    });
 }

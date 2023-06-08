@@ -13,11 +13,14 @@
 #import "CleverTap+InAppNotifications.h"
 #import "CleverTap+PushPermission.h"
 #import "CTLocalInApp.h"
+#import "CleverTap+CTVar.h"
+#import "CTVar.h"
 
 @interface CleverTapPlugin () <CleverTapSyncDelegate, CleverTapInAppNotificationDelegate, CleverTapDisplayUnitDelegate, CleverTapInboxViewControllerDelegate, CleverTapProductConfigDelegate, CleverTapFeatureFlagsDelegate, CleverTapPushNotificationDelegate, CleverTapPushPermissionDelegate>
 
 @property (strong, nonatomic) FlutterMethodChannel *dartToNativeMethodChannel;
 @property (strong, nonatomic) FlutterMethodChannel *nativeToDartMethodChannel;
+@property(nonatomic, strong) NSMutableDictionary *allVariables;
 
 @end
 
@@ -52,6 +55,7 @@ static NSDateFormatter *dateFormatter;
     
     self = [super init];
     if (self) {
+        self.allVariables = [NSMutableDictionary dictionary];
         CleverTap *clevertap = [CleverTap sharedInstance];
         [clevertap setSyncDelegate:self];
         [clevertap setInAppNotificationDelegate:self];
@@ -59,7 +63,6 @@ static NSDateFormatter *dateFormatter;
         [[clevertap productConfig] setDelegate:self];
         [[clevertap featureFlags] setDelegate:self];
         [clevertap setPushNotificationDelegate:self];
-        [clevertap setLibrary:@"Flutter"];
         [clevertap setPushPermissionDelegate:self];
         [self addObservers];
     }
@@ -177,6 +180,12 @@ static NSDateFormatter *dateFormatter;
         [self deleteInboxMessageForId:call withResult:result];
     else if ([@"markReadInboxMessageForId" isEqualToString:call.method])
         [self markReadInboxMessageForId:call withResult:result];
+    else if ([@"markReadInboxMessagesForIds" isEqualToString:call.method])
+        [self markReadInboxMessagesForIds:call withResult:result];
+    else if ([@"deleteInboxMessagesForIds" isEqualToString:call.method])
+        [self deleteInboxMessagesForIds:call withResult:result];
+    else if ([@"dismissInbox" isEqualToString:call.method])
+        [self dismissInbox:call withResult:result];
     else if ([@"pushInboxNotificationClickedEventForId" isEqualToString:call.method])
         [self pushInboxNotificationClickedEventForId:call withResult:result];
     else if ([@"pushInboxNotificationViewedEventForId" isEqualToString:call.method])
@@ -241,14 +250,30 @@ static NSDateFormatter *dateFormatter;
         result(nil);
     else if ([@"setHuaweiPushToken" isEqualToString:call.method])
         result(nil);
+    else if ([@"setLibrary" isEqualToString:call.method])
+        [self setLibrary:call withResult:result];
     else if ([@"promptPushPrimer" isEqualToString:call.method])
         [self promptPushPrimer:call withResult:result];
     else if ([@"promptForPushNotification" isEqualToString:call.method])
         [self promptForPushNotification:call withResult:result];
     else if ([@"getPushNotificationPermissionStatus" isEqualToString:call.method])
         [self getPushNotificationPermissionStatus:call withResult:result];
-    else if ([@"dismissAppInbox" isEqualToString:call.method])
-        [self dismissAppInbox];
+    else if ([@"syncVariables" isEqualToString:call.method])
+        [self syncVariables];
+    else if ([@"syncVariablesinProd" isEqualToString:call.method])
+        [self syncVariablesinProd:call withResult:result];
+    else if ([@"fetchVariables" isEqualToString:call.method])
+        [self fetchVariables:call withResult:result];
+    else if ([@"defineVariables" isEqualToString:call.method])
+        [self defineVariables:call withResult:result];
+    else if ([@"getVariables" isEqualToString:call.method])
+        [self getVariables:call withResult:result];
+    else if ([@"getVariable" isEqualToString:call.method])
+        [self getVariable:call withResult:result];
+    else if ([@"onVariablesChanged" isEqualToString:call.method])
+        [self onVariablesChanged:call withResult:result];
+    else if ([@"onValueChanged" isEqualToString:call.method])
+        [self onValueChanged:call withResult:result];
     else
         result(FlutterMethodNotImplemented);
 }
@@ -303,6 +328,11 @@ static NSDateFormatter *dateFormatter;
         [[UIApplication sharedApplication] registerUserNotificationSettings:settings];
     }
     result(nil);
+}
+
+- (void)setLibrary:(FlutterMethodCall*)call withResult:(FlutterResult)result {
+    [[CleverTap sharedInstance] setLibrary:call.arguments[@"libName"]];
+    [[CleverTap sharedInstance] setCustomSdkVersion:call.arguments[@"libName"] version:[call.arguments[@"libVersion"]intValue]];
 }
 
 
@@ -558,6 +588,16 @@ static NSDateFormatter *dateFormatter;
     result(nil);
 }
 
+- (void)markReadInboxMessagesForIds:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    [[CleverTap sharedInstance]markReadInboxMessagesForIDs:call.arguments[@"messageIds"]];
+    result(nil);
+}
+
+- (void)deleteInboxMessagesForIds:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    [[CleverTap sharedInstance]deleteInboxMessagesForIDs:call.arguments[@"messageIds"]];
+    result(nil);
+}
+
 - (void)deleteInboxMessageForId:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     
     [[CleverTap sharedInstance] deleteInboxMessageForID:call.arguments[@"messageId"]];
@@ -622,6 +662,10 @@ static NSDateFormatter *dateFormatter;
         UIViewController *mainViewController = keyWindow.rootViewController;
         [mainViewController presentViewController:navigationController animated:YES completion:nil];
     }
+}
+
+- (void)dismissInbox:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    [[CleverTap sharedInstance]dismissAppInbox];
 }
 
 - (CleverTapInboxStyleConfig*)_dictToInboxStyleConfig: (NSDictionary *)dict {
@@ -929,6 +973,36 @@ static NSDateFormatter *dateFormatter;
     return _profile;
 }
 
+- (CTVar *)createVarForName:(NSString *)name andValue:(id)value {
+
+    if ([value isKindOfClass:[NSString class]]) {
+        return [[CleverTap sharedInstance]defineVar:name withString:value];
+    }
+    if ([value isKindOfClass:[NSDictionary class]]) {
+        return [[CleverTap sharedInstance]defineVar:name withDictionary:value];
+    }
+    if ([value isKindOfClass:[NSNumber class]]) {
+        if ([self isBoolNumber:value]) {
+            return [[CleverTap sharedInstance]defineVar:name withBool:value];
+        }
+        return [[CleverTap sharedInstance]defineVar:name withNumber:value];
+    }
+    return nil;
+}
+
+- (BOOL)isBoolNumber:(NSNumber *)number {
+    CFTypeID boolID = CFBooleanGetTypeID();
+    CFTypeID numID = CFGetTypeID(CFBridgingRetain(number));
+    return (numID == boolID);
+}
+
+- (NSMutableDictionary *)getVariableValues {
+    NSMutableDictionary *varValues = [NSMutableDictionary dictionary];
+    [self.allVariables enumerateKeysAndObjectsUsingBlock:^(id  _Nonnull key, CTVar*  _Nonnull var, BOOL * _Nonnull stop) {
+        varValues[key] = var.value;
+    }];
+    return varValues;
+}
 
 #pragma mark - Notifications
 
@@ -940,6 +1014,11 @@ static NSDateFormatter *dateFormatter;
 - (void)emitEventPushPermissionResponse:(NSNotification *)notification {
     // Passed boolean value of `accepted` directly.
     [self.nativeToDartMethodChannel invokeMethod:notification.name arguments:notification.userInfo[@"accepted"]];
+}
+
+- (void)emitEventDisplayUnitsLoaded:(NSNotification *)notification {
+    // Passed CleverTapDisplayUnit Array directly.
+    [self.nativeToDartMethodChannel invokeMethod:notification.name arguments:notification.userInfo[@"adUnits"]];
 }
 
 - (void)addObservers {
@@ -970,7 +1049,7 @@ static NSDateFormatter *dateFormatter;
                                                object:nil];
     
     [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(emitEventInternal:)
+                                             selector:@selector(emitEventDisplayUnitsLoaded:)
                                                  name:kCleverTapDisplayUnitsLoaded
                                                object:nil];
     
@@ -1018,6 +1097,16 @@ static NSDateFormatter *dateFormatter;
                                              selector:@selector(emitEventPushPermissionResponse:)
                                                  name:kCleverTapPushPermissionResponseReceived
                                                object:nil];
+
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(emitEventInternal:)
+                                                 name:kCleverTapOnVariablesChanged
+                                               object:nil];
+
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(emitEventInternal:)
+                                                 name:kCleverTapOnValueChanged
+                                               object:nil];
 }
 
 - (void)postNotificationWithName:(NSString *)name andBody:(NSDictionary *)body {
@@ -1051,13 +1140,8 @@ static NSDateFormatter *dateFormatter;
 - (void)inAppNotificationDismissedWithExtras:(NSDictionary *)extras andActionExtras:(NSDictionary *)actionExtras {
     
     NSMutableDictionary *body = [NSMutableDictionary new];
-    if (extras != nil) {
-        body[@"extras"] = extras;
-    }
-    
-    if (actionExtras != nil) {
-        body[@"actionExtras"] = actionExtras;
-    }
+    body[@"extras"] = (extras != nil) ? extras : [NSMutableDictionary new];
+    body[@"actionExtras"] = (actionExtras != nil) ? actionExtras : [NSMutableDictionary new];
     [self postNotificationWithName:kCleverTapInAppNotificationDismissed andBody:body];
 }
 
@@ -1084,26 +1168,23 @@ static NSDateFormatter *dateFormatter;
 - (void)messageDidSelect:(CleverTapInboxMessage *_Nonnull)message atIndex:(int)index withButtonIndex:(int)buttonIndex {
     NSMutableDictionary *body = [NSMutableDictionary new];
     if ([message json] != nil) {
-        body[@"message"] = [NSMutableDictionary dictionaryWithDictionary:[message json]];
+        body[@"data"] = [NSMutableDictionary dictionaryWithDictionary:[message json]];
+    } else {
+        body[@"data"] = [NSMutableDictionary new];
     }
-    body[@"index"] = @(index);
+    body[@"contentPageIndex"] = @(index);
     body[@"buttonIndex"] = @(buttonIndex);
     [self postNotificationWithName:kCleverTapInboxMessageTapped andBody:body];
-}
-
-- (void)dismissAppInbox {
-    [[CleverTap sharedInstance] dismissAppInbox];
 }
 
 #pragma mark CleverTapPushNotificationDelegate
 
 - (void)pushNotificationTappedWithCustomExtras:(NSDictionary *)customExtras {
-    
-    NSMutableDictionary *body = [NSMutableDictionary new];
+    NSMutableDictionary *pushNotificationExtras = [NSMutableDictionary new];
     if (customExtras != nil) {
-        body[@"customExtras"] = customExtras;
+        pushNotificationExtras = [NSMutableDictionary dictionaryWithDictionary:customExtras];
     }
-    [self postNotificationWithName:kCleverTapPushNotificationClicked andBody:customExtras];
+    [self postNotificationWithName:kCleverTapPushNotificationClicked andBody:pushNotificationExtras];
 }
 
 #pragma mark - Push Notifications
@@ -1225,6 +1306,63 @@ static NSDateFormatter *dateFormatter;
         [localInAppBuilder setImageUrl:json[@"imageUrl"]];
     }
     return localInAppBuilder;
+}
+
+#pragma mark - Product Experiences - syncVariables
+
+- (void)syncVariables {
+    [[CleverTap sharedInstance]syncVariables];
+}
+
+- (void)syncVariablesinProd:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    [[CleverTap sharedInstance]syncVariables:[call.arguments[@"isProduction"] boolValue]];
+}
+
+- (void)fetchVariables:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    [[CleverTap sharedInstance]fetchVariables:^(BOOL success) {
+        result(@(success));
+    }];
+}
+
+- (void)defineVariables:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+
+    NSDictionary *variables = call.arguments[@"variables"];
+    if (!variables) return;
+
+    [variables enumerateKeysAndObjectsUsingBlock:^(NSString*  _Nonnull key, id  _Nonnull value, BOOL * _Nonnull stop) {
+        CTVar *var = [self createVarForName:key andValue:value];
+
+        if (var) {
+            self.allVariables[key] = var;
+        }
+    }];
+}
+- (void)getVariables:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    NSMutableDictionary *varValues = [self getVariableValues];
+    result(varValues);
+}
+
+- (void)getVariable:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CTVar *var = self.allVariables[call.arguments[@"name"]];
+    result(var.value);
+}
+
+- (void)onVariablesChanged:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    [[CleverTap sharedInstance]onVariablesChanged:^{
+        [self postNotificationWithName:kCleverTapOnVariablesChanged andBody:[self getVariableValues]];
+    }];
+}
+
+- (void)onValueChanged:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CTVar *var = self.allVariables[call.arguments[@"name"]];
+    if (var) {
+        [var onValueChanged:^{
+            NSDictionary *varResult = @{
+                var.name: var.value
+            };
+            [self postNotificationWithName:kCleverTapOnValueChanged andBody:varResult];
+        }];
+    }
 }
 
 @end

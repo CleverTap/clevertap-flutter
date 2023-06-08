@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:ffi';
 
 import 'package:flutter/services.dart';
 
@@ -26,6 +25,8 @@ typedef void CleverTapPushAmpPayloadReceivedHandler(Map<String, dynamic> map);
 typedef void CleverTapPushClickedPayloadReceivedHandler(
     Map<String, dynamic> map);
 typedef void CleverTapPushPermissionResponseReceivedHandler(bool accepted);
+typedef void CleverTapOnVariablesChangedHandler(Map<String, dynamic> variables);
+typedef void CleverTapOnValueChangedHandler(Map<String, dynamic> variable);
 
 class CleverTapPlugin {
   late CleverTapInAppNotificationDismissedHandler
@@ -57,6 +58,10 @@ class CleverTapPlugin {
   late CleverTapPushClickedPayloadReceivedHandler
       cleverTapPushClickedPayloadReceivedHandler;
   late CleverTapPushPermissionResponseReceivedHandler cleverTapPushPermissionResponseReceivedHandler;
+  static List<CleverTapOnVariablesChangedHandler>
+      cleverTapOnVariablesChangedHandlers = [];
+  static List<CleverTapOnValueChangedHandler>
+      cleverTapOnValueChangedHandlers = [];
 
   static const MethodChannel _dartToNativeMethodChannel = const MethodChannel('clevertap_plugin/dart_to_native');
   static const MethodChannel _nativeToDartMethodChannel = const MethodChannel('clevertap_plugin/native_to_dart');
@@ -66,7 +71,12 @@ class CleverTapPlugin {
 
   factory CleverTapPlugin() => _clevertapPlugin;
 
+  static const libName = 'Flutter';
+  static const libVersion = 10700; // If the current version is X.X.X then pass as X0X0X
+
   CleverTapPlugin._internal() {
+    /// Set the CleverTap Flutter library name and the current version for version tracking
+    _dartToNativeMethodChannel.invokeMethod('setLibrary', {'libName': libName, 'libVersion': libVersion});
     _nativeToDartMethodChannel.setMethodCallHandler(_platformCallHandler);
   }
 
@@ -107,11 +117,11 @@ class CleverTapPlugin {
         break;
       case "onInboxMessageClick":
         Map<dynamic, dynamic> args = call.arguments;
-        Map<dynamic, dynamic> message = args["message"];
-        int index = args["index"];
+        Map<dynamic, dynamic> message = args["data"];
+        int contentPageIndex = args["contentPageIndex"];
         int buttonIndex = args["buttonIndex"];
         cleverTapInboxNotificationMessageClickedHandler(
-            message.cast<String, dynamic>(),index,buttonIndex);
+            message.cast<String, dynamic>(), contentPageIndex, buttonIndex);
         break;
       case "onDisplayUnitsLoaded":
         List<dynamic>? args = call.arguments;
@@ -142,6 +152,18 @@ class CleverTapPlugin {
       case "pushPermissionResponseReceived":
         bool accepted = call.arguments;
         cleverTapPushPermissionResponseReceivedHandler(accepted);
+        break;
+      case "onVariablesChanged":
+        Map<dynamic, dynamic> args = call.arguments;
+        cleverTapOnVariablesChangedHandlers.forEach((cleverTapOnVariablesChangedHandler) {
+          cleverTapOnVariablesChangedHandler(args.cast<String, dynamic>());
+        });
+        break;
+      case "onValueChanged":
+        Map<dynamic, dynamic> args = call.arguments;
+        cleverTapOnValueChangedHandlers.forEach((cleverTapOnValueChangedHandler) {
+          cleverTapOnValueChangedHandler(args.cast<String, dynamic>());
+        });
         break;
     }
   }
@@ -673,6 +695,11 @@ class CleverTapPlugin {
         .invokeMethod('showInbox', {'styleConfig': styleConfig});
   }
 
+  ///Dismisses the App Inbox screen
+  static Future<void> dismissInbox() async {
+    return await _dartToNativeMethodChannel.invokeMethod('dismissInbox', {});
+  }
+
   /// Returns the count of all inbox messages for the user
   static Future<int?> getInboxMessageCount() async {
     return await _dartToNativeMethodChannel.invokeMethod('getInboxMessageCount', {});
@@ -708,10 +735,22 @@ class CleverTapPlugin {
         .invokeMethod('deleteInboxMessageForId', {'messageId': messageId});
   }
 
+  /// Deletes the CTInboxMessage objects for given messageIds
+  static Future<void> deleteInboxMessagesForIds(List<String> messageIds) async {
+    return await _dartToNativeMethodChannel
+        .invokeMethod('deleteInboxMessagesForIds', {'messageIds': messageIds});
+  }
+
   /// Marks the given messageId of CTInboxMessage object as read
   static Future<void> markReadInboxMessageForId(String messageId) async {
     return await _dartToNativeMethodChannel
         .invokeMethod('markReadInboxMessageForId', {'messageId': messageId});
+  }
+
+  /// Marks the given messageIds of CTInboxMessage objects as read
+  static Future<void> markReadInboxMessagesForIds(List<String> messageIds) async {
+    return await _dartToNativeMethodChannel
+        .invokeMethod('markReadInboxMessagesForIds', {'messageIds': messageIds});
   }
 
   /// Pushes the Notification Clicked event for App Inbox to CleverTap.
@@ -759,6 +798,9 @@ class CleverTapPlugin {
   }
 
   ///Feature Flags
+  @Deprecated(
+      "This method is deprecated since v1.3.0. Use getCleverTapID() instead")
+
   ///Returns boolean value of Feature Flag
   static Future<bool?> getFeatureFlag(String key, bool defaultValue) async {
     return await _dartToNativeMethodChannel.invokeMethod(
@@ -766,16 +808,25 @@ class CleverTapPlugin {
   }
 
   ///Product Config
+    @Deprecated(
+      "This method is deprecated since version 1.7.0 and will be removed in the future versions of this SDK.")
+
   ///Sets Default Values for Product Config using the passed Map
   static Future<void> setDefaultsMap(Map<String, dynamic> defaults) async {
     return await _dartToNativeMethodChannel
         .invokeMethod('setDefaultsMap', {'defaults': defaults});
   }
 
+  @Deprecated(
+      "This method is deprecated since version 1.7.0 and will be removed in the future versions of this SDK.")
+
   ///Fetches the Product Configs from CleverTap
   static Future<void> fetch() async {
     return await _dartToNativeMethodChannel.invokeMethod('fetch', {});
   }
+
+  @Deprecated(
+      "This method is deprecated since version 1.7.0 and will be removed in the future versions of this SDK.")
 
   ///Fetches Product configs, adhering to the specified minimum fetch interval in seconds.
   static Future<void> fetchWithMinimumIntervalInSeconds(int interval) async {
@@ -783,15 +834,24 @@ class CleverTapPlugin {
         'fetchWithMinimumFetchIntervalInSeconds', {'interval': interval});
   }
 
+  @Deprecated(
+      "This method is deprecated since version 1.7.0 and will be removed in the future versions of this SDK.")
+
   ///Activates the most recently fetched Product configs
   static Future<void> activate() async {
     return await _dartToNativeMethodChannel.invokeMethod('activate', {});
   }
 
+  @Deprecated(
+      "This method is deprecated since version 1.7.0 and will be removed in the future versions of this SDK.")
+
   ///Fetches and then activates the fetched Product configs.
   static Future<void> fetchAndActivate() async {
     return await _dartToNativeMethodChannel.invokeMethod('fetchAndActivate', {});
   }
+
+  @Deprecated(
+      "This method is deprecated since version 1.7.0 and will be removed in the future versions of this SDK.")
 
   ///Sets the minimum interval between successive fetch calls.
   static Future<void> setMinimumFetchIntervalInSeconds(int interval) async {
@@ -799,30 +859,48 @@ class CleverTapPlugin {
         'setMinimumFetchIntervalInSeconds', {'interval': interval});
   }
 
+  @Deprecated(
+      "This method is deprecated since version 1.7.0 and will be removed in the future versions of this SDK.")
+
   ///Returns the last fetched timestamp in millis.
   static Future<int?> getLastFetchTimeStampInMillis() async {
     return await _dartToNativeMethodChannel.invokeMethod('getLastFetchTimeStampInMillis', {});
   }
+
+  @Deprecated(
+      "This method is deprecated since version 1.7.0 and will be removed in the future versions of this SDK.")
 
   ///Returns the parameter value for the given key as a String.
   static Future<String?> getProductConfigString(String key) async {
     return await _dartToNativeMethodChannel.invokeMethod('getString', {'key': key});
   }
 
+  @Deprecated(
+      "This method is deprecated since version 1.7.0 and will be removed in the future versions of this SDK.")
+
   ///Returns the parameter value for the given key as a boolean.
   static Future<bool?> getProductConfigBoolean(String key) async {
     return await _dartToNativeMethodChannel.invokeMethod('getBoolean', {'key': key});
   }
+
+  @Deprecated(
+      "This method is deprecated since version 1.7.0 and will be removed in the future versions of this SDK.")
 
   ///Returns the parameter value for the given key as a long (int for Dart).
   static Future<int?> getProductConfigLong(String key) async {
     return await _dartToNativeMethodChannel.invokeMethod('getLong', {'key': key});
   }
 
+  @Deprecated(
+      "This method is deprecated since version 1.7.0 and will be removed in the future versions of this SDK.")
+
   ///Returns the parameter value for the given key as a double.
   static Future<double?> getProductConfigDouble(String key) async {
     return await _dartToNativeMethodChannel.invokeMethod('getDouble', {'key': key});
   }
+
+  @Deprecated(
+      "This method is deprecated since version 1.7.0 and will be removed in the future versions of this SDK.")
 
   ///Deletes all activated, fetched and defaults configs as well as all Product Config settings.
   static Future<void> resetProductConfig() async {
@@ -854,8 +932,52 @@ class CleverTapPlugin {
     return await _dartToNativeMethodChannel.invokeMethod('unregisterPushPermissionNotificationResponseListener', {});
   }
 
-  ///Dismiss the app inbox controller
-  static Future<void> dismissAppInbox() async {
-    return await _dartToNativeMethodChannel.invokeMethod('dismissAppInbox', {});
+  // Product Experiences - Vars
+
+  ///Uploads variables to the server. Requires Development/Debug build/configuration.
+  static Future<void> syncVariables() async {
+    return await _dartToNativeMethodChannel.invokeMethod('syncVariables', {});
+  }
+
+  ///Uploads variables to the server.
+  /// * @param isProduction Provide `true` if variables must be sync in Production build/configuration.
+  static Future<void> syncVariablesinProd(bool isProduction) async {
+    return await _dartToNativeMethodChannel.invokeMethod('syncVariablesinProd', {'isProduction': isProduction});
+  }
+
+  ///Forces variables to update from the server.
+  static Future<bool?> fetchVariables() async {
+    return await _dartToNativeMethodChannel.invokeMethod('fetchVariables', {});
+  }
+
+  ///Create variables.
+  /// * @param {object} variables The JSON Object specifying the varibles to be created.
+  static Future<void> defineVariables(Map<String, dynamic> variables) async {
+    return await _dartToNativeMethodChannel.invokeMethod('defineVariables', {'variables': variables});
+  }
+
+  ///Get all variables via a JSON object.
+  static Future<Map<Object?, Object?>> getVariables() async {
+    return await _dartToNativeMethodChannel.invokeMethod('getVariables', {});
+  }
+
+  ///Get a variable or a group for the specified name.
+  /// * @param {string} name - name.
+  static Future<dynamic> getVariable(String name) async {
+    return await _dartToNativeMethodChannel.invokeMethod('getVariable', {'name': name});
+  }
+
+  static void onVariablesChanged(CleverTapOnVariablesChangedHandler handler) {
+    if (!cleverTapOnVariablesChangedHandlers.contains(handler)) {
+      cleverTapOnVariablesChangedHandlers.add(handler);
+    }
+    _dartToNativeMethodChannel.invokeMethod('onVariablesChanged', {});
+  }
+
+  static void onValueChanged(String name, CleverTapOnValueChangedHandler handler) {
+    if (!cleverTapOnValueChangedHandlers.contains(handler)) {
+      cleverTapOnValueChangedHandlers.add(handler);
+    }
+      _dartToNativeMethodChannel.invokeMethod('onValueChanged', {'name': name});
   }
 }
