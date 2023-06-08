@@ -391,7 +391,7 @@ class _MyAppState extends State<MyApp> {
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
-                      title: Text('Get Variable Value for name \'reactnative_var_string\''),
+                      title: Text('Get Variable Value for name \'flutter_var_string\''),
                       onTap: getVariable,
                     ),
                   ),
@@ -2223,13 +2223,14 @@ class _MyAppState extends State<MyApp> {
   void syncVariables() {
     CleverTapPlugin.syncVariables();
     showToast("Sync Variables");
+    print("PE -> Sync Variables");
   }
 
   void fetchVariables() {
     showToast("Fetch Variables");
     this.setState(() async {
       bool? success = await CleverTapPlugin.fetchVariables();
-      print("fetchVariables result: " + success.toString());
+      print("PE -> fetchVariables result: " + success.toString());
     });
   }
 
@@ -2245,13 +2246,14 @@ class _MyAppState extends State<MyApp> {
             };
     CleverTapPlugin.defineVariables(variables);
     showToast("Define Variables");
+    print("PE -> Define Variables: " + variables.toString());
   }
 
   void getVariables() {
     showToast("Get Variables");
     this.setState(() async {
       Map<Object?, Object?> variables = await CleverTapPlugin.getVariables();
-      print('getVariables: ' + variables.toString());
+      print('PE -> getVariables: ' + variables.toString());
     });
   }
 
@@ -2259,21 +2261,21 @@ class _MyAppState extends State<MyApp> {
     showToast("Get Variable");
     this.setState(() async {
       var variable = await CleverTapPlugin.getVariable('flutter_var_string');
-      print('variable value for key \'flutter_var_string\': ' + variable.toString());
+      print('PE -> variable value for key \'flutter_var_string\': ' + variable.toString());
     });
   }
 
   void onVariablesChanged() {
     showToast("onVariablesChanged");
       CleverTapPlugin.onVariablesChanged((variables) {
-        print("onVariablesChanged: " + variables.toString());
+        print("PE -> onVariablesChanged: " + variables.toString());
       });
   }
 
   void onValueChanged() {
     showToast("onValueChanged");
       CleverTapPlugin.onValueChanged('flutter_var_string', (variable) {
-        print("onValueChanged: " + variable.toString());
+        print("PE -> onValueChanged: " + variable.toString());
       });
   }
 }

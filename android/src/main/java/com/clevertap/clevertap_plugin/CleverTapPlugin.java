@@ -572,12 +572,12 @@ public class CleverTapPlugin implements ActivityAware,
             }
 
             case "onVariablesChanged": {
-                onVariablesChanged(result);
+                onVariablesChanged();
                 break;
             }
 
             case "onValueChanged": {
-                onValueChanged(call, result);
+                onValueChanged(call);
                 break;
             }
 
@@ -744,7 +744,7 @@ public class CleverTapPlugin implements ActivityAware,
         }
     }
 
-    public void onVariablesChanged(Result result) {
+    public void onVariablesChanged() {
         if (isCleverTapNotNull(cleverTapAPI)) {
             cleverTapAPI.addVariablesChangedCallback(new VariablesChangedCallback() {
                 @Override
@@ -753,39 +753,36 @@ public class CleverTapPlugin implements ActivityAware,
                 }
             });
         } else {
-            result.error(TAG, ERROR_MSG, null);
+            Log.d(TAG, ERROR_MSG);
         }
     }
 
-    public void onValueChanged(MethodCall call, Result result) {
-        if (isCleverTapNotNull(cleverTapAPI)) {
-            String name = call.argument("name");
-            if (variables.containsKey(name)) {
+    public void onValueChanged(MethodCall call) {
+        String name = call.argument("name");
+        if (variables.containsKey(name)) {
 
-                Var<Object> var = (Var<Object>) variables.get(name);
-                if (var != null) {
-                    var.addValueChangedCallback(new VariableCallback<Object>() {
-                        @SuppressLint("RestrictedApi")
-                        @Override
-                        public void onValueChanged(final Var<Object> variable) {
-                            Map<String, Object> variablesMap = new HashMap<>();
-                            try {
-                                variablesMap = getVariableValueAsWritableMap(name);
-                                result.success(variablesMap);
-                            } catch (Exception e) {
-                                result.error(TAG, "Unable to handle onValueChanged callback: " + e.getLocalizedMessage(), null);
-                            }
-                            invokeMethodOnUiThread("onValueChanged", variablesMap);
+            Var<Object> var = (Var<Object>) variables.get(name);
+            if (var != null) {
+                var.addValueChangedCallback(new VariableCallback<Object>() {
+                    @SuppressLint("RestrictedApi")
+                    @Override
+                    public void onValueChanged(final Var<Object> variable) {
+                        Map<String, Object> variablesMap = new HashMap<>();
+                        try {
+                            variablesMap = getVariableValueAsMap(name);
+                        } catch (Exception e) {
+                            Log.d(TAG, "Unable to handle onValueChanged callback: " + e.getLocalizedMessage(), null);
                         }
-                    });
-                } else {
-                    Log.d(TAG, "Variable value with name = " + name + " contains null value. Not setting onValueChanged callback.");
-                }
+                        invokeMethodOnUiThread("onValueChanged", variablesMap);
+                    }
+                });
             } else {
-                Log.e(TAG, "Variable name = " + name + " does not exist. Make sure you set variable first.");
+                String errorMessage = "Variable value with name = " + name + " contains null value. Not setting onValueChanged callback.";
+                Log.d(TAG, errorMessage);
             }
         } else {
-            result.error(TAG, ERROR_MSG, null);
+            String errorMessage = "Variable name = " + name + " does not exist. Make sure you set variable first.";
+            Log.e(TAG, errorMessage);
         }
     }
 
@@ -797,16 +794,7 @@ public class CleverTapPlugin implements ActivityAware,
     private Object getVariableValue(String name) {
         if (variables.containsKey(name)) {
             Var<?> variable = (Var<?>) variables.get(name);
-            Object variableValue = variable.value();
-            Object value;
-            switch (variable.kind()) {
-                case CTVariableUtils.DICTIONARY:
-                    //value = CleverTapUtils.MapUtil.toWritableMap((Map<String, Object>) variableValue);
-                    return variableValue;
-                default:
-                    value = variableValue;
-            }
-            return value;
+            return variable.value();
         }
         throw new IllegalArgumentException(
                 "Variable name = " + name + " does not exist. Make sure you set variable first.");
@@ -825,10 +813,9 @@ public class CleverTapPlugin implements ActivityAware,
     }
 
     @SuppressLint("RestrictedApi")
-    private Map<String, Object> getVariableValueAsWritableMap(String name) {
+    private Map<String, Object> getVariableValueAsMap(String name) {
         if (variables.containsKey(name)) {
             Var<?> variable = (Var<?>) variables.get(name);
-            Object variableValue = variable.value();
             return CleverTapTypeUtils.MapUtil.addValue(name, variable.value());
         }
         throw new IllegalArgumentException(
