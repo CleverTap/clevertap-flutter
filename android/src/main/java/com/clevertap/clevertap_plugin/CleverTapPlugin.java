@@ -211,6 +211,9 @@ public class CleverTapPlugin implements ActivityAware,
     @Override
     public void onMethodCall(MethodCall call, @NonNull Result result) {
         switch (call.method) {
+            case "setLibrary": {
+                setLibrary(call, result);
+            }
             case "setDebugLevel": {
                 int debugLevelValue = call.argument("debugLevel");
                 CleverTapAPI.setDebugLevel(debugLevelValue);
@@ -832,6 +835,18 @@ public class CleverTapPlugin implements ActivityAware,
                 "Variable name = " + name + " does not exist.");
     }
 
+    @SuppressLint("RestrictedApi")
+    private void setLibrary(MethodCall call, Result result) {
+        String libName = call.argument("libName");
+        int libVersion = call.argument("libVersion");
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            cleverTapAPI.setCustomSdkVersion(libName, libVersion);
+            result.success(null);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
     @Override
     public void onNotificationClickedPayloadReceived(HashMap<String, Object> hashMap) {
         invokeMethodOnUiThread("pushClickedPayloadReceived", hashMap);
@@ -1348,10 +1363,10 @@ public class CleverTapPlugin implements ActivityAware,
     }
 
     private void processPushNotification(MethodCall call, Result result) {
-        JSONObject extras = call.argument("extras");
+        Map<String, Object> extras = call.argument("extras");
         if (isCleverTapNotNull(cleverTapAPI)) {
             try {
-                CleverTapAPI.processPushNotification(context, Utils.jsonToBundle(extras));
+                CleverTapAPI.processPushNotification(context, Utils.jsonToBundle(new JSONObject(extras)));
             } catch (JSONException e) {
                 result.error(TAG, "Unable to render notification due to JSONException - " + e.getLocalizedMessage(),
                         null);
@@ -1798,7 +1813,6 @@ public class CleverTapPlugin implements ActivityAware,
             this.cleverTapAPI.setCTFeatureFlagsListener(this);
             this.cleverTapAPI.setCTProductConfigListener(this);
             this.cleverTapAPI.setCTPushAmpListener(this);
-            this.cleverTapAPI.setLibrary("Flutter");
             this.cleverTapAPI.registerPushPermissionNotificationResponseListener(this);
         }
     }
