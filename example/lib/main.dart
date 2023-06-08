@@ -342,6 +342,85 @@ class _MyAppState extends State<MyApp> {
                   child: Padding(
                     padding: const EdgeInsets.all(0.0),
                     child: ListTile(
+                      title: Text("Product Experiences"),
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Sync Variables"),
+                      onTap: syncVariables,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Fetch Variables"),
+                      onTap: fetchVariables,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Define Variables"),
+                      onTap: defineVariables,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Get Variables"),
+                      onTap: getVariables,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text('Get Variable Value for name \'reactnative_var_string\''),
+                      onTap: getVariable,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text('Add \'OnVariablesChanged\' listener'),
+                      onTap: onVariablesChanged,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text('Add \'OnValueChanged\' listener for name \'flutter_var_string\''),
+                      onTap: onValueChanged,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.lightBlueAccent,
+                  child: Padding(
+                    padding: const EdgeInsets.all(0.0),
+                    child: ListTile(
                       title: Text("User Profiles"),
                     ),
                   ),
@@ -629,9 +708,31 @@ class _MyAppState extends State<MyApp> {
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
+                      title: Text("Delete Inbox Messages for list of IDs"),
+                      subtitle: Text("Deletes inbox messages for list of IDs"),
+                      onTap: deleteInboxMessagesForIds,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
                       title: Text("Mark Read Inbox Message for given ID"),
                       subtitle: Text("Mark read inbox message for given ID"),
                       onTap: markReadInboxMessageForId,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Mark Read Inbox Messagess for list of IDs"),
+                      subtitle: Text("Mark read inbox messages for list of IDs"),
+                      onTap: markReadInboxMessagesForIds,
                     ),
                   ),
                 ),
@@ -1600,26 +1701,61 @@ class _MyAppState extends State<MyApp> {
     }));
   }
 
-  void markReadInboxMessageForId() async {
-    var messageList = await CleverTapPlugin.getUnreadInboxMessages();
+  void deleteInboxMessagesForIds() async {
+    var messageId = await getFirstInboxMessageId();
 
-    if (messageList == null || messageList.length == 0) return;
-    Map<dynamic, dynamic> itemFirst = messageList[0];
-
-    if (Platform.isAndroid) {
-      await CleverTapPlugin.markReadInboxMessageForId(itemFirst["id"]);
+    if (messageId == null) {
       setState((() {
-        showToast("Marked Inbox Message as read with id =  ${itemFirst["id"]}");
-        print("Marked Inbox Message as read with id =  ${itemFirst["id"]}");
+        showToast("Inbox Message id is null");
+        print("Inbox Message id is null");
       }));
-    } else if (Platform.isIOS) {
-      await CleverTapPlugin.markReadInboxMessageForId(itemFirst["_id"]);
-      setState((() {
-        showToast(
-            "Marked Inbox Message as read with id =  ${itemFirst["_id"]}");
-        print("Marked Inbox Message as read with id =  ${itemFirst["_id"]}");
-      }));
+      return;
     }
+
+    await CleverTapPlugin.deleteInboxMessagesForIds([messageId]);
+
+    setState((() {
+      showToast("Deleted Inbox Messages with ids =  $messageId");
+      print("Deleted Inbox Messages with ids =  $messageId");
+    }));
+  }
+
+  void markReadInboxMessageForId() async {
+    var messageId = await getFirstUnreadInboxMessageId();
+
+    if (messageId == null) {
+      setState((() {
+        showToast("Inbox Message id is null");
+        print("Inbox Message id is null");
+      }));
+      return;
+    }
+
+    await CleverTapPlugin.markReadInboxMessageForId(messageId);
+
+    setState((() {
+      showToast("Marked Inbox Message as read with id =  $messageId");
+      print("Marked Inbox Message as read with id =  $messageId");
+    }));
+  }
+
+  void markReadInboxMessagesForIds() async{
+    var messageId = await getFirstUnreadInboxMessageId();
+
+    if (messageId == null) {
+      setState((() {
+        showToast("Inbox Message id is null");
+        print("Inbox Message id is null");
+      }));
+      return;
+    }
+
+    await CleverTapPlugin.markReadInboxMessagesForIds([messageId]);
+
+    setState((() {
+      showToast("Marked Inbox Messages as read with ids =  ${[messageId]}");
+      print("Marked Inbox Messages as read with ids =  ${[messageId]}");
+    }));
   }
 
   void pushInboxNotificationClickedEventForId() async {
@@ -1677,6 +1813,22 @@ class _MyAppState extends State<MyApp> {
     }
     return "";
   }
+
+  Future<String>? getFirstUnreadInboxMessageId() async {
+    var messageList = await CleverTapPlugin.getUnreadInboxMessages();
+    print("inside getFirstUnreadInboxMessageId");
+
+    Map<dynamic, dynamic> itemFirst = messageList?[0];
+    print(itemFirst.toString());
+
+    if (Platform.isAndroid) {
+      return itemFirst["id"];
+    } else if (Platform.isIOS) {
+      return itemFirst["_id"];
+    }
+    return "";
+  }
+
 
   void setOptOut() {
     if (optOut) {
@@ -2066,5 +2218,62 @@ class _MyAppState extends State<MyApp> {
         print("Push Permission is already enabled.");
       }
     });
+  }
+
+  void syncVariables() {
+    CleverTapPlugin.syncVariables();
+    showToast("Sync Variables");
+  }
+
+  void fetchVariables() {
+    showToast("Fetch Variables");
+    this.setState(() async {
+      bool? success = await CleverTapPlugin.fetchVariables();
+      print("fetchVariables result: " + success.toString());
+    });
+  }
+
+  void defineVariables() {
+    var variables = {
+              'flutter_var_string': 'flutter_var_string_value',
+              'flutter_var_map': {
+                'flutter_var_map_string': 'flutter_var_map_value'
+              },
+              'flutter_var_int': 6,
+              'flutter_var_float': 6.9,
+              'flutter_var_boolean': true
+            };
+    CleverTapPlugin.defineVariables(variables);
+    showToast("Define Variables");
+  }
+
+  void getVariables() {
+    showToast("Get Variables");
+    this.setState(() async {
+      Map<Object?, Object?> variables = await CleverTapPlugin.getVariables();
+      print('getVariables: ' + variables.toString());
+    });
+  }
+
+  void getVariable() {
+    showToast("Get Variable");
+    this.setState(() async {
+      var variable = await CleverTapPlugin.getVariable('flutter_var_string');
+      print('variable value for key \'flutter_var_string\': ' + variable.toString());
+    });
+  }
+
+  void onVariablesChanged() {
+    showToast("onVariablesChanged");
+      CleverTapPlugin.onVariablesChanged((variables) {
+        print("onVariablesChanged: " + variables.toString());
+      });
+  }
+
+  void onValueChanged() {
+    showToast("onValueChanged");
+      CleverTapPlugin.onValueChanged('flutter_var_string', (variable) {
+        print("onValueChanged: " + variable.toString());
+      });
   }
 }
