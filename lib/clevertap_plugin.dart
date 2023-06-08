@@ -968,16 +968,12 @@ class CleverTapPlugin {
   }
 
   static void onVariablesChanged(CleverTapOnVariablesChangedHandler handler) {
-    if (!cleverTapOnVariablesChangedHandlers.contains(handler)) {
-      cleverTapOnVariablesChangedHandlers.add(handler);
-    }
+    cleverTapOnVariablesChangedHandlers.add(handler);
     _dartToNativeMethodChannel.invokeMethod('onVariablesChanged', {});
   }
 
   static void onValueChanged(String name, CleverTapOnValueChangedHandler handler) {
-    if (!cleverTapOnValueChangedHandlers.contains(handler)) {
       cleverTapOnValueChangedHandlers.add(handler);
-    }
       _dartToNativeMethodChannel.invokeMethod('onValueChanged', {'name': name});
   }
 }
