@@ -15,7 +15,7 @@ typedef void CleverTapInboxMessagesDidUpdateHandler();
 typedef void CleverTapInboxNotificationButtonClickedHandler(
     Map<String, dynamic>? mapList);
 typedef void CleverTapInboxNotificationMessageClickedHandler(
-    Map<String, dynamic>? map);
+    Map<String, dynamic>? message, int contentPageIndex, int buttonIndex);
 typedef void CleverTapDisplayUnitsLoadedHandler(List<dynamic>? displayUnitList);
 typedef void CleverTapFeatureFlagUpdatedHandler();
 typedef void CleverTapProductConfigInitializedHandler();
@@ -117,8 +117,11 @@ class CleverTapPlugin {
         break;
       case "onInboxMessageClick":
         Map<dynamic, dynamic> args = call.arguments;
+        Map<dynamic, dynamic> message = args["data"];
+        int contentPageIndex = args["contentPageIndex"];
+        int buttonIndex = args["buttonIndex"];
         cleverTapInboxNotificationMessageClickedHandler(
-            args.cast<String, dynamic>());
+            message.cast<String, dynamic>(), contentPageIndex, buttonIndex);
         break;
       case "onDisplayUnitsLoaded":
         List<dynamic>? args = call.arguments;
@@ -692,6 +695,11 @@ class CleverTapPlugin {
         .invokeMethod('showInbox', {'styleConfig': styleConfig});
   }
 
+  ///Dismisses the App Inbox screen
+  static Future<void> dismissInbox() async {
+    return await _dartToNativeMethodChannel.invokeMethod('dismissInbox', {});
+  }
+
   /// Returns the count of all inbox messages for the user
   static Future<int?> getInboxMessageCount() async {
     return await _dartToNativeMethodChannel.invokeMethod('getInboxMessageCount', {});
@@ -727,10 +735,22 @@ class CleverTapPlugin {
         .invokeMethod('deleteInboxMessageForId', {'messageId': messageId});
   }
 
+  /// Deletes the CTInboxMessage objects for given messageIds
+  static Future<void> deleteInboxMessagesForIds(List<String> messageIds) async {
+    return await _dartToNativeMethodChannel
+        .invokeMethod('deleteInboxMessagesForIds', {'messageIds': messageIds});
+  }
+
   /// Marks the given messageId of CTInboxMessage object as read
   static Future<void> markReadInboxMessageForId(String messageId) async {
     return await _dartToNativeMethodChannel
         .invokeMethod('markReadInboxMessageForId', {'messageId': messageId});
+  }
+
+  /// Marks the given messageIds of CTInboxMessage objects as read
+  static Future<void> markReadInboxMessagesForIds(List<String> messageIds) async {
+    return await _dartToNativeMethodChannel
+        .invokeMethod('markReadInboxMessagesForIds', {'messageIds': messageIds});
   }
 
   /// Pushes the Notification Clicked event for App Inbox to CleverTap.
@@ -948,12 +968,16 @@ class CleverTapPlugin {
   }
 
   static void onVariablesChanged(CleverTapOnVariablesChangedHandler handler) {
+    if (!cleverTapOnVariablesChangedHandlers.contains(handler)) {
       cleverTapOnVariablesChangedHandlers.add(handler);
-      _dartToNativeMethodChannel.invokeMethod('onVariablesChanged', {});
+    }
+    _dartToNativeMethodChannel.invokeMethod('onVariablesChanged', {});
   }
 
   static void onValueChanged(String name, CleverTapOnValueChangedHandler handler) {
+    if (!cleverTapOnValueChangedHandlers.contains(handler)) {
       cleverTapOnValueChangedHandlers.add(handler);
+    }
       _dartToNativeMethodChannel.invokeMethod('onValueChanged', {'name': name});
   }
 }
