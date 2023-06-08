@@ -63,7 +63,6 @@ static NSDateFormatter *dateFormatter;
         [[clevertap productConfig] setDelegate:self];
         [[clevertap featureFlags] setDelegate:self];
         [clevertap setPushNotificationDelegate:self];
-        [clevertap setLibrary:@"Flutter"];
         [clevertap setPushPermissionDelegate:self];
         [self addObservers];
     }
@@ -245,6 +244,8 @@ static NSDateFormatter *dateFormatter;
         result(nil);
     else if ([@"setHuaweiPushToken" isEqualToString:call.method])
         result(nil);
+    else if ([@"setLibrary" isEqualToString:call.method])
+        [self setLibrary:call withResult:result];
     else if ([@"promptPushPrimer" isEqualToString:call.method])
         [self promptPushPrimer:call withResult:result];
     else if ([@"promptForPushNotification" isEqualToString:call.method])
@@ -321,6 +322,11 @@ static NSDateFormatter *dateFormatter;
         [[UIApplication sharedApplication] registerUserNotificationSettings:settings];
     }
     result(nil);
+}
+
+- (void)setLibrary:(FlutterMethodCall*)call withResult:(FlutterResult)result {
+    [[CleverTap sharedInstance] setLibrary:call.arguments[@"libName"]];
+    [[CleverTap sharedInstance] setCustomSdkVersion:call.arguments[@"libName"] version:[call.arguments[@"libVersion"]intValue]];
 }
 
 

@@ -200,6 +200,9 @@ public class CleverTapPlugin implements ActivityAware,
     @Override
     public void onMethodCall(MethodCall call, @NonNull Result result) {
         switch (call.method) {
+            case "setLibrary": {
+                setLibrary(call, result);
+            }
             case "setDebugLevel": {
                 int debugLevelValue = call.argument("debugLevel");
                 CleverTapAPI.setDebugLevel(debugLevelValue);
@@ -609,6 +612,18 @@ public class CleverTapPlugin implements ActivityAware,
             }
         }
 
+    }
+
+    @SuppressLint("RestrictedApi")
+    private void setLibrary(MethodCall call, Result result) {
+        String libName = call.argument("libName");
+        int libVersion = call.argument("libVersion");
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            cleverTapAPI.setCustomSdkVersion(libName, libVersion);
+            result.success(null);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
     }
 
     @Override
@@ -1557,7 +1572,6 @@ public class CleverTapPlugin implements ActivityAware,
             this.cleverTapAPI.setCTFeatureFlagsListener(this);
             this.cleverTapAPI.setCTProductConfigListener(this);
             this.cleverTapAPI.setCTPushAmpListener(this);
-            this.cleverTapAPI.setLibrary("Flutter");
             this.cleverTapAPI.registerPushPermissionNotificationResponseListener(this);
         }
     }
