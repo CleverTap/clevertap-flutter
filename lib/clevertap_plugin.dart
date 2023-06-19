@@ -380,6 +380,12 @@ class CleverTapPlugin {
     return await _dartToNativeMethodChannel.invokeMethod('createNotification', {'extras': data});
   }
 
+  /// Method to create Push Template Notification using CleverTap
+  static Future<void> createPushTemplateNotification(dynamic data) async {
+    print("inside createNotification Dart");
+    return await _dartToNativeMethodChannel.invokeMethod('createPushTemplateNotification', {'extras': data});
+  }
+
   /// Method to process Notification using CleverTap to avoid duplicates using Push Amplification
   static Future<void> processPushNotification(dynamic data) async {
     return await _dartToNativeMethodChannel
