@@ -226,11 +226,7 @@ public class CleverTapPlugin implements ActivityAware,
                 break;
             }
             case "createNotification": {
-                createNotification(call, result);
-                break;
-            }
-            case "createPushTemplateNotification": {
-                createPushTemplateNotification(call, result);
+                renderNotification(call, result);
                 break;
             }
             case "processPushNotification": {
@@ -877,38 +873,22 @@ public class CleverTapPlugin implements ActivityAware,
         }
     }
 
-    private void createNotification(MethodCall call, Result result) {
-        String extras = call.argument("extras");
-        if (isCleverTapNotNull(cleverTapAPI)) {
-            try {
-                Log.d(TAG, "createNotification Android");
-                CleverTapAPI.createNotification(context, Utils.stringToBundle(extras));
-            } catch (JSONException e) {
-                result.error(TAG, "Unable to render notification due to JSONException - " + e.getLocalizedMessage(),
-                        null);
-            }
-            result.success(null);
-        } else {
-            result.error(TAG, ERROR_MSG, null);
-        }
-    }
-
-    private void createPushTemplateNotification(MethodCall call, Result result) {
+    private void renderNotification(MethodCall call, Result result) {
         String extras = call.argument("extras");
         if (isCleverTapNotNull(cleverTapAPI)) {
             boolean isSuccess;
             try {
-                Log.d(TAG, "createPushTemplateNotification Android");
+                Log.d(TAG, "renderNotification Android");
                 Bundle messageBundle = Utils.stringToBundle(extras);
                 isSuccess = PushNotificationHandler.getPushNotificationHandler()
                         .onMessageReceived(context, messageBundle, PushType.FCM.toString());
                 if (isSuccess) {
                     result.success(null);
                 } else {
-                    throw new Exception("Unable to process push template notification rendering");
+                    throw new Exception("Unable to process notification rendering");
                 }
             } catch (JSONException e) {
-                result.error(TAG, "Unable to render push template notification due to JSONException - " + e.getLocalizedMessage(),
+                result.error(TAG, "Unable to render notification due to JSONException - " + e.getLocalizedMessage(),
                         null);
             } catch (Exception e) {
                 result.error(TAG, e.getLocalizedMessage(), null);
