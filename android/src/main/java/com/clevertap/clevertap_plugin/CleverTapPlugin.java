@@ -873,6 +873,9 @@ public class CleverTapPlugin implements ActivityAware,
         }
     }
 
+    /**
+     * Renders both core and push template notifications and also handles the signedcall push
+     */
     private void renderNotification(MethodCall call, Result result) {
         String extras = call.argument("extras");
         if (isCleverTapNotNull(cleverTapAPI)) {
