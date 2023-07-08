@@ -46,6 +46,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
+import io.flutter.embedding.engine.loader.FlutterLoader;
 import io.flutter.embedding.engine.plugins.FlutterPlugin;
 import io.flutter.embedding.engine.plugins.activity.ActivityAware;
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding;
@@ -832,6 +833,7 @@ public class CleverTapPlugin implements ActivityAware,
         } else {
             result.error(TAG, ERROR_MSG, null);
         }
+        new FlutterLoader().ensureInitializationComplete();
     }
 
     @Override

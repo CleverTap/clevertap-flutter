@@ -1,7 +1,11 @@
 import 'dart:async';
+import 'dart:ui';
 
 import 'package:clevertap_plugin/typedefs.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+
+import 'clevertap_callback_dispatcher.dart';
 
 class CleverTapPlugin {
   late CleverTapInAppNotificationDismissedHandler
@@ -226,6 +230,48 @@ class CleverTapPlugin {
   void setCleverTapPushPermissionResponseReceivedHandler(
           CleverTapPushPermissionResponseReceivedHandler handler) =>
       cleverTapPushPermissionResponseReceivedHandler = handler;
+
+  static CleverTapOnKilledStateNotificationClickedHandler? _onKilledStateNotificationClickedHandler;
+
+  /// Set a message handler function which is called when the app is in the
+  /// terminated or killed state.
+  ///
+  /// This provided handler must be a top-level function and cannot be
+  /// anonymous otherwise an [ArgumentError] will be thrown.
+  static CleverTapOnKilledStateNotificationClickedHandler? get onKilledStateNotificationClicked {
+    return _onKilledStateNotificationClickedHandler;
+  }
+
+  /// Allows the background message handler to be created and calls the
+  /// instance delegate [registerBackgroundMessageHandler] to perform any
+  /// platform specific registration logic.
+  static set onKilledNotificationClicked(CleverTapOnKilledStateNotificationClickedHandler? handler) {
+    _onKilledStateNotificationClickedHandler = handler;
+
+    if (handler != null) {
+      registerKilledStateNotificationClickedHandler(handler);
+    }
+  }
+
+  static bool _killedStateNotificationClickedHandlerInitialized = false;
+
+  static void registerKilledStateNotificationClickedHandler(
+      CleverTapOnKilledStateNotificationClickedHandler handler) async {
+    if (defaultTargetPlatform != TargetPlatform.android) {
+      return;
+    }
+
+    if (!_killedStateNotificationClickedHandlerInitialized) {
+      _killedStateNotificationClickedHandlerInitialized = true;
+      final CallbackHandle pluginCallbackHandle = PluginUtilities.getCallbackHandle(callbackDispatcher)!;
+      final CallbackHandle userCallbackHandle =
+      PluginUtilities.getCallbackHandle(handler)!;
+      await _dartToNativeMethodChannel.invokeMapMethod('registerKilledStateNotificationClickedHandler', {
+        'pluginCallbackHandle': pluginCallbackHandle.toRawHandle(),
+        'userCallbackHandle': userCallbackHandle.toRawHandle(),
+      });
+    }
+  }
 
   /// Sets debug level to show logs on Android Studio/Xcode console
   static Future<void> setDebugLevel(int value) async {
