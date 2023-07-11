@@ -38,6 +38,18 @@ class _MyAppState extends State<MyApp> {
     initPlatformState();
     activateCleverTapFlutterPluginHandlers();
     CleverTapPlugin.setDebugLevel(3);
+    CleverTapPlugin.getNotificationAppLaunchPayload().then((a) {
+      setState((() {
+        if(a != null) {
+          print("on Push Click Payload = ${a["nt"]}");
+          showToast("pushClickedPayloadReceived clicked");
+        }
+      }));
+    }).catchError((error) {
+      setState(() {
+        print("$error");
+      });
+    });
     CleverTapPlugin.createNotificationChannel(
         "fluttertest", "Flutter Test", "Flutter Test", 3, true);
     CleverTapPlugin.initializeInbox();
@@ -317,6 +329,7 @@ class _MyAppState extends State<MyApp> {
     this.setState(() async {
       var data = jsonEncode(map);
       print("on Push Click Payload = " + data.toString());
+      showToast("pushClickedPayloadReceived clicked");
     });
   }
 

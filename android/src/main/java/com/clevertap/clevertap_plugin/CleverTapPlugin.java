@@ -6,6 +6,7 @@ import static com.clevertap.clevertap_plugin.Constants.DISPATCHER_HANDLE;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.location.Location;
 import android.os.Build;
 import android.os.Bundle;
@@ -217,6 +218,10 @@ public class CleverTapPlugin implements ActivityAware,
     @Override
     public void onMethodCall(MethodCall call, @NonNull Result result) {
         switch (call.method) {
+            case "getNotificationAppLaunchPayload": {
+                getNotificationAppLaunchPayload(result);
+                break;
+            }
             case "setLibrary": {
                 setLibrary(call, result);
             }
@@ -835,6 +840,21 @@ public class CleverTapPlugin implements ActivityAware,
                 "Variable name = " + name + " does not exist.");
     }
 
+    private void getNotificationAppLaunchPayload(Result result) {
+        if(activity == null) {
+            result.success(null);
+            return;
+        }
+
+        Intent launchIntent = activity.getIntent();
+        if (launchIntent == null || launchIntent.getExtras() == null) {
+            result.success(null);
+            return;
+        }
+
+        result.success(Utils.bundleToMap(launchIntent.getExtras()));
+    }
+
     @SuppressLint("RestrictedApi")
     private void setLibrary(MethodCall call, Result result) {
         String libName = call.argument("libName");
@@ -849,9 +869,7 @@ public class CleverTapPlugin implements ActivityAware,
 
     @Override
     public void onNotificationClickedPayloadReceived(HashMap<String, Object> hashMap) {
-        CleverTapIsolateBackgroundService.enqueueMessageProcessing(context, hashMap);
-
-        //invokeMethodOnUiThread("pushClickedPayloadReceived", hashMap);
+        invokeMethodOnUiThread("pushClickedPayloadReceived", hashMap);
     }
 
     @Override

@@ -260,6 +260,10 @@ class CleverTapPlugin {
     }
   }
 
+  static Future<dynamic> getNotificationAppLaunchPayload() async {
+    return await _dartToNativeMethodChannel.invokeMethod('getNotificationAppLaunchPayload');
+  }
+
   /// Sets debug level to show logs on Android Studio/Xcode console
   static Future<void> setDebugLevel(int value) async {
     return await _dartToNativeMethodChannel.invokeMethod('setDebugLevel', {'debugLevel': value});

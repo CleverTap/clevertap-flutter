@@ -48,5 +48,5 @@ void callbackDispatcher() {
 
   // Once we've finished initializing the callbackDispatcher, let the native portion of the plugin
   // know that it can start the callback invocation.
-  _channel.invokeMethod<void>('CallbackDispatcher#initialized');
+  _channel.invokeMethod<void>('CleverTapCallbackDispatcher#initialized');
 }

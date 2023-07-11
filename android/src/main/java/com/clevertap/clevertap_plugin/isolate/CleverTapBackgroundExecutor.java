@@ -71,7 +71,7 @@ public class CleverTapBackgroundExecutor implements MethodCallHandler {
     public void onMethodCall(MethodCall call, @NonNull Result result) {
         String method = call.method;
         try {
-            if (method.equals("CallbackDispatcher#initialized")) {
+            if (method.equals("CleverTapCallbackDispatcher#initialized")) {
                 // This message is sent by the background method channel as soon as the background isolate
                 // is running. From this point forward, the Android side of this plugin can send
                 // callback handles through the background method channel, and the Dart side will execute
@@ -110,11 +110,7 @@ public class CleverTapBackgroundExecutor implements MethodCallHandler {
         Log.i(TAG, "startBackgroundIsolate#isNotRunning()!" + isNotRunning());
 
         if (isNotRunning()) {
-            Log.i(TAG, "startBackgroundIsolate#isNotRunning() me aya!" + isNotRunning());
-
             long callbackHandle = getPluginCallbackHandle();
-            Log.i(TAG, "startBackgroundIsolate#callbackHandle():" + callbackHandle);
-            Log.i(TAG, "startBackgroundIsolate#callbackHandle!");
             if (callbackHandle != 0) {
                 startBackgroundIsolate(callbackHandle, null);
             }
@@ -150,11 +146,10 @@ public class CleverTapBackgroundExecutor implements MethodCallHandler {
         Runnable myRunnable = () -> {
             Context applicationContext = CleverTapContextHolder.getApplicationContext();
             loader.startInitialization(applicationContext);
-            Log.i(TAG, "startBackgroundIsolate#loader()!");
 
             loader.ensureInitializationCompleteAsync(applicationContext, null, mainHandler, () -> {
                 String appBundlePath = loader.findAppBundlePath();
-                Log.i(TAG, "startBackgroundIsolate#isNotRunning()!");
+                Log.i(TAG, "startBackgroundIsolate#ensureInitializationCompleteAsync()!");
 
                 AssetManager assets = applicationContext.getAssets();
                 if (isNotRunning()) {
@@ -253,7 +248,7 @@ public class CleverTapBackgroundExecutor implements MethodCallHandler {
     private void initializeMethodChannel(BinaryMessenger isolate) {
         // backgroundChannel is the channel responsible for receiving the following messages from
         // the background isolate that was setup by this plugin method call:
-        // - "FirebaseBackgroundMessaging#initialized"
+        // - "CleverTapCallbackDispatcher#initialized"
         //
         // This channel is also responsible for sending requests from Android to Dart to execute Dart
         // callbacks in the background isolate.

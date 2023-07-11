@@ -1,7 +1,3 @@
-// Copyright 2020 The Chromium Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
-
 package com.clevertap.clevertap_plugin.isolate;
 
 import android.content.Context;
@@ -12,13 +8,10 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.core.app.JobIntentService;
 
-import com.clevertap.clevertap_plugin.Utils;
-
 import org.json.JSONObject;
 
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
-import io.flutter.embedding.engine.FlutterShellArgs;
 
 public class CleverTapIsolateBackgroundService extends JobIntentService {
   private static final String TAG = "CTIsolateBGService";
@@ -26,8 +19,6 @@ public class CleverTapIsolateBackgroundService extends JobIntentService {
   private static final int JOB_ID = 2020;
 
   private static Intent intentToBeHandled = null;
-//  private static final List<Intent> messagingQueue =
-//      Collections.synchronizedList(new LinkedList<>());
 
   /** Background Dart execution context. */
   private static CleverTapBackgroundExecutor flutterBackgroundExecutor;
@@ -49,25 +40,16 @@ public class CleverTapIsolateBackgroundService extends JobIntentService {
   /**
    * Called once the Dart isolate ({@code flutterBackgroundExecutor}) has finished initializing.
    *
-   * <p>Invoked by {@link com.clevertap.clevertap_plugin.CleverTapPlugin} when it receives the {@code
-   * FirebaseMessaging.initialized} message. Processes all messaging events that came in while the
+   * <p>Invoked by {@link com.clevertap.clevertap_plugin.isolate.CleverTapBackgroundExecutor} when it receives the {@code
+   * CleverTapCallbackDispatcher#initialized} message. Processes the incoming intent that came in while the
    * isolate was starting.
    */
   /* package */
   static void onInitialized() {
-    Log.i(TAG, "FlutterFirebaseMessagingBackgroundService started!");
+    Log.i(TAG, "flutterBackgroundExecutor#executeDartCallbackInBackgroundIsolate!");
     flutterBackgroundExecutor.executeDartCallbackInBackgroundIsolate(intentToBeHandled, null);
     intentToBeHandled = null;
-    /*synchronized (messagingQueue) {
-      // Handle all the message events received before the Dart isolate was
-      // initialized, then clear the queue.
-      for (Intent intent : messagingQueue) {
-        flutterBackgroundExecutor.executeDartCallbackInBackgroundIsolate(intent, null);
-      }
-      messagingQueue.clear();
-    }*/
   }
-
 
   @Override
   public void onCreate() {
@@ -75,7 +57,7 @@ public class CleverTapIsolateBackgroundService extends JobIntentService {
     if (flutterBackgroundExecutor == null) {
       flutterBackgroundExecutor = new CleverTapBackgroundExecutor();
     }
-    Log.i(TAG, "startBackgroundIsolate from oncreate!");
+    Log.i(TAG, "startBackgroundIsolate from onCreate!");
     flutterBackgroundExecutor.startBackgroundIsolate();
   }
 
