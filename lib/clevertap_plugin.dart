@@ -231,31 +231,18 @@ class CleverTapPlugin {
           CleverTapPushPermissionResponseReceivedHandler handler) =>
       cleverTapPushPermissionResponseReceivedHandler = handler;
 
-  static CleverTapOnKilledStateNotificationClickedHandler? _onKilledStateNotificationClickedHandler;
-
   /// Set a message handler function which is called when the app is in the
   /// terminated or killed state.
   ///
   /// This provided handler must be a top-level function and cannot be
   /// anonymous otherwise an [ArgumentError] will be thrown.
-  static CleverTapOnKilledStateNotificationClickedHandler? get onKilledStateNotificationClicked {
-    return _onKilledStateNotificationClickedHandler;
-  }
-
-  /// Allows the background message handler to be created and calls the
-  /// instance delegate [registerBackgroundMessageHandler] to perform any
-  /// platform specific registration logic.
-  static set onKilledNotificationClicked(CleverTapOnKilledStateNotificationClickedHandler? handler) {
-    _onKilledStateNotificationClickedHandler = handler;
-
-    if (handler != null) {
-      registerKilledStateNotificationClickedHandler(handler);
-    }
+  static void onKilledStateNotificationClicked(CleverTapOnKilledStateNotificationClickedHandler handler) {
+    _registerKilledStateNotificationClickedHandler(handler);
   }
 
   static bool _killedStateNotificationClickedHandlerInitialized = false;
 
-  static void registerKilledStateNotificationClickedHandler(
+  static void _registerKilledStateNotificationClickedHandler(
       CleverTapOnKilledStateNotificationClickedHandler handler) async {
     if (defaultTargetPlatform != TargetPlatform.android) {
       return;

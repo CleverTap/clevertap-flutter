@@ -6,7 +6,18 @@ import 'package:clevertap_plugin/clevertap_plugin.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_styled_toast/flutter_styled_toast.dart';
 
-void main() => runApp(MyApp());
+@pragma('vm:entry-point')
+void onKilledStateNotificationClickedHandler(Map<String, dynamic> map) async {
+  print("I am from main.dart!!!");
+  print("Payload received: " + map.toString());
+}
+
+void main() async {
+  print("main ran!");
+  WidgetsFlutterBinding.ensureInitialized();
+  CleverTapPlugin.onKilledStateNotificationClicked(onKilledStateNotificationClickedHandler);
+  runApp(MyApp());
+}
 
 class MyApp extends StatefulWidget {
   @override
@@ -23,6 +34,7 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
+    print("~~initialize is called!");
     initPlatformState();
     activateCleverTapFlutterPluginHandlers();
     CleverTapPlugin.setDebugLevel(3);
@@ -46,6 +58,8 @@ class _MyAppState extends State<MyApp> {
 
   void activateCleverTapFlutterPluginHandlers() {
     _clevertapPlugin = new CleverTapPlugin();
+    print("~~test is calling!");
+    print("~~test is called!");
     _clevertapPlugin
         .setCleverTapPushAmpPayloadReceivedHandler(pushAmpPayloadReceived);
     _clevertapPlugin.setCleverTapPushClickedPayloadReceivedHandler(

@@ -1,5 +1,8 @@
 package com.clevertap.clevertap_plugin;
 
+import static com.clevertap.clevertap_plugin.Constants.CALLBACK_HANDLE;
+import static com.clevertap.clevertap_plugin.Constants.DISPATCHER_HANDLE;
+
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
@@ -33,12 +36,14 @@ import com.clevertap.android.sdk.product_config.CTProductConfigListener;
 import com.clevertap.android.sdk.pushnotification.CTPushNotificationListener;
 import com.clevertap.android.sdk.pushnotification.PushConstants.PushType;
 import com.clevertap.android.sdk.pushnotification.amp.CTPushAmpListener;
-import com.clevertap.android.sdk.variables.CTVariableUtils;
 import com.clevertap.android.sdk.variables.Var;
 import com.clevertap.android.sdk.variables.callbacks.FetchVariablesCallback;
 import com.clevertap.android.sdk.variables.callbacks.VariableCallback;
 import com.clevertap.android.sdk.variables.callbacks.VariablesChangedCallback;
+import com.clevertap.clevertap_plugin.isolate.CleverTapIsolateBackgroundService;
+import com.clevertap.clevertap_plugin.isolate.IsolateHandlePreferences;
 
+import com.clevertap.clevertap_plugin.CleverTapTypeUtils.LongUtil;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -163,6 +168,7 @@ public class CleverTapPlugin implements ActivityAware,
     public void onDetachedFromEngine(@NonNull FlutterPluginBinding binding) {
         dartToNativeMethodChannel = null;
         nativeToDartMethodChannel = null;
+        context = null;
     }
 
     @Override
@@ -219,6 +225,13 @@ public class CleverTapPlugin implements ActivityAware,
                 CleverTapAPI.setDebugLevel(debugLevelValue);
                 result.success(null);
                 break;
+            }
+            case "registerKilledStateNotificationClickedHandler": {
+                Long dispatcherHandle = LongUtil.parseLong(call.argument(DISPATCHER_HANDLE));
+                Long callbackHandle = LongUtil.parseLong(call.argument(CALLBACK_HANDLE));
+                if (dispatcherHandle != null && callbackHandle != null) {
+                    new IsolateHandlePreferences(context).saveCallbackKeys(dispatcherHandle, callbackHandle);
+                }
             }
             // Push Methods
             case "setPushToken": {
@@ -836,7 +849,9 @@ public class CleverTapPlugin implements ActivityAware,
 
     @Override
     public void onNotificationClickedPayloadReceived(HashMap<String, Object> hashMap) {
-        invokeMethodOnUiThread("pushClickedPayloadReceived", hashMap);
+        CleverTapIsolateBackgroundService.enqueueMessageProcessing(context, hashMap);
+
+        //invokeMethodOnUiThread("pushClickedPayloadReceived", hashMap);
     }
 
     @Override
