@@ -30,12 +30,14 @@ import java.util.Set;
 public class Utils {
 
     static Map<String, Object> bundleToMap(Bundle extras) {
-        Map<String, Object> map = new HashMap<>();
-
-        Set<String> ks = extras.keySet();
-        for (String key : ks) {
-            map.put(key, extras.get(key));
+        if (extras == null) {
+            return null;
         }
+        Map<String, Object> map = new HashMap<>();
+            Set<String> ks = extras.keySet();
+            for (String key : ks) {
+                map.put(key, extras.get(key));
+            }
         return map;
     }
 

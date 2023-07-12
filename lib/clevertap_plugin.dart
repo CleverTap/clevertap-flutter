@@ -1,11 +1,14 @@
 import 'dart:async';
 import 'dart:ui';
 
-import 'package:clevertap_plugin/typedefs.dart';
+import 'package:clevertap_plugin/src/types.dart';
+import 'package:clevertap_plugin/src/typedefs.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
-import 'clevertap_callback_dispatcher.dart';
+import 'src/clevertap_callback_dispatcher.dart';
+
+export 'src/types.dart';
 
 class CleverTapPlugin {
   late CleverTapInAppNotificationDismissedHandler
@@ -260,8 +263,16 @@ class CleverTapPlugin {
     }
   }
 
-  static Future<dynamic> getNotificationAppLaunchPayload() async {
-    return await _dartToNativeMethodChannel.invokeMethod('getNotificationAppLaunchPayload');
+  static Future<CleverTapAppLaunchNotification>
+      getAppLaunchNotification() async {
+    Map<dynamic, dynamic> result = await _dartToNativeMethodChannel
+        .invokeMethod('getAppLaunchNotification');
+    final Map<String, dynamic>? notificationPayload =
+        result.containsKey('notificationPayload')
+            ? Map<String, dynamic>.from(result['notificationPayload'])
+            : null;
+    return CleverTapAppLaunchNotification(result['notificationLaunchedApp'],
+        payload: notificationPayload);
   }
 
   /// Sets debug level to show logs on Android Studio/Xcode console

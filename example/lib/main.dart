@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:developer';
 import 'dart:io' show Platform;
 
 import 'package:clevertap_plugin/clevertap_plugin.dart';
@@ -9,16 +10,15 @@ import 'package:flutter_styled_toast/flutter_styled_toast.dart';
 
 @pragma('vm:entry-point')
 void onKilledStateNotificationClickedHandler(Map<String, dynamic> map) async {
-  print("I ran from main.dart!!!");
-  print("Payload received: " + map.toString());
+  print("onKilledStateNotificationClickedHandler called from headless task!");
+  print("Notification Payload received: " + map.toString());
 }
 
 void main() async {
-  print("main ran!");
   WidgetsFlutterBinding.ensureInitialized();
   CleverTapPlugin.onKilledStateNotificationClicked(onKilledStateNotificationClickedHandler);
   runApp(MaterialApp(
-    title: 'Navigation Basics',
+    title: 'Home Page',
     home: MyApp(),
   ));
 }
@@ -35,27 +35,29 @@ class _MyAppState extends State<MyApp> {
   var offLine = false;
   var enableDeviceNetworkingInfo = false;
 
-  void handleKilledStateNotificationInteraction() async {
-    var notificationAppLaunchPayload =
-        await CleverTapPlugin.getNotificationAppLaunchPayload();
-    if (notificationAppLaunchPayload != null) {
-      print(
-          "handleKilledStateNotificationInteraction => $notificationAppLaunchPayload");
+  void _handleKilledStateNotificationInteraction() async {
+    CleverTapAppLaunchNotification appLaunchNotification =
+        await CleverTapPlugin.getAppLaunchNotification();
+    print(
+        "_handleKilledStateNotificationInteraction => $appLaunchNotification");
 
-      var type = notificationAppLaunchPayload["type"];
-      var title = notificationAppLaunchPayload["nt"];
-      var message = notificationAppLaunchPayload["nm"];
+    if (appLaunchNotification.didNotificationLaunchApp) {
+      Map<String, dynamic> notificationPayload = appLaunchNotification.payload!;
+      var type = notificationPayload["type"];
+      var title = notificationPayload["nt"];
+      var message = notificationPayload["nm"];
 
-      print(
-          "handleKilledStateNotificationInteraction => Type: $type, Title: $title, Message: $message ");
-      showToast("handleKilledStateNotificationInteraction called!");
       if (type != null) {
         Navigator.push(
             context,
             MaterialPageRoute(
-                builder: (context) => DeepLinkPage(
-                    type: type, title: title, message: message)));
+                builder: (context) =>
+                    DeepLinkPage(type: type, title: title, message: message)));
       }
+
+      print(
+          "_handleKilledStateNotificationInteraction => Type: $type, Title: $title, Message: $message ");
+      showToast("_handleKilledStateNotificationInteraction called!");
     }
   }
 
@@ -65,7 +67,7 @@ class _MyAppState extends State<MyApp> {
     initPlatformState();
     activateCleverTapFlutterPluginHandlers();
     CleverTapPlugin.setDebugLevel(3);
-    handleKilledStateNotificationInteraction();
+    _handleKilledStateNotificationInteraction();
     CleverTapPlugin.createNotificationChannel(
         "fluttertest", "Flutter Test", "Flutter Test", 3, true);
     CleverTapPlugin.initializeInbox();

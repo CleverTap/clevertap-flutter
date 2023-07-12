@@ -218,8 +218,8 @@ public class CleverTapPlugin implements ActivityAware,
     @Override
     public void onMethodCall(MethodCall call, @NonNull Result result) {
         switch (call.method) {
-            case "getNotificationAppLaunchPayload": {
-                getNotificationAppLaunchPayload(result);
+            case "getAppLaunchNotification": {
+                getAppLaunchNotification(result);
                 break;
             }
             case "setLibrary": {
@@ -840,19 +840,24 @@ public class CleverTapPlugin implements ActivityAware,
                 "Variable name = " + name + " does not exist.");
     }
 
-    private void getNotificationAppLaunchPayload(Result result) {
-        if(activity == null) {
-            result.success(null);
-            return;
-        }
+    private void getAppLaunchNotification(Result result) {
+        Map<String, Object> appLaunchNotificationMap = new HashMap<>();
+        boolean didNotificationLaunchApp = false;
 
-        Intent launchIntent = activity.getIntent();
-        if (launchIntent == null || launchIntent.getExtras() == null) {
-            result.success(null);
-            return;
+        if(activity != null) {
+            Intent launchIntent = activity.getIntent();
+            Bundle intentExtras = launchIntent.getExtras();
+            //intentExtras would be non-null if the app is launched from a notification click.
+            if (intentExtras != null) {
+                didNotificationLaunchApp = true;
+            }
+            Map notificationPayload = Utils.bundleToMap(intentExtras);
+            if (notificationPayload != null) {
+                appLaunchNotificationMap.put("notificationPayload", notificationPayload);
+            }
         }
-
-        result.success(Utils.bundleToMap(launchIntent.getExtras()));
+        appLaunchNotificationMap.put("notificationLaunchedApp", didNotificationLaunchApp);
+        result.success(appLaunchNotificationMap);
     }
 
     @SuppressLint("RestrictedApi")
