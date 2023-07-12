@@ -267,12 +267,7 @@ class CleverTapPlugin {
       getAppLaunchNotification() async {
     Map<dynamic, dynamic> result = await _dartToNativeMethodChannel
         .invokeMethod('getAppLaunchNotification');
-    final Map<String, dynamic>? notificationPayload =
-        result.containsKey('notificationPayload')
-            ? Map<String, dynamic>.from(result['notificationPayload'])
-            : null;
-    return CleverTapAppLaunchNotification(result['notificationLaunchedApp'],
-        payload: notificationPayload);
+    return CleverTapAppLaunchNotification.fromMap(result);
   }
 
   /// Sets debug level to show logs on Android Studio/Xcode console
