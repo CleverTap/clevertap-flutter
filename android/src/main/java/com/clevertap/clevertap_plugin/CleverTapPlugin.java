@@ -41,7 +41,7 @@ import com.clevertap.android.sdk.variables.Var;
 import com.clevertap.android.sdk.variables.callbacks.FetchVariablesCallback;
 import com.clevertap.android.sdk.variables.callbacks.VariableCallback;
 import com.clevertap.android.sdk.variables.callbacks.VariablesChangedCallback;
-import com.clevertap.clevertap_plugin.isolate.CleverTapIsolateBackgroundService;
+import com.clevertap.clevertap_plugin.isolate.CleverTapBackgroundIsolateRunner;
 import com.clevertap.clevertap_plugin.isolate.IsolateHandlePreferences;
 
 import com.clevertap.clevertap_plugin.CleverTapTypeUtils.LongUtil;
@@ -235,7 +235,7 @@ public class CleverTapPlugin implements ActivityAware,
                 Long dispatcherHandle = LongUtil.parseLong(call.argument(DISPATCHER_HANDLE));
                 Long callbackHandle = LongUtil.parseLong(call.argument(CALLBACK_HANDLE));
                 if (dispatcherHandle != null && callbackHandle != null) {
-                    new IsolateHandlePreferences(context).saveCallbackKeys(dispatcherHandle, callbackHandle);
+                    IsolateHandlePreferences.saveCallbackKeys(context, dispatcherHandle, callbackHandle);
                 }
             }
             // Push Methods

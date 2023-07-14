@@ -4,7 +4,7 @@ package com.clevertap.clevertap_plugin;
 import android.content.Context;
 import android.util.Log;
 
-public class CleverTapContextHolder {
+public class CleverTapAppContextHolder {
   private static Context applicationContext;
 
   public static Context getApplicationContext() {
@@ -13,6 +13,6 @@ public class CleverTapContextHolder {
 
   public static void setApplicationContext(Context applicationContext) {
     Log.d("CleverTapContextHolder", "received application context.");
-    CleverTapContextHolder.applicationContext = applicationContext;
+    CleverTapAppContextHolder.applicationContext = applicationContext;
   }
 }
