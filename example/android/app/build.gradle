@@ -32,7 +32,7 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.clevertap.fct"
+        applicationId "com.example.clevertap_plugin_example"
         minSdkVersion 21
         targetSdkVersion 33
         versionCode flutterVersionCode.toInteger()
