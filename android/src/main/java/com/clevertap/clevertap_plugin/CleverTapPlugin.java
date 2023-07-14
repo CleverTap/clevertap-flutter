@@ -223,6 +223,7 @@ public class CleverTapPlugin implements ActivityAware,
             }
             case "setLibrary": {
                 setLibrary(call, result);
+                break;
             }
             case "setDebugLevel": {
                 int debugLevelValue = call.argument("debugLevel");
