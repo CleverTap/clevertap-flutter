@@ -41,10 +41,9 @@ import com.clevertap.android.sdk.variables.Var;
 import com.clevertap.android.sdk.variables.callbacks.FetchVariablesCallback;
 import com.clevertap.android.sdk.variables.callbacks.VariableCallback;
 import com.clevertap.android.sdk.variables.callbacks.VariablesChangedCallback;
-import com.clevertap.clevertap_plugin.isolate.CleverTapBackgroundIsolateRunner;
+import com.clevertap.clevertap_plugin.CleverTapTypeUtils.LongUtil;
 import com.clevertap.clevertap_plugin.isolate.IsolateHandlePreferences;
 
-import com.clevertap.clevertap_plugin.CleverTapTypeUtils.LongUtil;
 import org.json.JSONException;
 import org.json.JSONObject;
 

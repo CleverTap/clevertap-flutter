@@ -33,11 +33,13 @@ public class Utils {
         if (extras == null) {
             return null;
         }
+
         Map<String, Object> map = new HashMap<>();
-            Set<String> ks = extras.keySet();
-            for (String key : ks) {
-                map.put(key, extras.get(key));
-            }
+
+        Set<String> ks = extras.keySet();
+        for (String key : ks) {
+            map.put(key, extras.get(key));
+        }
         return map;
     }
 

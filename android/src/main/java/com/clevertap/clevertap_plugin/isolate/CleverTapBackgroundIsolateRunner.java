@@ -1,21 +1,15 @@
 package com.clevertap.clevertap_plugin.isolate;
 
-import android.annotation.SuppressLint;
 import android.content.Context;
 import android.util.Log;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.annotation.RestrictTo;
-
-import com.clevertap.android.sdk.CleverTapAPI;
-import com.clevertap.android.sdk.CleverTapInstanceConfig;
-import com.clevertap.android.sdk.task.CTExecutorFactory;
-import com.clevertap.android.sdk.task.Task;
 import com.clevertap.clevertap_plugin.CleverTapAppContextHolder;
 
 import java.util.Map;
 
+/**
+ * A runner class which abstracts the startup process for a the background isolate.
+ */
 public class CleverTapBackgroundIsolateRunner {
     private static final String TAG = "CTBGIsolateRunner";
 

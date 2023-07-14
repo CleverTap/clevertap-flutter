@@ -36,7 +36,7 @@ import io.flutter.view.FlutterCallbackInformation;
  * A background executor which handles initializing a background isolate running a
  * callback dispatcher, used to invoke Dart callbacks in background/killed state.
  */
-public class CleverTapBackgroundIsolateExecutor implements MethodCallHandler {
+class CleverTapBackgroundIsolateExecutor implements MethodCallHandler {
     private static final String TAG = "CTBGIsolateExecutor";
     private final Context context;
     private final Map<String, Object> messageMap;
