@@ -284,7 +284,7 @@ CleverTapPlugin.setDebugLevel(3);
 
 ## Push Notifications
 
-#### Handle Notification Click 
+#### **Handle Notification Click**
 Register a `setCleverTapPushClickedPayloadReceivedHandler` handler to get a notification click callback along with the entire payload.
 
 ```Dart
@@ -299,7 +299,26 @@ _clevertapPlugin.setCleverTapPushClickedPayloadReceivedHandler(pushClickedPayloa
 > Please note that the `pushClickedPayloadReceived` handler is triggered in Android platform only when the app is in the foreground or background states, and not when it has been terminated(killed).
 > However, in the case of iOS platform, this handler is supported regardless of whether the app is in the foreground, background, or has been terminated (killed).
 
-#### Handling Android Platform Exception for Notification Clicks When the App Is Killed
+#### **[Android Platform] Handle Notification Trampoline Restrictions to support `pushClickedPayloadReceived` handler in Android 12 and Above**
+Due to [notification trampoline restrictions](https://developer.android.com/about/versions/12/behavior-changes-12#notification-trampolines), Android 12 and above do not directly support the `pushClickedPayloadReceived` callback.
+Hence, apps need to add manual handling for Android 12 and above to inform the CleverTap SDK about the notification click and get the `pushClickedPayloadReceived` callback.
+
+Add the following code in the `onNewIntent()` method of the Launcher `FlutterActivity` class in android:
+```kotlin
+class MainActivity : FlutterActivity() {
+
+override fun onNewIntent(intent: Intent?) {
+   super.onNewIntent(intent)
+
+   // On Android 12 and above, inform the notification click to get the pushClickedPayloadReceived callback on dart side.
+   if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+       cleverTapDefaultInstance?.pushNotificationClickedEvent(intent!!.extras)
+   }
+ }
+}
+```
+
+#### **[Android Platform] Handle Notification Clicks When the App Is Killed**
 The CleverTap Plugin provides two ways to handle user interactions with notifications, depending on whether the app needs to perform UI or non-UI operations.
 
 ##### **1. Perform UI impacting operation using `CleverTapPlugin.getAppLaunchNotification()`:**
@@ -356,7 +375,7 @@ class _Application extends State<Application> {
 
 ##### **2. Perform non-UI operation using `onKilledStateNotificationClicked` handler:**
 There are two steps to setup the `onKilledStateNotificationClicked` handler:
-1. Your `Application` class should extend the `CleverTapApplication` class instead of the `Application` class.
+1. Your `Application` class should extend the `CleverTapApplication` class instead of the `FlutterApplication` class.
 2. Register the `onKilledStateNotificationClicked` handler to get a notification click callback along with the entire payload. When notification is clicked, an isolate is spawned (Android only) allowing you to handle notification click even when your application is not running.
 There are a few things to keep in mind about your `onKilledStateNotificationClicked` handler:
  - It must not be an anonymous function.

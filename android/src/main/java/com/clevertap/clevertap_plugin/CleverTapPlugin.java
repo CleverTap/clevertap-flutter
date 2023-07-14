@@ -236,6 +236,7 @@ public class CleverTapPlugin implements ActivityAware,
                 if (dispatcherHandle != null && callbackHandle != null) {
                     IsolateHandlePreferences.saveCallbackKeys(context, dispatcherHandle, callbackHandle);
                 }
+                break;
             }
             // Push Methods
             case "setPushToken": {
@@ -845,14 +846,16 @@ public class CleverTapPlugin implements ActivityAware,
 
         if(activity != null) {
             Intent launchIntent = activity.getIntent();
-            Bundle intentExtras = launchIntent.getExtras();
-            //intentExtras would be non-null if the app is launched from a notification click.
-            if (intentExtras != null) {
-                didNotificationLaunchApp = true;
-            }
-            Map notificationPayload = Utils.bundleToMap(intentExtras);
-            if (notificationPayload != null) {
-                appLaunchNotificationMap.put("notificationPayload", notificationPayload);
+            if (launchIntent != null) {
+                Bundle intentExtras = launchIntent.getExtras();
+                //intentExtras would be non-null if the app is launched from a notification click.
+                if (intentExtras != null) {
+                    didNotificationLaunchApp = true;
+                }
+                Map notificationPayload = Utils.bundleToMap(intentExtras);
+                if (notificationPayload != null) {
+                    appLaunchNotificationMap.put("notificationPayload", notificationPayload);
+                }
             }
         }
         appLaunchNotificationMap.put("notificationLaunchedApp", didNotificationLaunchApp);
