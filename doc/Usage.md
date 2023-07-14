@@ -284,6 +284,103 @@ CleverTapPlugin.setDebugLevel(3);
 
 ## Push Notifications
 
+#### Handle Notification Click 
+Register a `setCleverTapPushClickedPayloadReceivedHandler` handler to get a notification click callback along with the entire payload.
+
+```Dart
+_clevertapPlugin.setCleverTapPushClickedPayloadReceivedHandler(pushClickedPayloadReceived);
+
+ void pushClickedPayloadReceived(Map<String, dynamic> map) {
+    print("pushClickedPayloadReceived called with notification payload: " + map.toString());
+}
+```
+> **Note:**
+>
+> Please note that the `pushClickedPayloadReceived` handler is triggered in Android platform only when the app is in the foreground or background states, and not when it has been terminated(killed).
+> However, in the case of iOS platform, this handler is supported regardless of whether the app is in the foreground, background, or has been terminated (killed).
+
+#### Handling Android Platform Exception for Notification Clicks When the App Is Killed
+The CleverTap Plugin provides two ways to handle user interactions with notifications, depending on whether the app needs to perform UI or non-UI operations.
+
+##### **1. Perform UI impacting operation using `CleverTapPlugin.getAppLaunchNotification()`:**
+The default behavior on Android is to launch the application if the application is terminated(killed).
+Use `CleverTapPlugin.getAppLaunchNotification()` to get a Future containing a notification-payload of `Map` type if the application is opened from a terminated(killed) state.
+Depending on the content of a notification-payload, you may perform UI operation like redirecting the user to a specific page. 
+
+```Dart
+class Application extends StatefulWidget {
+  @override
+  State<StatefulWidget> createState() => _Application();
+}
+
+class _Application extends State<Application> {
+  void _handleKilledStateNotificationInteraction() async {
+    // Retrieve the notification-payload in a 'CleverTapAppLaunchNotification' class object 
+    // which caused the application to open from a terminated state.
+    CleverTapAppLaunchNotification appLaunchNotification = await CleverTapPlugin.getAppLaunchNotification();
+    
+    if (appLaunchNotification.didNotificationLaunchApp) {
+      //App is launched from a notification click
+      Map<String, dynamic> notificationPayload = appLaunchNotification.payload!;
+      // It is assumed that all notifications contain a data field with the key 'type'. You may have 
+      // a different key for deeplink handling.
+      var type = notificationPayload["type"];
+
+      if (type != null) {
+        Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (context) =>
+                    DeepLinkPage(type: type)));
+      }
+
+      print(
+          "_handleKilledStateNotificationInteraction => Type: $type");
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Run CleverTapPlugin.getAppLaunchNotification in an async function
+    // as initState() must not be async
+    _handleKilledStateNotificationInteraction();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Text("...");
+  }
+}
+```
+
+##### **2. Perform non-UI operation using `onKilledStateNotificationClicked` handler:**
+There are two steps to setup the `onKilledStateNotificationClicked` handler:
+1. Your `Application` class should extend the `CleverTapApplication` class instead of the `Application` class.
+2. Register the `onKilledStateNotificationClicked` handler to get a notification click callback along with the entire payload. When notification is clicked, an isolate is spawned (Android only) allowing you to handle notification click even when your application is not running.
+There are a few things to keep in mind about your `onKilledStateNotificationClicked` handler:
+ - It must not be an anonymous function.
+ - It must be a top-level function (e.g. not a class method which requires initialization).
+ - When using Flutter version 3.3.0 or higher, the `onKilledStateNotificationClicked` handler must be annotated with `@pragma('vm:entry-point')` right above the function declaration (otherwise it may be removed during tree shaking for release mode).
+
+Add the following method to your `main.dart` file, right after the import statements, and outside any Widget class declaration, to process push notifications in the killed state via a Flutter background isolate:
+
+```Dart
+@pragma('vm:entry-point')
+void _onKilledStateNotificationClickedHandler(Map<String, dynamic> map) async {
+  print("Notification Payload received: " + map.toString());
+}
+
+void main() {
+  CleverTapPlugin.onKilledStateNotificationClicked(_onKilledStateNotificationClickedHandler);
+  runApp(MyApp());
+}
+```
+
+> **Note:**
+> Since the `_onKilledStateNotificationClickedHandler` handler runs in its own isolate outside your applications context, it is not possible to update application state or execute any UI operation from the handler itself. 
+> You can, however, perform HTTP requests, IO operations with local storage etc.
+
 #### Creating Notification Channel
 
 ```Dart
