@@ -843,23 +843,23 @@ public class CleverTapPlugin implements ActivityAware,
 
     private void getAppLaunchNotification(Result result) {
         Map<String, Object> appLaunchNotificationMap = new HashMap<>();
-        boolean didNotificationLaunchApp = false;
+        boolean notificationLaunchedApp = false;
 
         if(activity != null) {
             Intent launchIntent = activity.getIntent();
             if (launchIntent != null) {
                 Bundle intentExtras = launchIntent.getExtras();
-                //intentExtras would be non-null if the app is launched from a notification click.
-                if (intentExtras != null) {
-                    didNotificationLaunchApp = true;
-                }
-                Map notificationPayload = Utils.bundleToMap(intentExtras);
-                if (notificationPayload != null) {
+                // notificationLaunchedApp is true when intentExtras is non-null and app is launched from a
+                // notification click which was rendered by CleverTap SDK.
+                notificationLaunchedApp = intentExtras != null &&
+                        intentExtras.containsKey("wzrk_pn") && intentExtras.containsKey("nm");
+                if (notificationLaunchedApp) {
+                    Map notificationPayload = Utils.bundleToMap(intentExtras);
                     appLaunchNotificationMap.put("notificationPayload", notificationPayload);
                 }
             }
         }
-        appLaunchNotificationMap.put("notificationLaunchedApp", didNotificationLaunchApp);
+        appLaunchNotificationMap.put("notificationLaunchedApp", notificationLaunchedApp);
         result.success(appLaunchNotificationMap);
     }
 

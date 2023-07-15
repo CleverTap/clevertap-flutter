@@ -343,7 +343,7 @@ class _Application extends State<Application> {
         .getAppLaunchNotification();
 
     if (appLaunchNotification.didNotificationLaunchApp) {
-      //App is launched from a notification click
+      //App is launched from a notification click which was rendered by the CleverTap SDK. 
       Map<String, dynamic> notificationPayload = appLaunchNotification.payload!;
       _handleDeeplink();
     }
