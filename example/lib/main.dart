@@ -43,21 +43,7 @@ class _MyAppState extends State<MyApp> {
 
     if (appLaunchNotification.didNotificationLaunchApp) {
       Map<String, dynamic> notificationPayload = appLaunchNotification.payload!;
-      var type = notificationPayload["type"];
-      var title = notificationPayload["nt"];
-      var message = notificationPayload["nm"];
-
-      if (type != null) {
-        Navigator.push(
-            context,
-            MaterialPageRoute(
-                builder: (context) =>
-                    DeepLinkPage(type: type, title: title, message: message)));
-      }
-
-      print(
-          "_handleKilledStateNotificationInteraction => Type: $type, Title: $title, Message: $message ");
-      showToast("_handleKilledStateNotificationInteraction called!");
+      handleDeeplink(notificationPayload);
     }
   }
 
@@ -340,22 +326,10 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
-  void pushClickedPayloadReceived(Map<String, dynamic> map) {
+  void pushClickedPayloadReceived(Map<String, dynamic> notificationPayload) {
     print("pushClickedPayloadReceived called");
-    var type = map["type"];
-    var title = map["nt"];
-    var message = map["nm"];
-
-    if (type != null) {
-      Navigator.push(
-          context,
-          MaterialPageRoute(
-              builder: (context) => DeepLinkPage(
-                  type: type, title: title, message: message)));
-    }
-
-    print("on Push Click Payload = " + map.toString());
-    showToast("pushClickedPayloadReceived clicked");
+    print("on Push Click Payload = " + notificationPayload.toString());
+    handleDeeplink(notificationPayload);
   }
 
   void pushPermissionResponseReceived(bool accepted) {
@@ -2329,5 +2303,22 @@ class _MyAppState extends State<MyApp> {
       CleverTapPlugin.onValueChanged('flutter_var_string', (variable) {
         print("PE -> onValueChanged: " + variable.toString());
       });
+  }
+
+  void handleDeeplink(Map<String, dynamic> notificationPayload) {
+    var type = notificationPayload["type"];
+    var title = notificationPayload["nt"];
+    var message = notificationPayload["nm"];
+
+    if (type != null) {
+      Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (context) =>
+                  DeepLinkPage(type: type, title: title, message: message)));
+    }
+
+    print(
+        "_handleKilledStateNotificationInteraction => Type: $type, Title: $title, Message: $message ");
   }
 }

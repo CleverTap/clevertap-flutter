@@ -290,8 +290,11 @@ Register a `setCleverTapPushClickedPayloadReceivedHandler` handler to get a noti
 ```Dart
 _clevertapPlugin.setCleverTapPushClickedPayloadReceivedHandler(pushClickedPayloadReceived);
 
- void pushClickedPayloadReceived(Map<String, dynamic> map) {
-    print("pushClickedPayloadReceived called with notification payload: " + map.toString());
+void pushClickedPayloadReceived(Map<String, dynamic> notificationPayload) {
+  print("pushClickedPayloadReceived called with notification payload: " + notificationPayload.toString());
+  // You may perform UI operation like redirecting the user to a specific page based on custom key-value pairs
+  // passed in the notificationPayload. You may also perform non UI operation such as HTTP requests, IO with local storage etc.
+  handleNotificationClick(notificationPayload); 
 }
 ```
 > **Note:**
@@ -336,27 +339,32 @@ class _Application extends State<Application> {
   void _handleKilledStateNotificationInteraction() async {
     // Retrieve the notification-payload in a 'CleverTapAppLaunchNotification' class object 
     // which caused the application to open from a terminated state.
-    CleverTapAppLaunchNotification appLaunchNotification = await CleverTapPlugin.getAppLaunchNotification();
-    
+    CleverTapAppLaunchNotification appLaunchNotification = await CleverTapPlugin
+        .getAppLaunchNotification();
+
     if (appLaunchNotification.didNotificationLaunchApp) {
       //App is launched from a notification click
       Map<String, dynamic> notificationPayload = appLaunchNotification.payload!;
-      // It is assumed that all notifications contain a data field with the key 'type'. You may have 
-      // a different key for deeplink handling.
-      var type = notificationPayload["type"];
+      _handleDeeplink();
+    }
+  }
+  
+  void _handleDeeplink() {
+    // It is assumed that all notifications contain a data field with the key 'type' but you may also have 
+    // a different key for deeplink handling.
+    var type = notificationPayload["type"];
 
-      if (type != null) {
-        Navigator.push(
-            context,
-            MaterialPageRoute(
-                builder: (context) =>
-                    DeepLinkPage(type: type)));
-      }
-
+    if (type != null) {
       print(
           "_handleKilledStateNotificationInteraction => Type: $type");
+      Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (context) =>
+                  DeepLinkPage(type: type)));
+    }
   }
-
+  
   @override
   void initState() {
     super.initState();
