@@ -15,8 +15,7 @@ public class CleverTapBackgroundIsolateRunner {
 
     private static CleverTapBackgroundIsolateExecutor backgroundIsolateExecutor;
 
-    public static void startBackgroundIsolate(Context context,
-                                       Map<String, Object> messageMap) {
+    public static void startBackgroundIsolate(Context context, Map<String, Object> messageMap) {
         if (context == null) {
             Log.d(TAG, "Can't start a background isolate with a null appContext!");
             return;

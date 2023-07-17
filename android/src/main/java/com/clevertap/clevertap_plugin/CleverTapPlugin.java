@@ -841,6 +841,14 @@ public class CleverTapPlugin implements ActivityAware,
                 "Variable name = " + name + " does not exist.");
     }
 
+    /**
+     * Returns the notification payload as a Map if the application is opened from a terminated (killed) state.
+     * It determines whether the app is launched from a notification click rendered by the CleverTap SDK.
+     * If so, it adds a {@code notificationLaunchedApp} flag with a value of true to the result map; otherwise,
+     * the flag remains false.
+     *
+     * @param result The result object used for communicating the launch notification data.
+     */
     private void getAppLaunchNotification(Result result) {
         Map<String, Object> appLaunchNotificationMap = new HashMap<>();
         boolean notificationLaunchedApp = false;
@@ -850,7 +858,7 @@ public class CleverTapPlugin implements ActivityAware,
             if (launchIntent != null) {
                 Bundle intentExtras = launchIntent.getExtras();
                 // notificationLaunchedApp is true when intentExtras is non-null and app is launched from a
-                // notification click which was rendered by CleverTap SDK.
+                // notification click which was rendered by the CleverTap SDK.
                 notificationLaunchedApp = intentExtras != null &&
                         intentExtras.containsKey("wzrk_pn") && intentExtras.containsKey("nm");
                 if (notificationLaunchedApp) {
