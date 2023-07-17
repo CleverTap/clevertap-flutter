@@ -32,8 +32,8 @@ import com.clevertap.android.sdk.interfaces.OnInitCleverTapIDListener;
 import com.clevertap.android.sdk.product_config.CTProductConfigListener;
 import com.clevertap.android.sdk.pushnotification.CTPushNotificationListener;
 import com.clevertap.android.sdk.pushnotification.PushConstants.PushType;
+import com.clevertap.android.sdk.pushnotification.PushNotificationHandler;
 import com.clevertap.android.sdk.pushnotification.amp.CTPushAmpListener;
-import com.clevertap.android.sdk.variables.CTVariableUtils;
 import com.clevertap.android.sdk.variables.Var;
 import com.clevertap.android.sdk.variables.callbacks.FetchVariablesCallback;
 import com.clevertap.android.sdk.variables.callbacks.VariableCallback;
@@ -226,7 +226,7 @@ public class CleverTapPlugin implements ActivityAware,
                 break;
             }
             case "createNotification": {
-                createNotification(call, result);
+                renderNotification(call, result);
                 break;
             }
             case "processPushNotification": {
@@ -873,17 +873,29 @@ public class CleverTapPlugin implements ActivityAware,
         }
     }
 
-    private void createNotification(MethodCall call, Result result) {
+    /**
+     * Renders both core and push template notifications and also handles the signedcall push
+     */
+    private void renderNotification(MethodCall call, Result result) {
         String extras = call.argument("extras");
         if (isCleverTapNotNull(cleverTapAPI)) {
+            boolean isSuccess;
             try {
-                Log.d(TAG, "createNotification Android");
-                CleverTapAPI.createNotification(context, Utils.stringToBundle(extras));
+                Log.d(TAG, "renderNotification Android");
+                Bundle messageBundle = Utils.stringToBundle(extras);
+                isSuccess = PushNotificationHandler.getPushNotificationHandler()
+                        .onMessageReceived(context, messageBundle, PushType.FCM.toString());
+                if (isSuccess) {
+                    result.success(null);
+                } else {
+                    throw new Exception("Unable to process notification rendering");
+                }
             } catch (JSONException e) {
                 result.error(TAG, "Unable to render notification due to JSONException - " + e.getLocalizedMessage(),
                         null);
+            } catch (Exception e) {
+                result.error(TAG, e.getLocalizedMessage(), null);
             }
-            result.success(null);
         } else {
             result.error(TAG, ERROR_MSG, null);
         }
