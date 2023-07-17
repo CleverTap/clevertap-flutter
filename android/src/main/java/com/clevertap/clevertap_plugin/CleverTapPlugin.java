@@ -1,8 +1,12 @@
 package com.clevertap.clevertap_plugin;
 
+import static com.clevertap.clevertap_plugin.Constants.CALLBACK_HANDLE;
+import static com.clevertap.clevertap_plugin.Constants.DISPATCHER_HANDLE;
+
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.location.Location;
 import android.os.Build;
 import android.os.Bundle;
@@ -38,6 +42,8 @@ import com.clevertap.android.sdk.variables.Var;
 import com.clevertap.android.sdk.variables.callbacks.FetchVariablesCallback;
 import com.clevertap.android.sdk.variables.callbacks.VariableCallback;
 import com.clevertap.android.sdk.variables.callbacks.VariablesChangedCallback;
+import com.clevertap.clevertap_plugin.CleverTapTypeUtils.LongUtil;
+import com.clevertap.clevertap_plugin.isolate.IsolateHandlePreferences;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -163,6 +169,7 @@ public class CleverTapPlugin implements ActivityAware,
     public void onDetachedFromEngine(@NonNull FlutterPluginBinding binding) {
         dartToNativeMethodChannel = null;
         nativeToDartMethodChannel = null;
+        context = null;
     }
 
     @Override
@@ -211,13 +218,26 @@ public class CleverTapPlugin implements ActivityAware,
     @Override
     public void onMethodCall(MethodCall call, @NonNull Result result) {
         switch (call.method) {
+            case "getAppLaunchNotification": {
+                getAppLaunchNotification(result);
+                break;
+            }
             case "setLibrary": {
                 setLibrary(call, result);
+                break;
             }
             case "setDebugLevel": {
                 int debugLevelValue = call.argument("debugLevel");
                 CleverTapAPI.setDebugLevel(debugLevelValue);
                 result.success(null);
+                break;
+            }
+            case "registerKilledStateNotificationClickedHandler": {
+                Long dispatcherHandle = LongUtil.parseLong(call.argument(DISPATCHER_HANDLE));
+                Long callbackHandle = LongUtil.parseLong(call.argument(CALLBACK_HANDLE));
+                if (dispatcherHandle != null && callbackHandle != null) {
+                    IsolateHandlePreferences.saveCallbackKeys(context, dispatcherHandle, callbackHandle);
+                }
                 break;
             }
             // Push Methods
@@ -820,6 +840,36 @@ public class CleverTapPlugin implements ActivityAware,
         }
         throw new IllegalArgumentException(
                 "Variable name = " + name + " does not exist.");
+    }
+
+    /**
+     * Returns the notification payload as a Map if the application is opened from a terminated (killed) state.
+     * It determines whether the app is launched from a notification click rendered by the CleverTap SDK.
+     * If so, it adds a {@code notificationLaunchedApp} flag with a value of true to the result map; otherwise,
+     * the flag remains false.
+     *
+     * @param result The result object used for communicating the launch notification data.
+     */
+    private void getAppLaunchNotification(Result result) {
+        Map<String, Object> appLaunchNotificationMap = new HashMap<>();
+        boolean notificationLaunchedApp = false;
+
+        if(activity != null) {
+            Intent launchIntent = activity.getIntent();
+            if (launchIntent != null) {
+                Bundle intentExtras = launchIntent.getExtras();
+                // notificationLaunchedApp is true when intentExtras is non-null and app is launched from a
+                // notification click which was rendered by the CleverTap SDK.
+                notificationLaunchedApp = intentExtras != null &&
+                        intentExtras.containsKey("wzrk_pn") && intentExtras.containsKey("nm");
+                if (notificationLaunchedApp) {
+                    Map notificationPayload = Utils.bundleToMap(intentExtras);
+                    appLaunchNotificationMap.put("notificationPayload", notificationPayload);
+                }
+            }
+        }
+        appLaunchNotificationMap.put("notificationLaunchedApp", notificationLaunchedApp);
+        result.success(appLaunchNotificationMap);
     }
 
     @SuppressLint("RestrictedApi")

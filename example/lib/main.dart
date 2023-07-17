@@ -1,12 +1,27 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:developer';
 import 'dart:io' show Platform;
 
 import 'package:clevertap_plugin/clevertap_plugin.dart';
+import 'package:example/deeplink_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_styled_toast/flutter_styled_toast.dart';
 
-void main() => runApp(MyApp());
+@pragma('vm:entry-point')
+void onKilledStateNotificationClickedHandler(Map<String, dynamic> map) async {
+  print("onKilledStateNotificationClickedHandler called from headless task!");
+  print("Notification Payload received: " + map.toString());
+}
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  CleverTapPlugin.onKilledStateNotificationClicked(onKilledStateNotificationClickedHandler);
+  runApp(MaterialApp(
+    title: 'Home Page',
+    home: MyApp(),
+  ));
+}
 
 class MyApp extends StatefulWidget {
   @override
@@ -20,12 +35,25 @@ class _MyAppState extends State<MyApp> {
   var offLine = false;
   var enableDeviceNetworkingInfo = false;
 
+  void _handleKilledStateNotificationInteraction() async {
+    CleverTapAppLaunchNotification appLaunchNotification =
+        await CleverTapPlugin.getAppLaunchNotification();
+    print(
+        "_handleKilledStateNotificationInteraction => $appLaunchNotification");
+
+    if (appLaunchNotification.didNotificationLaunchApp) {
+      Map<String, dynamic> notificationPayload = appLaunchNotification.payload!;
+      handleDeeplink(notificationPayload);
+    }
+  }
+
   @override
   void initState() {
     super.initState();
     initPlatformState();
     activateCleverTapFlutterPluginHandlers();
     CleverTapPlugin.setDebugLevel(3);
+    _handleKilledStateNotificationInteraction();
     CleverTapPlugin.createNotificationChannel(
         "fluttertest", "Flutter Test", "Flutter Test", 3, true);
     CleverTapPlugin.initializeInbox();
@@ -298,12 +326,10 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
-  void pushClickedPayloadReceived(Map<String, dynamic> map) {
+  void pushClickedPayloadReceived(Map<String, dynamic> notificationPayload) {
     print("pushClickedPayloadReceived called");
-    this.setState(() async {
-      var data = jsonEncode(map);
-      print("on Push Click Payload = " + data.toString());
-    });
+    print("on Push Click Payload = " + notificationPayload.toString());
+    handleDeeplink(notificationPayload);
   }
 
   void pushPermissionResponseReceived(bool accepted) {
@@ -2277,5 +2303,22 @@ class _MyAppState extends State<MyApp> {
       CleverTapPlugin.onValueChanged('flutter_var_string', (variable) {
         print("PE -> onValueChanged: " + variable.toString());
       });
+  }
+
+  void handleDeeplink(Map<String, dynamic> notificationPayload) {
+    var type = notificationPayload["type"];
+    var title = notificationPayload["nt"];
+    var message = notificationPayload["nm"];
+
+    if (type != null) {
+      Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (context) =>
+                  DeepLinkPage(type: type, title: title, message: message)));
+    }
+
+    print(
+        "_handleKilledStateNotificationInteraction => Type: $type, Title: $title, Message: $message ");
   }
 }

@@ -5,10 +5,12 @@ import com.clevertap.android.pushtemplates.TemplateRenderer;
 import com.clevertap.android.sdk.ActivityLifecycleCallback;
 import com.clevertap.android.sdk.CleverTapAPI;
 import com.clevertap.android.sdk.interfaces.NotificationHandler;
+import com.clevertap.clevertap_plugin.CleverTapApplication;
 
 import io.flutter.app.FlutterApplication;
 
-public class MyApplication extends FlutterApplication {
+public class MyApplication extends CleverTapApplication {
+
     @java.lang.Override
     public void onCreate() {
         CleverTapAPI.setDebugLevel(3);

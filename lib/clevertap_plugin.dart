@@ -1,32 +1,14 @@
 import 'dart:async';
+import 'dart:ui';
 
+import 'package:clevertap_plugin/src/types.dart';
+import 'package:clevertap_plugin/src/typedefs.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
-typedef void CleverTapInAppNotificationDismissedHandler(
-    Map<String, dynamic> mapList);
-typedef void CleverTapInAppNotificationShowHandler(
-    Map<String, dynamic> map);
-typedef void CleverTapInAppNotificationButtonClickedHandler(
-    Map<String, dynamic>? mapList);
-typedef void CleverTapProfileDidInitializeHandler();
-typedef void CleverTapProfileSyncHandler(Map<String, dynamic>? map);
-typedef void CleverTapInboxDidInitializeHandler();
-typedef void CleverTapInboxMessagesDidUpdateHandler();
-typedef void CleverTapInboxNotificationButtonClickedHandler(
-    Map<String, dynamic>? mapList);
-typedef void CleverTapInboxNotificationMessageClickedHandler(
-    Map<String, dynamic>? message, int index, int buttonIndex);
-typedef void CleverTapDisplayUnitsLoadedHandler(List<dynamic>? displayUnitList);
-typedef void CleverTapFeatureFlagUpdatedHandler();
-typedef void CleverTapProductConfigInitializedHandler();
-typedef void CleverTapProductConfigFetchedHandler();
-typedef void CleverTapProductConfigActivatedHandler();
-typedef void CleverTapPushAmpPayloadReceivedHandler(Map<String, dynamic> map);
-typedef void CleverTapPushClickedPayloadReceivedHandler(
-    Map<String, dynamic> map);
-typedef void CleverTapPushPermissionResponseReceivedHandler(bool accepted);
-typedef void CleverTapOnVariablesChangedHandler(Map<String, dynamic> variables);
-typedef void CleverTapOnValueChangedHandler(Map<String, dynamic> variable);
+import 'src/clevertap_callback_dispatcher.dart';
+
+export 'src/types.dart';
 
 class CleverTapPlugin {
   late CleverTapInAppNotificationDismissedHandler
@@ -251,6 +233,42 @@ class CleverTapPlugin {
   void setCleverTapPushPermissionResponseReceivedHandler(
           CleverTapPushPermissionResponseReceivedHandler handler) =>
       cleverTapPushPermissionResponseReceivedHandler = handler;
+
+  /// Set a message handler function which is called when the app is in the
+  /// terminated or killed state.
+  ///
+  /// This provided handler must be a top-level function and cannot be
+  /// anonymous otherwise an [ArgumentError] will be thrown.
+  static void onKilledStateNotificationClicked(CleverTapOnKilledStateNotificationClickedHandler handler) {
+    _registerKilledStateNotificationClickedHandler(handler);
+  }
+
+  static bool _killedStateNotificationClickedHandlerInitialized = false;
+
+  static void _registerKilledStateNotificationClickedHandler(
+      CleverTapOnKilledStateNotificationClickedHandler handler) async {
+    if (defaultTargetPlatform != TargetPlatform.android) {
+      return;
+    }
+
+    if (!_killedStateNotificationClickedHandlerInitialized) {
+      _killedStateNotificationClickedHandlerInitialized = true;
+      final CallbackHandle pluginCallbackHandle = PluginUtilities.getCallbackHandle(callbackDispatcher)!;
+      final CallbackHandle userCallbackHandle =
+      PluginUtilities.getCallbackHandle(handler)!;
+      await _dartToNativeMethodChannel.invokeMapMethod('registerKilledStateNotificationClickedHandler', {
+        'pluginCallbackHandle': pluginCallbackHandle.toRawHandle(),
+        'userCallbackHandle': userCallbackHandle.toRawHandle(),
+      });
+    }
+  }
+
+  static Future<CleverTapAppLaunchNotification>
+      getAppLaunchNotification() async {
+    Map<dynamic, dynamic> result = await _dartToNativeMethodChannel
+        .invokeMethod('getAppLaunchNotification');
+    return CleverTapAppLaunchNotification.fromMap(result);
+  }
 
   /// Sets debug level to show logs on Android Studio/Xcode console
   static Future<void> setDebugLevel(int value) async {
