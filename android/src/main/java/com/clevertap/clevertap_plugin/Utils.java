@@ -25,12 +25,15 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 
 public class Utils {
 
     static Map<String, Object> bundleToMap(Bundle extras) {
+        if (extras == null) {
+            return null;
+        }
+
         Map<String, Object> map = new HashMap<>();
 
         Set<String> ks = extras.keySet();

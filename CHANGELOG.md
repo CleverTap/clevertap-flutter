@@ -1,5 +1,27 @@
 ## CHANGE LOG
 
+### Version 1.8.0 *(17th July 2023)*
+-------------------------------------------
+**What's new**
+* Supports [CleverTap Android SDK v5.1.0](https://github.com/CleverTap/clevertap-android-sdk/blob/master/docs/CTCORECHANGELOG.md#version-510-june-28-2023)
+* Supports [CleverTap iOS SDK v5.1.1](https://github.com/CleverTap/clevertap-ios-sdk/blob/master/CHANGELOG.md#version-511-july-13-2023)
+* Adds support for **notification click handling when the app is terminated or killed**. The CleverTap plugin provides two ways to handle user interactions with notifications, depending on whether the app needs to perform UI or non-UI operations. 
+  * Use `CleverTapPlugin.getAppLaunchNotification()` to perform UI impacting operation like redirecting the user to a specific page.
+  * Use `CleverTapPlugin.onKilledStateNotificationClicked(_onKilledStateNotificationClickedHandler)` to perform non-UI operation like performing HTTP requests, IO operations with local storage etc.
+  Please refer to the [Notification Click Handling](https://github.com/CleverTap/clevertap-flutter/blob/master/doc/Usage.md#handle-notification-click) to learn more about properly handling notification clicks.
+* ***[Android Platform]:*** Adds support for developer defined default notification channel. Please refer to the [Usage.md](https://github.com/CleverTap/clevertap-flutter/blob/master/doc/Usage.md#default-notification-channel) file to read more on how to setup default channel in your app.Also please note that this is only supported for clevertap core notifications. Support for push templates will be released soon.
+
+**Changes**
+* The `CleverTapPlugin.createNotification(data)` API now supports rendering push template notifications and handling VoIP push for the SignedCall SDK.
+
+**Bug Fixes**
+* **[iOS Platform]**
+  * Fixed Cocoapods generated duplicate UUIDs warnings.
+  * Mitigates potential App Inbox errors.
+* **[Android Platform]**
+  * Fixes [#428](https://github.com/CleverTap/clevertap-android-sdk/issues/428) - Race-condition when detecting if an in-app message should show.
+  * Fixes Push primer alert dialog freeze behavior, which became unresponsive when clicked outside the window.
+
 ### Version 1.7.0 *(8th June 2023)*
 -------------------------------------------
 **What's new**
