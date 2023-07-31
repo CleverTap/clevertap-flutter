@@ -1,6 +1,6 @@
 ## CHANGE LOG
 
-### Version 1.8.1 *(1st August 2023)*
+### Version 1.8.1 *(31st July 2023)*
 -------------------------------------------
 **What's new**
 * Supports [CleverTap iOS SDK v5.1.2](https://github.com/CleverTap/clevertap-ios-sdk/blob/master/CHANGELOG.md#version-512-july-28-2023)
