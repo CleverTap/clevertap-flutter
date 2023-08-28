@@ -636,6 +636,23 @@ CleverTapPlugin.setOffline(true);
 ## Push primer for notification Permission (Android and iOS)
 Follow the [Push Primer integration doc](PushPrimer.md).
 
+## Encryption of PII data (Android and iOS)
+PII data is stored across the SDK and could be sensitive information. From CleverTap Flutter SDK v1.9.0 onwards, you can enable encryption for PII data wiz. Email, Identity, Name and Phone.
+
+Currently 2 levels of encryption are supported i.e None(0) and Medium(1). Encryption level is None by default.
+**None** - All stored data is in plaintext
+**Medium** - PII data is encrypted completely.
+
+#### Android
+Add encryption level in the `AndroidManifest.xml` as following:
+```XML
+<meta-data
+    android:name="CLEVERTAP_ENCRYPTION_LEVEL"
+    android:value="1" />
+```
+#### iOS
+Add the `CleverTapEncryptionLevel` String key to `info.plist` file where value 1 means Medium and 0 means None. Encryption Level will be None if any other value is provided.
+
 
 ### For more information,
 
