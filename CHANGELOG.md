@@ -1,5 +1,17 @@
 ## CHANGE LOG
 
+### Version 1.9.0 *(29th August 2023)*
+-------------------------------------------
+**What's new**
+* **[Android Platform]**
+
+* **[iOS Platform]**
+  * Supports [CleverTap iOS SDK v5.2.0](https://github.com/CleverTap/clevertap-ios-sdk/releases/tag/5.2.0).
+
+* **[Android and iOS Platform]**
+  * Adds support for encryption of PII data wiz. Email, Identity, Name and Phone. Please refer to [Usage.md](https://github.com/CleverTap/clevertap-flutter/blob/master/doc/Usage.md#encryption-of-pii-data) file to read more on how to enable/disable encryption of PII data.
+  * Adds support for custom KV pairs common to all inbox messages in App Inbox.
+
 ### Version 1.8.1 *(31st July 2023)*
 -------------------------------------------
 **What's new**
