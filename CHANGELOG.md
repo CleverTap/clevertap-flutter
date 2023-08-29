@@ -4,6 +4,7 @@
 -------------------------------------------
 **What's new**
 * **[Android Platform]**
+  * Supports [CleverTap Android SDK v5.2.0](https://github.com/CleverTap/clevertap-android-sdk/blob/master/docs/CTCORECHANGELOG.md#version-520-august-10-2023).
 
 * **[iOS Platform]**
   * Supports [CleverTap iOS SDK v5.2.0](https://github.com/CleverTap/clevertap-ios-sdk/releases/tag/5.2.0).
@@ -11,6 +12,11 @@
 * **[Android and iOS Platform]**
   * Adds support for encryption of PII data wiz. Email, Identity, Name and Phone. Please refer to [Usage.md](https://github.com/CleverTap/clevertap-flutter/blob/master/doc/Usage.md#encryption-of-pii-data) file to read more on how to enable/disable encryption of PII data.
   * Adds support for custom KV pairs common to all inbox messages in App Inbox.
+
+**Bug Fixes**
+* **[Android Platform]**
+  * Fixes [#393](https://github.com/CleverTap/clevertap-android-sdk/issues/393) - push permission flow crash when context in CoreMetadata is null.
+  * Fixes a bug where addMultiValueForKey and addMultiValuesForKey were overwriting the current values of the user properties instead of appending it.
 
 ### Version 1.8.1 *(31st July 2023)*
 -------------------------------------------
@@ -26,6 +32,7 @@
 **What's new**
 * Supports [CleverTap Android SDK v5.1.0](https://github.com/CleverTap/clevertap-android-sdk/blob/master/docs/CTCORECHANGELOG.md#version-510-june-28-2023)
 * Supports [CleverTap iOS SDK v5.1.1](https://github.com/CleverTap/clevertap-ios-sdk/blob/master/CHANGELOG.md#version-511-july-13-2023)
+* ***Note: RenderMax Push SDK functionality is now supported directly within the CleverTap Core SDK***. Please remove the integrated *RenderMax SDK* before you upgrade to CleverTap Flutter SDK for this 1.8.0 version.
 * Adds support for **notification click handling when the app is terminated or killed**. The CleverTap plugin provides two ways to handle user interactions with notifications, depending on whether the app needs to perform UI or non-UI operations. 
   * Use `CleverTapPlugin.getAppLaunchNotification()` to perform UI impacting operation like redirecting the user to a specific page.
   * Use `CleverTapPlugin.onKilledStateNotificationClicked(_onKilledStateNotificationClickedHandler)` to perform non-UI operation like performing HTTP requests, IO operations with local storage etc.

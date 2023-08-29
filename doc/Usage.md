@@ -371,7 +371,9 @@ class _Application extends State<Application> {
 
     // Run CleverTapPlugin.getAppLaunchNotification in an async function
     // as initState() must not be async
-    _handleKilledStateNotificationInteraction();
+    if (Platform.isAndroid) {
+      _handleKilledStateNotificationInteraction();
+    }
   }
 
   @override
