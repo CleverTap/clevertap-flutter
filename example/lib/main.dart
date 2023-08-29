@@ -53,7 +53,9 @@ class _MyAppState extends State<MyApp> {
     initPlatformState();
     activateCleverTapFlutterPluginHandlers();
     CleverTapPlugin.setDebugLevel(3);
-    _handleKilledStateNotificationInteraction();
+    if (Platform.isAndroid) {
+      _handleKilledStateNotificationInteraction();
+    }
     CleverTapPlugin.createNotificationChannel(
         "fluttertest", "Flutter Test", "Flutter Test", 3, true);
     CleverTapPlugin.initializeInbox();
