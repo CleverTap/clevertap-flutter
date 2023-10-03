@@ -3121,7 +3121,7 @@
           profilesArr[_key] = arguments[_key];
         }
 
-        console.log('profilesArr received', profilesArr);
+        console.log('profilesArr is ', profilesArr);
 
         _classPrivateFieldLooseBase(this, _processLoginArray)[_processLoginArray](profilesArr);
 
@@ -3382,7 +3382,7 @@
   };
 
   var _processLoginArray2 = function _processLoginArray2(loginArr) {
-    console.log('LoginArr is ', loginArr);
+    console.log('loginArr is ', loginArr);
 
     if (Array.isArray(loginArr) && loginArr.length > 0) {
       var profileObj = loginArr.pop();
@@ -5366,9 +5366,10 @@
         if ($ct.dismissSpamControl && document.getElementById(_divId) != null) {
           var element = document.getElementById(_divId);
           element.remove();
-        }
+        } // ImageOnly campaign and Interstitial/Exit Intent shouldn't coexist
 
-        if (document.getElementById(_divId) != null) {
+
+        if (document.getElementById(_divId) != null || document.getElementById('intentPreview') != null) {
           return;
         }
 
@@ -5702,9 +5703,10 @@
         var element = document.getElementById('intentPreview');
         element.remove();
         document.getElementById('intentOpacityDiv').remove();
-      }
+      } // ImageOnly campaign and Interstitial/Exit Intent shouldn't coexist
 
-      if (document.getElementById('intentPreview') != null) {
+
+      if (document.getElementById('intentPreview') != null || document.getElementById('wzrkImageOnlyDiv') != null) {
         return;
       } // dont show exit intent on tablet/mobile - only on desktop
 
@@ -6665,6 +6667,8 @@
     _createClass(Privacy, [{
       key: "push",
       value: function push() {
+        console.log(arguments)
+        console.trace()
         for (var _len = arguments.length, privacyArr = new Array(_len), _key = 0; _key < _len; _key++) {
           privacyArr[_key] = arguments[_key];
         }
@@ -8105,7 +8109,7 @@
         var proto = document.location.protocol;
         proto = proto.replace(':', '');
         data.af = {
-          lib: 'web-sdk-v1.6.5',
+          lib: 'web-sdk-v1.6.6',
           protocol: proto
         };
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page');

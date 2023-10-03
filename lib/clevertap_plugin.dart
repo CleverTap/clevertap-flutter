@@ -281,9 +281,8 @@ class CleverTapPlugin {
   }
 
   /// Only for Web - Initialize clevertap sdk
-  /// Todo : Add if condition to execute this only when platform is web
-  static Future<void> init(String accountId,
-      {String? region, String? targetDomain}) async {
+  static Future<void> init(
+      String accountId, String? region, String? targetDomain) async {
     if (!kIsWeb) {
       return;
     }
@@ -293,6 +292,53 @@ class CleverTapPlugin {
       'targetDomain': targetDomain
     };
     await _dartToNativeMethodChannel.invokeMethod<void>('init', allProperties);
+  }
+
+  /// Only for Web - Return the accountId
+  static Future<String?> getAccountID() async {
+    if (!kIsWeb) {
+      /// Todo: Check this return
+      return null;
+    }
+    return await _dartToNativeMethodChannel.invokeMethod('getAccountID', {});
+  }
+
+  /// Only for Web - Method to ensure that clevertap does not auto collect the device IP as per GDPR rules
+  static Future<void> setUseIP(bool value) async {
+    if (!kIsWeb) {
+      return;
+    }
+    return await _dartToNativeMethodChannel
+        .invokeMethod('setUseIP', {'value': value});
+  }
+
+  /// Only for Web - Render notification viewed
+  static Future<void> renderNotificationViewed(
+      Map<String, dynamic> viewedData) async {
+    if (!kIsWeb) {
+      return;
+    }
+    await _dartToNativeMethodChannel.invokeMethod<void>(
+        'renderNotificationViewed', viewedData);
+  }
+
+  /// Only for Web - Render notification viewed
+  static Future<void> renderNotificationClicked(
+      Map<String, dynamic> clickedData) async {
+    if (!kIsWeb) {
+      return;
+    }
+    await _dartToNativeMethodChannel.invokeMethod<void>(
+        'renderNotificationClicked', clickedData);
+  }
+
+  /// Only for Web - Mark all messages as read
+  static Future<void> markReadAllInboxMessage() async {
+    if (!kIsWeb) {
+      return;
+    }
+    return await _dartToNativeMethodChannel
+        .invokeMethod('markReadAllInboxMessage', {});
   }
 
   /// Sets debug level to show logs on Android Studio/Xcode console
