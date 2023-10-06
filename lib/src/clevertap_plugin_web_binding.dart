@@ -6,17 +6,23 @@ import 'package:js/js.dart';
 @JS('init')
 external void init(String accountId, String? region, String? targetDomain);
 
+@JS('toggleInbox')
+external void toggleInbox(Object object);
+
 @JS('event.push')
 external void event_push(String event, Object? object);
 
 @JS('onUserLogin.push')
 external void onUserLogin_push(Object object);
 
+@JS('notifications.push')
+external void notifications_push(Object object);
+
 @JS('profile.push')
 external void profile_push(Object object);
 
 @JS('privacy.push')
-external void privacy_push(Object map);
+external void privacy_push(Object object);
 
 @JS('setLogLevel')
 external void setLogLevel(int value);

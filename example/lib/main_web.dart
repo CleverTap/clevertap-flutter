@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:html';
 import 'package:clevertap_plugin/clevertap_plugin.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
@@ -45,7 +44,7 @@ void main() {
                   print("on event tap");
                   if (kIsWeb) {
                     print("on web event puch");
-                    CleverTapPlugin.recordEvent("Amee", {});
+                    CleverTapPlugin.recordEvent("Charged", {});
                   }
                 },
               ),
@@ -55,8 +54,7 @@ void main() {
                   padding: const EdgeInsets.all(4.0),
                   child: ListTile(
                     title: Text("Set Debug Level"),
-                    subtitle: Text(
-                        "Sets the debug level in Android/iOS to show console logs"),
+                    subtitle: Text("Sets the debug level to show console logs"),
                     onTap: () {
                       CleverTapPlugin.setDebugLevel(3);
                     },
@@ -94,6 +92,17 @@ void main() {
                     title: Text("Set Offline"),
                     subtitle: Text("Switches CleverTap to offline mode"),
                     onTap: setOffline,
+                  ),
+                ),
+              ),
+              Card(
+                color: Colors.grey.shade300,
+                child: Padding(
+                  padding: const EdgeInsets.all(4.0),
+                  child: ListTile(
+                    title: Text("Enable Push notification"),
+                    subtitle: Text("Used to enable push notifications for web"),
+                    onTap: enablePushNotifs,
                   ),
                 ),
               ),
@@ -253,7 +262,38 @@ void main() {
                     onTap: renderViewedEvent,
                   ),
                 ),
-              )
+              ),
+              Builder(
+                builder: (BuildContext context) {
+                  final buttonContext = context;
+                  return Card(
+                    color: Colors.grey.shade300,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: ListTile(
+                        title: Text("Inbox Bell"),
+                        onTap: () {
+                          final RenderBox renderBox =
+                              buttonContext.findRenderObject() as RenderBox;
+                          final buttonPosition =
+                              renderBox.localToGlobal(Offset.zero);
+                          print(buttonPosition);
+                          CleverTapPlugin.toggleInbox({
+                            'x': buttonPosition.dx,
+                            'y': buttonPosition.dy,
+                            'left': buttonPosition.dx,
+                            'right': buttonPosition.dx + renderBox.size.width,
+                            'top': buttonPosition.dy,
+                            'bottom': buttonPosition.dy + renderBox.size.height,
+                            'height': renderBox.size.height,
+                            'width': renderBox.size.width
+                          });
+                        },
+                      ),
+                    ),
+                  );
+                },
+              ),
             ],
           ))));
 }
@@ -384,4 +424,20 @@ void renderViewedEvent() {
     'pivotId': 'wzrk_default',
   };
   CleverTapPlugin.renderNotificationViewed(customNotificationPayload);
+}
+
+void enablePushNotifs() {
+  var pushData = {
+    'titleText': 'Would you like to receive Push Notifications?',
+    'bodyText':
+        'We promise to only send you relevant content and give you updates on your transactions',
+    'okButtonText': 'Ok',
+    'rejectButtonText': 'Cancel',
+    'okButtonColor': '#F28046',
+    'askAgainTimeInSeconds': 5,
+    // 'serviceWorkerPath':
+    //     'https://s3-eu-west-1.amazonaws.com/static.wizrocket.com/js/sw_webpush.js'
+    'serviceWorkerPath': '/firebase-messaging-sw.js'
+  };
+  CleverTapPlugin.enableWebPush(pushData);
 }

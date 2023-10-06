@@ -3121,8 +3121,6 @@
           profilesArr[_key] = arguments[_key];
         }
 
-        console.log('profilesArr is ', profilesArr);
-
         _classPrivateFieldLooseBase(this, _processLoginArray)[_processLoginArray](profilesArr);
 
         return 0;
@@ -3382,8 +3380,6 @@
   };
 
   var _processLoginArray2 = function _processLoginArray2(loginArr) {
-    console.log('loginArr is ', loginArr);
-
     if (Array.isArray(loginArr) && loginArr.length > 0) {
       var profileObj = loginArr.pop();
       var processProfile = profileObj != null && isObject(profileObj) && (profileObj.Site != null && Object.keys(profileObj.Site).length > 0 || profileObj.Facebook != null && Object.keys(profileObj.Facebook).length > 0 || profileObj['Google Plus'] != null && Object.keys(profileObj['Google Plus']).length > 0);
@@ -4088,6 +4084,7 @@
 
       _this = _super.call(this);
       _this.isInboxOpen = false;
+      _this.isFlutterInboxOpen = false;
       _this.selectedCategory = null;
       _this.unviewedMessages = {};
       _this.unviewedCounter = 0;
@@ -4103,6 +4100,8 @@
 
       _this.addClickListenerOnDocument = function () {
         return function (e) {
+          console.log(e.target, _this.inboxSelector);
+
           if (e.composedPath().includes(_this.inbox)) {
             // path is not supported on FF. So we fallback to e.composedPath
             var path = e.path || e.composedPath && e.composedPath();
@@ -4131,7 +4130,11 @@
               }
             }
           } else if (_this.inboxSelector.contains(e.target) || _this.isInboxOpen) {
-            _this.toggleInbox(e);
+            if (_this.isFlutterInboxOpen) {
+              _this.isFlutterInboxOpen = false;
+            } else {
+              _this.toggleInbox(e);
+            }
           }
         };
       }();
@@ -4585,7 +4588,9 @@
     }, {
       key: "toggleInbox",
       value: function toggleInbox(e) {
+        console.trace('inbox rect ', e);
         this.isInboxOpen = !this.isInboxOpen;
+        this.isFlutterInboxOpen = !!(e === null || e === void 0 ? void 0 : e.rect);
 
         if (this.isInboxOpen) {
           this.inboxCard.scrollTop = 0;
@@ -4716,16 +4721,19 @@
         var _this9 = this;
 
         var msgs = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [];
+        var previewMsgs = {};
 
         if (msgs.length > 0 && this.inbox) {
           this.isPreview = true;
           this.unviewedCounter = 0;
           msgs.forEach(function (m) {
-            m.id = "".concat(m.wzrk_id.split('_')[0], "_").concat(Date.now());
-            _this9.unviewedMessages[m.id] = m;
+            var key = "".concat(m.wzrk_id.split('_')[0], "_").concat(Date.now());
+            m.id = key;
+            previewMsgs[key] = m;
+            _this9.unviewedMessages[key] = m;
             _this9.unviewedCounter++;
           });
-          this.buildUIForMessages(msgs);
+          this.buildUIForMessages(previewMsgs);
           this.updateUnviewedBadgeCounter();
         }
       }
@@ -4860,7 +4868,7 @@
     var verticalScroll = document.scrollingElement.scrollTop;
     var windowWidth = window.innerWidth + horizontalScroll;
     var windowHeight = window.innerHeight + verticalScroll;
-    var selectorRect = e.target.getBoundingClientRect();
+    var selectorRect = e.rect || e.target.getBoundingClientRect();
     var selectorX = selectorRect.x + horizontalScroll;
     var selectorY = selectorRect.y + verticalScroll;
     var selectorLeft = selectorRect.left + horizontalScroll;
@@ -6667,8 +6675,6 @@
     _createClass(Privacy, [{
       key: "push",
       value: function push() {
-        console.log(arguments)
-        console.trace()
         for (var _len = arguments.length, privacyArr = new Array(_len), _key = 0; _key < _len; _key++) {
           privacyArr[_key] = arguments[_key];
         }
@@ -7662,6 +7668,12 @@
         } else {
           _classPrivateFieldLooseBase(_this, _logger$9)[_logger$9].debug('All messages are already read');
         }
+      };
+
+      this.toggleInbox = function (e) {
+        var _$ct$inbox;
+
+        return (_$ct$inbox = $ct.inbox) === null || _$ct$inbox === void 0 ? void 0 : _$ct$inbox.toggleInbox(e);
       }; // method for notification viewed
 
 

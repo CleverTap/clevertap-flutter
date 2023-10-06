@@ -25,12 +25,16 @@ class CleverTapPlugin {
     switch (call.method) {
       case 'init':
         return _init(call);
+      case 'toggleInbox':
+        return _toggleInbox(call);
       case 'recordEvent':
         return _recordEvent(call);
       case 'onUserLogin':
         return _onUserLogin(call);
       case 'profileSet':
         return _profileSet(call);
+      case 'enableWebPush':
+        return _enableWebPush(call);
       case 'setOptOut':
         return _setOptOut(call);
       case 'setUseIP':
@@ -99,6 +103,11 @@ class CleverTapPlugin {
     init(accountId, region, targetDomain);
   }
 
+  void _toggleInbox(MethodCall call) {
+    Map<Object?, Object?> args = call.arguments as Map<Object?, Object?>;
+    toggleInbox(js.jsify({'rect': args['rect']}));
+  }
+
   /// Pushes a basic event
   void _recordEvent(MethodCall call) {
     Map<Object?, Object?> args = call.arguments as Map<Object?, Object?>;
@@ -111,6 +120,13 @@ class CleverTapPlugin {
   void _onUserLogin(MethodCall call) {
     Map<Object?, Object?> args = call.arguments as Map<Object?, Object?>;
     onUserLogin_push(js.jsify({"Site": args['profile']}));
+  }
+
+  /// enable web push
+  void _enableWebPush(MethodCall call) {
+    Map<Object?, Object?> args = call.arguments as Map<Object?, Object?>;
+    print(args);
+    notifications_push(js.jsify(args));
   }
 
   /// Profile push request

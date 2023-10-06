@@ -294,6 +294,15 @@ class CleverTapPlugin {
     await _dartToNativeMethodChannel.invokeMethod<void>('init', allProperties);
   }
 
+  static Future<void> toggleInbox(Object rect) async {
+    if (!kIsWeb) {
+      /// Todo: Check this return
+      return null;
+    }
+    return await _dartToNativeMethodChannel
+        .invokeMethod('toggleInbox', {'rect': rect});
+  }
+
   /// Only for Web - Return the accountId
   static Future<String?> getAccountID() async {
     if (!kIsWeb) {
@@ -330,6 +339,15 @@ class CleverTapPlugin {
     }
     await _dartToNativeMethodChannel.invokeMethod<void>(
         'renderNotificationClicked', clickedData);
+  }
+
+  /// Only for Web - Render notification viewed
+  static Future<void> enableWebPush(Map<String, dynamic> pushData) async {
+    if (!kIsWeb) {
+      return;
+    }
+    await _dartToNativeMethodChannel.invokeMethod<void>(
+        'enableWebPush', pushData);
   }
 
   /// Only for Web - Mark all messages as read
