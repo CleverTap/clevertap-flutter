@@ -994,4 +994,11 @@ class CleverTapPlugin {
       cleverTapOnValueChangedHandlers.add(handler);
       _dartToNativeMethodChannel.invokeMethod('onValueChanged', {'name': name});
   }
+
+  ///Sets the user locale.
+  static Future<void> setLocale(Locale locale) async {
+    String localeString = locale.toString();
+    return await _dartToNativeMethodChannel.invokeMethod(
+        'setLocale', localeString);
+  }
 }

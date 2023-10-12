@@ -79,6 +79,13 @@ var lat = 19.07;
 var long = 72.87;
 CleverTapPlugin.setLocation(lat, long);
 ```
+
+#### Set Locale of the user
+
+```Dart
+Locale locale = Locale('en', 'IN');
+CleverTapPlugin.setLocale(locale);
+```
 ----
 
 ## User Events

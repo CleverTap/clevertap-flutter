@@ -1365,6 +1365,17 @@ class _MyAppState extends State<MyApp> {
                     ),
                   ),
                 ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Set Locale"),
+                      subtitle: Text("Use to set Locale of a user"),
+                      onTap: setLocale,
+                    ),
+                  ),
+                ),
               ],
             )),
       ),
@@ -1981,6 +1992,12 @@ class _MyAppState extends State<MyApp> {
     var long = 72.87;
     CleverTapPlugin.setLocation(lat, long);
     showToast("Location is set");
+  }
+
+  void setLocale() {
+    Locale locale = Locale('en', 'IN');
+    CleverTapPlugin.setLocale(locale);
+    showToast("Locale is set");
   }
 
   void getCTAttributionId() {
