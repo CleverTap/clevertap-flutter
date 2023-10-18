@@ -240,6 +240,10 @@ public class CleverTapPlugin implements ActivityAware,
                 }
                 break;
             }
+            case "setLocale": {
+                setLocale(call, result);
+                break;
+            }
             // Push Methods
             case "setPushToken": {
                 setPushToken(call, result, PushType.FCM);
@@ -698,6 +702,16 @@ public class CleverTapPlugin implements ActivityAware,
             }
         }
 
+    }
+
+    private void setLocale(MethodCall call, Result result) {
+        String locale = call.arguments();
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            cleverTapAPI.setLocale(locale);
+            result.success(null);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
     }
 
     /**************************************************
