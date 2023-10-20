@@ -23,7 +23,6 @@
 **Bug Fixes**
 * **[iOS Platform]**
   * Fixes a crash in iOS 17/Xcode 15 related to alert inapps.
-  * Fixes a failing `test_clevertap_instance_nscoding` test case.
 
 
 ### Version 1.9.0 *(29th August 2023)*
