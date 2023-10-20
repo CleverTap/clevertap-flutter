@@ -54,7 +54,7 @@ class CleverTapPlugin {
   factory CleverTapPlugin() => _clevertapPlugin;
 
   static const libName = 'Flutter';
-  static const libVersion = 10900; // If the current version is X.X.X then pass as X0X0X
+  static const libVersion = 10901; // If the current version is X.X.X then pass as X0X0X
 
   CleverTapPlugin._internal() {
     /// Set the CleverTap Flutter library name and the current version for version tracking
@@ -993,5 +993,12 @@ class CleverTapPlugin {
   static void onValueChanged(String name, CleverTapOnValueChangedHandler handler) {
       cleverTapOnValueChangedHandlers.add(handler);
       _dartToNativeMethodChannel.invokeMethod('onValueChanged', {'name': name});
+  }
+
+  ///Sets the user locale.
+  static Future<void> setLocale(Locale locale) async {
+    String localeString = locale.toString();
+    return await _dartToNativeMethodChannel.invokeMethod(
+        'setLocale', localeString);
   }
 }
