@@ -274,6 +274,8 @@ static NSDateFormatter *dateFormatter;
         [self onVariablesChanged:call withResult:result];
     else if ([@"onValueChanged" isEqualToString:call.method])
         [self onValueChanged:call withResult:result];
+    else if ([@"setLocale" isEqualToString:call.method])
+        [self setLocale:call withResult:result];
     else
         result(FlutterMethodNotImplemented);
 }
@@ -1363,6 +1365,12 @@ static NSDateFormatter *dateFormatter;
             [self postNotificationWithName:kCleverTapOnValueChanged andBody:varResult];
         }];
     }
+}
+
+- (void)setLocale:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    NSLocale *locale = [[NSLocale alloc] initWithLocaleIdentifier:call.arguments];
+    [[CleverTap sharedInstance] setLocale:locale];
+    result(nil);
 }
 
 @end
