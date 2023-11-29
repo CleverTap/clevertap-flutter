@@ -2099,6 +2099,12 @@ class _MyAppState extends State<MyApp> {
     showToast("Location is set");
   }
 
+  void setLocale() {
+    Locale locale = Locale('en', 'IN');
+    CleverTapPlugin.setLocale(locale);
+    showToast("Locale is set");
+  }
+
   void getCTAttributionId() {
     CleverTapPlugin.profileGetCleverTapAttributionIdentifier()
         .then((attributionId) {
