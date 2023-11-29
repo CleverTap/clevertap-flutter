@@ -76,10 +76,10 @@ external int getInboxMessageCount();
 external int getInboxMessageUnreadCount();
 
 @JS('getAllInboxMessages')
-external List getAllInboxMessages();
+external Map getAllInboxMessages();
 
 @JS('getUnreadInboxMessages')
-external List getUnreadInboxMessages();
+external Map getUnreadInboxMessages();
 
 @JS('getInboxMessageForId')
 external Object getInboxMessageForId(String messageId);

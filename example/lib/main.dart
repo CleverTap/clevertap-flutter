@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
 import 'dart:io' show Platform;
+import 'package:example/notification_button.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 import 'package:clevertap_plugin/clevertap_plugin.dart';
 import 'package:example/deeplink_page.dart';
@@ -34,6 +36,8 @@ class _MyAppState extends State<MyApp> {
   var inboxInitialized = false;
   var optOut = false;
   var offLine = false;
+  var firstMsgId = "";
+
   var enableDeviceNetworkingInfo = false;
 
   void _handleKilledStateNotificationInteraction() async {
@@ -54,6 +58,26 @@ class _MyAppState extends State<MyApp> {
     initPlatformState();
     activateCleverTapFlutterPluginHandlers();
     CleverTapPlugin.setDebugLevel(3);
+    if (kIsWeb) {
+      CleverTapPlugin.init("WRK-485-456Z", "sk1-staging-4", "wzrkt.com");
+      CleverTapPlugin.setDebugLevel(3);
+
+      // enable web push
+      var pushData = {
+        'titleText': 'Would you like to receive Push Notifications?',
+        'bodyText':
+            'We promise to only send you relevant content and give you updates on your transactions',
+        'okButtonText': 'Ok',
+        'rejectButtonText': 'Cancel',
+        'okButtonColor': '#F28046',
+        'askAgainTimeInSeconds': 5,
+        // 'serviceWorkerPath':
+        //     'https://s3-eu-west-1.amazonaws.com/static.wizrocket.com/js/sw_webpush.js'
+        'serviceWorkerPath': '/firebase-messaging-sw.js'
+      };
+      CleverTapPlugin.enableWebPush(pushData);
+      return;
+    }
     if (Platform.isAndroid) {
       _handleKilledStateNotificationInteraction();
     }
@@ -353,6 +377,16 @@ class _MyAppState extends State<MyApp> {
             appBar: AppBar(
               title: const Text('CleverTap Plugin Example App'),
               backgroundColor: Colors.red.shade800,
+              actions: [
+                Padding(
+                    padding: EdgeInsets.only(right: 60.0),
+                    child: NotificationButton(
+                        id: "bell-selector",
+                        child: Icon(
+                          Icons.notifications,
+                          color: Colors.black,
+                        )))
+              ],
             ),
             body: ListView(
               children: <Widget>[
@@ -370,87 +404,95 @@ class _MyAppState extends State<MyApp> {
                     ),
                   ),
                 ),
-                Card(
-                  color: Colors.lightBlueAccent,
-                  child: Padding(
-                    padding: const EdgeInsets.all(0.0),
-                    child: ListTile(
-                      title: Text("Product Experiences"),
+                if (!kIsWeb)
+                  Card(
+                    color: Colors.lightBlueAccent,
+                    child: Padding(
+                      padding: const EdgeInsets.all(0.0),
+                      child: ListTile(
+                        title: Text("Product Experiences"),
+                      ),
                     ),
                   ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Sync Variables"),
-                      onTap: syncVariables,
+                if (!kIsWeb)
+                  Card(
+                    color: Colors.grey.shade300,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: ListTile(
+                        title: Text("Sync Variables"),
+                        onTap: syncVariables,
+                      ),
                     ),
                   ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Fetch Variables"),
-                      onTap: fetchVariables,
+                if (!kIsWeb)
+                  Card(
+                    color: Colors.grey.shade300,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: ListTile(
+                        title: Text("Fetch Variables"),
+                        onTap: fetchVariables,
+                      ),
                     ),
                   ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Define Variables"),
-                      onTap: defineVariables,
+                if (!kIsWeb)
+                  Card(
+                    color: Colors.grey.shade300,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: ListTile(
+                        title: Text("Define Variables"),
+                        onTap: defineVariables,
+                      ),
                     ),
                   ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Get Variables"),
-                      onTap: getVariables,
+                if (!kIsWeb)
+                  Card(
+                    color: Colors.grey.shade300,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: ListTile(
+                        title: Text("Get Variables"),
+                        onTap: getVariables,
+                      ),
                     ),
                   ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text(
-                          'Get Variable Value for name \'flutter_var_string\''),
-                      onTap: getVariable,
+                if (!kIsWeb)
+                  Card(
+                    color: Colors.grey.shade300,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: ListTile(
+                        title: Text(
+                            'Get Variable Value for name \'flutter_var_string\''),
+                        onTap: getVariable,
+                      ),
                     ),
                   ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text('Add \'OnVariablesChanged\' listener'),
-                      onTap: onVariablesChanged,
+                if (!kIsWeb)
+                  Card(
+                    color: Colors.grey.shade300,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: ListTile(
+                        title: Text('Add \'OnVariablesChanged\' listener'),
+                        onTap: onVariablesChanged,
+                      ),
                     ),
                   ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text(
-                          'Add \'OnValueChanged\' listener for name \'flutter_var_string\''),
-                      onTap: onValueChanged,
+                if (!kIsWeb)
+                  Card(
+                    color: Colors.grey.shade300,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: ListTile(
+                        title: Text(
+                            'Add \'OnValueChanged\' listener for name \'flutter_var_string\''),
+                        onTap: onValueChanged,
+                      ),
                     ),
                   ),
-                ),
                 Card(
                   color: Colors.lightBlueAccent,
                   child: Padding(
@@ -641,28 +683,30 @@ class _MyAppState extends State<MyApp> {
                     ),
                   ),
                 ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Get Event Detail"),
-                      subtitle: Text("Get details of an event"),
-                      onTap: getEventDetail,
+                if (!kIsWeb)
+                  Card(
+                    color: Colors.grey.shade300,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: ListTile(
+                        title: Text("Get Event Detail"),
+                        subtitle: Text("Get details of an event"),
+                        onTap: getEventDetail,
+                      ),
                     ),
                   ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Get Event History"),
-                      subtitle: Text("Get history of an event"),
-                      onTap: getEventHistory,
+                if (!kIsWeb)
+                  Card(
+                    color: Colors.grey.shade300,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: ListTile(
+                        title: Text("Get Event History"),
+                        subtitle: Text("Get history of an event"),
+                        onTap: getEventHistory,
+                      ),
                     ),
                   ),
-                ),
                 Card(
                   color: Colors.lightBlueAccent,
                   child: Padding(
@@ -672,28 +716,30 @@ class _MyAppState extends State<MyApp> {
                     ),
                   ),
                 ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Show Inbox"),
-                      subtitle: Text("Opens sample App Inbox"),
-                      onTap: showInbox,
+                if (!kIsWeb)
+                  Card(
+                    color: Colors.grey.shade300,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: ListTile(
+                        title: Text("Show Inbox"),
+                        subtitle: Text("Opens sample App Inbox"),
+                        onTap: showInbox,
+                      ),
                     ),
                   ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Show Inbox with sections"),
-                      subtitle: Text("Opens sample App Inbox"),
-                      onTap: showInboxWithTabs,
+                if (!kIsWeb)
+                  Card(
+                    color: Colors.grey.shade300,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: ListTile(
+                        title: Text("Show Inbox with sections"),
+                        subtitle: Text("Opens sample App Inbox"),
+                        onTap: showInboxWithTabs,
+                      ),
                     ),
                   ),
-                ),
                 Card(
                   color: Colors.grey.shade300,
                   child: Padding(
@@ -738,17 +784,19 @@ class _MyAppState extends State<MyApp> {
                     ),
                   ),
                 ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Delete Inbox Messages for list of IDs"),
-                      subtitle: Text("Deletes inbox messages for list of IDs"),
-                      onTap: deleteInboxMessagesForIds,
+                if (!kIsWeb)
+                  Card(
+                    color: Colors.grey.shade300,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: ListTile(
+                        title: Text("Delete Inbox Messages for list of IDs"),
+                        subtitle:
+                            Text("Deletes inbox messages for list of IDs"),
+                        onTap: deleteInboxMessagesForIds,
+                      ),
                     ),
                   ),
-                ),
                 Card(
                   color: Colors.grey.shade300,
                   child: Padding(
@@ -772,30 +820,32 @@ class _MyAppState extends State<MyApp> {
                     ),
                   ),
                 ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Push Inbox Message Clicked"),
-                      subtitle:
-                          Text("Pushes/Records inbox message clicked event"),
-                      onTap: pushInboxNotificationClickedEventForId,
+                if (!kIsWeb)
+                  Card(
+                    color: Colors.grey.shade300,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: ListTile(
+                        title: Text("Push Inbox Message Clicked"),
+                        subtitle:
+                            Text("Pushes/Records inbox message clicked event"),
+                        onTap: pushInboxNotificationClickedEventForId,
+                      ),
                     ),
                   ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Push Inbox Message Viewed"),
-                      subtitle:
-                          Text("Pushes/Records inbox message viewed event"),
-                      onTap: pushInboxNotificationViewedEventForId,
+                if (!kIsWeb)
+                  Card(
+                    color: Colors.grey.shade300,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: ListTile(
+                        title: Text("Push Inbox Message Viewed"),
+                        subtitle:
+                            Text("Pushes/Records inbox message viewed event"),
+                        onTap: pushInboxNotificationViewedEventForId,
+                      ),
                     ),
                   ),
-                ),
                 Card(
                   color: Colors.lightBlueAccent,
                   child: Padding(
@@ -811,8 +861,8 @@ class _MyAppState extends State<MyApp> {
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
                       title: Text("Set Debug Level"),
-                      subtitle: Text(
-                          "Sets the debug level in Android/iOS to show console logs"),
+                      subtitle:
+                          Text("Sets the debug level to show console logs"),
                       onTap: () {
                         CleverTapPlugin.setDebugLevel(3);
                       },
@@ -820,214 +870,234 @@ class _MyAppState extends State<MyApp> {
                     ),
                   ),
                 ),
-                Card(
-                  color: Colors.lightBlueAccent,
-                  child: Padding(
-                    padding: const EdgeInsets.all(0.0),
-                    child: ListTile(
-                      title: Text("In-App messaging controls"),
+                if (!kIsWeb)
+                  Card(
+                    color: Colors.lightBlueAccent,
+                    child: Padding(
+                      padding: const EdgeInsets.all(0.0),
+                      child: ListTile(
+                        title: Text("In-App messaging controls"),
+                      ),
                     ),
                   ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Suspend InApp notifications"),
-                      subtitle:
-                          Text("Suspends display of InApp Notifications."),
-                      onTap: suspendInAppNotifications,
+                if (!kIsWeb)
+                  Card(
+                    color: Colors.grey.shade300,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: ListTile(
+                        title: Text("Suspend InApp notifications"),
+                        subtitle:
+                            Text("Suspends display of InApp Notifications."),
+                        onTap: suspendInAppNotifications,
+                      ),
                     ),
                   ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Discard InApp notifications"),
-                      subtitle: Text(
-                          "Suspends the display of InApp Notifications "
-                          "and discards any new InApp Notifications to be shown"
-                          " after this method is called."),
-                      onTap: discardInAppNotifications,
+                if (!kIsWeb)
+                  Card(
+                    color: Colors.grey.shade300,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: ListTile(
+                        title: Text("Discard InApp notifications"),
+                        subtitle: Text(
+                            "Suspends the display of InApp Notifications "
+                            "and discards any new InApp Notifications to be shown"
+                            " after this method is called."),
+                        onTap: discardInAppNotifications,
+                      ),
                     ),
                   ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Resume InApp notifications"),
-                      subtitle: Text("Resumes display of InApp Notifications."),
-                      onTap: resumeInAppNotifications,
+                if (!kIsWeb)
+                  Card(
+                    color: Colors.grey.shade300,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: ListTile(
+                        title: Text("Resume InApp notifications"),
+                        subtitle:
+                            Text("Resumes display of InApp Notifications."),
+                        onTap: resumeInAppNotifications,
+                      ),
                     ),
                   ),
-                ),
-                Card(
-                  color: Colors.lightBlueAccent,
-                  child: Padding(
-                    padding: const EdgeInsets.all(0.0),
-                    child: ListTile(
-                      title: Text("Product Config"),
+                if (!kIsWeb)
+                  Card(
+                    color: Colors.lightBlueAccent,
+                    child: Padding(
+                      padding: const EdgeInsets.all(0.0),
+                      child: ListTile(
+                        title: Text("Product Config"),
+                      ),
                     ),
                   ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Get Event First Time"),
-                      subtitle: Text("Gets first epoch of an event"),
-                      onTap: eventGetFirstTime,
+                if (!kIsWeb)
+                  Card(
+                    color: Colors.grey.shade300,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: ListTile(
+                        title: Text("Get Event First Time"),
+                        subtitle: Text("Gets first epoch of an event"),
+                        onTap: eventGetFirstTime,
+                      ),
                     ),
                   ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Get Event Occurrences"),
-                      subtitle: Text("Get number of occurences of an event"),
-                      onTap: eventGetOccurrences,
+                if (!kIsWeb)
+                  Card(
+                    color: Colors.grey.shade300,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: ListTile(
+                        title: Text("Get Event Occurrences"),
+                        subtitle: Text("Get number of occurences of an event"),
+                        onTap: eventGetOccurrences,
+                      ),
                     ),
                   ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Get Event Last Time"),
-                      subtitle: Text("Returns last epoch value for an event"),
-                      onTap: eventGetLastTime,
+                if (!kIsWeb)
+                  Card(
+                    color: Colors.grey.shade300,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: ListTile(
+                        title: Text("Get Event Last Time"),
+                        subtitle: Text("Returns last epoch value for an event"),
+                        onTap: eventGetLastTime,
+                      ),
                     ),
                   ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Fetch"),
-                      subtitle: Text("Fetches Product Config values"),
-                      onTap: fetch,
+                if (!kIsWeb)
+                  Card(
+                    color: Colors.grey.shade300,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: ListTile(
+                        title: Text("Fetch"),
+                        subtitle: Text("Fetches Product Config values"),
+                        onTap: fetch,
+                      ),
                     ),
                   ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Activate"),
-                      subtitle: Text("Activates Product Config values"),
-                      onTap: activate,
+                if (!kIsWeb)
+                  Card(
+                    color: Colors.grey.shade300,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: ListTile(
+                        title: Text("Activate"),
+                        subtitle: Text("Activates Product Config values"),
+                        onTap: activate,
+                      ),
                     ),
                   ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Fetch and Activate"),
-                      subtitle: Text("Fetches and Activates Config values"),
-                      onTap: fetchAndActivate,
+                if (!kIsWeb)
+                  Card(
+                    color: Colors.grey.shade300,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: ListTile(
+                        title: Text("Fetch and Activate"),
+                        subtitle: Text("Fetches and Activates Config values"),
+                        onTap: fetchAndActivate,
+                      ),
                     ),
                   ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Session Time Elapsed"),
-                      subtitle: Text("Returns session time elapsed"),
-                      onTap: getTimeElapsed,
+                if (!kIsWeb)
+                  Card(
+                    color: Colors.grey.shade300,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: ListTile(
+                        title: Text("Session Time Elapsed"),
+                        subtitle: Text("Returns session time elapsed"),
+                        onTap: getTimeElapsed,
+                      ),
                     ),
                   ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Session Total Visits"),
-                      subtitle: Text("Returns session total visits"),
-                      onTap: getTotalVisits,
+                if (!kIsWeb)
+                  Card(
+                    color: Colors.grey.shade300,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: ListTile(
+                        title: Text("Session Total Visits"),
+                        subtitle: Text("Returns session total visits"),
+                        onTap: getTotalVisits,
+                      ),
                     ),
                   ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Session Screen Count"),
-                      subtitle: Text("Returns session screen count"),
-                      onTap: getScreenCount,
+                if (!kIsWeb)
+                  Card(
+                    color: Colors.grey.shade300,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: ListTile(
+                        title: Text("Session Screen Count"),
+                        subtitle: Text("Returns session screen count"),
+                        onTap: getScreenCount,
+                      ),
                     ),
                   ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Session Previous Visit Time"),
-                      subtitle: Text("Returns session previous visit time"),
-                      onTap: getPreviousVisitTime,
+                if (!kIsWeb)
+                  Card(
+                    color: Colors.grey.shade300,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: ListTile(
+                        title: Text("Session Previous Visit Time"),
+                        subtitle: Text("Returns session previous visit time"),
+                        onTap: getPreviousVisitTime,
+                      ),
                     ),
                   ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Session UTM Details"),
-                      subtitle: Text("Returns session UTM details"),
-                      onTap: getUTMDetails,
+                if (!kIsWeb)
+                  Card(
+                    color: Colors.grey.shade300,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: ListTile(
+                        title: Text("Session UTM Details"),
+                        subtitle: Text("Returns session UTM details"),
+                        onTap: getUTMDetails,
+                      ),
                     ),
                   ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Get Ad Units"),
-                      subtitle: Text("Returns all Display Units set"),
-                      onTap: getAdUnits,
+                if (!kIsWeb)
+                  Card(
+                    color: Colors.grey.shade300,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: ListTile(
+                        title: Text("Get Ad Units"),
+                        subtitle: Text("Returns all Display Units set"),
+                        onTap: getAdUnits,
+                      ),
                     ),
                   ),
-                ),
-                Card(
-                  color: Colors.lightBlueAccent,
-                  child: Padding(
-                    padding: const EdgeInsets.all(0.0),
-                    child: ListTile(
-                      title: Text("Attribution"),
+                if (!kIsWeb)
+                  Card(
+                    color: Colors.lightBlueAccent,
+                    child: Padding(
+                      padding: const EdgeInsets.all(0.0),
+                      child: ListTile(
+                        title: Text("Attribution"),
+                      ),
                     ),
                   ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Get Attribution ID"),
-                      subtitle: Text(
-                          "Returns Attribution ID to send to attribution partners"),
-                      onTap: getCTAttributionId,
+                if (!kIsWeb)
+                  Card(
+                    color: Colors.grey.shade300,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: ListTile(
+                        title: Text("Get Attribution ID"),
+                        subtitle: Text(
+                            "Returns Attribution ID to send to attribution partners"),
+                        onTap: getCTAttributionId,
+                      ),
                     ),
                   ),
-                ),
                 Card(
                   color: Colors.lightBlueAccent,
                   child: Padding(
@@ -1049,49 +1119,53 @@ class _MyAppState extends State<MyApp> {
                     ),
                   ),
                 ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Device Networking Info"),
-                      subtitle: Text(
-                          "Enables/Disable device networking info as per GDPR"),
-                      onTap: setEnableDeviceNetworkingInfo,
+                if (!kIsWeb)
+                  Card(
+                    color: Colors.grey.shade300,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: ListTile(
+                        title: Text("Device Networking Info"),
+                        subtitle: Text(
+                            "Enables/Disable device networking info as per GDPR"),
+                        onTap: setEnableDeviceNetworkingInfo,
+                      ),
                     ),
                   ),
-                ),
-                Card(
-                  color: Colors.lightBlueAccent,
-                  child: Padding(
-                    padding: const EdgeInsets.all(0.0),
-                    child: ListTile(
-                      title: Text("Multi-Instance"),
+                if (!kIsWeb)
+                  Card(
+                    color: Colors.lightBlueAccent,
+                    child: Padding(
+                      padding: const EdgeInsets.all(0.0),
+                      child: ListTile(
+                        title: Text("Multi-Instance"),
+                      ),
                     ),
                   ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Enable Personalization"),
-                      subtitle: Text("Enables Personalization"),
-                      onTap: enablePersonalization,
+                if (!kIsWeb)
+                  Card(
+                    color: Colors.grey.shade300,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: ListTile(
+                        title: Text("Enable Personalization"),
+                        subtitle: Text("Enables Personalization"),
+                        onTap: enablePersonalization,
+                      ),
                     ),
                   ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Disables Personalization"),
-                      subtitle: Text("Disables Personalization"),
-                      onTap: disablePersonalization,
+                if (!kIsWeb)
+                  Card(
+                    color: Colors.grey.shade300,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: ListTile(
+                        title: Text("Disables Personalization"),
+                        subtitle: Text("Disables Personalization"),
+                        onTap: disablePersonalization,
+                      ),
                     ),
                   ),
-                ),
                 Card(
                   color: Colors.grey.shade300,
                   child: Padding(
@@ -1122,257 +1196,282 @@ class _MyAppState extends State<MyApp> {
                     ),
                   ),
                 ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Carousel Push"),
-                      onTap: sendAutoCarouselPush,
+                if (!kIsWeb)
+                  Card(
+                    color: Colors.grey.shade300,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: ListTile(
+                        title: Text("Carousel Push"),
+                        onTap: sendAutoCarouselPush,
+                      ),
                     ),
                   ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Manual Carousel Push"),
-                      onTap: sendManualCarouselPush,
+                if (!kIsWeb)
+                  Card(
+                    color: Colors.grey.shade300,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: ListTile(
+                        title: Text("Manual Carousel Push"),
+                        onTap: sendManualCarouselPush,
+                      ),
                     ),
                   ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("FilmStrip Carousel Push"),
-                      onTap: sendFilmStripCarouselPush,
+                if (!kIsWeb)
+                  Card(
+                    color: Colors.grey.shade300,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: ListTile(
+                        title: Text("FilmStrip Carousel Push"),
+                        onTap: sendFilmStripCarouselPush,
+                      ),
                     ),
                   ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Rating Push"),
-                      onTap: sendRatingCarouselPush,
+                if (!kIsWeb)
+                  Card(
+                    color: Colors.grey.shade300,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: ListTile(
+                        title: Text("Rating Push"),
+                        onTap: sendRatingCarouselPush,
+                      ),
                     ),
                   ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Product Display"),
-                      onTap: sendProductDisplayPush,
+                if (!kIsWeb)
+                  Card(
+                    color: Colors.grey.shade300,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: ListTile(
+                        title: Text("Product Display"),
+                        onTap: sendProductDisplayPush,
+                      ),
                     ),
                   ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Linear Product Display"),
-                      onTap: sendLinearProductDisplayPush,
+                if (!kIsWeb)
+                  Card(
+                    color: Colors.grey.shade300,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: ListTile(
+                        title: Text("Linear Product Display"),
+                        onTap: sendLinearProductDisplayPush,
+                      ),
                     ),
                   ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Five CTA"),
-                      onTap: sendCTAPush,
+                if (!kIsWeb)
+                  Card(
+                    color: Colors.grey.shade300,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: ListTile(
+                        title: Text("Five CTA"),
+                        onTap: sendCTAPush,
+                      ),
                     ),
                   ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Zero Bezel"),
-                      onTap: sendZeroBezelPush,
+                if (!kIsWeb)
+                  Card(
+                    color: Colors.grey.shade300,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: ListTile(
+                        title: Text("Zero Bezel"),
+                        onTap: sendZeroBezelPush,
+                      ),
                     ),
                   ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Zero Bezel Text Only"),
-                      onTap: sendZeroBezelTextOnlyPush,
+                if (!kIsWeb)
+                  Card(
+                    color: Colors.grey.shade300,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: ListTile(
+                        title: Text("Zero Bezel Text Only"),
+                        onTap: sendZeroBezelTextOnlyPush,
+                      ),
                     ),
                   ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Timer Push"),
-                      onTap: sendTimerPush,
+                if (!kIsWeb)
+                  Card(
+                    color: Colors.grey.shade300,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: ListTile(
+                        title: Text("Timer Push"),
+                        onTap: sendTimerPush,
+                      ),
                     ),
                   ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text(
-                          "Input Box - CTA + reminder Push Campaign - DOC true"),
-                      onTap: sendInputBoxPush,
+                if (!kIsWeb)
+                  Card(
+                    color: Colors.grey.shade300,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: ListTile(
+                        title: Text(
+                            "Input Box - CTA + reminder Push Campaign - DOC true"),
+                        onTap: sendInputBoxPush,
+                      ),
                     ),
                   ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Input Box - Reply with Event"),
-                      onTap: sendInputBoxReplyEventPush,
+                if (!kIsWeb)
+                  Card(
+                    color: Colors.grey.shade300,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: ListTile(
+                        title: Text("Input Box - Reply with Event"),
+                        onTap: sendInputBoxReplyEventPush,
+                      ),
                     ),
                   ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Input Box - Reply with Intent"),
-                      onTap: sendInputBoxReplyAutoOpenPush,
+                if (!kIsWeb)
+                  Card(
+                    color: Colors.grey.shade300,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: ListTile(
+                        title: Text("Input Box - Reply with Intent"),
+                        onTap: sendInputBoxReplyAutoOpenPush,
+                      ),
                     ),
                   ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text(
-                          "Input Box - CTA + reminder Push Campaign - DOC false"),
-                      onTap: sendInputBoxRemindDOCFalsePush,
+                if (!kIsWeb)
+                  Card(
+                    color: Colors.grey.shade300,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: ListTile(
+                        title: Text(
+                            "Input Box - CTA + reminder Push Campaign - DOC false"),
+                        onTap: sendInputBoxRemindDOCFalsePush,
+                      ),
                     ),
                   ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Input Box - CTA - DOC true"),
-                      onTap: sendInputBoxCTADOCTruePush,
+                if (!kIsWeb)
+                  Card(
+                    color: Colors.grey.shade300,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: ListTile(
+                        title: Text("Input Box - CTA - DOC true"),
+                        onTap: sendInputBoxCTADOCTruePush,
+                      ),
                     ),
                   ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Input Box - CTA - DOC false"),
-                      onTap: sendInputBoxCTADOCFalsePush,
+                if (!kIsWeb)
+                  Card(
+                    color: Colors.grey.shade300,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: ListTile(
+                        title: Text("Input Box - CTA - DOC false"),
+                        onTap: sendInputBoxCTADOCFalsePush,
+                      ),
                     ),
                   ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Input Box - reminder - DOC true"),
-                      onTap: sendInputBoxReminderDOCTruePush,
+                if (!kIsWeb)
+                  Card(
+                    color: Colors.grey.shade300,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: ListTile(
+                        title: Text("Input Box - reminder - DOC true"),
+                        onTap: sendInputBoxReminderDOCTruePush,
+                      ),
                     ),
                   ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Input Box - reminder - DOC false"),
-                      onTap: sendInputBoxReminderDOCFalsePush,
+                if (!kIsWeb)
+                  Card(
+                    color: Colors.grey.shade300,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: ListTile(
+                        title: Text("Input Box - reminder - DOC false"),
+                        onTap: sendInputBoxReminderDOCFalsePush,
+                      ),
                     ),
                   ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Set Push token : FCM"),
-                      onTap: setPushTokenFCM,
+                if (!kIsWeb)
+                  Card(
+                    color: Colors.grey.shade300,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: ListTile(
+                        title: Text("Set Push token : FCM"),
+                        onTap: setPushTokenFCM,
+                      ),
                     ),
                   ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Set Push token : XPS"),
-                      onTap: setPushTokenXPS,
+                if (!kIsWeb)
+                  Card(
+                    color: Colors.grey.shade300,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: ListTile(
+                        title: Text("Set Push token : XPS"),
+                        onTap: setPushTokenXPS,
+                      ),
                     ),
                   ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Set Push token : HMS"),
-                      onTap: setPushTokenHMS,
+                if (!kIsWeb)
+                  Card(
+                    color: Colors.grey.shade300,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: ListTile(
+                        title: Text("Set Push token : HMS"),
+                        onTap: setPushTokenHMS,
+                      ),
                     ),
                   ),
-                ),
-                Card(
-                  color: Colors.lightBlueAccent,
-                  child: Padding(
-                    padding: const EdgeInsets.all(0.0),
-                    child: ListTile(
-                      title: Text("Push Primer"),
+                if (!kIsWeb)
+                  Card(
+                    color: Colors.lightBlueAccent,
+                    child: Padding(
+                      padding: const EdgeInsets.all(0.0),
+                      child: ListTile(
+                        title: Text("Push Primer"),
+                      ),
                     ),
                   ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Prompt for Push Notification"),
-                      onTap: promptForPushNotification,
+                if (!kIsWeb)
+                  Card(
+                    color: Colors.grey.shade300,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: ListTile(
+                        title: Text("Prompt for Push Notification"),
+                        onTap: promptForPushNotification,
+                      ),
                     ),
                   ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Local Half Interstitial Push Primer"),
-                      onTap: localHalfInterstitialPushPrimer,
+                if (!kIsWeb)
+                  Card(
+                    color: Colors.grey.shade300,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: ListTile(
+                        title: Text("Local Half Interstitial Push Primer"),
+                        onTap: localHalfInterstitialPushPrimer,
+                      ),
                     ),
                   ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Local Alert Push Primer"),
-                      onTap: localAlertPushPrimer,
+                if (!kIsWeb)
+                  Card(
+                    color: Colors.grey.shade300,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: ListTile(
+                        title: Text("Local Alert Push Primer"),
+                        onTap: localAlertPushPrimer,
+                      ),
                     ),
                   ),
-                ),
               ],
             )),
       ),
@@ -1608,7 +1707,11 @@ class _MyAppState extends State<MyApp> {
       'total': '200',
       'payment': 'cash'
     };
-    CleverTapPlugin.recordChargedEvent(chargeDetails, items);
+    if (kIsWeb) {
+      CleverTapPlugin.recordEvent("Charged", chargeDetails);
+    } else {
+      CleverTapPlugin.recordChargedEvent(chargeDetails, items);
+    }
     showToast("Raised event - Charged");
   }
 
@@ -1663,6 +1766,8 @@ class _MyAppState extends State<MyApp> {
   void getAllInboxMessages() async {
     List? messages = await CleverTapPlugin.getAllInboxMessages();
     showToast("See all inbox messages in console");
+    firstMsgId = messages![0]["id"];
+    print(firstMsgId);
     print("Inbox Messages = " + messages.toString());
     // Uncomment to print payload.
     // printInboxMessagesArray(messages);
@@ -1702,6 +1807,7 @@ class _MyAppState extends State<MyApp> {
   void getInboxMessageForId() async {
     var messageId = await getFirstInboxMessageId();
 
+    print("first message Id" + "$messageId");
     if (messageId == null) {
       setState((() {
         showToast("Inbox Message id is null");
@@ -1843,7 +1949,9 @@ class _MyAppState extends State<MyApp> {
     Map<dynamic, dynamic> itemFirst = messageList?[0];
     print(itemFirst.toString());
 
-    if (Platform.isAndroid) {
+    if (kIsWeb) {
+      return itemFirst["id"];
+    } else if (Platform.isAndroid) {
       return itemFirst["id"];
     } else if (Platform.isIOS) {
       return itemFirst["_id"];
@@ -2063,7 +2171,7 @@ class _MyAppState extends State<MyApp> {
   }
 
   void addMultiValues() {
-    var values = ["value1", "value2"];
+    var values = ["value2", "value3"];
     CleverTapPlugin.profileAddMultiValues("props", values);
     showToast("check console for details");
   }

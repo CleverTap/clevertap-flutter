@@ -272,19 +272,19 @@ class CleverTapPlugin {
 
   /// Get All Inbox Messages
   List _getAllInboxMessages(MethodCall call) {
-    return getAllInboxMessages();
+    return List.from((js.dartify(getAllInboxMessages()) as Map).values);
   }
 
   /// Get All Inbox Unread Messages
   List _getUnreadInboxMessages(MethodCall call) {
-    return getUnreadInboxMessages();
+    return List.from((js.dartify(getUnreadInboxMessages()) as Map).values);
   }
 
   /// Get Inbox Message for the given message-id
   Object _getInboxMessageForId(MethodCall call) {
     Map<Object?, Object?> args = call.arguments as Map<Object?, Object?>;
     String messageId = args['messageId'] as String;
-    return getInboxMessageForId(messageId);
+    return (js.dartify(getInboxMessageForId(messageId)) as Map);
   }
 
   /// Delete Message for the given message-id

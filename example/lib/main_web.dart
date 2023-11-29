@@ -1,9 +1,11 @@
+import 'package:example/notification_button.dart';
 import 'package:flutter/material.dart';
 import 'package:clevertap_plugin/clevertap_plugin.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
 var offLine = false;
 var optOut = false;
+var firstMsgId = "";
 
 const htmlData = "<div><button id='inbox'>Inbox</button></div>";
 void main() {
@@ -294,6 +296,99 @@ void main() {
                   );
                 },
               ),
+              Card(
+                color: Colors.grey.shade300,
+                child: Padding(
+                  padding: const EdgeInsets.all(4.0),
+                  child: ListTile(
+                    title: Text("Inbox Message count"),
+                    subtitle: Text("Get the total number of messages in inbox"),
+                    onTap: getInboxMessageCount,
+                  ),
+                ),
+              ),
+              Card(
+                color: Colors.grey.shade300,
+                child: Padding(
+                  padding: const EdgeInsets.all(4.0),
+                  child: ListTile(
+                    title: Text("Inbox Unread messages count"),
+                    subtitle: Text(
+                        "Get the total number of unread messages in inbox"),
+                    onTap: getInboxMessageUnreadCount,
+                  ),
+                ),
+              ),
+              Card(
+                color: Colors.grey.shade300,
+                child: Padding(
+                  padding: const EdgeInsets.all(4.0),
+                  child: ListTile(
+                    title: Text("Get Inbox Messages"),
+                    subtitle: Text("Get the list of all the inbox messages"),
+                    onTap: getAllInboxMessages,
+                  ),
+                ),
+              ),
+              Card(
+                color: Colors.grey.shade300,
+                child: Padding(
+                  padding: const EdgeInsets.all(4.0),
+                  child: ListTile(
+                    title: Text("Get All Unread Inbox Messages"),
+                    subtitle: Text("Get the list of unread inbox messages"),
+                    onTap: getUnreadInboxMessages,
+                  ),
+                ),
+              ),
+              Card(
+                color: Colors.grey.shade300,
+                child: Padding(
+                  padding: const EdgeInsets.all(4.0),
+                  child: ListTile(
+                    title: Text("Mark read all Inbox Messages"),
+                    subtitle: Text("Mark read all Inbox Messages"),
+                    onTap: markReadAllInboxMessage,
+                  ),
+                ),
+              ),
+              Card(
+                color: Colors.grey.shade300,
+                child: Padding(
+                  padding: const EdgeInsets.all(4.0),
+                  child: ListTile(
+                    title: Text("Get Inbox message for the Id"),
+                    subtitle: Text(
+                        "Get the inbox message for the Id - default id of first message is passed "),
+                    onTap: getInboxMessageForId,
+                  ),
+                ),
+              ),
+              Card(
+                color: Colors.grey.shade300,
+                child: Padding(
+                  padding: const EdgeInsets.all(4.0),
+                  child: ListTile(
+                    title: Text("Mark read the inbox message for the Id"),
+                    subtitle: Text(
+                        "Mark the inbox message as read - default id of first message is passed "),
+                    onTap: markReadInboxMessage,
+                  ),
+                ),
+              ),
+              Card(
+                color: Colors.grey.shade300,
+                child: Padding(
+                  padding: const EdgeInsets.all(4.0),
+                  child: ListTile(
+                    title: Text("Delete the inbox message for the id"),
+                    subtitle: Text(
+                        "Delete the inbox message for the id - default id of first message is passed"),
+                    onTap: deleteInboxMessage,
+                  ),
+                ),
+              ),
+              NotificationButton(id: "bell-selector", child: Icon(Icons.star))
             ],
           ))));
 }
@@ -440,4 +535,61 @@ void enablePushNotifs() {
     'serviceWorkerPath': '/firebase-messaging-sw.js'
   };
   CleverTapPlugin.enableWebPush(pushData);
+}
+
+void getInboxMessageCount() {
+  CleverTapPlugin.getInboxMessageCount().then((messages) {
+    print("total messages count " + "$messages");
+  }).catchError((error) {
+    print("$error");
+  });
+}
+
+void getInboxMessageUnreadCount() {
+  CleverTapPlugin.getInboxMessageUnreadCount().then((messages) {
+    print("unread messages count " + "$messages");
+  }).catchError((error) {
+    print("$error");
+  });
+}
+
+void getAllInboxMessages() {
+  CleverTapPlugin.getAllInboxMessages().then((messages) {
+    firstMsgId = messages![0]["id"];
+    print(firstMsgId);
+    print("List of all inbox messages " + "$messages");
+  }).catchError((error) {
+    print("$error");
+  });
+}
+
+void getUnreadInboxMessages() {
+  CleverTapPlugin.getUnreadInboxMessages().then((messages) {
+    print("List of all unread messages " + "$messages");
+  }).catchError((error) {
+    print("$error");
+  });
+}
+
+void getInboxMessageForId() {
+  CleverTapPlugin.getInboxMessageForId(firstMsgId).then((message) {
+    print("Inbox message for " + "$firstMsgId" + " is " + "$message");
+  }).catchError((error) {
+    print("$error");
+  });
+}
+
+void markReadInboxMessage() {
+  CleverTapPlugin.markReadInboxMessageForId(firstMsgId);
+  print("Inbox message marked as read");
+}
+
+void deleteInboxMessage() {
+  CleverTapPlugin.deleteInboxMessageForId(firstMsgId);
+  print("Deleted inbox message");
+}
+
+void markReadAllInboxMessage() {
+  CleverTapPlugin.markReadAllInboxMessage();
+  print("All messages marked as read");
 }
