@@ -25,6 +25,8 @@ class CleverTapPlugin {
     switch (call.method) {
       case 'init':
         return _init(call);
+      case 'setLibrary':
+        return _setLibrary(call);
       case 'toggleInbox':
         return _toggleInbox(call);
       case 'recordEvent':
@@ -85,6 +87,8 @@ class CleverTapPlugin {
         return _markReadInboxMessageForId(call);
       case 'markReadAllInboxMessage':
         return _markReadAllInboxMessage(call);
+      case 'markReadInboxMessagesForIds':
+        return _markReadInboxMessagesForIds(call);
       default:
         throw PlatformException(
           code: 'Unimplemented',
@@ -101,6 +105,12 @@ class CleverTapPlugin {
     String? targetDomain = args['targetDomain'] as String?;
     print("actual call going to happen");
     init(accountId, region, targetDomain);
+  }
+
+  void _setLibrary(MethodCall call) {
+    Map<Object?, Object?> args = call.arguments as Map<Object?, Object?>;
+    int libVersion = args['libVersion'] as int;
+    setLibrary("Flutter", libVersion);
   }
 
   void _toggleInbox(MethodCall call) {
@@ -304,5 +314,11 @@ class CleverTapPlugin {
   /// Mark all inbox Message as Read
   void _markReadAllInboxMessage(MethodCall call) {
     markReadAllInboxMessage();
+  }
+
+  void _markReadInboxMessagesForIds(MethodCall call) {
+    Map<Object?, Object?> args = call.arguments as Map<Object?, Object?>;
+    List messageIds = args['messageIds'] as List;
+    markReadInboxMessagesForIds(messageIds);
   }
 }

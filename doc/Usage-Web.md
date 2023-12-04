@@ -1,0 +1,216 @@
+# Example Usage
+
+## User Profiles
+
+#### Update User Profile(Push Profile)
+
+```Dart
+var stuff = ["bags", "shoes"];
+var profile = {
+    'Name': 'John Wick',
+    'Identity': '100',
+    'DOB': '22-04-2000',
+    //Key always has to be "DOB" and format should always be dd-MM-yyyy
+    'Email': 'john@gmail.com',
+    'Phone': '14155551234',
+    'props': 'property1',
+    'stuff': stuff
+};
+CleverTapPlugin.profileSet(profile);
+```
+
+#### Set Multi Values For Key 
+
+```Dart
+var values = ["value1", "value2"];
+CleverTapPlugin.profileSetMultiValues("props", values);
+```
+
+#### Remove Multi Value For Key
+
+```Dart
+var values = ["value1", "value2"];
+CleverTapPlugin.profileRemoveMultiValues("props", values);
+```
+
+#### Add Multi Value For Key
+
+```Dart
+var values = ["value1", "value2"];
+CleverTapPlugin.profileAddMultiValues("props", values);
+```
+
+#### Increment Value For Key
+
+```Dart
+CleverTapPlugin.profileIncrementValue("score", value);
+```
+
+#### Decrement Value For Key
+
+```Dart
+CleverTapPlugin.profileDecrementValue("score", value);
+```
+
+#### Create a User profile when user logs in (On User Login)
+
+```Dart
+var stuff = ["bags", "shoes"];
+var profile = {
+    'Name': 'Captain America',
+    'Identity': '100',
+    'Email': 'captain@america.com',
+    'Phone': '+14155551234',
+    'stuff': stuff
+};
+CleverTapPlugin.onUserLogin(profile);
+```
+
+#### Get CleverTap Reference id
+
+```Dart
+CleverTapPlugin.getCleverTapID().then((clevertapId) {})
+```
+
+#### Set Location to User Profile
+
+```Dart
+var lat = 19.07;
+var long = 72.87;
+CleverTapPlugin.setLocation(lat, long);
+```
+----
+
+## User Events
+
+#### Record an event 
+
+```Dart
+var eventData = {
+    // Key:    Value
+   'first': 'partridge',
+   'second': 'turtledoves'
+};
+CleverTapPlugin.recordEvent("Flutter Event", eventData);
+```
+
+#### Record Charged event
+
+```Dart
+var chargeDetails = {
+    // Key:    Value
+    'total': '200',
+    'payment': 'cash'
+};
+CleverTapPlugin.recordEvent("Charged", chargeDetails);
+```
+-------
+
+## App Inbox
+
+#### Steps to setup Web Inbox
+- Add the button/div with the id as configured on clevertap dashboard. Set the visibility of the element as hidden
+```HTML
+<button id='bell-selector' style="visibility: hidden;">Inbox</button>
+```
+- Uncheck the Notifications Badge in Web Inbox configuration Style section on clevertap dashboard
+- Use the custom Widget NotificationButton to pass the Widget on which the inbox has to be rendered.
+
+```Dart
+NotificationButton(child: Icon(Icons.notifications))
+```
+
+#### Get Total Inbox Message Count
+
+```Dart
+int total = await CleverTapPlugin.getInboxMessageCount();
+print("Total count = " + total.toString());
+```
+
+#### Get Total Inbox Unread Count
+
+```Dart
+int unread = await CleverTapPlugin.getInboxMessageUnreadCount();
+print("Unread count = " + unread.toString());
+	      
+```
+
+#### Get All Inbox Messages
+
+```Dart
+List messages = await CleverTapPlugin.getAllInboxMessages();
+```
+
+#### Get All Inbox Unread Messages
+
+```Dart
+List messages = await CleverTapPlugin.getUnreadInboxMessages();
+```
+
+#### Get Inbox Message for the given message id
+
+```Dart
+var messageForId = await CleverTapPlugin.getInboxMessageForId(messageId);				
+```
+
+#### Delete Message for the given message id
+
+```Dart
+await CleverTapPlugin.deleteInboxMessageForId(messageId);	
+```
+
+#### Mark Message as Read for the given message id
+
+```Dart
+await CleverTapPlugin.markReadInboxMessageForId(messageId);	
+```
+
+## Debugging
+
+#### Set Debug Level
+
+```Dart
+CleverTapPlugin.setDebugLevel(3);
+```
+
+## Push Notifications
+
+#### Enable Web Push
+- Add Clevertap's service worker in web folder. Refer [here](https://developer.clevertap.com/docs/web-push)
+
+```Dart
+var pushData = {
+    'titleText': 'Would you like to receive Push Notifications?',
+    'bodyText':
+        'We promise to only send you relevant content and give you updates on your transactions',
+    'okButtonText': 'Ok',
+    'rejectButtonText': 'Cancel',
+    'okButtonColor': '#F28046',
+    'askAgainTimeInSeconds': 5,
+    'serviceWorkerPath': '/firebase-messaging-sw.js'
+  };
+  CleverTapPlugin.enableWebPush(pushData);
+```
+
+## GDPR 
+
+#### Set Opt Out
+
+```Dart
+CleverTapPlugin.setOptOut(false); ///Will opt in the user to send data to CleverTap
+CleverTapPlugin.setOptOut(true); ///Will opt out the user to send data to CleverTap
+```
+
+## Set Offline
+
+```Dart
+// Will set the user online
+CleverTapPlugin.setOffline(false);
+// Will set the user offline
+CleverTapPlugin.setOffline(true);
+```
+
+### For more information,
+
+ - [See Example Application Dart interface](/example/lib/main.dart) 
+ - [See CleverTap Dart interface](/lib/clevertap_plugin_web.dart)

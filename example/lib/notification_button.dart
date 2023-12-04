@@ -3,10 +3,9 @@ import 'package:clevertap_plugin/clevertap_plugin.dart';
 import 'dart:html';
 
 class NotificationButton extends StatefulWidget {
-  final String id;
   final Widget child;
 
-  NotificationButton({required this.id, required this.child});
+  NotificationButton({required this.child});
 
   @override
   _NotificationButtonState createState() => _NotificationButtonState();

@@ -462,7 +462,7 @@
   var PR_COOKIE = 'WZRK_PR';
   var ARP_COOKIE = 'WZRK_ARP';
   var LCOOKIE_NAME = 'WZRK_L';
-  var GLOBAL = 'global';
+  var GLOBAL = 'global'; // used for email unsubscribe also
   var DISPLAY = 'display';
   var WEBPUSH_LS_KEY = 'WZRK_WPR';
   var OPTOUT_KEY = 'optOut';
@@ -916,7 +916,9 @@
     privacyArray: [],
     offline: false,
     location: null,
-    dismissSpamControl: false // domain: window.location.hostname, url -> getHostName()
+    dismissSpamControl: false,
+    globalUnsubscribe: true,
+    isFlutter: null // domain: window.location.hostname, url -> getHostName()
     // gcookie: -> device
 
   };
@@ -2585,6 +2587,7 @@
 
     var encodedEmailId = urlParamsAsIs.e;
     var encodedProfileProps = urlParamsAsIs.p;
+    var pageType = urlParamsAsIs.page_type;
 
     if (typeof encodedEmailId !== 'undefined') {
       var data = {};
@@ -2615,6 +2618,11 @@
 
       if (subscription !== '-1') {
         url = addToURL(url, 'sub', subscription);
+      }
+
+      if (pageType) {
+        $ct.globalUnsubscribe = pageType === GLOBAL;
+        url = addToURL(url, 'page_type', pageType);
       }
 
       RequestDispatcher.fireRequest(url);
@@ -2817,30 +2825,27 @@
     }, {
       key: "_handleMultiValueAdd",
       value: function _handleMultiValueAdd(propKey, propVal, command) {
-        var array = [];
+        // Initialize array
+        var array = []; // Check if globalProfileMap is null, initialize if needed
 
         if ($ct.globalProfileMap == null) {
-          var _StorageManager$readF2;
-
-          $ct.globalProfileMap = (_StorageManager$readF2 = StorageManager.readFromLSorCookie(PR_COOKIE)) !== null && _StorageManager$readF2 !== void 0 ? _StorageManager$readF2 : {};
-        } // if the value to be set is either string or number
+          $ct.globalProfileMap = StorageManager.readFromLSorCookie(PR_COOKIE) || {};
+        } // Check if the value to be set is either string or number
 
 
         if (typeof propVal === 'string' || typeof propVal === 'number') {
           if ($ct.globalProfileMap.hasOwnProperty(propKey)) {
-            array = $ct.globalProfileMap[propKey];
-            typeof propVal === 'number' ? array.push(propVal) : array.push(propVal.toLowerCase());
+            array = $ct.globalProfileMap[propKey]; // Push the value to the array in a more concise way
+
+            array.push(typeof propVal === 'number' ? propVal : propVal.toLowerCase());
           } else {
             $ct.globalProfileMap[propKey] = propVal;
-          } // if propVal is an array
-
-        } else {
-          if ($ct.globalProfileMap.hasOwnProperty(propKey)) {
-            array = $ct.globalProfileMap[propKey];
           }
-          /**
-           * checks for case sensitive inputs and filters the same ones
-           */
+        } else {
+          // Check if propVal is an array
+          if ($ct.globalProfileMap.hasOwnProperty(propKey)) {
+            array = Array.isArray($ct.globalProfileMap[propKey]) ? $ct.globalProfileMap[propKey] : [$ct.globalProfileMap[propKey]];
+          } // Check for case-sensitive inputs and filter the same ones
 
 
           for (var i = 0; i < propVal.length; i++) {
@@ -2851,14 +2856,17 @@
             } else if (typeof propVal[i] === 'number' && array.includes(propVal[i]) || typeof propVal[i] === 'string' && array.includes(propVal[i].toLowerCase())) {
               console.error('Values already included');
             } else {
-              console.error('array supports only string or number type values');
+              console.error('Array supports only string or number type values');
             }
-          }
+          } // Update globalProfileMap with the array
+
 
           $ct.globalProfileMap[propKey] = array;
-        }
+        } // Save to local storage or cookie
 
-        StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap);
+
+        StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap); // Call the sendMultiValueData function
+
         this.sendMultiValueData(propKey, propVal, command);
       }
       /**
@@ -4113,8 +4121,6 @@
 
       _this.addClickListenerOnDocument = function () {
         return function (e) {
-          console.log(e.target, _this.inboxSelector);
-
           if (e.composedPath().includes(_this.inbox)) {
             // path is not supported on FF. So we fallback to e.composedPath
             var path = e.path || e.composedPath && e.composedPath();
@@ -4336,9 +4342,9 @@
     }, {
       key: "updateUnviewedBadgePosition",
       value: function updateUnviewedBadgePosition() {
-        var _ref = this.rect || this.inboxSelector.getBoundingClientRect(),
-            top = _ref.top,
-            right = _ref.right;
+        var _this$inboxSelector$g = this.inboxSelector.getBoundingClientRect(),
+            top = _this$inboxSelector$g.top,
+            right = _this$inboxSelector$g.right;
 
         this.unviewedBadge.style.top = "".concat(top - 8, "px");
         this.unviewedBadge.style.left = "".concat(right - 8, "px");
@@ -4594,7 +4600,6 @@
     }, {
       key: "toggleInbox",
       value: function toggleInbox(e) {
-        console.trace('inbox rect ', e);
         this.isInboxOpen = !this.isInboxOpen;
         this.isInboxFromFlutter = !!(e === null || e === void 0 ? void 0 : e.rect);
 
@@ -7524,6 +7529,10 @@
 
       this.getSCDomain = function () {
         return _classPrivateFieldLooseBase(_this, _account$5)[_account$5].finalTargetDomain;
+      };
+
+      this.setLibrary = function (libName, libVersion) {
+        $ct.isFlutter = _defineProperty({}, libName, libVersion);
       }; // Set the Signed Call sdk version and fire request
 
 
@@ -7628,9 +7637,13 @@
           }
 
           messages[messageId].viewed = 1;
-          var counter = parseInt(document.getElementById('unviewedBadge').innerText) - 1;
-          document.getElementById('unviewedBadge').innerText = counter;
-          document.getElementById('unviewedBadge').style.display = counter > 0 ? 'flex' : 'none';
+
+          if (document.getElementById('unviewedBadge')) {
+            var counter = parseInt(document.getElementById('unviewedBadge').innerText) - 1;
+            document.getElementById('unviewedBadge').innerText = counter;
+            document.getElementById('unviewedBadge').style.display = counter > 0 ? 'flex' : 'none';
+          }
+
           window.clevertap.renderNotificationViewed({
             msgId: messages[messageId].wzrk_id,
             pivotId: messages[messageId].pivotId
@@ -7640,6 +7653,16 @@
           saveInboxMessages(messages);
         } else {
           _classPrivateFieldLooseBase(_this, _logger$9)[_logger$9].error('No message available for message Id ' + messageId);
+        }
+      };
+      /* Mark Message as Read. messageIds should be a an array of string */
+
+
+      this.markReadInboxMessagesForIds = function (messageIds) {
+        if (Array.isArray(messageIds)) {
+          for (var id = 0; id < messageIds.length; id++) {
+            _this.markReadInboxMessage(messageIds[id]);
+          }
         }
       };
       /* Mark all messages as read
@@ -7960,6 +7983,14 @@
         _handleEmailSubscription(GROUP_SUBSCRIPTION_REQUEST_ID, reEncoded);
       };
 
+      api.isGlobalUnsubscribe = function () {
+        return $ct.globalUnsubscribe;
+      };
+
+      api.setIsGlobalUnsubscribe = function (value) {
+        $ct.globalUnsubscribe = value;
+      };
+
       api.setUpdatedCategoryLong = function (profile) {
         if (profile[categoryLongKey]) {
           $ct.updatedCategoryLong = profile[categoryLongKey];
@@ -8127,10 +8158,10 @@
 
         var proto = document.location.protocol;
         proto = proto.replace(':', '');
-        data.af = {
-          lib: 'web-sdk-v1.6.7',
+        data.af = _objectSpread2({
+          lib: 'web-sdk-v1.6.8',
           protocol: proto
-        };
+        }, $ct.isFlutter);
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page');
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]));
 

@@ -388,7 +388,7 @@ void main() {
                   ),
                 ),
               ),
-              NotificationButton(id: "bell-selector", child: Icon(Icons.star))
+              NotificationButton(child: Icon(Icons.star))
             ],
           ))));
 }

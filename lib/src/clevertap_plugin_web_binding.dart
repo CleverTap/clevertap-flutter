@@ -6,6 +6,12 @@ import 'package:js/js.dart';
 @JS('init')
 external void init(String accountId, String? region, String? targetDomain);
 
+@JS('setLibrary')
+external void setLibrary(
+  String libName,
+  int libVersion,
+);
+
 @JS('toggleInbox')
 external void toggleInbox(Object object);
 
@@ -92,3 +98,6 @@ external void markReadInboxMessage(String messageId);
 
 @JS('markReadAllInboxMessage')
 external void markReadAllInboxMessage();
+
+@JS('markReadInboxMessagesForIds')
+external void markReadInboxMessagesForIds(List messageIds);

@@ -71,8 +71,6 @@ class _MyAppState extends State<MyApp> {
         'rejectButtonText': 'Cancel',
         'okButtonColor': '#F28046',
         'askAgainTimeInSeconds': 5,
-        // 'serviceWorkerPath':
-        //     'https://s3-eu-west-1.amazonaws.com/static.wizrocket.com/js/sw_webpush.js'
         'serviceWorkerPath': '/firebase-messaging-sw.js'
       };
       CleverTapPlugin.enableWebPush(pushData);
@@ -381,11 +379,10 @@ class _MyAppState extends State<MyApp> {
                 Padding(
                     padding: EdgeInsets.only(right: 60.0),
                     child: NotificationButton(
-                        id: "bell-selector",
                         child: Icon(
-                          Icons.notifications,
-                          color: Colors.black,
-                        )))
+                      Icons.notifications,
+                      color: Colors.black,
+                    )))
               ],
             ),
             body: ListView(
@@ -1717,15 +1714,14 @@ class _MyAppState extends State<MyApp> {
 
   void recordUser() {
     var stuff = ["bags", "shoes"];
+    var dob = '2012-04-22';
     var profile = {
-      'Name': 'sarvesh',
+      'Name': 'John Wick',
       'Identity': '100',
-      'DOB': '22-04-2000',
-
-      ///Key always has to be "DOB" and format should always be dd-MM-yyyy
-      'Email': 'sarveshgk10@gmail.com',
-      'Phone': '14155551234',
-      'props': 'property1',
+      // Key always has to be "dob" and format should always be yyyy-MM-dd
+      'dob': CleverTapPlugin.getCleverTapDate(DateTime.parse(dob)),
+      'Email': 'john@gmail.com',
+      'Phone': '+14155551234',
       'stuff': stuff
     };
     CleverTapPlugin.profileSet(profile);
@@ -1966,7 +1962,7 @@ class _MyAppState extends State<MyApp> {
     Map<dynamic, dynamic> itemFirst = messageList?[0];
     print(itemFirst.toString());
 
-    if (Platform.isAndroid) {
+    if (kIsWeb || Platform.isAndroid) {
       return itemFirst["id"];
     } else if (Platform.isIOS) {
       return itemFirst["_id"];
