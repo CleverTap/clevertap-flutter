@@ -2,6 +2,7 @@
 .packages
 .idea/
 .DS_Store
+.metadata
 example/build
 example/android/app/google-services.json
 build/

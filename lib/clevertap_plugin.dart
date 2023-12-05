@@ -59,7 +59,8 @@ class CleverTapPlugin {
 
   static const libName = 'Flutter';
 
-  static const libVersion = 10901; // If the current version is X.X.X then pass as X0X0X
+  static const libVersion =
+      20000; // If the current version is X.X.X then pass as X0X0X
 
   CleverTapPlugin._internal() {
     /// Set the CleverTap Flutter library name and the current version for version tracking
@@ -296,7 +297,6 @@ class CleverTapPlugin {
 
   static Future<void> toggleInbox(Object rect) async {
     if (!kIsWeb) {
-      /// Todo: Check this return
       return null;
     }
     return await _dartToNativeMethodChannel
@@ -306,7 +306,6 @@ class CleverTapPlugin {
   /// Only for Web - Return the accountId
   static Future<String?> getAccountID() async {
     if (!kIsWeb) {
-      /// Todo: Check this return
       return null;
     }
     return await _dartToNativeMethodChannel.invokeMethod('getAccountID', {});
