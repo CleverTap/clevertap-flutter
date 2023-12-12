@@ -81,6 +81,11 @@ CleverTapPlugin.onUserLogin(profile);
 CleverTapPlugin.getCleverTapID().then((clevertapId) {})
 ```
 
+#### Get CleverTap Account Id
+
+```Dart
+CleverTapPlugin.getAccountID().then((accountId) {})
+
 #### Set Location to User Profile
 
 ```Dart
@@ -120,7 +125,7 @@ CleverTapPlugin.recordEvent("Charged", chargeDetails);
 #### Steps to setup Web Inbox
 - Add the button/div with the id as configured on clevertap dashboard. Set the visibility of the element as hidden
 ```HTML
-<button id='bell-selector' style="visibility: hidden;">Inbox</button>
+<button id='Element ID' style="visibility: hidden;">Inbox</button>
 ```
 - Uncheck the Notifications Badge in Web Inbox configuration Style section on clevertap dashboard
 - Use the custom Widget NotificationButton to pass the Widget on which the inbox has to be rendered.
@@ -185,7 +190,7 @@ CleverTapPlugin.setDebugLevel(3);
 ## Push Notifications
 
 #### Enable Web Push
-- Add Clevertap's service worker in web folder. Refer [here](https://developer.clevertap.com/docs/web-push)
+- Add Clevertap's service worker in web folder. Refer [here](https://developer.clevertap.com/docs/web-push#add-the-service-worker-file)
 
 ```Dart
 var pushData = {
@@ -204,10 +209,22 @@ var pushData = {
 ## GDPR 
 
 #### Set Opt Out
+- This will ensure that the data from the device will not reach CleverTap's servers. Default value is set to False.
+- If a device needs to be opted out, the flag needs to be set.
 
 ```Dart
-CleverTapPlugin.setOptOut(false); ///Will opt in the user to send data to CleverTap
-CleverTapPlugin.setOptOut(true); ///Will opt out the user to send data to CleverTap
+CleverTapPlugin.setOptOut(false); // Will opt in the user to send data to CleverTap
+CleverTapPlugin.setOptOut(true); // Will opt out the user to send data to CleverTap
+```
+
+#### Set useIP
+
+- This will ensure that the CleverTap does not auto collect the device IP. Default value is set to False.
+- If a customer wants to collect to the device IP, they need to explicitly set it to true.
+
+```Dart
+CleverTapPlugin.setUseIP(false); // call the flag to true, if the user of the device opts out of sharing their data
+CleverTapPlugin.setUseIP(true); // call the flag to true, if the user agrees to share their IP data
 ```
 
 ## Set Offline
