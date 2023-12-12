@@ -1,5 +1,14 @@
 # Example Usage
 
+## Initialization
+```Dart
+ CleverTapPlugin.init("CLEVERTAP_ACCOUNT_ID", "CLEVERTAP_REGION", "CLEVERTAP_TARGET_DOMAIN");
+```
+Here: \
+```ACCOUNT_ID``` (mandatory): This value can be got from Projects page on the CleverTap Dashboard.\
+```REGION``` (optional): This will be same as the region of the CleverTap Dashboard. Possible values: (in1/us1/sg1/aps3/mec1).\
+```TARGET_DOMAIN``` (optional): domain of the proxy server.
+
 ## User Profiles
 
 #### Update User Profile(Push Profile)
