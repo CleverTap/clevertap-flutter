@@ -47,8 +47,8 @@ class CleverTapPlugin {
   static List<CleverTapOnValueChangedHandler> cleverTapOnValueChangedHandlers =
       [];
 
-  static const MethodChannel _dartToNativeMethodChannel = const MethodChannel(
-      'clevertap_plugin/dart_to_native', const StandardMethodCodec());
+  static const MethodChannel _dartToNativeMethodChannel =
+      const MethodChannel('clevertap_plugin/dart_to_native');
   static const MethodChannel _nativeToDartMethodChannel =
       const MethodChannel('clevertap_plugin/native_to_dart');
 

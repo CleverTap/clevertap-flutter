@@ -106,7 +106,7 @@ CleverTapPlugin.recordEvent("Charged", chargeDetails);
 ```
 -------
 
-## App Inbox
+## Web Inbox
 
 #### Steps to setup Web Inbox
 - Add the button/div with the id as configured on clevertap dashboard. Set the visibility of the element as hidden
