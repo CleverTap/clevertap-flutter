@@ -376,15 +376,19 @@ class _MyAppState extends State<MyApp> {
             appBar: AppBar(
               title: const Text('CleverTap Plugin Example App'),
               backgroundColor: Colors.red.shade800,
-              actions: [
-                Padding(
-                    padding: EdgeInsets.only(right: 60.0),
-                    child: NotificationButton(
-                        child: Icon(
-                      Icons.notifications,
-                      color: Colors.black,
-                    )))
-              ],
+              actions: kIsWeb
+                  ? [
+                      Padding(
+                        padding: EdgeInsets.only(right: 60.0),
+                        child: NotificationButton(
+                          child: Icon(
+                            Icons.notifications,
+                            color: Colors.black,
+                          ),
+                        ),
+                      ),
+                    ]
+                  : null,
             ),
             body: ListView(
               children: <Widget>[

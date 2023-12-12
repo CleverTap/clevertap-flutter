@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:clevertap_plugin/clevertap_plugin.dart';
-import 'dart:html';
 
 class NotificationButton extends StatefulWidget {
   final Widget child;
@@ -15,19 +14,12 @@ class _NotificationButtonState extends State<NotificationButton> {
   @override
   void initState() {
     super.initState();
-    // var btn = document.createElement('button');
-    // btn.id = widget.id;
-    // btn.style.visibility = 'hidden';
-    // document.body?.append(btn);
-    // caviate expose method for web inbox init
     print('Widget is mounted');
   }
 
   @override
   void dispose() {
     print('Widget is unmounted');
-    // var btn = document.getElementById(widget.id);
-    // btn?.remove();
     super.dispose();
   }
 
@@ -45,7 +37,6 @@ class _NotificationButtonState extends State<NotificationButton> {
       'height': renderBox.size.height,
       'width': renderBox.size.width
     });
-    print(querySelector('#body'));
   }
 
   @override
