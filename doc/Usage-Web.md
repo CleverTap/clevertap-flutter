@@ -15,17 +15,17 @@ Here: \
 
 ```Dart
 var stuff = ["bags", "shoes"];
+var dob = '2012-04-22';
 var profile = {
     'Name': 'John Wick',
     'Identity': '100',
-    'DOB': '22-04-2000',
-    //Key always has to be "DOB" and format should always be dd-MM-yyyy
+    // Key always has to be "dob" and format should always be yyyy-MM-dd
+    'dob': CleverTapPlugin.getCleverTapDate(DateTime.parse(dob)),
     'Email': 'john@gmail.com',
-    'Phone': '14155551234',
-    'props': 'property1',
+    'Phone': '+14155551234',
     'stuff': stuff
 };
-CleverTapPlugin.profileSet(profile);
+CleverTapPlugin.profileSet(profile);;
 ```
 
 #### Set Multi Values For Key 
