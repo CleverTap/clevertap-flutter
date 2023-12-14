@@ -918,7 +918,7 @@
     location: null,
     dismissSpamControl: false,
     globalUnsubscribe: true,
-    isFlutter: null // domain: window.location.hostname, url -> getHostName()
+    flutterVersion: null // domain: window.location.hostname, url -> getHostName()
     // gcookie: -> device
 
   };
@@ -4883,8 +4883,9 @@
     var selectorY = selectorRect.y + verticalScroll;
     var selectorLeft = selectorRect.left + horizontalScroll;
     var selectorRight = selectorRect.right + horizontalScroll;
-    var selectorTop = selectorRect.top + verticalScroll;
-    var selectorBottom = selectorRect.bottom + verticalScroll;
+    var selectorTop = selectorRect.top + verticalScroll; // const selectorBottom = selectorRect.bottom + verticalScroll
+
+    var selectorBottom = selectorRect.bottom;
     var selectorHeight = selectorRect.height;
     var selectorWidth = selectorRect.width;
     var selectorCenter = {
@@ -5515,7 +5516,10 @@
       iframe.setAttribute('style', 'z-index: 2147483647; display:block; width: 100% !important; border:0px !important; border-color:none !important;');
       msgDiv.appendChild(iframe);
       var ifrm = iframe.contentWindow ? iframe.contentWindow : iframe.contentDocument.document ? iframe.contentDocument.document : iframe.contentDocument;
-      var doc = ifrm.document;
+      var doc = ifrm.document; // Dispatch event for popup box/banner close
+
+      var closeCampaign = new Event('CT_campaign_rendered');
+      document.dispatchEvent(closeCampaign);
       doc.open();
       doc.write(html);
 
@@ -5816,7 +5820,10 @@
       iframe.setAttribute('style', 'z-index: 2147483647; display:block; height: 100% !important; width: 100% !important;min-height:80px !important;border:0px !important; border-color:none !important;');
       msgDiv.appendChild(iframe);
       var ifrm = iframe.contentWindow ? iframe.contentWindow : iframe.contentDocument.document ? iframe.contentDocument.document : iframe.contentDocument;
-      var doc = ifrm.document;
+      var doc = ifrm.document; // Dispatch event for interstitial/exit intent close
+
+      var closeCampaign = new Event('CT_campaign_rendered');
+      document.dispatchEvent(closeCampaign);
       doc.open();
       doc.write(html);
 
@@ -7532,7 +7539,7 @@
       };
 
       this.setLibrary = function (libName, libVersion) {
-        $ct.isFlutter = _defineProperty({}, libName, libVersion);
+        $ct.flutterVersion = _defineProperty({}, libName, libVersion);
       }; // Set the Signed Call sdk version and fire request
 
 
@@ -8159,9 +8166,9 @@
         var proto = document.location.protocol;
         proto = proto.replace(':', '');
         data.af = _objectSpread2({
-          lib: 'web-sdk-v1.6.8',
+          lib: 'web-sdk-v1.6.9',
           protocol: proto
-        }, $ct.isFlutter);
+        }, $ct.flutterVersion);
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page');
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]));
 

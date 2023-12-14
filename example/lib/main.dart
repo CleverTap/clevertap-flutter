@@ -1767,7 +1767,11 @@ class _MyAppState extends State<MyApp> {
   void getAllInboxMessages() async {
     List? messages = await CleverTapPlugin.getAllInboxMessages();
     showToast("See all inbox messages in console");
-    firstMsgId = messages![0]["id"];
+    if (kIsWeb || Platform.isAndroid) {
+      firstMsgId = messages![0]["id"];
+    } else if (Platform.isIOS) {
+      firstMsgId = messages![0]["_id"];
+    }
     print(firstMsgId);
     print("Inbox Messages = " + messages.toString());
     // Uncomment to print payload.
