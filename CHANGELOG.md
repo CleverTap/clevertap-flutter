@@ -1,5 +1,15 @@
 ## CHANGE LOG
 
+### Version 2.0.0 *(15th December 2023)*
+-------------------------------------------
+**What's new**
+* **[iOS Platform]**
+  * Supports [CleverTap iOS SDK v5.2.2](https://github.com/CleverTap/clevertap-ios-sdk/releases/tag/5.2.2)
+
+* **[Web Platform]**
+  * Supports [CleverTap Web SDK v1.6.9](https://github.com/CleverTap/clevertap-web-sdk/releases/tag/v1.6.9). Please refer to [Usage-Web.md](https://github.com/CleverTap/clevertap-flutter/blob/master/doc/Usage-Web.md) to integrate and use Clevertap Web SDK in flutter.
+
+
 ### Version 1.9.1 *(20th October 2023)*
 -------------------------------------------
 **What's new**
