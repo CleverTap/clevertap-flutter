@@ -59,7 +59,8 @@ class _MyAppState extends State<MyApp> {
     activateCleverTapFlutterPluginHandlers();
     CleverTapPlugin.setDebugLevel(3);
     if (kIsWeb) {
-      CleverTapPlugin.init('WRK-485-456Z', 'sk1-staging-4', 'wzrkt.com');
+      CleverTapPlugin.init("CLEVERTAP_ACCOUNT_ID", "CLEVERTAP_REGION",
+          "CLEVERTAP_TARGET_DOMAIN");
       CleverTapPlugin.setDebugLevel(3);
 
       // enable web push
