@@ -1,6 +1,12 @@
 # Example Usage
 
+Add the below script in index.html file
+```Javascript
+<script src="./assets/packages/clevertap_plugin/assets/clevertap.js"></script>
+```
+
 ## Initialization
+
 ```Dart
  CleverTapPlugin.init("CLEVERTAP_ACCOUNT_ID", "CLEVERTAP_REGION", "CLEVERTAP_TARGET_DOMAIN");
 ```

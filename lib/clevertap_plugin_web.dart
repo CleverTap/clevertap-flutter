@@ -123,7 +123,7 @@ class CleverTapPlugin {
     Map<Object?, Object?> args = call.arguments as Map<Object?, Object?>;
     String eventName = args['eventName'] as String;
     Object? eventData = args['eventData'];
-    event_push(eventName, eventData);
+    event_push(eventName, js.jsify(eventData));
   }
 
   /// OnUserLogin request
@@ -135,7 +135,6 @@ class CleverTapPlugin {
   /// enable web push
   void _enableWebPush(MethodCall call) {
     Map<Object?, Object?> args = call.arguments as Map<Object?, Object?>;
-    print(args);
     notifications_push(js.jsify(args));
   }
 
