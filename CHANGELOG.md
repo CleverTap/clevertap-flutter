@@ -1,5 +1,16 @@
 ## CHANGE LOG
 
+### Version 2.0.1 *(1st February 2024)*
+-------------------------------------------
+**What's new**
+* **[Web Platform]**
+  * Supports [CleverTap Web SDK v1.6.10](https://github.com/CleverTap/clevertap-web-sdk/releases/tag/v1.6.10). 
+
+**Bug Fixes**
+* **[Web Platform]**
+  *  Fixes [#213](https://github.com/CleverTap/clevertap-flutter/issues/213) - Event structure invalid error. 
+
+
 ### Version 2.0.0 *(15th December 2023)*
 -------------------------------------------
 **What's new**
