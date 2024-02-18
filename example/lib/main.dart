@@ -1437,6 +1437,40 @@ class _MyAppState extends State<MyApp> {
                     child: Padding(
                       padding: const EdgeInsets.all(0.0),
                       child: ListTile(
+                        title: Text("Client Side In-Apps"),
+                      ),
+                    ),
+                  ),
+                if (!kIsWeb)
+                  Card(
+                    color: Colors.grey.shade300,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: ListTile(
+                        title: Text("Fetch In-Apps"),
+                        subtitle: Text("Fetch In-Apps"),
+                        onTap: fetchInApps,
+                      ),
+                    ),
+                  ),
+                if (!kIsWeb)
+                  Card(
+                    color: Colors.grey.shade300,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: ListTile(
+                        title: Text("Clear In-Apps"),
+                        subtitle: Text("Clear In-Apps"),
+                        onTap: clearInAppResources,
+                      ),
+                    ),
+                  ),
+                if (!kIsWeb)
+                  Card(
+                    color: Colors.lightBlueAccent,
+                    child: Padding(
+                      padding: const EdgeInsets.all(0.0),
+                      child: ListTile(
                         title: Text("Push Primer"),
                       ),
                     ),
@@ -2450,5 +2484,19 @@ class _MyAppState extends State<MyApp> {
 
     print(
         "_handleKilledStateNotificationInteraction => Type: $type, Title: $title, Message: $message ");
+  }
+
+  void clearInAppResources() {
+    var expiredOnly = true;
+    CleverTapPlugin.clearInAppResources(expiredOnly);
+    showToast("Clear In-App Resources");
+  }
+
+  void fetchInApps() {
+    showToast("Fetch Client Side In-Apps");
+    this.setState(() async {
+      bool? success = await CleverTapPlugin.fetchInApps();
+      print("fetchInApps result: " + success.toString());
+    });
   }
 }
