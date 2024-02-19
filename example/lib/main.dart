@@ -1437,7 +1437,7 @@ class _MyAppState extends State<MyApp> {
                     child: Padding(
                       padding: const EdgeInsets.all(0.0),
                       child: ListTile(
-                        title: Text("Client Side In-Apps"),
+                        title: Text("Client Side InApps"),
                       ),
                     ),
                   ),
@@ -1447,8 +1447,8 @@ class _MyAppState extends State<MyApp> {
                     child: Padding(
                       padding: const EdgeInsets.all(4.0),
                       child: ListTile(
-                        title: Text("Fetch In-Apps"),
-                        subtitle: Text("Fetch In-Apps"),
+                        title: Text("Fetch Client Side InApps"),
+                        subtitle: Text("Fetch Client Side InApps"),
                         onTap: fetchInApps,
                       ),
                     ),
@@ -1459,9 +1459,21 @@ class _MyAppState extends State<MyApp> {
                     child: Padding(
                       padding: const EdgeInsets.all(4.0),
                       child: ListTile(
-                        title: Text("Clear In-Apps"),
-                        subtitle: Text("Clear In-Apps"),
+                        title: Text("Clear All InApp Resources"),
+                        subtitle: Text("Clear All InApp Resources"),
                         onTap: clearInAppResources,
+                      ),
+                    ),
+                  ),
+                if (!kIsWeb)
+                  Card(
+                    color: Colors.grey.shade300,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: ListTile(
+                        title: Text("Clear Expired Only InApp Resources"),
+                        subtitle: Text("Clear Expired Only InApp Resources"),
+                        onTap: clearExpiredInAppResources,
                       ),
                     ),
                   ),
@@ -2486,17 +2498,23 @@ class _MyAppState extends State<MyApp> {
         "_handleKilledStateNotificationInteraction => Type: $type, Title: $title, Message: $message ");
   }
 
-  void clearInAppResources() {
-    var expiredOnly = true;
-    CleverTapPlugin.clearInAppResources(expiredOnly);
-    showToast("Clear In-App Resources");
-  }
-
   void fetchInApps() {
     showToast("Fetch Client Side In-Apps");
     this.setState(() async {
       bool? success = await CleverTapPlugin.fetchInApps();
       print("fetchInApps result: " + success.toString());
     });
+  }
+
+  void clearInAppResources() {
+    var expiredOnly = false;
+    CleverTapPlugin.clearInAppResources(expiredOnly);
+    showToast("Clear In-App Resources");
+  }
+
+  void clearExpiredInAppResources() {
+    var expiredOnly = true;
+    CleverTapPlugin.clearInAppResources(expiredOnly);
+    showToast("Clear In-App Resources");
   }
 }
