@@ -1,6 +1,6 @@
 ## CHANGE LOG
 
-### Version 3.0.0 *(xx February 2024)*
+### Version 2.1.0 *(26 February 2024)*
 -------------------------------------------
 **What's new**
 * **[Android Platform]**
