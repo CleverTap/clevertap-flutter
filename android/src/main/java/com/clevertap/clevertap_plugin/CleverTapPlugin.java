@@ -31,6 +31,7 @@ import com.clevertap.android.sdk.displayunits.DisplayUnitListener;
 import com.clevertap.android.sdk.displayunits.model.CleverTapDisplayUnit;
 import com.clevertap.android.sdk.events.EventDetail;
 import com.clevertap.android.sdk.inapp.CTInAppNotification;
+import com.clevertap.android.sdk.inapp.callbacks.FetchInAppsCallback;
 import com.clevertap.android.sdk.inbox.CTInboxMessage;
 import com.clevertap.android.sdk.interfaces.OnInitCleverTapIDListener;
 import com.clevertap.android.sdk.product_config.CTProductConfigListener;
@@ -605,6 +606,16 @@ public class CleverTapPlugin implements ActivityAware,
                 break;
             }
 
+            case "fetchInApps": {
+                fetchInApps(result);
+                break;
+            }
+
+            case "clearInAppResources": {
+                clearInAppResources(call, result);
+                break;
+            }
+
             //Native Display
             case "getAllDisplayUnits": {
                 getAllDisplayUnits(result);
@@ -819,6 +830,29 @@ public class CleverTapPlugin implements ActivityAware,
             Log.e(TAG, errorMessage);
         }
     }
+
+    public void fetchInApps(Result result) {
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            cleverTapAPI.fetchInApps(new FetchInAppsCallback() {
+                @Override
+                public void onInAppsFetched(final boolean isSuccess) {
+                    result.success(isSuccess);
+                }
+            });
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+    public void clearInAppResources(MethodCall call, Result result) {
+        boolean expiredOnly = call.arguments();
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            cleverTapAPI.clearInAppResources(expiredOnly);
+            result.success(null);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
 
     /************************************************
      *  Product Experience Remote Config methods ends
