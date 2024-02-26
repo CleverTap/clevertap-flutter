@@ -272,6 +272,10 @@ static NSDateFormatter *dateFormatter;
         [self getVariable:call withResult:result];
     else if ([@"onVariablesChanged" isEqualToString:call.method])
         [self onVariablesChanged:call withResult:result];
+    else if ([@"fetchInApps" isEqualToString:call.method])
+        [self fetchInApps:call withResult:result];
+    else if ([@"clearInAppResources" isEqualToString:call.method])
+        [self clearInAppResources:call withResult:result];
     else if ([@"onValueChanged" isEqualToString:call.method])
         [self onValueChanged:call withResult:result];
     else if ([@"setLocale" isEqualToString:call.method])
@@ -568,6 +572,19 @@ static NSDateFormatter *dateFormatter;
 - (void)resumeInAppNotifications {
     
     [[CleverTap sharedInstance] resumeInAppNotifications];
+}
+
+#pragma mark - InApp Controls
+
+- (void)fetchInApps:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    [[CleverTap sharedInstance]fetchInApps:^(BOOL success) {
+        result(@(success));
+    }];
+}
+
+- (void)clearInAppResources:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    BOOL expiredOnly = [call.arguments boolValue];
+    [[CleverTap sharedInstance] clearInAppResources: expiredOnly];
 }
 
 #pragma mark - Inbox
