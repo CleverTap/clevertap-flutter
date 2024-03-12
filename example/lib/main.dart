@@ -406,49 +406,45 @@ class _MyAppState extends State<MyApp> {
                     ),
                   ),
                 ),
-                if (!kIsWeb)
-                  Card(
-                    color: Colors.lightBlueAccent,
-                    child: Padding(
-                      padding: const EdgeInsets.all(0.0),
-                      child: ListTile(
-                        title: Text("Product Experiences"),
-                      ),
+                Card(
+                  color: Colors.lightBlueAccent,
+                  child: Padding(
+                    padding: const EdgeInsets.all(0.0),
+                    child: ListTile(
+                      title: Text("Product Experiences"),
                     ),
                   ),
-                if (!kIsWeb)
-                  Card(
-                    color: Colors.grey.shade300,
-                    child: Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: ListTile(
-                        title: Text("Sync Variables"),
-                        onTap: syncVariables,
-                      ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Sync Variables"),
+                      onTap: syncVariables,
                     ),
                   ),
-                if (!kIsWeb)
-                  Card(
-                    color: Colors.grey.shade300,
-                    child: Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: ListTile(
-                        title: Text("Fetch Variables"),
-                        onTap: fetchVariables,
-                      ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Fetch Variables"),
+                      onTap: fetchVariables,
                     ),
                   ),
-                if (!kIsWeb)
-                  Card(
-                    color: Colors.grey.shade300,
-                    child: Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: ListTile(
-                        title: Text("Define Variables"),
-                        onTap: defineVariables,
-                      ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Define Variables"),
+                      onTap: defineVariables,
                     ),
                   ),
+                ),
                 if (!kIsWeb)
                   Card(
                     color: Colors.grey.shade300,
@@ -472,29 +468,27 @@ class _MyAppState extends State<MyApp> {
                       ),
                     ),
                   ),
-                if (!kIsWeb)
-                  Card(
-                    color: Colors.grey.shade300,
-                    child: Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: ListTile(
-                        title: Text('Add \'OnVariablesChanged\' listener'),
-                        onTap: onVariablesChanged,
-                      ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text('Add \'OnVariablesChanged\' listener'),
+                      onTap: onVariablesChanged,
                     ),
                   ),
-                if (!kIsWeb)
-                  Card(
-                    color: Colors.grey.shade300,
-                    child: Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: ListTile(
-                        title: Text(
-                            'Add \'OnValueChanged\' listener for name \'flutter_var_string\''),
-                        onTap: onValueChanged,
-                      ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text(
+                          'Add \'OnValueChanged\' listener for name \'flutter_var_string\''),
+                      onTap: onValueChanged,
                     ),
                   ),
+                ),
                 Card(
                   color: Colors.lightBlueAccent,
                   child: Padding(
@@ -2383,19 +2377,17 @@ class _MyAppState extends State<MyApp> {
     print("PE -> Sync Variables");
   }
 
-  void fetchVariables() {
+  void fetchVariables() async {
     showToast("Fetch Variables");
-    this.setState(() async {
-      bool? success = await CleverTapPlugin.fetchVariables();
-      print("PE -> fetchVariables result: " + success.toString());
-    });
+    bool? success = await CleverTapPlugin.fetchVariables();
+    print("PE -> fetchVariables result: " + success.toString());
   }
 
   void defineVariables() {
     var variables = {
       'flutter_var_string': 'flutter_var_string_value',
-      'flutter_var_map': {'flutter_var_map_string': 'flutter_var_map_value'},
-      'flutter_var_int': 6,
+      // 'flutter_var_map': {'flutter_var_map_string': 'flutter_var_map_value'},
+      'flutter_var_int': 'sonam',
       'flutter_var_float': 6.9,
       'flutter_var_boolean': true
     };

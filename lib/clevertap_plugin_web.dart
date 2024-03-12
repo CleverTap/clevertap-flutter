@@ -4,18 +4,34 @@ import 'package:clevertap_plugin/src/clevertap_plugin_web_binding.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_web_plugins/flutter_web_plugins.dart';
 import 'package:js/js_util.dart' as js;
+import 'dart:html' as html;
 
 /// A web implementation of the CleverTapPlugin plugin.
 class CleverTapPlugin {
+  static MethodChannel? _nativeToDartMethodChannel;
+
   static void registerWith(Registrar registrar) {
-    final MethodChannel channel = MethodChannel(
+    final MethodChannel _dartToNativeMethodChannel = MethodChannel(
       'clevertap_plugin/dart_to_native',
       const StandardMethodCodec(),
       registrar,
     );
 
+    _nativeToDartMethodChannel = MethodChannel(
+      'clevertap_plugin/native_to_dart',
+      const StandardMethodCodec(),
+      registrar,
+    );
+
     final pluginInstance = CleverTapPlugin();
-    channel.setMethodCallHandler(pluginInstance.handleMethodCall);
+    _dartToNativeMethodChannel
+        .setMethodCallHandler(pluginInstance.handleMethodCall);
+
+    final script = html.ScriptElement();
+    script.type = 'text/javascript';
+    script.src =
+        './assets/packages/clevertap_plugin/assets/clevertap_support.js';
+    html.document.head?.append(script);
   }
 
   /// Handles method calls over the MethodChannel of this plugin.
@@ -89,6 +105,16 @@ class CleverTapPlugin {
         return _markReadAllInboxMessage(call);
       case 'markReadInboxMessagesForIds':
         return _markReadInboxMessagesForIds(call);
+      case 'defineVariables':
+        return _defineVariables(call);
+      case 'syncVariables':
+        return _syncVariables(call);
+      case 'fetchVariables':
+        return _fetchVariables(call);
+      case 'onValueChanged':
+        return _onValueChanged(call);
+      case 'onVariablesChanged':
+        return _onVariablesChanged(call);
       default:
         throw PlatformException(
           code: 'Unimplemented',
@@ -103,8 +129,9 @@ class CleverTapPlugin {
     String accountId = args['accountId'] as String;
     String? region = args['region'] as String?;
     String? targetDomain = args['targetDomain'] as String?;
+    String? token = args['token'] as String?;
     print("actual call going to happen");
-    init(accountId, region, targetDomain);
+    init(accountId, region, targetDomain, token);
   }
 
   void _setLibrary(MethodCall call) {
@@ -319,5 +346,41 @@ class CleverTapPlugin {
     Map<Object?, Object?> args = call.arguments as Map<Object?, Object?>;
     List messageIds = args['messageIds'] as List;
     markReadInboxMessagesForIds(messageIds);
+  }
+
+  void _defineVariables(MethodCall call) {
+    Map<Object?, Object?> args = call.arguments as Map<Object?, Object?>;
+    Object variables = args['variables'] as Object;
+    defineVariables(js.jsify(variables));
+  }
+
+  /// Sync Variables
+  void _syncVariables(MethodCall call) {
+    syncVariables();
+  }
+
+  /// Fetch Variables
+  Future<bool> _fetchVariables(MethodCall call) async {
+    var completer = Completer<bool>();
+    fetchVariables(js.allowInterop(() => completer.complete(true)));
+    return completer.future;
+  }
+
+  void _onValueChanged(MethodCall call) {
+    Map<Object?, Object?> args = call.arguments as Map<Object?, Object?>;
+    String name = args['name'] as String;
+    onValueChanged(
+        name,
+        js.allowInterop((object) => {
+              _nativeToDartMethodChannel?.invokeMethod(
+                  'onValueChanged', js.dartify(object))
+            }));
+  }
+
+  void _onVariablesChanged(MethodCall call) {
+    onVariablesChanged(js.allowInterop((object) => {
+          _nativeToDartMethodChannel?.invokeMethod(
+              'onVariablesChanged', js.dartify(object))
+        }));
   }
 }
