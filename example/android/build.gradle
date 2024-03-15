@@ -5,8 +5,8 @@ buildscript {
     }
 
     dependencies {
-        classpath 'com.android.tools.build:gradle:7.3.0'
-        classpath 'com.google.gms:google-services:4.3.8'
+        classpath 'com.android.tools.build:gradle:8.3.0'
+        classpath 'com.google.gms:google-services:4.4.1'
     }
 }
 
@@ -21,8 +21,14 @@ allprojects {
 }
 
 rootProject.buildDir = '../build'
+
 subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"
+    if (project.hasProperty("android")) {
+        if (project.android.hasProperty("namespace")) {
+            namespace 'com.clevertap.clevertap_plugin'
+        }
+    }
 }
 subprojects {
     project.evaluationDependsOn(':app')
