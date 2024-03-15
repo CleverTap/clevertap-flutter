@@ -51,17 +51,14 @@ void main() {
   var eventName = 'Flutter Event';
   var messageId = '123_123';
 
-  String defaultStringValue = "defaultString";
   String mockString = "mockString";
   String varName = "varName";
 
   bool defaultBoolValue = false;
   bool mockBool = true;
 
-  double defaultDoubleValue = 9.9;
   double mockDouble = 1.1;
 
-  int defaultIntegerValue = 9;
   int mockInteger = 1;
   int nowDateTime = (DateTime.now().millisecondsSinceEpoch / 1000).truncate();
 
