@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:developer';
 import 'dart:io' show Platform;
 import 'package:example/notification_button.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -2359,6 +2358,7 @@ class _MyAppState extends State<MyApp> {
   }
 
   void activate() {
+    super.activate();
     CleverTapPlugin.activate();
     showToast("check console for logs");
   }
