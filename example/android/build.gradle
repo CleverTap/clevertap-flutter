@@ -12,11 +12,6 @@ rootProject.layout.buildDirectory = '../build'
 
 subprojects {
     project.layout.buildDirectory = "${rootProject.layout.buildDirectory}/${project.name}"
-    if (project.hasProperty("android")) {
-        if (project.android.hasProperty("namespace")) {
-            namespace 'com.clevertap.clevertap_plugin'
-        }
-    }
 }
 subprojects {
     project.evaluationDependsOn(':app')

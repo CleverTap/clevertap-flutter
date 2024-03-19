@@ -10,15 +10,10 @@
   * Supports [CleverTap iOS SDK v6.1.0](https://github.com/CleverTap/clevertap-ios-sdk/releases/tag/6.1.0).
   * Adds privacy manifests.
 
-* **[Android and iOS Platform]**
-  * Fixes an issue of incorrect endpoint in the case of network handshake. 
-  * Fixes a bug in Client Side InApps with regards to frequency limits.
-
 **Bug Fixes**
 * **[Android Platform]**
   * Fixes InApps crash in a rare activity destroyed race condition 
   * Fixes Potential ANR in a race condition of SDK initialisation in multithreaded setup 
-  * Fixes #456 - Build issues due to AGP 8
 
 * **[iOS Platform]**
   * Fixes crash due to out of bounds in NSLocale implementation.
