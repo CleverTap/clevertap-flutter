@@ -4,14 +4,14 @@ Add the following to your `dependencies` section in `project/build.gradle`
 
 ```groovy
     dependencies {
-            classpath 'com.android.tools.build:gradle:4.2.1'
-            classpath 'com.google.gms:google-services:4.3.3' //<--- Mandatory for using Firebase Messaging, skip if not using FCM
+            classpath 'com.android.tools.build:gradle:8.3.0'
+            classpath 'com.google.gms:google-services:4.4.1' //<--- Mandatory for using Firebase Messaging, skip if not using FCM
         }
 ```
 
 Add the following to your `dependencies` section in `app/build.gradle`
 ```groovy
-        implementation 'com.google.firebase:firebase-messaging:21.0.0'
+        implementation 'com.google.firebase:firebase-messaging:23.4.1'
         implementation 'androidx.core:core:1.3.0'
         implementation 'androidx.fragment:fragment:1.3.6'
         
@@ -26,9 +26,9 @@ Add the following to your `dependencies` section in `app/build.gradle`
         implementation 'com.android.installreferrer:installreferrer:2.2'
         
         //Optional ExoPlayer Libraries for Audio/Video Inbox Messages. Audio/Video messages will be dropped without these dependencies
-        implementation 'com.google.android.exoplayer:exoplayer:2.15.1'
-        implementation 'com.google.android.exoplayer:exoplayer-hls:2.15.1'
-        implementation 'com.google.android.exoplayer:exoplayer-ui:2.15.1'
+        implementation 'com.google.android.exoplayer:exoplayer:2.19.1'
+        implementation 'com.google.android.exoplayer:exoplayer-hls:2.19.1'
+        implementation 'com.google.android.exoplayer:exoplayer-ui:2.19.1'
 ```
 
 At the end of the `app/build.gradle` file add the following 
