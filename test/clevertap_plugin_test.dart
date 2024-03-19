@@ -51,17 +51,14 @@ void main() {
   var eventName = 'Flutter Event';
   var messageId = '123_123';
 
-  String defaultStringValue = "defaultString";
   String mockString = "mockString";
   String varName = "varName";
 
   bool defaultBoolValue = false;
   bool mockBool = true;
 
-  double defaultDoubleValue = 9.9;
   double mockDouble = 1.1;
 
-  int defaultIntegerValue = 9;
   int mockInteger = 1;
   int nowDateTime = (DateTime.now().millisecondsSinceEpoch / 1000).truncate();
 
@@ -71,82 +68,56 @@ void main() {
       switch (methodCall.method) {
         case "eventGetOccurrences":
           return 1;
-          break;
         case "eventGetFirstTime":
           return nowDateTime;
-          break;
         case "eventGetLastTime":
           return nowDateTime;
-          break;
         case "eventGetDetail":
           return testMap;
-          break;
         case "getEventHistory":
           return testMap;
-          break;
         case "profileGetCleverTapAttributionIdentifier":
           return mockString;
-          break;
         case "profileGetCleverTapID":
           return mockString;
-          break;
         case "sessionGetTimeElapsed":
           return nowDateTime;
-          break;
         case "sessionGetTotalVisits":
           return mockInteger;
-          break;
         case "sessionGetScreenCount":
           return mockInteger;
-          break;
         case "sessionGetPreviousVisitTime":
           return nowDateTime;
-          break;
         case "sessionGetUTMDetails":
           return testMap;
-          break;
         case "getInboxMessageCount":
           return mockInteger;
-          break;
         case "getInboxMessageUnreadCount":
           return mockInteger;
-          break;
         case "getAllInboxMessages":
           return testList;
-          break;
         case "getUnreadInboxMessages":
           return testList;
-          break;
         case "getInboxMessageForId":
           return testMap;
-          break;
         case "getInitialUrl":
           return mockString;
-          break;
         case "getAllDisplayUnits":
           return testList;
-          break;
         case "getDisplayUnitForId":
           return testMap;
-          break;
         case "getFeatureFlag":
           return mockBool;
-          break;
         case "getLastFetchTimeStampInMillis":
           return nowDateTime;
-          break;
         case "getString":
           return mockString;
-          break;
         case "getBoolean":
           return mockBool;
-          break;
         case "getLong":
           return mockInteger;
-          break;
         case "getDouble":
           return mockDouble;
-          break;
       }
       return null;
     });

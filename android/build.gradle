@@ -1,16 +1,9 @@
-group 'com.clevertap.clevertap_plugin'
-version '2.1.0'
-
-buildscript {
-    repositories {
-        google()
-        mavenCentral()
-    }
-
-    dependencies {
-        classpath 'com.android.tools.build:gradle:7.3.0'
-    }
+plugins {
+    id "com.android.library"
 }
+
+group 'com.clevertap.clevertap_plugin'
+version '2.2.0'
 
 rootProject.allprojects {
     repositories {
@@ -22,10 +15,11 @@ rootProject.allprojects {
     }
 }
 
-apply plugin: 'com.android.library'
-
 android {
-    compileSdkVersion 33
+    compileSdkVersion 34
+    if (project.android.hasProperty("namespace")) {
+        namespace 'com.clevertap.clevertap_plugin'
+    }
 
     defaultConfig {
         minSdkVersion 19
@@ -42,7 +36,7 @@ android {
 
 dependencies {
     testImplementation 'junit:junit:4.13.2'
-    api 'com.clevertap.android:clevertap-android-sdk:6.0.0'
+    api 'com.clevertap.android:clevertap-android-sdk:6.1.1'
     compileOnly 'androidx.fragment:fragment:1.3.6'
     compileOnly 'androidx.core:core:1.9.0'
 }
