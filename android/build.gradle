@@ -1,16 +1,9 @@
+plugins {
+    id "com.android.library"
+}
+
 group 'com.clevertap.clevertap_plugin'
 version '2.2.0'
-
-buildscript {
-    repositories {
-        google()
-        mavenCentral()
-    }
-
-    dependencies {
-        classpath 'com.android.tools.build:gradle:8.3.0'
-    }
-}
 
 rootProject.allprojects {
     repositories {
@@ -21,8 +14,6 @@ rootProject.allprojects {
         }
     }
 }
-
-apply plugin: 'com.android.library'
 
 android {
     compileSdkVersion 34
