@@ -5,6 +5,11 @@
 **What's new**
 * **[Android Platform]**
   * Supports [CleverTap Android SDK v6.1.1](https://github.com/CleverTap/clevertap-android-sdk/blob/master/docs/CTCORECHANGELOG.md#version-611-february-27-2024).
+  * Supports Android 14, made it compliant with Android 14 requirements. Details [here](https://developer.android.com/about/versions/14/summary)
+  * Upgrades AGP to 8.3.0 for building the SDK and adds related consumer proguard rules
+  * Deprecates Xiaomi public methods as we are sunsetting SDK. Details [here](https://dev.mi.com/distribute/doc/details?pId=1555).
+  * Adds Accessibility ids for UI components of SDK
+  * Migrates JobScheduler to WorkManager for Pull Notifications.
 
 * **[iOS Platform]**
   * Supports [CleverTap iOS SDK v6.1.0](https://github.com/CleverTap/clevertap-ios-sdk/releases/tag/6.1.0).
@@ -13,7 +18,7 @@
 **Bug Fixes**
 * **[Android Platform]**
   * Fixes InApps crash in a rare activity destroyed race condition 
-  * Fixes Potential ANR in a race condition of SDK initialisation in multithreaded setup 
+  * Fixes Potential ANR in a race condition of SDK initialisation in multithreaded setup
 
 * **[iOS Platform]**
   * Fixes crash due to out of bounds in NSLocale implementation.
