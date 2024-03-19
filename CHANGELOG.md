@@ -19,6 +19,7 @@
 * **[Android Platform]**
   * Fixes InApps crash in a rare activity destroyed race condition 
   * Fixes Potential ANR in a race condition of SDK initialisation in multithreaded setup
+  * Fixes [#211](https://github.com/CleverTap/clevertap-flutter/issues/211)
 
 * **[iOS Platform]**
   * Fixes crash due to out of bounds in NSLocale implementation.
