@@ -155,6 +155,9 @@ class CleverTapPlugin {
           cleverTapOnValueChangedHandler(args.cast<String, dynamic>());
         });
         break;
+      default:
+        print('error');
+        break;
     }
   }
 
@@ -282,15 +285,16 @@ class CleverTapPlugin {
   }
 
   /// Only for Web - Initialize clevertap sdk
-  static Future<void> init(
-      String accountId, String? region, String? targetDomain) async {
+  static Future<void> init(String accountId,
+      [String? region, String? targetDomain, String? token]) async {
     if (!kIsWeb) {
       return;
     }
     var allProperties = <String, dynamic>{
       'accountId': accountId,
       'region': region,
-      'targetDomain': targetDomain
+      'targetDomain': targetDomain,
+      'token': token
     };
     await _dartToNativeMethodChannel.invokeMethod<void>('init', allProperties);
   }

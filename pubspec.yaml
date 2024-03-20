@@ -22,6 +22,7 @@ dev_dependencies:
 flutter:
   assets:
     - assets/clevertap.js
+    - assets/clevertap_support.js
 
   plugin:
     platforms:
