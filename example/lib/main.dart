@@ -2387,7 +2387,7 @@ class _MyAppState extends State<MyApp> {
     var variables = {
       'flutter_var_string': 'flutter_var_string_value',
       // 'flutter_var_map': {'flutter_var_map_string': 'flutter_var_map_value'},
-      'flutter_var_int': 'sonam',
+      'flutter_var_int': '12',
       'flutter_var_float': 6.9,
       'flutter_var_boolean': true
     };
