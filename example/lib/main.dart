@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:developer';
 import 'dart:io' show Platform;
 import 'package:example/notification_button.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -1429,6 +1428,52 @@ class _MyAppState extends State<MyApp> {
                     child: Padding(
                       padding: const EdgeInsets.all(0.0),
                       child: ListTile(
+                        title: Text("Client Side InApps"),
+                      ),
+                    ),
+                  ),
+                if (!kIsWeb)
+                  Card(
+                    color: Colors.grey.shade300,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: ListTile(
+                        title: Text("Fetch Client Side InApps"),
+                        subtitle: Text("Fetch Client Side InApps"),
+                        onTap: fetchInApps,
+                      ),
+                    ),
+                  ),
+                if (!kIsWeb)
+                  Card(
+                    color: Colors.grey.shade300,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: ListTile(
+                        title: Text("Clear All InApp Resources"),
+                        subtitle: Text("Clear All InApp Resources"),
+                        onTap: clearInAppResources,
+                      ),
+                    ),
+                  ),
+                if (!kIsWeb)
+                  Card(
+                    color: Colors.grey.shade300,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: ListTile(
+                        title: Text("Clear Expired Only InApp Resources"),
+                        subtitle: Text("Clear Expired Only InApp Resources"),
+                        onTap: clearExpiredInAppResources,
+                      ),
+                    ),
+                  ),
+                if (!kIsWeb)
+                  Card(
+                    color: Colors.lightBlueAccent,
+                    child: Padding(
+                      padding: const EdgeInsets.all(0.0),
+                      child: ListTile(
                         title: Text("Push Primer"),
                       ),
                     ),
@@ -2305,6 +2350,7 @@ class _MyAppState extends State<MyApp> {
   }
 
   void activate() {
+    super.activate();
     CleverTapPlugin.activate();
     showToast("check console for logs");
   }
@@ -2436,5 +2482,25 @@ class _MyAppState extends State<MyApp> {
 
     print(
         "_handleKilledStateNotificationInteraction => Type: $type, Title: $title, Message: $message ");
+  }
+
+  void fetchInApps() {
+    showToast("Fetch Client Side In-Apps");
+    this.setState(() async {
+      bool? success = await CleverTapPlugin.fetchInApps();
+      print("fetchInApps result: " + success.toString());
+    });
+  }
+
+  void clearInAppResources() {
+    var expiredOnly = false;
+    CleverTapPlugin.clearInAppResources(expiredOnly);
+    showToast("Clear In-App Resources");
+  }
+
+  void clearExpiredInAppResources() {
+    var expiredOnly = true;
+    CleverTapPlugin.clearInAppResources(expiredOnly);
+    showToast("Clear In-App Resources");
   }
 }

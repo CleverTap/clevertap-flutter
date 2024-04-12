@@ -60,7 +60,7 @@ class CleverTapPlugin {
   static const libName = 'Flutter';
 
   static const libVersion =
-      20002; // If the current version is X.X.X then pass as X0X0X
+      20201; // If the current version is X.X.X then pass as X0X0X
 
   CleverTapPlugin._internal() {
     /// Set the CleverTap Flutter library name and the current version for version tracking
@@ -1138,5 +1138,15 @@ class CleverTapPlugin {
     String localeString = locale.toString();
     return await _dartToNativeMethodChannel.invokeMethod(
         'setLocale', localeString);
+  }
+
+  ///Fetch Client Side In-Apps
+  static Future<bool?> fetchInApps() async {
+    return await _dartToNativeMethodChannel.invokeMethod('fetchInApps', {});
+  }
+
+  static Future<void> clearInAppResources(bool expiredOnly) async {
+    return await _dartToNativeMethodChannel.invokeMethod(
+        'clearInAppResources', expiredOnly);
   }
 }
