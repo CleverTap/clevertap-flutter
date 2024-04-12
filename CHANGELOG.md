@@ -1,5 +1,12 @@
 ## CHANGE LOG
 
+### Version 2.0.2 *(12th April 2024)*
+-------------------------------------------
+**What's new**
+* **[Web Platform]**
+  * Supports [CleverTap Web SDK v1.7.3](https://github.com/CleverTap/clevertap-web-sdk/releases/tag/v1.7.3). 
+  * Adds support for **Remote Config Variables**. Please refer to the [Remote Config Variables doc](https://github.com/CleverTap/clevertap-flutter/blob/master/doc/Variables.md) to read more on how to integrate this to your app.
+
 ### Version 2.0.1 *(1st February 2024)*
 -------------------------------------------
 **What's new**

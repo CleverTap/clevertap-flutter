@@ -445,29 +445,27 @@ class _MyAppState extends State<MyApp> {
                     ),
                   ),
                 ),
-                if (!kIsWeb)
-                  Card(
-                    color: Colors.grey.shade300,
-                    child: Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: ListTile(
-                        title: Text("Get Variables"),
-                        onTap: getVariables,
-                      ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Get Variables"),
+                      onTap: getVariables,
                     ),
                   ),
-                if (!kIsWeb)
-                  Card(
-                    color: Colors.grey.shade300,
-                    child: Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: ListTile(
-                        title: Text(
-                            'Get Variable Value for name \'flutter_var_string\''),
-                        onTap: getVariable,
-                      ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text(
+                          'Get Variable Value for name \'flutter_var_string\''),
+                      onTap: getVariable,
                     ),
                   ),
+                ),
                 Card(
                   color: Colors.grey.shade300,
                   child: Padding(
@@ -2387,7 +2385,7 @@ class _MyAppState extends State<MyApp> {
     var variables = {
       'flutter_var_string': 'flutter_var_string_value',
       // 'flutter_var_map': {'flutter_var_map_string': 'flutter_var_map_value'},
-      'flutter_var_int': '12',
+      'flutter_var_int': 12,
       'flutter_var_float': 6.9,
       'flutter_var_boolean': true
     };
@@ -2396,21 +2394,17 @@ class _MyAppState extends State<MyApp> {
     print("PE -> Define Variables: " + variables.toString());
   }
 
-  void getVariables() {
+  void getVariables() async {
     showToast("Get Variables");
-    this.setState(() async {
-      Map<Object?, Object?> variables = await CleverTapPlugin.getVariables();
-      print('PE -> getVariables: ' + variables.toString());
-    });
+    Map<Object?, Object?> variables = await CleverTapPlugin.getVariables();
+    print('PE -> getVariables: ' + variables.toString());
   }
 
-  void getVariable() {
+  void getVariable() async {
     showToast("Get Variable");
-    this.setState(() async {
-      var variable = await CleverTapPlugin.getVariable('flutter_var_string');
-      print('PE -> variable value for key \'flutter_var_string\': ' +
-          variable.toString());
-    });
+    var variable = await CleverTapPlugin.getVariable('flutter_var_string');
+    print('PE -> variable value for key \'flutter_var_string\': ' +
+        variable.toString());
   }
 
   void onVariablesChanged() {

@@ -21,3 +21,16 @@ clevertap.onVariablesChanged = (callback) => {
 clevertap.onValueChanged = (key, callback) => {
   variables[key].addValueChangedCallback((v) => callback({ [key]: v.value }));
 }
+
+clevertap.getVariables = (callback) => {
+  const vars = {}
+  console.log({variables})
+  for (const name in variables) {
+    vars[name] = variables[name].value
+  }
+  callback(vars)
+}
+
+clevertap.getVariable = (name, callback) => {
+  callback(variables[name].value)
+}

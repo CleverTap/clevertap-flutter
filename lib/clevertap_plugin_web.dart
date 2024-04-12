@@ -115,6 +115,10 @@ class CleverTapPlugin {
         return _onValueChanged(call);
       case 'onVariablesChanged':
         return _onVariablesChanged(call);
+      case 'getVariables':
+        return _getVariables(call);
+      case 'getVariable':
+        return _getVariable(call);
       default:
         throw PlatformException(
           code: 'Unimplemented',
@@ -382,5 +386,21 @@ class CleverTapPlugin {
           _nativeToDartMethodChannel?.invokeMethod(
               'onVariablesChanged', js.dartify(object))
         }));
+  }
+
+  Future<Map<Object?, Object?>> _getVariables(MethodCall call) async {
+    var completer = Completer<Map<Object?, Object?>>();
+    getVariables(js.allowInterop((object) =>
+        completer.complete(js.dartify(object) as Map<Object?, Object?>)));
+    return completer.future;
+  }
+
+  Future<dynamic> _getVariable(MethodCall call) async {
+    Map<Object?, Object?> args = call.arguments as Map<Object?, Object?>;
+    String name = args['name'] as String;
+    var completer = Completer<dynamic>();
+    getVariable(name,
+        js.allowInterop((object) => completer.complete(js.dartify(object))));
+    return completer.future;
   }
 }

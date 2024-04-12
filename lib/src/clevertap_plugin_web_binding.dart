@@ -117,3 +117,9 @@ external void onValueChanged(String key, Function function);
 
 @JS('onVariablesChanged')
 external void onVariablesChanged(Function function);
+
+@JS('getVariables')
+external void getVariables(Function function);
+
+@JS('getVariable')
+external void getVariable(String name, Function function);
