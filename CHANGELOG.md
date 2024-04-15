@@ -1,13 +1,13 @@
 ## CHANGE LOG
 
-### Version 2.2.0 *(19 March 2024)*
+### Version 2.2.1 *(15 April 2024)*
 -------------------------------------------
 **What's new**
 * **[Android Platform]**
   * Supports [CleverTap Android SDK v6.2.1](https://github.com/CleverTap/clevertap-android-sdk/blob/master/docs/CTCORECHANGELOG.md#version-621-april-11-2024).
 
 * **[iOS Platform]**
-  * Supports [CleverTap iOS SDK v6.2.0](https://github.com/CleverTap/clevertap-ios-sdk/releases/tag/6.2.0).
+  * Supports [CleverTap iOS SDK v6.2.1](https://github.com/CleverTap/clevertap-ios-sdk/releases/tag/6.2.1).
 
 **Breaking Changes**
 * Removes all Xiaomi related public methods as the Xiaomi SDK has been discontinued. Details [here](https://developer.clevertap.com/docs/discontinuation-of-xiaomi-push-service).
@@ -20,6 +20,7 @@
   * Fixes an ANR due to eager initialisation of `CtApi` triggered by DeviceId generation.
 
 * **[iOS Platform]**
+  * Fixes a build error related to privacy manifests when statically linking the SDK using Cocoapods.
 
 ### Version 2.2.0 *(19 March 2024)*
 -------------------------------------------
