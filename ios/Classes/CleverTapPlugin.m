@@ -244,8 +244,6 @@ static NSDateFormatter *dateFormatter;
         result(nil);
     else if ([@"deleteNotificationChannel" isEqualToString:call.method])
         result(nil);
-    else if ([@"setXiaomiPushToken" isEqualToString:call.method])
-        result(nil);
     else if ([@"setBaiduPushToken" isEqualToString:call.method])
         result(nil);
     else if ([@"setHuaweiPushToken" isEqualToString:call.method])

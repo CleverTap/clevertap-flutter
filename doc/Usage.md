@@ -495,12 +495,11 @@ CleverTapPlugin.createNotificationChannelGroup(“groupId”, “groupName”);
 CleverTapPlugin.deleteNotificationChannelGroup(“channelId”);
 ```
 
-#### Registering Fcm, Baidu, Xiaomi, Huawei Token
+#### Registering Fcm, Baidu, Huawei Token
 
 ```Dart
 CleverTapPlugin.setPushToken(“value”);
 CleverTapPlugin.setBaiduPushToken(“value”);
-CleverTapPlugin.setXiaomiPushToken(“value”);
 CleverTapPlugin.setHuaweiPushToken(“value”);
 ```
 

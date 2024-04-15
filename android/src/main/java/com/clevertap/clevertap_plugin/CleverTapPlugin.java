@@ -258,12 +258,7 @@ public class CleverTapPlugin implements ActivityAware,
                 processPushNotification(call, result);
                 break;
             }
-            //Baidu/Xiaomi/Huawei push notifications
-            case "setXiaomiPushToken": {
-                setPushToken(call, result, PushType.XPS);
-                break;
-            }
-
+            //Baidu/Huawei push notifications
             case "setBaiduPushToken": {
                 setPushToken(call, result, PushType.BPS);
                 break;
@@ -1859,9 +1854,6 @@ public class CleverTapPlugin implements ActivityAware,
             switch (type.getType()) {
                 case "fcm":
                     cleverTapAPI.pushFcmRegistrationId(token, true);
-                    break;
-                case "xps":
-                    cleverTapAPI.pushXiaomiRegistrationId(token, region, true);
                     break;
                 case "hps":
                     cleverTapAPI.pushHuaweiRegistrationId(token, true);

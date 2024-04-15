@@ -60,7 +60,7 @@ class CleverTapPlugin {
   static const libName = 'Flutter';
 
   static const libVersion =
-      20200; // If the current version is X.X.X then pass as X0X0X
+      20300; // If the current version is X.X.X then pass as X0X0X
 
   CleverTapPlugin._internal() {
     /// Set the CleverTap Flutter library name and the current version for version tracking
@@ -154,6 +154,9 @@ class CleverTapPlugin {
             .forEach((cleverTapOnValueChangedHandler) {
           cleverTapOnValueChangedHandler(args.cast<String, dynamic>());
         });
+        break;
+      default:
+        print('error');
         break;
     }
   }
@@ -282,15 +285,16 @@ class CleverTapPlugin {
   }
 
   /// Only for Web - Initialize clevertap sdk
-  static Future<void> init(
-      String accountId, String? region, String? targetDomain) async {
+  static Future<void> init(String accountId,
+      [String? region, String? targetDomain, String? token]) async {
     if (!kIsWeb) {
       return;
     }
     var allProperties = <String, dynamic>{
       'accountId': accountId,
       'region': region,
-      'targetDomain': targetDomain
+      'targetDomain': targetDomain,
+      'token': token
     };
     await _dartToNativeMethodChannel.invokeMethod<void>('init', allProperties);
   }
@@ -373,12 +377,6 @@ class CleverTapPlugin {
   static Future<void> setPushToken(String value) async {
     return await _dartToNativeMethodChannel
         .invokeMethod('setPushToken', {'token': value});
-  }
-
-  /// Set the Xiaomi Token for Push Notifications
-  static Future<void> setXiaomiPushToken(String value, String region) async {
-    return await _dartToNativeMethodChannel
-        .invokeMethod('setXiaomiPushToken', {'token': value, 'region': region});
   }
 
   /// Set the Baidu Token for Push Notifications

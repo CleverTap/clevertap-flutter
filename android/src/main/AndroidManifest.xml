@@ -1,12 +1,3 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    package="com.clevertap.clevertap_plugin">
+<manifest package="com.clevertap.clevertap_plugin">
     <!-- we need to add package so client can use both AGP 7+ and 8+, can remove when AGP 7 is deprecated !-->
-    <application>
-        <service
-            android:name="com.clevertap.android.sdk.pushnotification.amp.CTBackgroundJobService"
-            android:enabled="false"
-            android:exported="false"
-            tools:ignore="MissingClass" />
-    </application>
 </manifest>

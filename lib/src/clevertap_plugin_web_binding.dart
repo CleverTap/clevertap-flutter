@@ -4,7 +4,8 @@ library clevertap;
 import 'package:js/js.dart';
 
 @JS('init')
-external void init(String accountId, String? region, String? targetDomain);
+external void init(
+    String accountId, String? region, String? targetDomain, String? token);
 
 @JS('setLibrary')
 external void setLibrary(
@@ -101,3 +102,24 @@ external void markReadAllInboxMessage();
 
 @JS('markReadInboxMessagesForIds')
 external void markReadInboxMessagesForIds(List messageIds);
+
+@JS('defineVariables')
+external void defineVariables(Object object);
+
+@JS('syncVariables')
+external void syncVariables();
+
+@JS('fetchVariables')
+external void fetchVariables(Function callback);
+
+@JS('onValueChanged')
+external void onValueChanged(String key, Function function);
+
+@JS('onVariablesChanged')
+external void onVariablesChanged(Function function);
+
+@JS('getVariables')
+external void getVariables(Function function);
+
+@JS('getVariable')
+external void getVariable(String name, Function function);

@@ -8,12 +8,13 @@ Add the below script in index.html file
 ## Initialization
 
 ```Dart
- CleverTapPlugin.init("CLEVERTAP_ACCOUNT_ID", "CLEVERTAP_REGION", "CLEVERTAP_TARGET_DOMAIN");
+ CleverTapPlugin.init("CLEVERTAP_ACCOUNT_ID", "CLEVERTAP_REGION", "CLEVERTAP_TARGET_DOMAIN","CLEVERTAP_TOKEN");
 ```
 Here: \
 ```ACCOUNT_ID``` (mandatory): This value can be got from Projects page on the CleverTap Dashboard.\
 ```REGION``` (optional): This will be same as the region of the CleverTap Dashboard. Possible values: (in1/us1/sg1/aps3/mec1).\
-```TARGET_DOMAIN``` (optional): domain of the proxy server.
+```TARGET_DOMAIN``` (optional): domain of the proxy server.\
+```TOKEN``` : This value is mandatory only when using remote config feature otherwise optional. It can be get from Projects page on the CleverTap Dashboard..
 
 ## User Profiles
 
