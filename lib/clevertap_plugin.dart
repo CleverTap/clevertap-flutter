@@ -60,7 +60,7 @@ class CleverTapPlugin {
   static const libName = 'Flutter';
 
   static const libVersion =
-      20200; // If the current version is X.X.X then pass as X0X0X
+      20300; // If the current version is X.X.X then pass as X0X0X
 
   CleverTapPlugin._internal() {
     /// Set the CleverTap Flutter library name and the current version for version tracking
@@ -373,12 +373,6 @@ class CleverTapPlugin {
   static Future<void> setPushToken(String value) async {
     return await _dartToNativeMethodChannel
         .invokeMethod('setPushToken', {'token': value});
-  }
-
-  /// Set the Xiaomi Token for Push Notifications
-  static Future<void> setXiaomiPushToken(String value, String region) async {
-    return await _dartToNativeMethodChannel
-        .invokeMethod('setXiaomiPushToken', {'token': value, 'region': region});
   }
 
   /// Set the Baidu Token for Push Notifications

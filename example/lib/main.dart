@@ -1414,17 +1414,6 @@ class _MyAppState extends State<MyApp> {
                     child: Padding(
                       padding: const EdgeInsets.all(4.0),
                       child: ListTile(
-                        title: Text("Set Push token : XPS"),
-                        onTap: setPushTokenXPS,
-                      ),
-                    ),
-                  ),
-                if (!kIsWeb)
-                  Card(
-                    color: Colors.grey.shade300,
-                    child: Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: ListTile(
                         title: Text("Set Push token : HMS"),
                         onTap: setPushTokenHMS,
                       ),
@@ -1684,10 +1673,6 @@ class _MyAppState extends State<MyApp> {
 
   void setPushTokenFCM() {
     CleverTapPlugin.setPushToken("token_fcm");
-  }
-
-  void setPushTokenXPS() {
-    CleverTapPlugin.setXiaomiPushToken("token_xps", "Europe");
   }
 
   void setPushTokenHMS() {
