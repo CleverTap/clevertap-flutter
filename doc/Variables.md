@@ -12,6 +12,8 @@ Currently, the CleverTap Flutter plugin supports the following variable types:
 - float
 - double
 
+Web Platform only supports primitive data types - String, Number and boolean
+
 # Define Variables
 
 Variables can be defined using the `defineVariables` method. You must provide the names and default values of the variables using a JSON Object. 
