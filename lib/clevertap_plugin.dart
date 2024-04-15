@@ -379,12 +379,6 @@ class CleverTapPlugin {
         .invokeMethod('setPushToken', {'token': value});
   }
 
-  /// Set the Xiaomi Token for Push Notifications
-  static Future<void> setXiaomiPushToken(String value, String region) async {
-    return await _dartToNativeMethodChannel
-        .invokeMethod('setXiaomiPushToken', {'token': value, 'region': region});
-  }
-
   /// Set the Baidu Token for Push Notifications
   static Future<void> setBaiduPushToken(String value) async {
     return await _dartToNativeMethodChannel
