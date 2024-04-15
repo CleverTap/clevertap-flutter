@@ -1,6 +1,6 @@
 ## CHANGE LOG
 
-### Version 2.2.1 *(12th April 2024)*
+### Version 2.2.1 *(15th April 2024)*
 -------------------------------------------
 **What's new**
 * **[Web Platform]**
