@@ -1,5 +1,11 @@
 ## CHANGE LOG
 
+### Version 2.3.1 *(18th April 2024)*
+-------------------------------------------
+**Bug Fixes**
+* **[Web Platform]**
+  *  Removes [JS package](https://pub.dev/packages/js) dependency
+
 ### Version 2.3.0 *(15th April 2024)*
 -------------------------------------------
 **What's new**
