@@ -3,7 +3,7 @@
 #
 Pod::Spec.new do |s|
   s.name                     = 'clevertap_plugin'
-  s.version                  = '2.3.0'
+  s.version                  = '2.3.1'
   s.summary                  = 'CleverTap Flutter plugin.'
   s.description              = 'The CleverTap iOS SDK for App Analytics and Engagement.'                   
   s.homepage                 = 'https://github.com/CleverTap/clevertap-ios-sdk'

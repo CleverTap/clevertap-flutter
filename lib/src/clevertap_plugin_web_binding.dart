@@ -1,7 +1,7 @@
 @JS("clevertap")
 library clevertap;
 
-import 'package:js/js.dart';
+import 'dart:js_interop';
 
 @JS('init')
 external void init(
@@ -14,22 +14,22 @@ external void setLibrary(
 );
 
 @JS('toggleInbox')
-external void toggleInbox(Object object);
+external void toggleInbox(JSObject object);
 
 @JS('event.push')
-external void event_push(String event, Object? object);
+external void event_push(String event, JSObject? object);
 
 @JS('onUserLogin.push')
-external void onUserLogin_push(Object object);
+external void onUserLogin_push(JSObject object);
 
 @JS('notifications.push')
-external void notifications_push(Object object);
+external void notifications_push(JSObject object);
 
 @JS('profile.push')
-external void profile_push(Object object);
+external void profile_push(JSObject object);
 
 @JS('privacy.push')
-external void privacy_push(Object object);
+external void privacy_push(JSObject object);
 
 @JS('setLogLevel')
 external void setLogLevel(int value);
@@ -71,10 +71,10 @@ external void handleDecrementValue(String key, num value);
 external void getLocation(double latitude, double longitude);
 
 @JS('renderNotificationViewed')
-external void renderNotificationViewed(Object object);
+external void renderNotificationViewed(JSObject object);
 
 @JS('renderNotificationViewed')
-external void renderNotificationClicked(Object object);
+external void renderNotificationClicked(JSObject object);
 
 @JS('getInboxMessageCount')
 external int getInboxMessageCount();
@@ -83,13 +83,13 @@ external int getInboxMessageCount();
 external int getInboxMessageUnreadCount();
 
 @JS('getAllInboxMessages')
-external Map getAllInboxMessages();
+external JSAny getAllInboxMessages();
 
 @JS('getUnreadInboxMessages')
-external Map getUnreadInboxMessages();
+external JSAny getUnreadInboxMessages();
 
 @JS('getInboxMessageForId')
-external Object getInboxMessageForId(String messageId);
+external JSAny getInboxMessageForId(String messageId);
 
 @JS('deleteInboxMessage')
 external void deleteInboxMessage(String messageId);
@@ -104,7 +104,7 @@ external void markReadAllInboxMessage();
 external void markReadInboxMessagesForIds(List messageIds);
 
 @JS('defineVariables')
-external void defineVariables(Object object);
+external void defineVariables(JSObject object);
 
 @JS('syncVariables')
 external void syncVariables();
