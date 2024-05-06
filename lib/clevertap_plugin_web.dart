@@ -48,6 +48,8 @@ class CleverTapPlugin {
         return _toggleInbox(call);
       case 'recordEvent':
         return _recordEvent(call);
+      case 'recordChargedEvent':
+        return _recordChargedEvent(call);
       case 'onUserLogin':
         return _onUserLogin(call);
       case 'profileSet':
@@ -156,6 +158,14 @@ class CleverTapPlugin {
     String eventName = args['eventName'] as String;
     Object? eventData = args['eventData'];
     event_push(eventName, js_util.jsify(eventData ?? {}));
+  }
+
+  /// Pushed a Charged event
+  void _recordChargedEvent(MethodCall call) {
+    Map<Object?, Object?> args = call.arguments as Map<Object?, Object?>;
+    Map chargeDetails = args['chargeDetails'] as Map;
+    chargeDetails["Items"] = args['items'] as List;
+    event_push("Charged", js_util.jsify(chargeDetails));
   }
 
   /// OnUserLogin request
