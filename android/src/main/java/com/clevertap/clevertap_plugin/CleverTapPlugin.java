@@ -91,7 +91,7 @@ public class CleverTapPlugin implements ActivityAware,
 
     private Activity activity;
 
-    private MethodChannel dartToNativeMethodChannel;
+    private static MethodChannel dartToNativeMethodChannel;
 
     private static MethodChannel nativeToDartMethodChannel;
 
@@ -100,6 +100,8 @@ public class CleverTapPlugin implements ActivityAware,
     private Context context;
 
     public static Map<String, Object> variables = new HashMap<>();
+
+    private static FlutterPluginBinding flutterPluginBinding = null;
 
     /**
      * Plugin registration.
@@ -148,11 +150,19 @@ public class CleverTapPlugin implements ActivityAware,
 
     @Override
     public void onAttachedToActivity(@NonNull ActivityPluginBinding binding) {
+        // Reinitialize MethodChannel Forcefully from MainIsolate
+        if(flutterPluginBinding != null) {
+            Log.i("Debug","onAttachedToActivity");
+            setupPlugin(flutterPluginBinding.getApplicationContext(), flutterPluginBinding.getBinaryMessenger(),
+                    null);
+        }
         activity = binding.getActivity();
     }
 
     @Override
     public void onAttachedToEngine(@NonNull FlutterPluginBinding binding) {
+        flutterPluginBinding = binding;
+        Log.i("Debug","onAttachedToEngine");
         setupPlugin(binding.getApplicationContext(), binding.getBinaryMessenger(), null);
     }
 
@@ -1437,6 +1447,7 @@ public class CleverTapPlugin implements ActivityAware,
             Log.d(TAG, "methodChannel in invokeMethodOnUiThread(ArrayList) is null");
             return;
         }
+        Log.d("Debug", "methodChannel in invokeMethodOnUiThread(ArrayList) is not null");
         runOnMainThread(() -> channel.invokeMethod(methodName, list));
     }
 
@@ -1878,9 +1889,12 @@ public class CleverTapPlugin implements ActivityAware,
         }
     }
 
+
     private void setupPlugin(Context context, BinaryMessenger messenger, Registrar registrar) {
-        this.dartToNativeMethodChannel = getMethodChannel("clevertap_plugin/dart_to_native", messenger, registrar);
+        if(dartToNativeMethodChannel == null)
+            dartToNativeMethodChannel = getMethodChannel("clevertap_plugin/dart_to_native", messenger, registrar);
         if (nativeToDartMethodChannel == null) {
+            Log.i("Debug","nativetodart");
             // set nativeToDartMethodChannel channel once and it has to be static field
             // as per https://github.com/firebase/flutterfire/issues/9689 because multiple
             // instances of the CleverTap plugin can be created in case onBackgroundMessage handler

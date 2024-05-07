@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io' show Platform;
+import 'dart:io' show Platform, sleep;
 import 'package:example/notification_button.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
@@ -8,6 +8,7 @@ import 'package:clevertap_plugin/clevertap_plugin.dart';
 import 'package:example/deeplink_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_styled_toast/flutter_styled_toast.dart';
+import 'package:workmanager/workmanager.dart';
 
 @pragma('vm:entry-point')
 void onKilledStateNotificationClickedHandler(Map<String, dynamic> map) async {
@@ -15,8 +16,28 @@ void onKilledStateNotificationClickedHandler(Map<String, dynamic> map) async {
   print("Notification Payload received: " + map.toString());
 }
 
+@pragma('vm:entry-point') // Mandatory if the App is obfuscated or using Flutter 3.1+
+void callbackDispatcher() {
+  Workmanager().executeTask((task, inputData) {
+    print("Native started background task: $task");
+    print("Native called background task: $task"); //simpleTask will be emitted here.
+    return Future.value(true);
+  });
+}
+
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  Workmanager().initialize(
+      callbackDispatcher, // The top level function, aka callbackDispatcher
+      isInDebugMode: true // If enabled it will post a notification whenever the task is running. Handy for debugging tasks
+  );
+  await Workmanager().cancelAll();
+  Workmanager().registerOneOffTask(
+      "periodic-task-identifier",
+      "simplePeriodicTask"
+  );
+
   CleverTapPlugin.onKilledStateNotificationClicked(
       onKilledStateNotificationClickedHandler);
   runApp(MaterialApp(
@@ -1680,7 +1701,7 @@ class _MyAppState extends State<MyApp> {
       'date': CleverTapPlugin.getCleverTapDate(now),
       'number': 1
     };
-    CleverTapPlugin.recordEvent("Flutter Event", eventData);
+    CleverTapPlugin.recordEvent("Anush", eventData);
     showToast("Raised event - Flutter Event");
   }
 
