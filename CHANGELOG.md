@@ -10,6 +10,9 @@
 * **[Web Platform]**
   *  Added [JS package](https://pub.dev/packages/js) dependency to handle latest versions.
 
+* **[Android Platform]**
+  * Fixes [#114](https://github.com/CleverTap/clevertap-flutter/issues/114) - an issue related to callbacks from dart to native when a 3rd party plugin like `flutter_workmanager` is used.
+
 ### Version 2.3.1 *(19th April 2024)*
 -------------------------------------------
 **Bug Fixes**
