@@ -1,5 +1,15 @@
 ## CHANGE LOG
 
+### Version 2.3.2 *(9th May 2024)*
+-------------------------------------------
+**What's new**
+* **[Web Platform]**
+  * Added the method 'recordChargedEvent' for web
+
+**Bug Fixes**
+* **[Web Platform]**
+  *  Added [JS package](https://pub.dev/packages/js) dependency to handle latest versions.
+
 ### Version 2.3.1 *(19th April 2024)*
 -------------------------------------------
 **Bug Fixes**
