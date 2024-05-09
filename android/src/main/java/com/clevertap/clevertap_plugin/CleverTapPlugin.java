@@ -95,7 +95,7 @@ public class CleverTapPlugin implements ActivityAware,
 
     private MethodChannel dartToNativeMethodChannel;
 
-    private MethodChannel nativeToDartMethodChannel;
+    private MethodChannel lastNativeToDartMethodChannel;
 
     private CleverTapAPI cleverTapAPI;
 
@@ -173,8 +173,8 @@ public class CleverTapPlugin implements ActivityAware,
     @Override
     public void onDetachedFromEngine(@NonNull FlutterPluginBinding binding) {
         Log.d(TAG,"onDetachedFromEngine");
-        nativeToDartMethodChannelSet.remove(this.nativeToDartMethodChannel);
-        this.nativeToDartMethodChannel = null;
+        nativeToDartMethodChannelSet.remove(this.lastNativeToDartMethodChannel);
+        this.lastNativeToDartMethodChannel = null;
         dartToNativeMethodChannel = null;
         context = null;
     }
@@ -1893,10 +1893,10 @@ public class CleverTapPlugin implements ActivityAware,
     private void setupPlugin(Context context, BinaryMessenger messenger, Registrar registrar) {
         this.dartToNativeMethodChannel = getMethodChannel("clevertap_plugin/dart_to_native", messenger, registrar);
 
-        // nativeToDartMethodChannel is added to a set and not kept as a static field to ensure callbacks work when a background isolate is spawned
+        // lastNativeToDartMethodChannel is added to a set and not kept as a static field to ensure callbacks work when a background isolate is spawned
         // Background Isolates are spawned by several libraries like flutter_workmanager and flutter_firebasemessaging
-        nativeToDartMethodChannel = getMethodChannel("clevertap_plugin/native_to_dart", messenger, registrar);
-        nativeToDartMethodChannelSet.add(nativeToDartMethodChannel);
+        lastNativeToDartMethodChannel = getMethodChannel("clevertap_plugin/native_to_dart", messenger, registrar);
+        nativeToDartMethodChannelSet.add(lastNativeToDartMethodChannel);
 
         this.dartToNativeMethodChannel.setMethodCallHandler(this);
         this.context = context.getApplicationContext();
