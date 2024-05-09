@@ -3,7 +3,7 @@ plugins {
 }
 
 group 'com.clevertap.clevertap_plugin'
-version '2.3.1'
+version '2.3.2'
 
 rootProject.allprojects {
     repositories {

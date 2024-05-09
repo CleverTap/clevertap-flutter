@@ -1774,11 +1774,7 @@ class _MyAppState extends State<MyApp> {
       'total': '200',
       'payment': 'cash'
     };
-    if (kIsWeb) {
-      CleverTapPlugin.recordEvent("Charged", chargeDetails);
-    } else {
-      CleverTapPlugin.recordChargedEvent(chargeDetails, items);
-    }
+    CleverTapPlugin.recordChargedEvent(chargeDetails, items);
     showToast("Raised event - Charged");
   }
 
