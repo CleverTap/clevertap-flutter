@@ -102,7 +102,7 @@ public class CleverTapPlugin implements ActivityAware,
     private Context context;
 
     public static Map<String, Object> variables = new HashMap<>();
-    public static Set<MethodChannel> nativeToDartMethodChannelSet = new HashSet<>();
+    private static Set<MethodChannel> nativeToDartMethodChannelSet = new HashSet<>();
 
     /**
      * Plugin registration.
