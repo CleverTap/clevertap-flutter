@@ -1,5 +1,18 @@
 ## CHANGE LOG
 
+### Version 2.4.0 *(10th May 2024)*
+-------------------------------------------
+**What's new**
+* **[Web Platform]**
+  * Added the method 'recordChargedEvent' for web
+
+**Bug Fixes**
+* **[Web Platform]**
+  *  Added [JS package](https://pub.dev/packages/js) dependency to handle latest versions.
+
+* **[Android Platform]**
+  * Fixes [#114](https://github.com/CleverTap/clevertap-flutter/issues/114) - an issue related to callbacks from native to dart when a 3rd party plugin like `flutter_workmanager` is used.
+
 ### Version 2.3.1 *(19th April 2024)*
 -------------------------------------------
 **Bug Fixes**

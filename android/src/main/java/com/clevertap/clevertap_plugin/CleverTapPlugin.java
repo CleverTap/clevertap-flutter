@@ -46,6 +46,8 @@ import com.clevertap.android.sdk.variables.callbacks.VariablesChangedCallback;
 import com.clevertap.clevertap_plugin.CleverTapTypeUtils.LongUtil;
 import com.clevertap.clevertap_plugin.isolate.IsolateHandlePreferences;
 
+import java.util.HashSet;
+import java.util.Set;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -93,13 +95,14 @@ public class CleverTapPlugin implements ActivityAware,
 
     private MethodChannel dartToNativeMethodChannel;
 
-    private static MethodChannel nativeToDartMethodChannel;
+    private MethodChannel lastNativeToDartMethodChannel;
 
     private CleverTapAPI cleverTapAPI;
 
     private Context context;
 
     public static Map<String, Object> variables = new HashMap<>();
+    private static final Set<MethodChannel> nativeToDartMethodChannelSet = new HashSet<>();
 
     /**
      * Plugin registration.
@@ -153,6 +156,7 @@ public class CleverTapPlugin implements ActivityAware,
 
     @Override
     public void onAttachedToEngine(@NonNull FlutterPluginBinding binding) {
+        Log.d(TAG,"onAttachedToEngine");
         setupPlugin(binding.getApplicationContext(), binding.getBinaryMessenger(), null);
     }
 
@@ -168,8 +172,10 @@ public class CleverTapPlugin implements ActivityAware,
 
     @Override
     public void onDetachedFromEngine(@NonNull FlutterPluginBinding binding) {
+        Log.d(TAG,"onDetachedFromEngine");
+        nativeToDartMethodChannelSet.remove(this.lastNativeToDartMethodChannel);
+        this.lastNativeToDartMethodChannel = null;
         dartToNativeMethodChannel = null;
-        nativeToDartMethodChannel = null;
         context = null;
     }
 
@@ -1395,49 +1401,55 @@ public class CleverTapPlugin implements ActivityAware,
     }
 
     private void invokeMethodOnUiThread(final String methodName, final String cleverTapID) {
-        final MethodChannel channel = nativeToDartMethodChannel;
-        if (channel == null) {
-            Log.d(TAG, "methodChannel in invokeMethodOnUiThread(String) is null");
-            return;
-        }
-        runOnMainThread(() -> {
-            if (!cleverTapID.isEmpty()) {
-                channel.invokeMethod(methodName, cleverTapID);
-            } else {
-                channel.invokeMethod(methodName, null);
+        Log.d(TAG, "methodChannelSet in invokeMethodOnUiThread(String) is of size " + nativeToDartMethodChannelSet.size());
+
+        for(MethodChannel channel : nativeToDartMethodChannelSet) {
+            if (channel != null) {
+                Log.d(TAG, "methodChannelSet in invokeMethodOnUiThread(String) " +  channel);
+                runOnMainThread(() -> {
+                    if (!cleverTapID.isEmpty()) {
+                        channel.invokeMethod(methodName, cleverTapID);
+                    } else {
+                        channel.invokeMethod(methodName, null);
+                    }
+                });
             }
-        });
+        }
     }
 
     @SuppressWarnings("SameParameterValue")
     private void invokeMethodOnUiThread(final String methodName, final boolean params) {
-        final MethodChannel channel = nativeToDartMethodChannel;
-        if (channel == null) {
-            Log.d(TAG, "params in invokeMethodOnUiThread(boolean) is null");
-            return;
+        Log.d(TAG, "methodChannelSet in invokeMethodOnUiThread(boolean) is of size" + nativeToDartMethodChannelSet.size());
+
+        for(MethodChannel channel : nativeToDartMethodChannelSet) {
+            if (channel != null) {
+                Log.d(TAG, "methodChannelSet in invokeMethodOnUiThread(boolean) " + channel);
+                runOnMainThread(() -> channel.invokeMethod(methodName, params));
+            }
         }
-        runOnMainThread(() -> {
-            channel.invokeMethod(methodName, params);
-        });
     }
 
     private void invokeMethodOnUiThread(final String methodName, final Map map) {
-        final MethodChannel channel = nativeToDartMethodChannel;
-        if (channel == null) {
-            Log.d(TAG, "methodChannel in invokeMethodOnUiThread(Map) is null");
-            return;
+        Log.d(TAG, "methodChannelSet in invokeMethodOnUiThread(Map) is of size " + nativeToDartMethodChannelSet.size());
+
+        for(MethodChannel channel : nativeToDartMethodChannelSet) {
+            if (channel != null) {
+                Log.d(TAG, "methodChannel in invokeMethodOnUiThread(Map) " + channel);
+                runOnMainThread(() -> channel.invokeMethod(methodName, map));
+            }
         }
-        runOnMainThread(() -> channel.invokeMethod(methodName, map));
     }
 
     @SuppressWarnings("SameParameterValue")
     private void invokeMethodOnUiThread(final String methodName, final ArrayList list) {
-        final MethodChannel channel = nativeToDartMethodChannel;
-        if (channel == null) {
-            Log.d(TAG, "methodChannel in invokeMethodOnUiThread(ArrayList) is null");
-            return;
+        Log.d(TAG, "methodChannelSet in invokeMethodOnUiThread(ArrayList) is of size " + nativeToDartMethodChannelSet.size());
+
+        for(MethodChannel channel : nativeToDartMethodChannelSet) {
+            if (channel != null) {
+                Log.d(TAG, "methodChannel in invokeMethodOnUiThread(ArrayList)" + channel);
+                runOnMainThread(() -> channel.invokeMethod(methodName, list));
+            }
         }
-        runOnMainThread(() -> channel.invokeMethod(methodName, list));
     }
 
     private boolean isCleverTapNotNull(CleverTapAPI cleverTapAPI) {
@@ -1880,13 +1892,12 @@ public class CleverTapPlugin implements ActivityAware,
 
     private void setupPlugin(Context context, BinaryMessenger messenger, Registrar registrar) {
         this.dartToNativeMethodChannel = getMethodChannel("clevertap_plugin/dart_to_native", messenger, registrar);
-        if (nativeToDartMethodChannel == null) {
-            // set nativeToDartMethodChannel channel once and it has to be static field
-            // as per https://github.com/firebase/flutterfire/issues/9689 because multiple
-            // instances of the CleverTap plugin can be created in case onBackgroundMessage handler
-            // of FCM plugin.
-            nativeToDartMethodChannel = getMethodChannel("clevertap_plugin/native_to_dart", messenger, registrar);
-        }
+
+        // lastNativeToDartMethodChannel is added to a set and not kept as a static field to ensure callbacks work when a background isolate is spawned
+        // Background Isolates are spawned by several libraries like flutter_workmanager and flutter_firebasemessaging
+        lastNativeToDartMethodChannel = getMethodChannel("clevertap_plugin/native_to_dart", messenger, registrar);
+        nativeToDartMethodChannelSet.add(lastNativeToDartMethodChannel);
+
         this.dartToNativeMethodChannel.setMethodCallHandler(this);
         this.context = context.getApplicationContext();
         this.cleverTapAPI = CleverTapAPI.getDefaultInstance(this.context);
