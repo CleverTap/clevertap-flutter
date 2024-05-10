@@ -1,13 +1,16 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io' show Platform;
+import 'dart:io' show Platform, sleep;
 import 'package:example/notification_button.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
 import 'package:clevertap_plugin/clevertap_plugin.dart';
 import 'package:example/deeplink_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_styled_toast/flutter_styled_toast.dart';
+import 'package:workmanager/workmanager.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 @pragma('vm:entry-point')
 void onKilledStateNotificationClickedHandler(Map<String, dynamic> map) async {
@@ -15,8 +18,47 @@ void onKilledStateNotificationClickedHandler(Map<String, dynamic> map) async {
   print("Notification Payload received: " + map.toString());
 }
 
+@pragma('vm:entry-point') // Mandatory if the App is obfuscated or using Flutter 3.1+
+void callbackDispatcher() {
+  // This is a dummy work manager to test usecases with background isolates
+
+  Workmanager().executeTask((task, inputData) {
+    print("Native started background task: $task");
+    sleep(Duration(seconds: 30));
+    print("Native called background task: $task"); //simpleTask will be emitted here.
+    return Future.value(true);
+  });
+}
+
+Future<void> _firebaseBackgroundMessageHandler(RemoteMessage message) async {
+  // This is a dummy firebase integration to test usecases with background isolates
+  await Firebase.initializeApp();
+  print("_firebaseBackgroundMessageHandler Background");
+  // CleverTapPlugin.createNotification(jsonEncode(message.data));
+}
+
+/// Handles foreground messages of FCM
+void _firebaseForegroundMessageHandler(RemoteMessage remoteMessage) {
+  print('_firebaseForegroundMessageHandler called');
+  // CleverTapPlugin.createNotification(jsonEncode(remoteMessage.data));
+}
+
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  Workmanager().initialize(
+      callbackDispatcher, // The top level function, aka callbackDispatcher
+      isInDebugMode: true // If enabled it will post a notification whenever the task is running. Handy for debugging tasks
+  );
+  Workmanager().registerOneOffTask(
+      "periodic-task-identifier",
+      "simplePeriodicTask"
+  );
+
+  await Firebase.initializeApp();
+  FirebaseMessaging.onMessage.listen(_firebaseForegroundMessageHandler);
+  FirebaseMessaging.onBackgroundMessage(_firebaseBackgroundMessageHandler);
+
   CleverTapPlugin.onKilledStateNotificationClicked(
       onKilledStateNotificationClickedHandler);
   runApp(MaterialApp(
@@ -53,6 +95,7 @@ class _MyAppState extends State<MyApp> {
 
   @override
   void initState() {
+    print("initState");
     super.initState();
     initPlatformState();
     activateCleverTapFlutterPluginHandlers();
