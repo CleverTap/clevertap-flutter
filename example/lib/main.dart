@@ -46,18 +46,20 @@ void _firebaseForegroundMessageHandler(RemoteMessage remoteMessage) {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  Workmanager().initialize(
-      callbackDispatcher, // The top level function, aka callbackDispatcher
-      isInDebugMode: true // If enabled it will post a notification whenever the task is running. Handy for debugging tasks
-  );
-  Workmanager().registerOneOffTask(
-      "periodic-task-identifier",
-      "simplePeriodicTask"
-  );
+  if (!Platform.isIOS) {
+    Workmanager().initialize(
+        callbackDispatcher, // The top level function, aka callbackDispatcher
+        isInDebugMode: true // If enabled it will post a notification whenever the task is running. Handy for debugging tasks
+    );
+    Workmanager().registerOneOffTask(
+        "periodic-task-identifier",
+        "simplePeriodicTask"
+    );
 
-  await Firebase.initializeApp();
-  FirebaseMessaging.onMessage.listen(_firebaseForegroundMessageHandler);
-  FirebaseMessaging.onBackgroundMessage(_firebaseBackgroundMessageHandler);
+    await Firebase.initializeApp();
+    FirebaseMessaging.onMessage.listen(_firebaseForegroundMessageHandler);
+    FirebaseMessaging.onBackgroundMessage(_firebaseBackgroundMessageHandler);
+  }
 
   CleverTapPlugin.onKilledStateNotificationClicked(
       onKilledStateNotificationClickedHandler);
