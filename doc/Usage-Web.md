@@ -118,12 +118,23 @@ CleverTapPlugin.recordEvent("Flutter Event", eventData);
 #### Record Charged event
 
 ```Dart
+var item1 = {
+    // Key:    Value
+    'name': 'thing1',
+    'amount': '100'
+};
+var item2 = {
+   // Key:    Value
+   'name': 'thing2',
+   'amount': '100'
+};
+var items = [item1, item2];
 var chargeDetails = {
     // Key:    Value
     'total': '200',
     'payment': 'cash'
 };
-CleverTapPlugin.recordEvent("Charged", chargeDetails);
+CleverTapPlugin.recordChargedEvent(chargeDetails, items);
 ```
 -------
 
