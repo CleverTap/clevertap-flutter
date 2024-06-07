@@ -1,5 +1,11 @@
 ## CHANGE LOG
 
+### Version 2.4.1 *(3rd June 2024)*
+-------------------------------------------
+**Bug Fixes**
+* **[Web Platform]**
+  *  Fixes a issue Banner and carousel templates regarding background color.
+
 ### Version 2.4.0 *(10th May 2024)*
 -------------------------------------------
 **What's new**
