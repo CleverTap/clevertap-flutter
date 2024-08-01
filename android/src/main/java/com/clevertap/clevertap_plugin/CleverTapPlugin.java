@@ -1817,7 +1817,7 @@ public class CleverTapPlugin implements ActivityAware,
     }
 
     private void setMinimumFetchIntervalInSeconds(MethodCall call, Result result) {
-        long interval = call.argument("interval");
+        int interval = call.argument("interval");
         if (isCleverTapNotNull(cleverTapAPI)) {
             cleverTapAPI.productConfig().setMinimumFetchIntervalInSeconds(interval);
             result.success(null);
