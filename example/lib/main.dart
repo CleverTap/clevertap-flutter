@@ -662,6 +662,17 @@ class _MyAppState extends State<MyApp> {
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
+                      title: Text("Get Profile Property"),
+                      subtitle: Text("Returns the specified Profile Property"),
+                      onTap: getProfileProperty,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
                       title: Text("Get CleverTap ID"),
                       subtitle: Text("Returns Clevertap ID"),
                       onTap: getCleverTapId,
@@ -1780,12 +1791,12 @@ class _MyAppState extends State<MyApp> {
 
   void recordUser() {
     var stuff = ["bags", "shoes"];
-    var dob = '2012-04-22';
+    var dob = '1965-06-29';
     var profile = {
       'Name': 'John Wick',
       'Identity': '100',
       // Key always has to be "dob" and format should always be yyyy-MM-dd
-      'dob': CleverTapPlugin.getCleverTapDate(DateTime.parse(dob)),
+      'dob': '\$D_' + (((DateTime.parse(dob)).millisecondsSinceEpoch)~/1000).toString(),
       'Email': 'john@gmail.com',
       'Phone': '+14155551234',
       'stuff': stuff
@@ -2200,11 +2211,23 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
+  void getProfileProperty() {
+    var propertyName = "Email";
+    CleverTapPlugin.profileGetProperty(propertyName).then((prop) {
+      if(prop == null) {
+        showToast("Property not found");
+        return;
+      }
+      showToast("Email Profile Property = " + prop.toString());
+      print("Email Profile Property = " + prop.toString());
+    });
+  }
+
   void onUserLogin() {
     var stuff = ["bags", "shoes"];
     var profile = {
       'Name': 'Captain America',
-      'Identity': '100',
+      'Identity': 100,
       'Email': 'captain@america.com',
       'Phone': '+14155551234',
       'stuff': stuff
@@ -2367,10 +2390,10 @@ class _MyAppState extends State<MyApp> {
   }
 
   void fetch() {
-    CleverTapPlugin.fetch();
-    showToast("check console for logs");
+    // CleverTapPlugin.fetch();
+    showToast("check console for logs now");
 
-    ///CleverTapPlugin.fetchWithMinimumIntervalInSeconds(0);
+    CleverTapPlugin.setMinimumFetchIntervalInSeconds(100);
   }
 
   void activate() {
