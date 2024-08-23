@@ -11,7 +11,6 @@ class CleverTapPlugin {
   static MethodChannel? _nativeToDartMethodChannel;
 
   static void registerWith(Registrar registrar) {
-    print("registerWith");
     final MethodChannel _dartToNativeMethodChannel = MethodChannel(
       'clevertap_plugin/dart_to_native',
       const StandardMethodCodec(),
