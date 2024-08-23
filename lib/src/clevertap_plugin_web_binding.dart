@@ -123,3 +123,6 @@ external void getVariables(Function function);
 
 @JS('getVariable')
 external void getVariable(String name, Function function);
+
+@JS('addDocumentEventListener')
+external void addDocumentEventListener(String name, Function callback);

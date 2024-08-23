@@ -5,13 +5,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_web_plugins/flutter_web_plugins.dart';
 import 'package:js/js_util.dart' as js_util;
 import 'package:js/js.dart';
-import 'dart:html' as html;
 
 /// A web implementation of the CleverTapPlugin plugin.
 class CleverTapPlugin {
   static MethodChannel? _nativeToDartMethodChannel;
 
   static void registerWith(Registrar registrar) {
+    print("registerWith");
     final MethodChannel _dartToNativeMethodChannel = MethodChannel(
       'clevertap_plugin/dart_to_native',
       const StandardMethodCodec(),
@@ -27,12 +27,6 @@ class CleverTapPlugin {
     final pluginInstance = CleverTapPlugin();
     _dartToNativeMethodChannel
         .setMethodCallHandler(pluginInstance.handleMethodCall);
-
-    final script = html.ScriptElement();
-    script.type = 'text/javascript';
-    script.src =
-        './assets/packages/clevertap_plugin/assets/clevertap_support.js';
-    html.document.head?.append(script);
   }
 
   /// Handles method calls over the MethodChannel of this plugin.
@@ -122,6 +116,8 @@ class CleverTapPlugin {
         return _getVariables(call);
       case 'getVariable':
         return _getVariable(call);
+      case 'getKVPairData':
+        return _getKVPairData(call);
       default:
         throw PlatformException(
           code: 'Unimplemented',
@@ -414,6 +410,17 @@ class CleverTapPlugin {
     var completer = Completer<dynamic>();
     getVariable(name,
         allowInterop((object) => completer.complete(js_util.dartify(object))));
+    return completer.future;
+  }
+
+  /// Get KV Pair Data
+  Future<Map<Object?, Object?>> _getKVPairData(MethodCall call) async {
+    var completer = Completer<Map<Object?, Object?>>();
+
+    addDocumentEventListener(
+        'CT_web_native_display',
+        allowInterop((obj) =>
+            completer.complete(js_util.dartify(obj) as Map<Object?, Object?>)));
     return completer.future;
   }
 }

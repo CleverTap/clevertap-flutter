@@ -18,14 +18,16 @@ void onKilledStateNotificationClickedHandler(Map<String, dynamic> map) async {
   print("Notification Payload received: " + map.toString());
 }
 
-@pragma('vm:entry-point') // Mandatory if the App is obfuscated or using Flutter 3.1+
+@pragma(
+    'vm:entry-point') // Mandatory if the App is obfuscated or using Flutter 3.1+
 void callbackDispatcher() {
   // This is a dummy work manager to test usecases with background isolates
 
   Workmanager().executeTask((task, inputData) {
     print("Native started background task: $task");
     sleep(Duration(seconds: 30));
-    print("Native called background task: $task"); //simpleTask will be emitted here.
+    print(
+        "Native called background task: $task"); //simpleTask will be emitted here.
     return Future.value(true);
   });
 }
@@ -43,21 +45,21 @@ void _firebaseForegroundMessageHandler(RemoteMessage remoteMessage) {
   // CleverTapPlugin.createNotification(jsonEncode(remoteMessage.data));
 }
 
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  Workmanager().initialize(
-      callbackDispatcher, // The top level function, aka callbackDispatcher
-      isInDebugMode: true // If enabled it will post a notification whenever the task is running. Handy for debugging tasks
-  );
-  Workmanager().registerOneOffTask(
-      "periodic-task-identifier",
-      "simplePeriodicTask"
-  );
+  if (!kIsWeb) {
+    Workmanager().initialize(
+        callbackDispatcher, // The top level function, aka callbackDispatcher
+        isInDebugMode:
+            true // If enabled it will post a notification whenever the task is running. Handy for debugging tasks
+        );
+    Workmanager()
+        .registerOneOffTask("periodic-task-identifier", "simplePeriodicTask");
 
-  await Firebase.initializeApp();
-  FirebaseMessaging.onMessage.listen(_firebaseForegroundMessageHandler);
-  FirebaseMessaging.onBackgroundMessage(_firebaseBackgroundMessageHandler);
+    await Firebase.initializeApp();
+    FirebaseMessaging.onMessage.listen(_firebaseForegroundMessageHandler);
+    FirebaseMessaging.onBackgroundMessage(_firebaseBackgroundMessageHandler);
+  }
 
   CleverTapPlugin.onKilledStateNotificationClicked(
       onKilledStateNotificationClickedHandler);
@@ -104,7 +106,10 @@ class _MyAppState extends State<MyApp> {
       CleverTapPlugin.init("CLEVERTAP_ACCOUNT_ID", "CLEVERTAP_REGION",
           "CLEVERTAP_TARGET_DOMAIN");
       CleverTapPlugin.setDebugLevel(3);
-
+      CleverTapPlugin.getKVPairData().then((obj) {
+        var kv = obj?["kv"];
+        print(kv);
+      });
       // enable web push
       var pushData = {
         'titleText': 'Would you like to receive Push Notifications?',

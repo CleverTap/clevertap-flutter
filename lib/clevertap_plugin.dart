@@ -60,7 +60,7 @@ class CleverTapPlugin {
   static const libName = 'Flutter';
 
   static const libVersion =
-      20400; // If the current version is X.X.X then pass as X0X0X
+      20401; // If the current version is X.X.X then pass as X0X0X
 
   CleverTapPlugin._internal() {
     /// Set the CleverTap Flutter library name and the current version for version tracking
@@ -313,6 +313,18 @@ class CleverTapPlugin {
       return null;
     }
     return await _dartToNativeMethodChannel.invokeMethod('getAccountID', {});
+  }
+
+  /// Only for Web - Return the Web Native Display KV pair data
+  static Future<Map<String, Object?>?> getKVPairData() async {
+    if (!kIsWeb) {
+      return null;
+    }
+    var res = (await _dartToNativeMethodChannel
+        .invokeMethod('getKVPairData', {})) as Map<Object?, Object?>;
+    Map<String, Object?> data = Map.fromEntries(res.entries
+        .map((entry) => MapEntry(entry.key.toString(), entry.value)));
+    return data;
   }
 
   /// Only for Web - Method to ensure that clevertap does not auto collect the device IP as per GDPR rules
