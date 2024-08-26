@@ -46,6 +46,8 @@ class CleverTapPlugin {
       cleverTapOnVariablesChangedHandlers = [];
   static List<CleverTapOnValueChangedHandler> cleverTapOnValueChangedHandlers =
       [];
+  static List<CleverTapOnKVDataChangedHandler>
+      cleverTapOnKVDataChangedHandlers = [];
 
   static const MethodChannel _dartToNativeMethodChannel =
       const MethodChannel('clevertap_plugin/dart_to_native');
@@ -153,6 +155,13 @@ class CleverTapPlugin {
         cleverTapOnValueChangedHandlers
             .forEach((cleverTapOnValueChangedHandler) {
           cleverTapOnValueChangedHandler(args.cast<String, dynamic>());
+        });
+        break;
+      case "onKVDataChanged":
+        Map<dynamic, dynamic> args = call.arguments;
+        cleverTapOnKVDataChangedHandlers
+            .forEach((cleverTapOnKVDataChangedHandlers) {
+          cleverTapOnKVDataChangedHandlers(args.cast<String, dynamic>());
         });
         break;
       default:
@@ -316,15 +325,12 @@ class CleverTapPlugin {
   }
 
   /// Only for Web - Return the Web Native Display KV pair data
-  static Future<Map<String, Object?>?> getKVPairData() async {
+  static void addKVDataChangeListener(CleverTapOnKVDataChangedHandler handler) {
     if (!kIsWeb) {
       return null;
     }
-    var res = (await _dartToNativeMethodChannel
-        .invokeMethod('getKVPairData', {})) as Map<Object?, Object?>;
-    Map<String, Object?> data = Map.fromEntries(res.entries
-        .map((entry) => MapEntry(entry.key.toString(), entry.value)));
-    return data;
+    cleverTapOnKVDataChangedHandlers.add(handler);
+    _dartToNativeMethodChannel.invokeMethod('addKVDataChangeListener', {});
   }
 
   /// Only for Web - Method to ensure that clevertap does not auto collect the device IP as per GDPR rules

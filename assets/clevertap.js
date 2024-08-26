@@ -8558,6 +8558,7 @@ clevertap.getVariable = (name, callback) => {
 }
 
 clevertap.addDocumentEventListener = (name, callback) => {
+  console.log('_getKV pair js');
   document.addEventListener(name, (e) => {
     callback(e.detail)
   })

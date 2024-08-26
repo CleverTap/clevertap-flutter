@@ -115,8 +115,8 @@ class CleverTapPlugin {
         return _getVariables(call);
       case 'getVariable':
         return _getVariable(call);
-      case 'getKVPairData':
-        return _getKVPairData(call);
+      case 'addKVDataChangeListener':
+        return _addKVDataChangeListener(call);
       default:
         throw PlatformException(
           code: 'Unimplemented',
@@ -413,13 +413,12 @@ class CleverTapPlugin {
   }
 
   /// Get KV Pair Data
-  Future<Map<Object?, Object?>> _getKVPairData(MethodCall call) async {
-    var completer = Completer<Map<Object?, Object?>>();
-
-    addDocumentEventListener(
-        'CT_web_native_display',
-        allowInterop((obj) =>
-            completer.complete(js_util.dartify(obj) as Map<Object?, Object?>)));
-    return completer.future;
+  void _addKVDataChangeListener(MethodCall call) async {
+    addDocumentEventListener('CT_web_native_display', allowInterop((object) {
+      var object_ = js_util.dartify(object) as Map<Object?, Object?>;
+      Map<String, Object?> data = Map.fromEntries(object_.entries
+          .map((entry) => MapEntry(entry.key.toString(), entry.value)));
+      _nativeToDartMethodChannel?.invokeMethod('onKVDataChanged', data);
+    }));
   }
 }

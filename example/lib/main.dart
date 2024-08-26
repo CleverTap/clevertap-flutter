@@ -106,8 +106,8 @@ class _MyAppState extends State<MyApp> {
       CleverTapPlugin.init("CLEVERTAP_ACCOUNT_ID", "CLEVERTAP_REGION",
           "CLEVERTAP_TARGET_DOMAIN");
       CleverTapPlugin.setDebugLevel(3);
-      CleverTapPlugin.getKVPairData().then((obj) {
-        var kv = obj?["kv"];
+      CleverTapPlugin.addKVDataChangeListener((obj) {
+        var kv = obj["kv"];
         print(kv);
       });
       // enable web push
