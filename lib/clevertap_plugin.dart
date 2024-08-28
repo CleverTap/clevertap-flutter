@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:ui';
 
+import 'package:clevertap_plugin/clevertap_plugin_web.dart';
 import 'package:clevertap_plugin/src/types.dart';
 import 'package:clevertap_plugin/src/typedefs.dart';
 import 'package:flutter/foundation.dart';
@@ -46,8 +47,6 @@ class CleverTapPlugin {
       cleverTapOnVariablesChangedHandlers = [];
   static List<CleverTapOnValueChangedHandler> cleverTapOnValueChangedHandlers =
       [];
-  static List<CleverTapOnKVDataChangedHandler>
-      cleverTapOnKVDataChangedHandlers = [];
 
   static const MethodChannel _dartToNativeMethodChannel =
       const MethodChannel('clevertap_plugin/dart_to_native');
@@ -155,13 +154,6 @@ class CleverTapPlugin {
         cleverTapOnValueChangedHandlers
             .forEach((cleverTapOnValueChangedHandler) {
           cleverTapOnValueChangedHandler(args.cast<String, dynamic>());
-        });
-        break;
-      case "onKVDataChanged":
-        Map<dynamic, dynamic> args = call.arguments;
-        cleverTapOnKVDataChangedHandlers
-            .forEach((cleverTapOnKVDataChangedHandlers) {
-          cleverTapOnKVDataChangedHandlers(args.cast<String, dynamic>());
         });
         break;
       default:
@@ -329,8 +321,7 @@ class CleverTapPlugin {
     if (!kIsWeb) {
       return null;
     }
-    cleverTapOnKVDataChangedHandlers.add(handler);
-    _dartToNativeMethodChannel.invokeMethod('addKVDataChangeListener', {});
+    CleverTapPluginWeb.addKVDataChangeListener(handler);
   }
 
   /// Only for Web - Method to ensure that clevertap does not auto collect the device IP as per GDPR rules
@@ -1135,14 +1126,22 @@ class CleverTapPlugin {
   }
 
   static void onVariablesChanged(CleverTapOnVariablesChangedHandler handler) {
-    cleverTapOnVariablesChangedHandlers.add(handler);
-    _dartToNativeMethodChannel.invokeMethod('onVariablesChanged', {});
+    if (!kIsWeb) {
+      cleverTapOnVariablesChangedHandlers.add(handler);
+      _dartToNativeMethodChannel.invokeMethod('onVariablesChanged', {});
+    } else {
+      CleverTapPluginWeb.onVariablesChanged(handler);
+    }
   }
 
   static void onValueChanged(
       String name, CleverTapOnValueChangedHandler handler) {
-    cleverTapOnValueChangedHandlers.add(handler);
-    _dartToNativeMethodChannel.invokeMethod('onValueChanged', {'name': name});
+    if (!kIsWeb) {
+      cleverTapOnValueChangedHandlers.add(handler);
+      _dartToNativeMethodChannel.invokeMethod('onValueChanged', {'name': name});
+    } else {
+      CleverTapPluginWeb.onValueChanged(name, handler);
+    }
   }
 
   ///Sets the user locale.

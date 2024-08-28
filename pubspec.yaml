@@ -30,5 +30,5 @@ flutter:
       ios:
         pluginClass: CleverTapPlugin
       web:
-        pluginClass: CleverTapPlugin
+        pluginClass: CleverTapPluginWeb
         fileName: clevertap_plugin_web.dart

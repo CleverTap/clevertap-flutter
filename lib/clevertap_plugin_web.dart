@@ -1,15 +1,15 @@
 import 'dart:async';
 
 import 'package:clevertap_plugin/src/clevertap_plugin_web_binding.dart';
+import 'package:clevertap_plugin/src/typedefs.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_web_plugins/flutter_web_plugins.dart';
 import 'package:js/js_util.dart' as js_util;
 import 'package:js/js.dart';
+import 'clevertap_plugin.dart' as MainPlugin;
 
 /// A web implementation of the CleverTapPlugin plugin.
-class CleverTapPlugin {
-  static MethodChannel? _nativeToDartMethodChannel;
-
+class CleverTapPluginWeb {
   static void registerWith(Registrar registrar) {
     final MethodChannel _dartToNativeMethodChannel = MethodChannel(
       'clevertap_plugin/dart_to_native',
@@ -17,21 +17,18 @@ class CleverTapPlugin {
       registrar,
     );
 
-    _nativeToDartMethodChannel = MethodChannel(
-      'clevertap_plugin/native_to_dart',
-      const StandardMethodCodec(),
-      registrar,
-    );
-
-    final pluginInstance = CleverTapPlugin();
+    final pluginInstance = CleverTapPluginWeb();
     _dartToNativeMethodChannel
-        .setMethodCallHandler(pluginInstance.handleMethodCall);
+        .setMethodCallHandler(pluginInstance._handleMethodCall);
+
+    setLibrary(MainPlugin.CleverTapPlugin.libName,
+        MainPlugin.CleverTapPlugin.libVersion);
   }
 
   /// Handles method calls over the MethodChannel of this plugin.
   /// Note: Check the "federated" architecture for a new way of doing this:
   /// https://flutter.dev/go/federated-plugins
-  Future<dynamic> handleMethodCall(MethodCall call) async {
+  Future<dynamic> _handleMethodCall(MethodCall call) async {
     switch (call.method) {
       case 'init':
         return _init(call);
@@ -107,16 +104,10 @@ class CleverTapPlugin {
         return _syncVariables(call);
       case 'fetchVariables':
         return _fetchVariables(call);
-      case 'onValueChanged':
-        return _onValueChanged(call);
-      case 'onVariablesChanged':
-        return _onVariablesChanged(call);
       case 'getVariables':
         return _getVariables(call);
       case 'getVariable':
         return _getVariable(call);
-      case 'addKVDataChangeListener':
-        return _addKVDataChangeListener(call);
       default:
         throw PlatformException(
           code: 'Unimplemented',
@@ -378,22 +369,17 @@ class CleverTapPlugin {
     return completer.future;
   }
 
-  void _onValueChanged(MethodCall call) {
-    Map<Object?, Object?> args = call.arguments as Map<Object?, Object?>;
-    String name = args['name'] as String;
-    onValueChanged(
-        name,
-        allowInterop((object) => {
-              _nativeToDartMethodChannel?.invokeMethod(
-                  'onValueChanged', js_util.dartify(object))
-            }));
+  static void onValueChanged(
+      String name, CleverTapOnValueChangedHandler handler) {
+    onValueChangedImpl(name, allowInterop((object) {
+      handler(js_util.dartify(object) as Map<String, dynamic>);
+    }));
   }
 
-  void _onVariablesChanged(MethodCall call) {
-    onVariablesChanged(allowInterop((object) => {
-          _nativeToDartMethodChannel?.invokeMethod(
-              'onVariablesChanged', js_util.dartify(object))
-        }));
+  static void onVariablesChanged(CleverTapOnVariablesChangedHandler handler) {
+    onVariablesChangedImpl(allowInterop((object) {
+      handler(js_util.dartify(object) as Map<String, dynamic>);
+    }));
   }
 
   Future<Map<Object?, Object?>> _getVariables(MethodCall call) async {
@@ -412,13 +398,14 @@ class CleverTapPlugin {
     return completer.future;
   }
 
-  /// Get KV Pair Data
-  void _addKVDataChangeListener(MethodCall call) async {
-    addDocumentEventListener('CT_web_native_display', allowInterop((object) {
+  static void addKVDataChangeListener(
+      CleverTapOnKVDataChangedHandler handler) async {
+    addDocumentEventListenerImpl('CT_web_native_display',
+        allowInterop((object) {
       var object_ = js_util.dartify(object) as Map<Object?, Object?>;
       Map<String, Object?> data = Map.fromEntries(object_.entries
           .map((entry) => MapEntry(entry.key.toString(), entry.value)));
-      _nativeToDartMethodChannel?.invokeMethod('onKVDataChanged', data);
+      handler(data);
     }));
   }
 }
