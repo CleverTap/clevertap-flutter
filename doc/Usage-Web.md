@@ -202,9 +202,8 @@ await CleverTapPlugin.markReadInboxMessageForId(messageId);
 #### Custom KV Pair
 
 ```Dart
-CleverTapPlugin.addKVDataChangeListener().then((obj) {
-    var kv = obj?["kv"];
-    print(kv);
+CleverTapPlugin.addKVDataChangeListener((obj) {
+    print(obj);
 });
 ```
 
