@@ -662,6 +662,17 @@ class _MyAppState extends State<MyApp> {
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
+                      title: Text("Get Profile Property"),
+                      subtitle: Text("Returns the specified Profile Property"),
+                      onTap: getProfileProperty,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
                       title: Text("Get CleverTap ID"),
                       subtitle: Text("Returns Clevertap ID"),
                       onTap: getCleverTapId,
@@ -2197,6 +2208,18 @@ class _MyAppState extends State<MyApp> {
       setState(() {
         print("$error");
       });
+    });
+  }
+
+  void getProfileProperty() {
+    var propertyName = "Email";
+    CleverTapPlugin.profileGetProperty(propertyName).then((prop) {
+      if(prop == null) {
+        showToast("Property not found");
+        return;
+      }
+      showToast("Email Profile Property = " + prop.toString());
+      print("Email Profile Property = " + prop.toString());
     });
   }
 
