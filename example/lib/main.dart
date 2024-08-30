@@ -1791,12 +1791,12 @@ class _MyAppState extends State<MyApp> {
 
   void recordUser() {
     var stuff = ["bags", "shoes"];
-    var dob = '1965-06-29';
+    var dob = '2012-04-22';
     var profile = {
       'Name': 'John Wick',
       'Identity': '100',
       // Key always has to be "dob" and format should always be yyyy-MM-dd
-      'dob': '\$D_' + (((DateTime.parse(dob)).millisecondsSinceEpoch)~/1000).toString(),
+      'dob': CleverTapPlugin.getCleverTapDate(DateTime.parse(dob)),
       'Email': 'john@gmail.com',
       'Phone': '+14155551234',
       'stuff': stuff
@@ -2227,7 +2227,7 @@ class _MyAppState extends State<MyApp> {
     var stuff = ["bags", "shoes"];
     var profile = {
       'Name': 'Captain America',
-      'Identity': 100,
+      'Identity': '100',
       'Email': 'captain@america.com',
       'Phone': '+14155551234',
       'stuff': stuff
@@ -2390,10 +2390,10 @@ class _MyAppState extends State<MyApp> {
   }
 
   void fetch() {
-    // CleverTapPlugin.fetch();
-    showToast("check console for logs now");
+    CleverTapPlugin.fetch();
+    showToast("check console for logs");
 
-    CleverTapPlugin.setMinimumFetchIntervalInSeconds(100);
+    ///CleverTapPlugin.fetchWithMinimumIntervalInSeconds(0);
   }
 
   void activate() {
