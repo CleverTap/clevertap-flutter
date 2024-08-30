@@ -611,6 +611,7 @@ class CleverTapPlugin {
         'setLocation', {'latitude': latitude, 'longitude': longitude});
   }
 
+  /// Returns the user profile property value for the specified key.
   static Future<Object?> profileGetProperty(String propertyName) async {
     return await _dartToNativeMethodChannel
         .invokeMethod('profileGetProperty', {'propertyName': propertyName});
