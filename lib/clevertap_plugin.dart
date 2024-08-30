@@ -1054,7 +1054,7 @@ class CleverTapPlugin {
   }
 
   static String getCleverTapDate(DateTime dateTime) {
-    return '\$D_' + dateTime.millisecondsSinceEpoch.toString();
+    return '\$D_' + (dateTime.millisecondsSinceEpoch~/1000).toString();
   }
 
   // Push Primer
