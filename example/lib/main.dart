@@ -47,7 +47,7 @@ void _firebaseForegroundMessageHandler(RemoteMessage remoteMessage) {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  if (!kIsWeb) {
+  if (!kIsWeb && !Platform.isIOS) {
     Workmanager().initialize(
         callbackDispatcher, // The top level function, aka callbackDispatcher
         isInDebugMode:

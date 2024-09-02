@@ -372,13 +372,19 @@ class CleverTapPluginWeb {
   static void onValueChanged(
       String name, CleverTapOnValueChangedHandler handler) {
     onValueChangedImpl(name, allowInterop((object) {
-      handler(js_util.dartify(object) as Map<String, dynamic>);
+      var dartObject = js_util.dartify(object);
+      var convertedMap = (dartObject as Map)
+          .map((key, value) => MapEntry(key.toString(), value as dynamic));
+      handler(convertedMap.cast<String, dynamic>());
     }));
   }
 
   static void onVariablesChanged(CleverTapOnVariablesChangedHandler handler) {
     onVariablesChangedImpl(allowInterop((object) {
-      handler(js_util.dartify(object) as Map<String, dynamic>);
+      var dartObject = js_util.dartify(object);
+      var convertedMap = (dartObject as Map)
+          .map((key, value) => MapEntry(key.toString(), value as dynamic));
+      handler(convertedMap.cast<String, dynamic>());
     }));
   }
 
