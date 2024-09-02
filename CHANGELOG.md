@@ -7,6 +7,11 @@
   *  Adds the method 'addKVDataChangeListener()' to get the custom KV Pair data
   *  Supports [CleverTap Web SDK v1.9.0](https://github.com/CleverTap/clevertap-web-sdk/releases/tag/v1.9.0) 
 
+* **[Android Platform]**
+  * Fixes a date conversion issue for dates before January 1, 1970.
+  * Fixes a `ClassCastException` for `setMinimumFetchIntervalInSeconds` in `ProductConfig`.
+  * Fixes missing support for `profileGetProperty`.
+
 ### Version 2.4.0 *(10th May 2024)*
 -------------------------------------------
 **What's new**
