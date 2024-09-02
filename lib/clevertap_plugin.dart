@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:ui';
 
+import 'package:clevertap_plugin/clevertap_plugin_web_wrapper.dart';
 import 'package:clevertap_plugin/src/types.dart';
 import 'package:clevertap_plugin/src/typedefs.dart';
 import 'package:flutter/foundation.dart';
@@ -60,7 +61,7 @@ class CleverTapPlugin {
   static const libName = 'Flutter';
 
   static const libVersion =
-      20400; // If the current version is X.X.X then pass as X0X0X
+      20401; // If the current version is X.X.X then pass as X0X0X
 
   CleverTapPlugin._internal() {
     /// Set the CleverTap Flutter library name and the current version for version tracking
@@ -313,6 +314,14 @@ class CleverTapPlugin {
       return null;
     }
     return await _dartToNativeMethodChannel.invokeMethod('getAccountID', {});
+  }
+
+  /// Only for Web - Return the Web Native Display KV pair data
+  static void addKVDataChangeListener(CleverTapOnKVDataChangedHandler handler) {
+    if (!kIsWeb) {
+      return null;
+    }
+    CleverTapPluginWeb.addKVDataChangeListener(handler);
   }
 
   /// Only for Web - Method to ensure that clevertap does not auto collect the device IP as per GDPR rules
@@ -609,6 +618,12 @@ class CleverTapPlugin {
   static Future<void> setLocation(double latitude, double longitude) async {
     return await _dartToNativeMethodChannel.invokeMethod(
         'setLocation', {'latitude': latitude, 'longitude': longitude});
+  }
+
+  /// Returns the user profile property value for the specified key.
+  static Future<Object?> profileGetProperty(String propertyName) async {
+    return await _dartToNativeMethodChannel
+        .invokeMethod('profileGetProperty', {'propertyName': propertyName});
   }
 
   @Deprecated(
@@ -1048,7 +1063,7 @@ class CleverTapPlugin {
   }
 
   static String getCleverTapDate(DateTime dateTime) {
-    return '\$D_' + dateTime.millisecondsSinceEpoch.toString();
+    return '\$D_' + (dateTime.millisecondsSinceEpoch~/1000).toString();
   }
 
   // Push Primer
@@ -1117,14 +1132,22 @@ class CleverTapPlugin {
   }
 
   static void onVariablesChanged(CleverTapOnVariablesChangedHandler handler) {
-    cleverTapOnVariablesChangedHandlers.add(handler);
-    _dartToNativeMethodChannel.invokeMethod('onVariablesChanged', {});
+    if (!kIsWeb) {
+      cleverTapOnVariablesChangedHandlers.add(handler);
+      _dartToNativeMethodChannel.invokeMethod('onVariablesChanged', {});
+    } else {
+      CleverTapPluginWeb.onVariablesChanged(handler);
+    }
   }
 
   static void onValueChanged(
       String name, CleverTapOnValueChangedHandler handler) {
-    cleverTapOnValueChangedHandlers.add(handler);
-    _dartToNativeMethodChannel.invokeMethod('onValueChanged', {'name': name});
+    if (!kIsWeb) {
+      cleverTapOnValueChangedHandlers.add(handler);
+      _dartToNativeMethodChannel.invokeMethod('onValueChanged', {'name': name});
+    } else {
+      CleverTapPluginWeb.onValueChanged(name, handler);
+    }
   }
 
   ///Sets the user locale.
