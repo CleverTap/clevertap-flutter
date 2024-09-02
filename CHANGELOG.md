@@ -1,6 +1,6 @@
 ## CHANGE LOG
 
-### Version 2.4.1 *(28th August 2024)*
+### Version 2.4.1 *(2nd September 2024)*
 -------------------------------------------
 **Bug Fixes**
 * **[Web Platform]**
