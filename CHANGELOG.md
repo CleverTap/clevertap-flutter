@@ -12,6 +12,9 @@
   * Fixes a `ClassCastException` for `setMinimumFetchIntervalInSeconds` in `ProductConfig`.
   * Fixes missing support for `profileGetProperty`.
 
+* **[iOS Platform]**
+  * Fixes missing support for `profileGetProperty`.
+  
 ### Version 2.4.0 *(10th May 2024)*
 -------------------------------------------
 **What's new**
