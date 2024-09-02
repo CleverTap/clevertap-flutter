@@ -1,5 +1,12 @@
 ## CHANGE LOG
 
+### Version 2.4.1 *(2nd September 2024)*
+-------------------------------------------
+**Bug Fixes**
+* **[Web Platform]**
+  *  Adds the method 'addKVDataChangeListener()' to get the custom KV Pair data
+  *  Supports [CleverTap Web SDK v1.9.0](https://github.com/CleverTap/clevertap-web-sdk/releases/tag/v1.9.0) 
+
 ### Version 2.4.0 *(10th May 2024)*
 -------------------------------------------
 **What's new**

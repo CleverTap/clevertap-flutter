@@ -113,13 +113,16 @@ external void syncVariables();
 external void fetchVariables(Function callback);
 
 @JS('onValueChanged')
-external void onValueChanged(String key, Function function);
+external void onValueChangedImpl(String key, Function function);
 
 @JS('onVariablesChanged')
-external void onVariablesChanged(Function function);
+external void onVariablesChangedImpl(Function function);
 
 @JS('getVariables')
 external void getVariables(Function function);
 
 @JS('getVariable')
 external void getVariable(String name, Function function);
+
+@JS('addDocumentEventListener')
+external void addDocumentEventListenerImpl(String name, Function callback);
