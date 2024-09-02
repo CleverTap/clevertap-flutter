@@ -13,6 +13,7 @@
   * Fixes the missing support for `profileGetProperty`.
 
 * **[iOS Platform]**
+  * Fixes iOS platform channel messages must be sent on the platform thread issue.
   * Fixes the missing support for `profileGetProperty`.
   
 ### Version 2.4.0 *(10th May 2024)*
