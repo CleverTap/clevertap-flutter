@@ -10,10 +10,10 @@
 * **[Android Platform]**
   * Fixes a date conversion issue for dates before January 1, 1970.
   * Fixes a `ClassCastException` for `setMinimumFetchIntervalInSeconds` in `ProductConfig`.
-  * Fixes missing support for `profileGetProperty`.
+  * Fixes the missing support for `profileGetProperty`.
 
 * **[iOS Platform]**
-  * Fixes missing support for `profileGetProperty`.
+  * Fixes the missing support for `profileGetProperty`.
   
 ### Version 2.4.0 *(10th May 2024)*
 -------------------------------------------
