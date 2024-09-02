@@ -1024,18 +1024,23 @@ static NSDateFormatter *dateFormatter;
 #pragma mark - Notifications
 
 - (void)emitEventInternal:(NSNotification *)notification {
-    
-    [self.nativeToDartMethodChannel invokeMethod:notification.name arguments:notification.userInfo];
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [self.nativeToDartMethodChannel invokeMethod:notification.name arguments:notification.userInfo];
+    });
 }
 
 - (void)emitEventPushPermissionResponse:(NSNotification *)notification {
     // Passed boolean value of `accepted` directly.
-    [self.nativeToDartMethodChannel invokeMethod:notification.name arguments:notification.userInfo[@"accepted"]];
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [self.nativeToDartMethodChannel invokeMethod:notification.name arguments:notification.userInfo[@"accepted"]];
+    });
 }
 
 - (void)emitEventDisplayUnitsLoaded:(NSNotification *)notification {
     // Passed CleverTapDisplayUnit Array directly.
-    [self.nativeToDartMethodChannel invokeMethod:notification.name arguments:notification.userInfo[@"adUnits"]];
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [self.nativeToDartMethodChannel invokeMethod:notification.name arguments:notification.userInfo[@"adUnits"]];
+    });
 }
 
 - (void)addObservers {
