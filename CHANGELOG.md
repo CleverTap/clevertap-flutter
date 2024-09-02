@@ -5,7 +5,7 @@
 **Bug Fixes**
 * **[Web Platform]**
   *  Adds the method 'addKVDataChangeListener()' to get the custom KV Pair data
-  *  Supports [CleverTap Web SDK v1.9.0](https://github.com/CleverTap/clevertap-web-sdk/releases/tag/v1.9.0) 
+  *  Supports [CleverTap Web SDK v1.9.1](https://github.com/CleverTap/clevertap-web-sdk/releases/tag/v1.9.1) 
 
 * **[Android Platform]**
   * Fixes a date conversion issue for dates before January 1, 1970.

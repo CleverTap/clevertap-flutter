@@ -4544,7 +4544,10 @@
       window.addEventListener('message', handleMessageEvent, false);
 
       if (parentWindow) {
-        parentWindow.postMessage('builder', '*');
+        parentWindow.postMessage({
+          message: 'builder',
+          originUrl: window.location.href
+        }, '*');
       }
 
       return;
@@ -4554,20 +4557,31 @@
       window.addEventListener('message', handleMessageEvent, false);
 
       if (parentWindow) {
-        parentWindow.postMessage('preview', '*');
+        parentWindow.postMessage({
+          message: 'preview',
+          originUrl: window.location.href
+        }, '*');
       }
     }
   };
 
   const handleMessageEvent = event => {
-    if (event.data && event.data.message) {
-      if (event.data.message === 'Dashboard' && event.data.url) {
-        var _event$data$variant, _event$data$details;
+    if (event.data && isValidUrl(event.data.originUrl)) {
+      const msgOrigin = new URL(event.data.originUrl).origin;
 
-        initialiseCTBuilder(event.data.url, (_event$data$variant = event.data.variant) !== null && _event$data$variant !== void 0 ? _event$data$variant : null, (_event$data$details = event.data.details) !== null && _event$data$details !== void 0 ? _event$data$details : {});
-      } else if (event.data.message === 'Overlay') {
-        renderVisualBuilder(event.data, true);
+      if (event.origin !== msgOrigin) {
+        return;
       }
+    } else {
+      return;
+    }
+
+    if (event.data.message === 'Dashboard') {
+      var _event$data$variant, _event$data$details;
+
+      initialiseCTBuilder(event.data.url, (_event$data$variant = event.data.variant) !== null && _event$data$variant !== void 0 ? _event$data$variant : null, (_event$data$details = event.data.details) !== null && _event$data$details !== void 0 ? _event$data$details : {});
+    } else if (event.data.message === 'Overlay') {
+      renderVisualBuilder(event.data, true);
     }
   };
   /**
@@ -4777,6 +4791,15 @@
       detail: inaObj
     });
     document.dispatchEvent(kvPairsEvent);
+  }
+
+  function isValidUrl(string) {
+    try {
+      const url = new URL(string);
+      return Boolean(url);
+    } catch (_err) {
+      return false;
+    }
   }
 
   const _tr = (msg, _ref) => {
@@ -6221,7 +6244,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.9.0',
+        lib: 'web-sdk-v1.9.1',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -8387,7 +8410,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.9.0';
+      return 'web-sdk-v1.9.1';
     }
 
     defineVariable(name, defaultValue) {
