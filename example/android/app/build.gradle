@@ -53,7 +53,7 @@ flutter {
 dependencies {
     testImplementation 'junit:junit:4.13'
     //implementation fileTree('libs')
-    implementation "com.clevertap.android:push-templates:1.2.3"
+    implementation "com.clevertap.android:push-templates:1.2.4"
     implementation 'com.google.firebase:firebase-messaging:23.4.1'
     implementation 'androidx.core:core:1.13.1'
     implementation 'androidx.fragment:fragment:1.7.0'
@@ -64,10 +64,10 @@ dependencies {
     implementation 'com.google.android.material:material:1.11.0'
     implementation 'com.github.bumptech.glide:glide:4.12.0'
 
-//Optional ExoPlayer Libraries for Audio/Video Inbox Messages. Audio/Video messages will be dropped without these dependencies
-    implementation 'com.google.android.exoplayer:exoplayer:2.19.1'
-    implementation 'com.google.android.exoplayer:exoplayer-hls:2.19.1'
-    implementation 'com.google.android.exoplayer:exoplayer-ui:2.19.1'
+//Optional ExoPlayer/AndroidX Media3 Libraries for Audio/Video Inbox Messages. Audio/Video messages will be dropped without these dependencies
+    implementation("androidx.media3:media3-exoplayer:1.1.1")
+    implementation("androidx.media3:media3-exoplayer-hls:1.1.1")
+    implementation("androidx.media3:media3-ui:1.1.1")
     implementation 'com.android.installreferrer:installreferrer:2.2'
 
     implementation 'com.android.support:multidex:1.0.3'
