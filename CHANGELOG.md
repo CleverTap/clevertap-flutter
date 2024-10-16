@@ -3,11 +3,24 @@
 ### Version 2.5.0 *(17th October 2024)*
 -------------------------------------------
 **What's new**
+* **[Android Platform]**
+  * Supports [CleverTap Android SDK v7.0.1](https://github.com/CleverTap/clevertap-android-sdk/blob/master/docs/CTCORECHANGELOG.md#version-701-september-2-2024).
+  * Adds support for triggering InApps based on user attribute changes.
+  * Removes character limit of maximum 3 lines from AppInbox messages.
+  * Adds support for `AndroidX Media3` in lieu of the [deprecation](https://developer.android.com/media/media3/exoplayer/migration-guide) of `ExoPlayer`. While Clevertap continues to support `ExoPlayer`, migration is recommended. For migration refer [here](doc/Integrate-Android.md#migrateExoplayer).
+
 * **[iOS Platform]**
   * Supports [CleverTap iOS SDK v7.0.1](https://github.com/CleverTap/clevertap-ios-sdk/releases/tag/7.0.1).
   * Adds support for triggering in-app notifications on User Attribute Change.
 
 **Bug Fixes**
+* **[Android Platform]**
+  * Fixes an ANR caused by extremely old InApp campaigns. 
+  * Fixes an issue where incorrect callbacks were sent for InApps when the phone was rotated. 
+  * Fixes an issue where an InApp was displayed even after all the campaigns were stopped. 
+  * Fixes an issue where the InApp image was not shown when the phone was rotated to landscape. 
+  * Fixes an issue where certain URLs loaded incorrectly in custom HTML InApp templates.
+
 * **[iOS Platform]**
   * Fix HTML view controller CTInAppHTMLViewController presented before scene became active. Use keyWindow supported orientations for CTInAppDisplayViewController.
 
