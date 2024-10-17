@@ -2,11 +2,6 @@
 
 ### Version 2.5.0 *(17th October 2024)*
 -------------------------------------------
-**Bug Fixes**
-* **[Web Platform]**
-  *  Adds the method 'enableWebPushNotifications()' to support custom Web Push Prompt
-  *  Supports [CleverTap Web SDK v1.11.2](https://github.com/CleverTap/clevertap-web-sdk/releases/tag/v1.11.2) 
-  
 **What's new**
 * **[Android Platform]**
   * Supports [CleverTap Android SDK v7.0.1](https://github.com/CleverTap/clevertap-android-sdk/blob/master/docs/CTCORECHANGELOG.md#version-701-september-2-2024).
@@ -17,6 +12,10 @@
 * **[iOS Platform]**
   * Supports [CleverTap iOS SDK v7.0.1](https://github.com/CleverTap/clevertap-ios-sdk/releases/tag/7.0.1).
   * Adds support for triggering in-app notifications on User Attribute Change.
+
+* **[Web Platform]**
+  *  Adds the method 'enableWebPushNotifications()' to support custom Web Push Prompt
+  *  Supports [CleverTap Web SDK v1.11.2](https://github.com/CleverTap/clevertap-web-sdk/releases/tag/v1.11.2) 
 
 **Bug Fixes**
 * **[Android Platform]**
