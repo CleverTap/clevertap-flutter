@@ -1,5 +1,12 @@
 ## CHANGE LOG
 
+### Version 2.4.2 *(17th October 2024)*
+-------------------------------------------
+**Bug Fixes**
+* **[Web Platform]**
+  *  Adds the method 'enableWebPushNotifications()' to support custom Web Push Prompt
+  *  Supports [CleverTap Web SDK v1.11.2](https://github.com/CleverTap/clevertap-web-sdk/releases/tag/v1.11.2) 
+
 ### Version 2.4.1 *(2nd September 2024)*
 -------------------------------------------
 **Bug Fixes**
