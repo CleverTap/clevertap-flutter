@@ -25,6 +25,9 @@ external void onUserLogin_push(Object object);
 @JS('notifications.push')
 external void notifications_push(Object object);
 
+@JS('notifications.enable')
+external void notifications_enable(Object object);
+
 @JS('profile.push')
 external void profile_push(Object object);
 

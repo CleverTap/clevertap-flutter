@@ -206,6 +206,7 @@
   const PUSH_DELAY_MS = 1000;
   const MAX_DELAY_FREQUENCY = 1000 * 60 * 10;
   const WZRK_FETCH = 'wzrk_fetch';
+  const WEBPUSH_CONFIG = 'WZRK_PUSH_CONFIG';
   const SYSTEM_EVENTS = ['Stayed', 'UTM Visited', 'App Launched', 'Notification Sent', NOTIFICATION_VIEWED, NOTIFICATION_CLICKED];
 
   const isString = input => {
@@ -602,7 +603,8 @@
     dismissSpamControl: false,
     globalUnsubscribe: true,
     flutterVersion: null,
-    variableStore: {} // domain: window.location.hostname, url -> getHostName()
+    variableStore: {},
+    pushConfig: null // domain: window.location.hostname, url -> getHostName()
     // gcookie: -> device
 
   };
@@ -2230,6 +2232,14 @@
           if (document.getElementById('intentOpacityDiv') != null) {
             document.getElementById('intentOpacityDiv').style.display = 'none';
           }
+        } else if (divId === 'wizParDiv0') {
+          if (document.getElementById('intentOpacityDiv0') != null) {
+            document.getElementById('intentOpacityDiv0').style.display = 'none';
+          }
+        } else if (divId === 'wizParDiv2') {
+          if (document.getElementById('intentOpacityDiv2') != null) {
+            document.getElementById('intentOpacityDiv2').style.display = 'none';
+          }
         }
       }
     }
@@ -2504,47 +2514,39 @@
 
 
     _handleMultiValueAdd(propKey, propVal, command) {
-      // Initialize array
-      var array = []; // Check if globalProfileMap is null, initialize if needed
-
       if ($ct.globalProfileMap == null) {
         $ct.globalProfileMap = StorageManager.readFromLSorCookie(PR_COOKIE) || {};
-      } // Check if the value to be set is either string or number
+      }
 
+      const existingValue = $ct.globalProfileMap[propKey];
+      const array = Array.isArray(existingValue) ? existingValue : existingValue != null ? [existingValue] : [];
 
-      if (typeof propVal === 'string' || typeof propVal === 'number') {
-        if ($ct.globalProfileMap.hasOwnProperty(propKey)) {
-          array = $ct.globalProfileMap[propKey];
-          array.push(typeof propVal === 'number' ? propVal : propVal.toLowerCase());
-        } else {
-          $ct.globalProfileMap[propKey] = propVal;
+      const addValue = value => {
+        const normalizedValue = typeof value === 'number' ? value : value.toLowerCase();
+
+        if (!array.includes(normalizedValue)) {
+          array.push(normalizedValue);
         }
-      } else {
-        // Check if propVal is an array
-        if ($ct.globalProfileMap.hasOwnProperty(propKey)) {
-          array = Array.isArray($ct.globalProfileMap[propKey]) ? $ct.globalProfileMap[propKey] : [$ct.globalProfileMap[propKey]];
-        } // Check for case-sensitive inputs and filter the same ones
+      };
 
-
-        for (var i = 0; i < propVal.length; i++) {
-          if (typeof propVal[i] === 'number' && !array.includes(propVal[i])) {
-            array.push(propVal[i]);
-          } else if (typeof propVal[i] === 'string' && !array.includes(propVal[i].toLowerCase())) {
-            array.push(propVal[i].toLowerCase());
-          } else if (typeof propVal[i] === 'number' && array.includes(propVal[i]) || typeof propVal[i] === 'string' && array.includes(propVal[i].toLowerCase())) {
-            console.error('Values already included');
+      if (Array.isArray(propVal)) {
+        propVal.forEach(value => {
+          if (typeof value === 'string' || typeof value === 'number') {
+            addValue(value);
           } else {
-            console.error('Array supports only string or number type values');
+            _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].error('Array supports only string or number type values');
           }
-        } // Update globalProfileMap with the array
+        });
+      } else if (typeof propVal === 'string' || typeof propVal === 'number') {
+        addValue(propVal);
+      } else {
+        _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].error('Unsupported value type');
 
+        return;
+      }
 
-        $ct.globalProfileMap[propKey] = array;
-      } // Save to local storage or cookie
-
-
-      StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap); // Call the sendMultiValueData function
-
+      $ct.globalProfileMap[propKey] = array;
+      StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap);
       this.sendMultiValueData(propKey, propVal, command);
     }
     /**
@@ -2557,30 +2559,37 @@
 
 
     _handleMultiValueRemove(propKey, propVal, command) {
-      var _$ct$globalProfileMap2;
-
       if ($ct.globalProfileMap == null) {
-        $ct.globalProfileMap = StorageManager.readFromLSorCookie(PR_COOKIE);
+        $ct.globalProfileMap = StorageManager.readFromLSorCookie(PR_COOKIE) || {};
       }
 
-      if (!($ct === null || $ct === void 0 ? void 0 : (_$ct$globalProfileMap2 = $ct.globalProfileMap) === null || _$ct$globalProfileMap2 === void 0 ? void 0 : _$ct$globalProfileMap2.hasOwnProperty(propKey))) {
-        console.error("The property ".concat(propKey, " does not exist."));
-      } else {
-        if (typeof propVal === 'string' || typeof propVal === 'number') {
-          var index = $ct.globalProfileMap[propKey].indexOf(propVal);
+      if (!$ct.globalProfileMap.hasOwnProperty(propKey)) {
+        _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].error("The property ".concat(propKey, " does not exist."));
 
-          if (index !== -1) {
-            $ct.globalProfileMap[propKey].splice(index, 1);
-          }
-        } else {
-          for (var k = 0; k < propVal.length; k++) {
-            var idx = $ct.globalProfileMap[propKey].indexOf(propVal[k]);
+        return;
+      }
 
-            if (idx !== -1) {
-              $ct.globalProfileMap[propKey].splice(idx, 1);
-            }
-          }
+      const removeValue = value => {
+        const index = $ct.globalProfileMap[propKey].indexOf(value);
+
+        if (index !== -1) {
+          $ct.globalProfileMap[propKey].splice(index, 1);
         }
+      };
+
+      if (Array.isArray(propVal)) {
+        propVal.forEach(removeValue);
+      } else if (typeof propVal === 'string' || typeof propVal === 'number') {
+        removeValue(propVal);
+      } else {
+        _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].error('Unsupported propVal type');
+
+        return;
+      } // Remove the key if the array is empty
+
+
+      if ($ct.globalProfileMap[propKey].length === 0) {
+        delete $ct.globalProfileMap[propKey];
       }
 
       StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap);
@@ -2595,14 +2604,14 @@
 
 
     _handleMultiValueDelete(propKey, command) {
-      var _$ct$globalProfileMap3;
+      var _$ct$globalProfileMap2;
 
       if ($ct.globalProfileMap == null) {
         $ct.globalProfileMap = StorageManager.readFromLSorCookie(PR_COOKIE);
       }
 
-      if (!($ct === null || $ct === void 0 ? void 0 : (_$ct$globalProfileMap3 = $ct.globalProfileMap) === null || _$ct$globalProfileMap3 === void 0 ? void 0 : _$ct$globalProfileMap3.hasOwnProperty(propKey))) {
-        console.error("The property ".concat(propKey, " does not exist."));
+      if (!($ct === null || $ct === void 0 ? void 0 : (_$ct$globalProfileMap2 = $ct.globalProfileMap) === null || _$ct$globalProfileMap2 === void 0 ? void 0 : _$ct$globalProfileMap2.hasOwnProperty(propKey))) {
+        _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].error("The property ".concat(propKey, " does not exist."));
       } else {
         delete $ct.globalProfileMap[propKey];
       }
@@ -3064,245 +3073,6 @@
       }
     }
   };
-
-  class CTWebPersonalisationBanner extends HTMLElement {
-    constructor() {
-      super();
-      this._details = null;
-      this.shadow = null;
-      this.shadow = this.attachShadow({
-        mode: 'open'
-      });
-    }
-
-    get details() {
-      return this._details || '';
-    }
-
-    set details(val) {
-      if (this._details === null) {
-        this._details = val;
-        this.renderBanner();
-      }
-    }
-
-    renderBanner() {
-      this.shadow.innerHTML = this.getBannerContent();
-
-      if (this.trackClick !== false) {
-        this.addEventListener('click', () => {
-          const onClickUrl = this.details.onClick;
-
-          if (onClickUrl) {
-            this.details.window ? window.open(onClickUrl, '_blank') : window.parent.location.href = onClickUrl;
-          }
-
-          window.clevertap.renderNotificationClicked({
-            msgId: this.msgId,
-            pivotId: this.pivotId
-          });
-        });
-      }
-
-      window.clevertap.renderNotificationViewed({
-        msgId: this.msgId,
-        pivotId: this.pivotId
-      });
-    }
-
-    getBannerContent() {
-      return "\n      <style type=\"text/css\">\n        .banner {\n          position: relative;\n          cursor: ".concat(this.details.onClick ? 'pointer' : '', "\n        }\n        img {\n          height: ").concat(this.divHeight ? this.divHeight : 'auto', ";\n          width: 100%;\n        }\n        .wrapper:is(.left, .right, .center) {\n          display: flex;\n          justify-content: center;\n          flex-direction: column;\n          align-items: center;\n          position: absolute;\n          width: 100%;\n          height: 100%;\n          overflow: auto;\n          top: 0;\n        }\n        ").concat(this.details.css ? this.details.css : '', "\n      </style>\n      <div class=\"banner\">\n        <picture>\n          <source media=\"(min-width:480px)\" srcset=\"").concat(this.details.desktopImageURL, "\">\n          <source srcset=\"").concat(this.details.mobileImageURL, "\">\n          <img src=\"").concat(this.details.desktopImageURL, "\" alt=\"Please upload a picture\" style=\"width:100%;\" part=\"banner__img\">\n        </picture>\n        ").concat(this.details.html ? this.details.html : '', "\n      </div>\n    ");
-    }
-
-  }
-
-  class CTWebPersonalisationCarousel extends HTMLElement {
-    constructor() {
-      super();
-      this._target = null;
-      this._carousel = null;
-      this.shadow = null;
-      this.slides = 0;
-      this.previouslySelectedItem = -1;
-      this.selectedItem = 1;
-      this.autoSlide = null;
-      this.stopAutoSlideTimeout = null;
-      this.shadow = this.attachShadow({
-        mode: 'open'
-      });
-
-      if (customElements.get('ct-web-personalisation-banner') === undefined) {
-        customElements.define('ct-web-personalisation-banner', CTWebPersonalisationBanner);
-      }
-    }
-
-    get target() {
-      return this._target || '';
-    }
-
-    set target(val) {
-      if (this._target === null) {
-        this._target = val;
-        this.renderCarousel();
-      }
-    }
-
-    get details() {
-      return this.target.display.details;
-    }
-
-    get display() {
-      return this.target.display;
-    }
-
-    renderCarousel() {
-      this.slides = this.details.length;
-      this.shadow.innerHTML = this.getStyles();
-      const carousel = this.getCarouselContent();
-
-      if (this.display.showNavBtns) {
-        carousel.insertAdjacentHTML('beforeend', this.display.navBtnsHtml);
-      }
-
-      if (this.display.showNavArrows) {
-        carousel.insertAdjacentHTML('beforeend', this.display.leftNavArrowHtml);
-        carousel.insertAdjacentHTML('beforeend', this.display.rightNavArrowHtml);
-      }
-
-      this._carousel = carousel;
-      this.shadow.appendChild(carousel);
-      this.setupClick();
-      this.updateSelectedItem(); // TODO: enable conditionally
-
-      this.startAutoSlide();
-      this.setupOnHover();
-      window.clevertap.renderNotificationViewed({
-        msgId: this.target.wzrk_id,
-        pivotId: this.target.wzrk_pivot
-      });
-    }
-
-    setupClick() {
-      this._carousel.addEventListener('click', event => {
-        const eventID = event.target.id;
-
-        if (eventID.startsWith('carousel__button')) {
-          const selected = +eventID.split('-')[1];
-
-          if (selected !== this.selectedItem) {
-            this.previouslySelectedItem = this.selectedItem;
-            this.selectedItem = selected;
-            this.updateSelectedItem();
-            this.startAutoSlide();
-          }
-        } else if (eventID.startsWith('carousel__arrow')) {
-          eventID.endsWith('right') ? this.goToNext() : this.goToPrev();
-          this.startAutoSlide();
-        } else if (eventID.indexOf('-') > -1) {
-          const item = +eventID.split('-')[1];
-          const index = item - 1;
-
-          if (window.parent.clevertap) {
-            // console.log('Raise notification clicked event for ', item)
-            window.clevertap.renderNotificationClicked({
-              msgId: this.target.wzrk_id,
-              pivotId: this.target.wzrk_pivot,
-              wzrk_slideNo: item
-            });
-          }
-
-          const url = this.details[index].onClick;
-
-          if (url !== '') {
-            this.details[index].window ? window.open(url, '_blank') : window.location.href = url;
-          }
-        }
-      });
-    }
-
-    setupOnHover() {
-      this._carousel.addEventListener('mouseenter', event => {
-        this.stopAutoSlideTimeout = setTimeout(() => {
-          this.autoSlide = clearInterval(this.autoSlide);
-        }, 500);
-      });
-
-      this._carousel.addEventListener('mouseleave', event => {
-        clearTimeout(this.stopAutoSlideTimeout);
-
-        if (this.autoSlide === undefined) {
-          this.startAutoSlide();
-        }
-      });
-    }
-
-    getCarouselContent() {
-      const carousel = document.createElement('div');
-      carousel.setAttribute('class', 'carousel');
-      this.details.forEach((detail, i) => {
-        const banner = document.createElement('ct-web-personalisation-banner');
-        banner.classList.add('carousel__item');
-        banner.trackClick = false;
-        banner.setAttribute('id', "carousel__item-".concat(i + 1));
-        banner.details = detail;
-        carousel.appendChild(banner);
-      });
-      return carousel;
-    }
-
-    getStyles() {
-      var _this$target, _this$target$display;
-
-      return "\n      <style>\n      .carousel {\n        position: relative;\n      }\n\n      .carousel__item {\n        display: none;\n        background-repeat: no-repeat;\n        background-size: cover;\n      }\n\n      ct-web-personalisation-banner::part(banner__img) {\n        height: ".concat((this === null || this === void 0 ? void 0 : (_this$target = this.target) === null || _this$target === void 0 ? void 0 : (_this$target$display = _this$target.display) === null || _this$target$display === void 0 ? void 0 : _this$target$display.divHeight) ? this.target.display.divHeight : 'auto', ";\n        width: 100%;\n        transition: 2s;\n      }\n\n      .carousel__item--selected {\n        display: block;\n      }\n      ").concat(this.display.navBtnsCss, "\n      ").concat(this.display.navArrowsCss, "\n      </style>\n  ");
-    }
-
-    updateSelectedItem() {
-      if (this.previouslySelectedItem !== -1) {
-        const prevItem = this.shadow.getElementById("carousel__item-".concat(this.previouslySelectedItem));
-        const prevButton = this.shadow.getElementById("carousel__button-".concat(this.previouslySelectedItem));
-        prevItem.classList.remove('carousel__item--selected');
-
-        if (prevButton) {
-          prevButton.classList.remove('carousel__button--selected');
-        }
-      }
-
-      const item = this.shadow.getElementById("carousel__item-".concat(this.selectedItem));
-      const button = this.shadow.getElementById("carousel__button-".concat(this.selectedItem));
-      item.classList.add('carousel__item--selected');
-
-      if (button) {
-        button.classList.add('carousel__button--selected');
-      }
-    }
-
-    startAutoSlide() {
-      clearInterval(this.autoSlide);
-      this.autoSlide = setInterval(() => {
-        this.goToNext();
-      }, this.display.sliderTime ? this.display.sliderTime * 1000 : 3000);
-    }
-
-    goToNext() {
-      this.goTo(this.selectedItem, (this.selectedItem + 1) % this.slides);
-    }
-
-    goToPrev() {
-      this.goTo(this.selectedItem, this.selectedItem - 1);
-    }
-
-    goTo(prev, cur) {
-      this.previouslySelectedItem = prev;
-      this.selectedItem = cur;
-
-      if (cur === 0) {
-        this.selectedItem = this.slides;
-      }
-
-      this.updateSelectedItem();
-    }
-
-  }
 
   class CTWebPopupImageOnly extends HTMLElement {
     constructor() {
@@ -4488,6 +4258,11 @@
 
   const OVERLAY_PATH = 'https://web-native-display-campaign.clevertap.com/production/lib-overlay/overlay.js';
   const CSS_PATH = 'https://web-native-display-campaign.clevertap.com/production/lib-overlay/style.css';
+  const WVE_CLASS = {
+    FLICKER_SHOW: 'wve-anti-flicker-show',
+    FLICKER_HIDE: 'wve-anti-flicker-hide',
+    FLICKER_ID: 'wve-flicker-style'
+  };
 
   const updateFormData = (element, formStyle) => {
     // Update the element style
@@ -4534,7 +4309,26 @@
     }
   };
 
-  const checkBuilder = logger => {
+  const versionCompare = currentVersion => {
+    const requiredVersion = '1.9.2';
+    if (requiredVersion === currentVersion) return true;
+    const splitRequiredVersion = requiredVersion.split('.');
+    const splitCurrentVersion = currentVersion.split('.');
+    let p1 = 0;
+    let isWebsiteVersionHigher = false;
+
+    while (p1 < splitRequiredVersion.length && !isWebsiteVersionHigher) {
+      if (parseInt(splitRequiredVersion[p1]) < parseInt(splitCurrentVersion[p1])) {
+        isWebsiteVersionHigher = true;
+      }
+
+      p1++;
+    }
+
+    return isWebsiteVersionHigher;
+  };
+
+  const checkBuilder = (logger, accountId) => {
     const search = window.location.search;
     const parentWindow = window.opener;
 
@@ -4560,6 +4354,19 @@
         parentWindow.postMessage({
           message: 'preview',
           originUrl: window.location.href
+        }, '*');
+      }
+    }
+
+    if (search === '?ctBuilderSDKCheck') {
+      if (parentWindow) {
+        const sdkVersion = '1.11.2';
+        const isRequiredVersion = versionCompare(sdkVersion);
+        parentWindow.postMessage({
+          message: 'SDKVersion',
+          accountId,
+          originUrl: window.location.href,
+          sdkVersion: isRequiredVersion ? '1.9.3' : sdkVersion
         }, '*');
       }
     }
@@ -4593,22 +4400,33 @@
 
 
   const initialiseCTBuilder = (url, variant, details) => {
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', () => onContentLoad(url, variant, details));
-    } else {
+    if (document.readyState === 'complete') {
       onContentLoad(url, variant, details);
+    } else {
+      document.addEventListener('readystatechange', () => {
+        if (document.readyState === 'complete') {
+          onContentLoad(url, variant, details);
+        }
+      });
     }
   };
 
   let container;
   let contentLoaded = false;
+  let isShopify = false;
   /**
    * Handles content load for Clevertap builder.
    */
 
   function onContentLoad(url, variant, details) {
     if (!contentLoaded) {
+      if (window.Shopify) {
+        isShopify = true;
+      }
+
       document.body.innerHTML = '';
+      document.head.innerHTML = '';
+      document.documentElement.innerHTML = '';
       container = document.createElement('div');
       container.id = 'overlayDiv';
       container.style.position = 'relative'; // Ensure relative positioning for absolute positioning of form
@@ -4623,7 +4441,6 @@
         console.error('Error loading overlay script:', error);
       });
       loadCSS();
-      loadTypeKit();
     }
   }
   /**
@@ -4660,7 +4477,8 @@
             id: '#overlayDiv',
             url,
             variant,
-            details
+            details,
+            isShopify
           });
           resolve();
         } else {
@@ -4674,43 +4492,6 @@
 
       document.head.appendChild(script);
     });
-  }
-  /**
-   * Loads TypeKit script.
-   */
-
-
-  function loadTypeKit() {
-    const config = {
-      kitId: 'eqj6nom',
-      scriptTimeout: 3000,
-      async: true
-    };
-    const docElement = document.documentElement;
-    const timeoutId = setTimeout(function () {
-      docElement.className = docElement.className.replace(/\bwf-loading\b/g, '') + ' wf-inactive';
-    }, config.scriptTimeout);
-    const typeKitScript = document.createElement('script');
-    let scriptLoaded = false;
-    const firstScript = document.getElementsByTagName('script')[0];
-    let scriptReadyState;
-    docElement.className += ' wf-loading';
-    typeKitScript.src = 'https://use.typekit.net/' + config.kitId + '.js';
-    typeKitScript.async = true;
-
-    typeKitScript.onload = typeKitScript.onreadystatechange = function () {
-      scriptReadyState = this.readyState;
-      if (scriptLoaded || scriptReadyState && scriptReadyState !== 'complete' && scriptReadyState !== 'loaded') return;
-      scriptLoaded = true;
-      clearTimeout(timeoutId);
-
-      try {
-        // eslint-disable-next-line no-undef
-        Typekit.load(config);
-      } catch (e) {}
-    };
-
-    firstScript.parentNode.insertBefore(typeKitScript, firstScript);
   }
   /**
    * Renders the visual builder.
@@ -4801,6 +4582,1396 @@
       return false;
     }
   }
+
+  function addAntiFlicker(antiFlicker) {
+    const {
+      personalizedSelectors = [],
+      delayTime = 2000
+    } = antiFlicker;
+    const retryElements = {}; // Track selectors that need retry
+
+    let retryCount = 0; // Counter for retries
+
+    let retryInterval;
+
+    function isInViewport(element) {
+      const rect = element.getBoundingClientRect();
+      const {
+        innerHeight: windowHeight,
+        innerWidth: windowWidth
+      } = window;
+      return rect.bottom > 0 && rect.right > 0 && rect.top < windowHeight && rect.left < windowWidth;
+    }
+
+    (function () {
+      const styleContent = "\n      .wve-anti-flicker-hide {\n        opacity: 0 !important\n      }\n      .wve-anti-flicker-show {\n        transition: opacity 0.5s, filter 0.5s !important\n      }\n    "; // Create and append the style element if it doesn't exist
+
+      const styleId = WVE_CLASS.FLICKER_ID;
+
+      if (!document.getElementById(styleId)) {
+        const styleElement = document.createElement('style');
+        styleElement.id = styleId;
+        styleElement.textContent = styleContent;
+        document.head.appendChild(styleElement);
+      }
+    })();
+
+    function applyAntiFlicker(selectors) {
+      function processSelectors(selectorElements) {
+        const elements = [];
+        selectorElements.forEach(selector => {
+          const matchedElements = document.querySelectorAll(selector);
+
+          if (matchedElements.length) {
+            matchedElements.forEach(el => {
+              if (isInViewport(el)) {
+                elements.push(el);
+              }
+            });
+            delete retryElements[selector]; // Successfully processed, remove from retry list
+          } else {
+            retryElements[selector] = false; // Add to retry list if not found
+          }
+        });
+        applyStyles(elements);
+      }
+
+      function retryProcessing() {
+        processSelectors(Object.keys(retryElements));
+        retryCount++;
+
+        if (Object.keys(retryElements).length === 0 || retryCount > 20) {
+          retryCount = 0;
+          clearInterval(retryInterval);
+        }
+      }
+
+      processSelectors(selectors);
+
+      if (Object.keys(retryElements).length) {
+        retryInterval = setInterval(retryProcessing, 100);
+      }
+    }
+
+    function applyStyles(elements) {
+      elements.forEach(el => el.classList.add(WVE_CLASS.FLICKER_HIDE));
+      setTimeout(() => {
+        elements.forEach(el => {
+          el.classList.remove(WVE_CLASS.FLICKER_HIDE);
+          el.classList.add(WVE_CLASS.FLICKER_SHOW);
+        });
+      }, delayTime); // Apply styles after maxRenderTime
+    }
+
+    function observeUrlChange() {
+      let previousHref = document.location.href;
+      const observer = new MutationObserver(() => {
+        if (previousHref !== document.location.href) {
+          previousHref = document.location.href;
+          applyAntiFlicker(personalizedSelectors);
+        }
+      });
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true
+      });
+    }
+
+    window.addEventListener('load', () => {
+      observeUrlChange();
+      applyAntiFlicker(personalizedSelectors);
+    });
+  }
+
+  class CTWebPersonalisationBanner extends HTMLElement {
+    constructor() {
+      super();
+      this._details = null;
+      this.shadow = null;
+      this.shadow = this.attachShadow({
+        mode: 'open'
+      });
+    }
+
+    get details() {
+      return this._details || '';
+    }
+
+    set details(val) {
+      if (this._details === null) {
+        this._details = val;
+        this.renderBanner();
+      }
+    }
+
+    renderBanner() {
+      this.shadow.innerHTML = this.getBannerContent();
+
+      if (this.trackClick !== false) {
+        this.addEventListener('click', () => {
+          const onClickUrl = this.details.onClick;
+
+          if (onClickUrl) {
+            this.details.window ? window.open(onClickUrl, '_blank') : window.parent.location.href = onClickUrl;
+          }
+
+          window.clevertap.renderNotificationClicked({
+            msgId: this.msgId,
+            pivotId: this.pivotId
+          });
+        });
+      }
+
+      window.clevertap.renderNotificationViewed({
+        msgId: this.msgId,
+        pivotId: this.pivotId
+      });
+    }
+
+    getBannerContent() {
+      return "\n      <style type=\"text/css\">\n        .banner {\n          position: relative;\n          cursor: ".concat(this.details.onClick ? 'pointer' : '', "\n        }\n        img {\n          height: ").concat(this.divHeight ? this.divHeight : 'auto', ";\n          width: 100%;\n        }\n        .wrapper:is(.left, .right, .center) {\n          display: flex;\n          justify-content: center;\n          flex-direction: column;\n          align-items: center;\n          position: absolute;\n          width: 100%;\n          height: 100%;\n          overflow: auto;\n          top: 0;\n        }\n        ").concat(this.details.css ? this.details.css : '', "\n      </style>\n      <div class=\"banner\">\n        <picture>\n          <source media=\"(min-width:480px)\" srcset=\"").concat(this.details.desktopImageURL, "\">\n          <source srcset=\"").concat(this.details.mobileImageURL, "\">\n          <img src=\"").concat(this.details.desktopImageURL, "\" alt=\"Please upload a picture\" style=\"width:100%;\" part=\"banner__img\">\n        </picture>\n        ").concat(this.details.html ? this.details.html : '', "\n      </div>\n    ");
+    }
+
+  }
+
+  class CTWebPersonalisationCarousel extends HTMLElement {
+    constructor() {
+      super();
+      this._target = null;
+      this._carousel = null;
+      this.shadow = null;
+      this.slides = 0;
+      this.previouslySelectedItem = -1;
+      this.selectedItem = 1;
+      this.autoSlide = null;
+      this.stopAutoSlideTimeout = null;
+      this.shadow = this.attachShadow({
+        mode: 'open'
+      });
+
+      if (customElements.get('ct-web-personalisation-banner') === undefined) {
+        customElements.define('ct-web-personalisation-banner', CTWebPersonalisationBanner);
+      }
+    }
+
+    get target() {
+      return this._target || '';
+    }
+
+    set target(val) {
+      if (this._target === null) {
+        this._target = val;
+        this.renderCarousel();
+      }
+    }
+
+    get details() {
+      return this.target.display.details;
+    }
+
+    get display() {
+      return this.target.display;
+    }
+
+    renderCarousel() {
+      this.slides = this.details.length;
+      this.shadow.innerHTML = this.getStyles();
+      const carousel = this.getCarouselContent();
+
+      if (this.display.showNavBtns) {
+        carousel.insertAdjacentHTML('beforeend', this.display.navBtnsHtml);
+      }
+
+      if (this.display.showNavArrows) {
+        carousel.insertAdjacentHTML('beforeend', this.display.leftNavArrowHtml);
+        carousel.insertAdjacentHTML('beforeend', this.display.rightNavArrowHtml);
+      }
+
+      this._carousel = carousel;
+      this.shadow.appendChild(carousel);
+      this.setupClick();
+      this.updateSelectedItem(); // TODO: enable conditionally
+
+      this.startAutoSlide();
+      this.setupOnHover();
+      window.clevertap.renderNotificationViewed({
+        msgId: this.target.wzrk_id,
+        pivotId: this.target.wzrk_pivot
+      });
+    }
+
+    setupClick() {
+      this._carousel.addEventListener('click', event => {
+        const eventID = event.target.id;
+
+        if (eventID.startsWith('carousel__button')) {
+          const selected = +eventID.split('-')[1];
+
+          if (selected !== this.selectedItem) {
+            this.previouslySelectedItem = this.selectedItem;
+            this.selectedItem = selected;
+            this.updateSelectedItem();
+            this.startAutoSlide();
+          }
+        } else if (eventID.startsWith('carousel__arrow')) {
+          eventID.endsWith('right') ? this.goToNext() : this.goToPrev();
+          this.startAutoSlide();
+        } else if (eventID.indexOf('-') > -1) {
+          const item = +eventID.split('-')[1];
+          const index = item - 1;
+
+          if (window.parent.clevertap) {
+            window.clevertap.renderNotificationClicked({
+              msgId: this.target.wzrk_id,
+              pivotId: this.target.wzrk_pivot,
+              wzrk_slideNo: item
+            });
+          }
+
+          const url = this.details[index].onClick;
+
+          if (url !== '') {
+            this.details[index].window ? window.open(url, '_blank') : window.location.href = url;
+          }
+        }
+      });
+    }
+
+    setupOnHover() {
+      this._carousel.addEventListener('mouseenter', event => {
+        this.stopAutoSlideTimeout = setTimeout(() => {
+          this.autoSlide = clearInterval(this.autoSlide);
+        }, 500);
+      });
+
+      this._carousel.addEventListener('mouseleave', event => {
+        clearTimeout(this.stopAutoSlideTimeout);
+
+        if (this.autoSlide === undefined) {
+          this.startAutoSlide();
+        }
+      });
+    }
+
+    getCarouselContent() {
+      const carousel = document.createElement('div');
+      carousel.setAttribute('class', 'carousel');
+      this.details.forEach((detail, i) => {
+        const banner = document.createElement('ct-web-personalisation-banner');
+        banner.classList.add('carousel__item');
+        banner.trackClick = false;
+        banner.setAttribute('id', "carousel__item-".concat(i + 1));
+        banner.details = detail;
+        carousel.appendChild(banner);
+      });
+      return carousel;
+    }
+
+    getStyles() {
+      var _this$target, _this$target$display;
+
+      return "\n      <style>\n      .carousel {\n        position: relative;\n      }\n\n      .carousel__item {\n        display: none;\n        background-repeat: no-repeat;\n        background-size: cover;\n      }\n\n      ct-web-personalisation-banner::part(banner__img) {\n        height: ".concat((this === null || this === void 0 ? void 0 : (_this$target = this.target) === null || _this$target === void 0 ? void 0 : (_this$target$display = _this$target.display) === null || _this$target$display === void 0 ? void 0 : _this$target$display.divHeight) ? this.target.display.divHeight : 'auto', ";\n        width: 100%;\n        transition: 2s;\n      }\n\n      .carousel__item--selected {\n        display: block;\n      }\n      ").concat(this.display.navBtnsCss, "\n      ").concat(this.display.navArrowsCss, "\n      </style>\n  ");
+    }
+
+    updateSelectedItem() {
+      if (this.previouslySelectedItem !== -1) {
+        const prevItem = this.shadow.getElementById("carousel__item-".concat(this.previouslySelectedItem));
+        const prevButton = this.shadow.getElementById("carousel__button-".concat(this.previouslySelectedItem));
+        prevItem.classList.remove('carousel__item--selected');
+
+        if (prevButton) {
+          prevButton.classList.remove('carousel__button--selected');
+        }
+      }
+
+      const item = this.shadow.getElementById("carousel__item-".concat(this.selectedItem));
+      const button = this.shadow.getElementById("carousel__button-".concat(this.selectedItem));
+      item.classList.add('carousel__item--selected');
+
+      if (button) {
+        button.classList.add('carousel__button--selected');
+      }
+    }
+
+    startAutoSlide() {
+      clearInterval(this.autoSlide);
+      this.autoSlide = setInterval(() => {
+        this.goToNext();
+      }, this.display.sliderTime ? this.display.sliderTime * 1000 : 3000);
+    }
+
+    goToNext() {
+      this.goTo(this.selectedItem, (this.selectedItem + 1) % this.slides);
+    }
+
+    goToPrev() {
+      this.goTo(this.selectedItem, this.selectedItem - 1);
+    }
+
+    goTo(prev, cur) {
+      this.previouslySelectedItem = prev;
+      this.selectedItem = cur;
+
+      if (cur === 0) {
+        this.selectedItem = this.slides;
+      }
+
+      this.updateSelectedItem();
+    }
+
+  }
+
+  const renderPersonalisationBanner = targetingMsgJson => {
+    var _targetingMsgJson$dis;
+
+    if (customElements.get('ct-web-personalisation-banner') === undefined) {
+      customElements.define('ct-web-personalisation-banner', CTWebPersonalisationBanner);
+    }
+
+    const divId = (_targetingMsgJson$dis = targetingMsgJson.display.divId) !== null && _targetingMsgJson$dis !== void 0 ? _targetingMsgJson$dis : targetingMsgJson.display.divSelector;
+    const bannerEl = document.createElement('ct-web-personalisation-banner');
+    bannerEl.msgId = targetingMsgJson.wzrk_id;
+    bannerEl.pivotId = targetingMsgJson.wzrk_pivot;
+    bannerEl.divHeight = targetingMsgJson.display.divHeight;
+    bannerEl.details = targetingMsgJson.display.details[0];
+    const containerEl = targetingMsgJson.display.divId ? document.getElementById(divId) : document.querySelector(divId);
+    containerEl.innerHTML = '';
+    containerEl.appendChild(bannerEl);
+  };
+  const renderPersonalisationCarousel = targetingMsgJson => {
+    var _targetingMsgJson$dis2;
+
+    if (customElements.get('ct-web-personalisation-carousel') === undefined) {
+      customElements.define('ct-web-personalisation-carousel', CTWebPersonalisationCarousel);
+    }
+
+    const divId = (_targetingMsgJson$dis2 = targetingMsgJson.display.divId) !== null && _targetingMsgJson$dis2 !== void 0 ? _targetingMsgJson$dis2 : targetingMsgJson.display.divSelector;
+    const carousel = document.createElement('ct-web-personalisation-carousel');
+    carousel.target = targetingMsgJson;
+    const container = targetingMsgJson.display.divId ? document.getElementById(divId) : document.querySelector(divId);
+    container.innerHTML = '';
+    container.appendChild(carousel);
+  };
+  const handleKVpairCampaign = targetingMsgJson => {
+    const inaObj = {};
+    inaObj.msgId = targetingMsgJson.wzrk_id;
+
+    if (targetingMsgJson.wzrk_pivot) {
+      inaObj.pivotId = targetingMsgJson.wzrk_pivot;
+    }
+
+    if (targetingMsgJson.msgContent.kv != null) {
+      inaObj.kv = targetingMsgJson.msgContent.kv;
+    }
+
+    const kvPairsEvent = new CustomEvent('CT_web_native_display', {
+      detail: inaObj
+    });
+    document.dispatchEvent(kvPairsEvent);
+  };
+
+  const invokeExternalJs = (jsFunc, targetingMsgJson) => {
+    const func = window.parent[jsFunc];
+
+    if (typeof func === 'function') {
+      if (targetingMsgJson.display.kv != null) {
+        func(targetingMsgJson.display.kv);
+      } else {
+        func();
+      }
+    }
+  };
+  const appendScriptForCustomEvent = (targetingMsgJson, html) => {
+    const script = "<script>\n      const ct__camapignId = '".concat(targetingMsgJson.wzrk_id, "';\n      const ct__formatVal = (v) => {\n          return v && v.trim().substring(0, 20);\n      }\n      const ct__parentOrigin =  window.parent.origin;\n      document.body.addEventListener('click', (event) => {\n        const elem = event.target.closest?.('a[wzrk_c2a], button[wzrk_c2a]');\n        if (elem) {\n            const {innerText, id, name, value, href} = elem;\n            const clickAttr = elem.getAttribute('onclick') || elem.getAttribute('click');\n            const onclickURL = clickAttr?.match(/(window.open)[(](\"|')(.*)(\"|',)/)?.[3] || clickAttr?.match(/(location.href *= *)(\"|')(.*)(\"|')/)?.[3];\n            const props = {innerText, id, name, value};\n            let msgCTkv = Object.keys(props).reduce((acc, c) => {\n                const formattedVal = ct__formatVal(props[c]);\n                formattedVal && (acc['wzrk_click_' + c] = formattedVal);\n                return acc;\n            }, {});\n            if(onclickURL) { msgCTkv['wzrk_click_' + 'url'] = onclickURL; }\n            if(href) { msgCTkv['wzrk_click_' + 'c2a'] = href; }\n            const notifData = { msgId: ct__camapignId, msgCTkv, pivotId: '").concat(targetingMsgJson.wzrk_pivot, "' };\n            window.parent.clevertap.renderNotificationClicked(notifData);\n        }\n      });\n      </script>\n    ");
+    return html.replace(/(<\s*\/\s*body)/, "".concat(script, "\n$1"));
+  };
+  const staleDataUpdate = (staledata, campType) => {
+    const campObj = getCampaignObject();
+    const globalObj = campObj[campType].global;
+
+    if (globalObj != null && campType) {
+      for (const idx in staledata) {
+        if (staledata.hasOwnProperty(idx)) {
+          delete globalObj[staledata[idx]];
+
+          if (StorageManager.read(CAMP_COOKIE_G)) {
+            const guidCampObj = JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)));
+            const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
+
+            if (guidCampObj[guid] && guidCampObj[guid][campType] && guidCampObj[guid][campType][staledata[idx]]) {
+              delete guidCampObj[guid][campType][staledata[idx]];
+              StorageManager.save(CAMP_COOKIE_G, encodeURIComponent(JSON.stringify(guidCampObj)));
+            }
+          }
+        }
+      }
+    }
+
+    saveCampaignObject(campObj);
+  };
+  const mergeEventMap = newEvtMap => {
+    if ($ct.globalEventsMap == null) {
+      $ct.globalEventsMap = StorageManager.readFromLSorCookie(EV_COOKIE);
+
+      if ($ct.globalEventsMap == null) {
+        $ct.globalEventsMap = newEvtMap;
+        return;
+      }
+    }
+
+    for (const key in newEvtMap) {
+      if (newEvtMap.hasOwnProperty(key)) {
+        const oldEvtObj = $ct.globalEventsMap[key];
+        const newEvtObj = newEvtMap[key];
+
+        if ($ct.globalEventsMap[key] != null) {
+          if (newEvtObj[0] != null && newEvtObj[0] > oldEvtObj[0]) {
+            $ct.globalEventsMap[key] = newEvtObj;
+          }
+        } else {
+          $ct.globalEventsMap[key] = newEvtObj;
+        }
+      }
+    }
+  };
+  const incrementImpression = (targetingMsgJson, _request) => {
+    const data = {};
+    data.type = 'event';
+    data.evtName = NOTIFICATION_VIEWED;
+    data.evtData = {
+      [WZRK_ID]: targetingMsgJson.wzrk_id
+    };
+
+    if (targetingMsgJson.wzrk_pivot) {
+      data.evtData = { ...data.evtData,
+        wzrk_pivot: targetingMsgJson.wzrk_pivot
+      };
+    }
+
+    _request.processEvent(data);
+  };
+  const setupClickEvent = (onClick, targetingMsgJson, contentDiv, divId, isLegacy, _device, _session) => {
+    if (onClick !== '' && onClick != null) {
+      let ctaElement;
+      let jsCTAElements;
+
+      if (isLegacy) {
+        ctaElement = contentDiv;
+      } else if (contentDiv !== null) {
+        jsCTAElements = contentDiv.getElementsByClassName('jsCT_CTA');
+
+        if (jsCTAElements != null && jsCTAElements.length === 1) {
+          ctaElement = jsCTAElements[0];
+        }
+      }
+
+      const jsFunc = targetingMsgJson.display.jsFunc;
+      const isPreview = targetingMsgJson.display.preview;
+
+      if (isPreview == null) {
+        onClick += getCookieParams(_device, _session);
+      }
+
+      if (ctaElement != null) {
+        ctaElement.onclick = () => {
+          // invoke js function call
+          if (jsFunc != null) {
+            // track notification clicked event
+            if (isPreview == null) {
+              RequestDispatcher.fireRequest(onClick);
+            }
+
+            invokeExternalJs(jsFunc, targetingMsgJson); // close iframe. using -1 for no campaignId
+
+            closeIframe('-1', divId, _session.sessionId);
+          } else {
+            const rValue = targetingMsgJson.display.preview ? targetingMsgJson.display.onClick : new URL(targetingMsgJson.display.onClick).searchParams.get('r');
+            const campaignId = targetingMsgJson.wzrk_id.split('_')[0];
+
+            if (rValue === 'pushPrompt') {
+              if (!targetingMsgJson.display.preview) {
+                window.parent.clevertap.renderNotificationClicked({
+                  msgId: targetingMsgJson.wzrk_id,
+                  pivotId: targetingMsgJson.wzrk_pivot
+                });
+              } // Open Web Push Soft prompt
+
+
+              window.clevertap.notifications.push({
+                skipDialog: true
+              });
+              closeIframe(campaignId, divId, _session.sessionId);
+            } else if (rValue === 'none') {
+              // Close notification
+              closeIframe(campaignId, divId, _session.sessionId);
+            } else {
+              // Will get the url to open
+              if (targetingMsgJson.display.window === 1) {
+                window.open(onClick, '_blank');
+
+                if (targetingMsgJson.display['close-popup']) {
+                  closeIframe(campaignId, divId, _session.sessionId);
+                }
+
+                if (!targetingMsgJson.display.preview) {
+                  window.parent.clevertap.renderNotificationClicked({
+                    msgId: targetingMsgJson.wzrk_id,
+                    pivotId: targetingMsgJson.wzrk_pivot
+                  });
+                }
+              } else {
+                window.location = onClick;
+              }
+            }
+          }
+        };
+      }
+    }
+  };
+  const getCookieParams = (_device, _session) => {
+    const gcookie = _device.getGuid();
+
+    const scookieObj = _session.getSessionCookieObject();
+
+    return '&t=wc&d=' + encodeURIComponent(compressToBase64(gcookie + '|' + scookieObj.p + '|' + scookieObj.s));
+  };
+
+  const renderPopUpImageOnly = (targetingMsgJson, _session) => {
+    const divId = 'wzrkImageOnlyDiv';
+    const popupImageOnly = document.createElement('ct-web-popup-imageonly');
+    popupImageOnly.session = _session;
+    popupImageOnly.target = targetingMsgJson;
+    const containerEl = document.getElementById(divId);
+    containerEl.innerHTML = '';
+    containerEl.style.visibility = 'hidden';
+    containerEl.appendChild(popupImageOnly);
+  };
+
+  const getBoxPromptStyles = style => {
+    const totalBorderWidth = style.card.borderEnabled ? style.card.border.borderWidth * 2 : 0;
+    const cardPadding = 16 * 2; // Left and right padding
+
+    const cardContentWidth = 360 - cardPadding - totalBorderWidth;
+    return "\n    #pnWrapper {\n      width: 360px;\n    }\n\n    #pnOverlay {\n      background-color: ".concat(style.overlay.color || 'rgba(0, 0, 0, .15)', ";\n      position: fixed;\n      left: 0;\n      right: 0;\n      top: 0;\n      bottom: 0;\n      z-index: 10000\n    }\n\n    #pnCard {\n      background-color: ").concat(style.card.color, ";\n      border-radius: ").concat(style.card.borderRadius, "px;\n      padding: 16px;\n      width: ").concat(cardContentWidth, "px;\n      position: fixed;\n      z-index: 999999;\n      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);\n      ").concat(style.card.borderEnabled ? "\n        border-width: ".concat(style.card.border.borderWidth, "px;\n        border-color: ").concat(style.card.border.borderColor, ";\n        border-style: solid;\n      ") : '', "\n      height: fit-content;\n    }\n\n    #iconTitleDescWrapper {\n      display: flex;\n      align-items: center;\n      margin-bottom: 16px;\n      gap: 12px;\n    }\n\n    #iconContainer {\n      min-width: 64px;\n      max-width: 64px;\n      aspect-ratio: 1;\n      object-fit: cover;\n    }\n\n    #titleDescWrapper {\n      flex-grow: 1;\n      overflow: hidden;\n      overflow-wrap: break-word;\n    }\n\n    #title {\n      font-size: 16px;\n      font-weight: 700;\n      color: ").concat(style.text.titleColor, ";\n      margin-bottom: 4px;\n      line-height: 24px;\n    }\n\n    #description {\n      font-size: 14px;\n      font-weight: 500;\n      color: ").concat(style.text.descriptionColor, ";\n      line-height: 20px;\n    }\n\n    #buttonsContainer {\n      display: flex;\n      justify-content: space-between;\n      min-height: 32px;\n      gap: 8px;\n      align-items: center;\n    }\n\n    #primaryButton, #secondaryButton {\n      padding: 6px 24px;\n      flex: 1;\n      cursor: pointer;\n      font-weight: bold;\n      display: flex;\n      align-items: center;\n      justify-content: center;\n      height: max-content;\n      font-size: 14px;\n      font-weight: 500;\n      line-height: 20px;\n    }\n\n    #primaryButton {\n      background-color: ").concat(style.buttons.primaryButton.buttonColor, ";\n      color: ").concat(style.buttons.primaryButton.textColor, ";\n      border-radius: ").concat(style.buttons.primaryButton.borderRadius, "px;\n      ").concat(style.buttons.primaryButton.borderEnabled ? "\n          border-width: ".concat(style.buttons.primaryButton.border.borderWidth, "px;\n          border-color: ").concat(style.buttons.primaryButton.border.borderColor, ";\n          border-style: solid;\n        ") : 'border: none;', "\n    }\n\n    #secondaryButton {\n      background-color: ").concat(style.buttons.secondaryButton.buttonColor, ";\n      color: ").concat(style.buttons.secondaryButton.textColor, ";\n      border-radius: ").concat(style.buttons.secondaryButton.borderRadius, "px;\n      ").concat(style.buttons.secondaryButton.borderEnabled ? "\n          border-width: ".concat(style.buttons.secondaryButton.border.borderWidth, "px;\n          border-color: ").concat(style.buttons.secondaryButton.border.borderColor, ";\n          border-style: solid;\n        ") : 'border: none;', "\n    }\n\n    #primaryButton:hover, #secondaryButton:hover {\n      opacity: 0.9;\n    }\n  ");
+  };
+  const getBellIconStyles = style => {
+    return "\n    #bell_wrapper {\n      position: fixed;\n      cursor: pointer;\n      background-color: ".concat(style.card.backgroundColor, ";\n      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);\n      width: 48px;\n      height: 48px;\n      border-radius: 50%;\n      display: flex;\n      flex-direction: column;\n      gap: 8px;\n      z-index: 999999;\n    }\n\n    #bell_icon {\n      display: block;\n      width: 48px;\n      height: 48px;\n    }\n\n    #bell_wrapper:hover {\n      transform: scale(1.05);\n      transition: transform 0.2s ease-in-out;\n    }\n\n    #bell_tooltip {\n      display: none;\n      background-color: #2b2e3e;\n      color: #fff;\n      border-radius: 4px;\n      padding: 4px;\n      white-space: nowrap;\n      pointer-events: none;\n      font-size: 14px;\n      line-height: 1.4;\n    }\n\n    #gif_modal {\n      display: none;\n      background-color: #ffffff;\n      padding: 4px;\n      width: 400px;\n      height: 256px;\n      border-radius: 4px;\n      position: relative;\n      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);\n      cursor: default;\n    }\n\n    #gif_image {\n      object-fit: contain;\n      width: 100%;\n      height: 100%;\n    }\n\n    #close_modal {\n      position: absolute;\n      width: 24px;\n      height: 24px;\n      top: 8px;\n      right: 8px;\n      background: rgba(238, 238, 238, 0.8);\n      text-align: center;\n      line-height: 20px;\n      border-radius: 4px;\n      color: #000000;\n      font-size: 22px;\n      cursor: pointer;\n    }\n  ");
+  };
+
+  var _oldValues$3 = _classPrivateFieldLooseKey("oldValues");
+
+  var _logger$5 = _classPrivateFieldLooseKey("logger");
+
+  var _request$4 = _classPrivateFieldLooseKey("request");
+
+  var _account$2 = _classPrivateFieldLooseKey("account");
+
+  var _wizAlertJSPath = _classPrivateFieldLooseKey("wizAlertJSPath");
+
+  var _fcmPublicKey = _classPrivateFieldLooseKey("fcmPublicKey");
+
+  var _setUpWebPush = _classPrivateFieldLooseKey("setUpWebPush");
+
+  var _setUpSafariNotifications = _classPrivateFieldLooseKey("setUpSafariNotifications");
+
+  var _setUpChromeFirefoxNotifications = _classPrivateFieldLooseKey("setUpChromeFirefoxNotifications");
+
+  var _addWizAlertJS = _classPrivateFieldLooseKey("addWizAlertJS");
+
+  var _removeWizAlertJS = _classPrivateFieldLooseKey("removeWizAlertJS");
+
+  var _handleNotificationRegistration = _classPrivateFieldLooseKey("handleNotificationRegistration");
+
+  class NotificationHandler extends Array {
+    constructor(_ref, values) {
+      let {
+        logger,
+        session,
+        request,
+        account
+      } = _ref;
+      super();
+      Object.defineProperty(this, _handleNotificationRegistration, {
+        value: _handleNotificationRegistration2
+      });
+      Object.defineProperty(this, _removeWizAlertJS, {
+        value: _removeWizAlertJS2
+      });
+      Object.defineProperty(this, _addWizAlertJS, {
+        value: _addWizAlertJS2
+      });
+      Object.defineProperty(this, _setUpChromeFirefoxNotifications, {
+        value: _setUpChromeFirefoxNotifications2
+      });
+      Object.defineProperty(this, _setUpSafariNotifications, {
+        value: _setUpSafariNotifications2
+      });
+      Object.defineProperty(this, _setUpWebPush, {
+        value: _setUpWebPush2
+      });
+      Object.defineProperty(this, _oldValues$3, {
+        writable: true,
+        value: void 0
+      });
+      Object.defineProperty(this, _logger$5, {
+        writable: true,
+        value: void 0
+      });
+      Object.defineProperty(this, _request$4, {
+        writable: true,
+        value: void 0
+      });
+      Object.defineProperty(this, _account$2, {
+        writable: true,
+        value: void 0
+      });
+      Object.defineProperty(this, _wizAlertJSPath, {
+        writable: true,
+        value: void 0
+      });
+      Object.defineProperty(this, _fcmPublicKey, {
+        writable: true,
+        value: void 0
+      });
+      _classPrivateFieldLooseBase(this, _wizAlertJSPath)[_wizAlertJSPath] = 'https://d2r1yp2w7bby2u.cloudfront.net/js/wzrk_dialog.min.js';
+      _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] = null;
+      _classPrivateFieldLooseBase(this, _oldValues$3)[_oldValues$3] = values;
+      _classPrivateFieldLooseBase(this, _logger$5)[_logger$5] = logger;
+      _classPrivateFieldLooseBase(this, _request$4)[_request$4] = request;
+      _classPrivateFieldLooseBase(this, _account$2)[_account$2] = account;
+    }
+
+    push() {
+      for (var _len = arguments.length, displayArgs = new Array(_len), _key = 0; _key < _len; _key++) {
+        displayArgs[_key] = arguments[_key];
+      }
+
+      _classPrivateFieldLooseBase(this, _setUpWebPush)[_setUpWebPush](displayArgs);
+
+      return 0;
+    }
+
+    enable() {
+      let options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+      const {
+        swPath
+      } = options;
+      enablePush(_classPrivateFieldLooseBase(this, _logger$5)[_logger$5], _classPrivateFieldLooseBase(this, _account$2)[_account$2], _classPrivateFieldLooseBase(this, _request$4)[_request$4], swPath);
+    }
+
+    _processOldValues() {
+      if (_classPrivateFieldLooseBase(this, _oldValues$3)[_oldValues$3]) {
+        _classPrivateFieldLooseBase(this, _setUpWebPush)[_setUpWebPush](_classPrivateFieldLooseBase(this, _oldValues$3)[_oldValues$3]);
+      }
+
+      _classPrivateFieldLooseBase(this, _oldValues$3)[_oldValues$3] = null;
+    }
+
+    setUpWebPushNotifications(subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsServiceUrl) {
+      if (navigator.userAgent.indexOf('Chrome') !== -1 || navigator.userAgent.indexOf('Firefox') !== -1) {
+        _classPrivateFieldLooseBase(this, _setUpChromeFirefoxNotifications)[_setUpChromeFirefoxNotifications](subscriptionCallback, serviceWorkerPath);
+      } else if (navigator.userAgent.indexOf('Safari') !== -1) {
+        _classPrivateFieldLooseBase(this, _setUpSafariNotifications)[_setUpSafariNotifications](subscriptionCallback, apnsWebPushId, apnsServiceUrl);
+      }
+    }
+
+    setApplicationServerKey(applicationServerKey) {
+      _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] = applicationServerKey;
+    }
+
+    _enableWebPush(enabled, applicationServerKey) {
+      $ct.webPushEnabled = enabled;
+
+      if (applicationServerKey != null) {
+        this.setApplicationServerKey(applicationServerKey);
+      }
+
+      if ($ct.webPushEnabled && $ct.notifApi.notifEnabledFromApi) {
+        _classPrivateFieldLooseBase(this, _handleNotificationRegistration)[_handleNotificationRegistration]($ct.notifApi.displayArgs);
+      } else if (!$ct.webPushEnabled && $ct.notifApi.notifEnabledFromApi) {
+        _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Ensure that web push notifications are fully enabled and integrated before requesting them');
+      }
+    }
+
+  }
+
+  var _setUpWebPush2 = function _setUpWebPush2(displayArgs) {
+    if ($ct.webPushEnabled && displayArgs.length > 0) {
+      _classPrivateFieldLooseBase(this, _handleNotificationRegistration)[_handleNotificationRegistration](displayArgs);
+    } else if ($ct.webPushEnabled == null && displayArgs.length > 0) {
+      $ct.notifApi.notifEnabledFromApi = true;
+      $ct.notifApi.displayArgs = displayArgs.slice();
+    } else if ($ct.webPushEnabled === false && displayArgs.length > 0) {
+      _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Make sure push notifications are fully enabled and integrated');
+    }
+  };
+
+  var _setUpSafariNotifications2 = function _setUpSafariNotifications2(subscriptionCallback, apnsWebPushId, apnsServiceUrl) {
+    // ensure that proper arguments are passed
+    if (typeof apnsWebPushId === 'undefined') {
+      _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Ensure that APNS Web Push ID is supplied');
+    }
+
+    if (typeof apnsServiceUrl === 'undefined') {
+      _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Ensure that APNS Web Push service path is supplied');
+    }
+
+    if ('safari' in window && 'pushNotification' in window.safari) {
+      window.safari.pushNotification.requestPermission(apnsServiceUrl, apnsWebPushId, {}, subscription => {
+        if (subscription.permission === 'granted') {
+          const subscriptionData = JSON.parse(JSON.stringify(subscription));
+          subscriptionData.endpoint = subscription.deviceToken;
+          subscriptionData.browser = 'Safari';
+          StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData);
+
+          _classPrivateFieldLooseBase(this, _request$4)[_request$4].registerToken(subscriptionData);
+
+          _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Safari Web Push registered. Device Token: ' + subscription.deviceToken);
+        } else if (subscription.permission === 'denied') {
+          _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Error subscribing to Safari web push');
+        }
+      });
+    }
+  };
+
+  var _setUpChromeFirefoxNotifications2 = function _setUpChromeFirefoxNotifications2(subscriptionCallback, serviceWorkerPath) {
+    let registrationScope = '';
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register(serviceWorkerPath).then(registration => {
+        if (typeof __wzrk_account_id !== 'undefined') {
+          // eslint-disable-line
+          // shopify accounts , since the service worker is not at root, serviceWorker.ready is never resolved.
+          // hence add a timeout and hope serviceWroker is ready within that time.
+          return new Promise(resolve => setTimeout(() => resolve(registration), 5000));
+        }
+
+        registrationScope = registration.scope; // IF SERVICE WORKER IS AT ROOT, RETURN THE READY PROMISE
+        // ELSE IF CHROME RETURN PROMISE AFTER 5 SECONDS
+        // OR getRegistrations PROMISE IF ITS FIREFOX
+
+        const rootDirRegex = /^(\.?)(\/?)([^/]*).js$/;
+        const isServiceWorkerAtRoot = rootDirRegex.test(serviceWorkerPath);
+
+        if (isServiceWorkerAtRoot) {
+          return navigator.serviceWorker.ready;
+        } else {
+          if (navigator.userAgent.indexOf('Chrome') !== -1) {
+            return new Promise(resolve => setTimeout(() => resolve(registration), 5000));
+          } else {
+            return navigator.serviceWorker.getRegistrations();
+          }
+        }
+      }).then(serviceWorkerRegistration => {
+        // ITS AN ARRAY IN CASE OF FIREFOX, SO USE THE REGISTRATION WITH PROPER SCOPE
+        if (navigator.userAgent.indexOf('Firefox') !== -1 && Array.isArray(serviceWorkerRegistration)) {
+          serviceWorkerRegistration = serviceWorkerRegistration.filter(i => i.scope === registrationScope)[0];
+        }
+
+        const subscribeObj = {
+          userVisibleOnly: true
+        };
+
+        if (_classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] != null) {
+          subscribeObj.applicationServerKey = urlBase64ToUint8Array(_classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey]);
+        }
+
+        serviceWorkerRegistration.pushManager.subscribe(subscribeObj).then(subscription => {
+          _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Service Worker registered. Endpoint: ' + subscription.endpoint); // convert the subscription keys to strings; this sets it up nicely for pushing to LC
+
+
+          const subscriptionData = JSON.parse(JSON.stringify(subscription)); // remove the common chrome/firefox endpoint at the beginning of the token
+
+          if (navigator.userAgent.indexOf('Chrome') !== -1) {
+            subscriptionData.endpoint = subscriptionData.endpoint.split('/').pop();
+            subscriptionData.browser = 'Chrome';
+          } else if (navigator.userAgent.indexOf('Firefox') !== -1) {
+            subscriptionData.endpoint = subscriptionData.endpoint.split('/').pop();
+            subscriptionData.browser = 'Firefox';
+          }
+
+          StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData);
+
+          _classPrivateFieldLooseBase(this, _request$4)[_request$4].registerToken(subscriptionData);
+
+          if (typeof subscriptionCallback !== 'undefined' && typeof subscriptionCallback === 'function') {
+            subscriptionCallback();
+          }
+
+          const existingBellWrapper = document.getElementById('bell_wrapper');
+
+          if (existingBellWrapper) {
+            existingBellWrapper.parentNode.removeChild(existingBellWrapper);
+          }
+        }).catch(error => {
+          // unsubscribe from webpush if error
+          serviceWorkerRegistration.pushManager.getSubscription().then(subscription => {
+            if (subscription !== null) {
+              subscription.unsubscribe().then(successful => {
+                // You've successfully unsubscribed
+                _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Unsubscription successful');
+
+                window.clevertap.notifications.push({
+                  skipDialog: true
+                });
+              }).catch(e => {
+                // Unsubscription failed
+                _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Error unsubscribing: ' + e);
+              });
+            }
+          });
+
+          _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Error subscribing: ' + error);
+        });
+      }).catch(err => {
+        _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('error registering service worker: ' + err);
+      });
+    }
+  };
+
+  var _addWizAlertJS2 = function _addWizAlertJS2() {
+    const scriptTag = document.createElement('script');
+    scriptTag.setAttribute('type', 'text/javascript');
+    scriptTag.setAttribute('id', 'wzrk-alert-js');
+    scriptTag.setAttribute('src', _classPrivateFieldLooseBase(this, _wizAlertJSPath)[_wizAlertJSPath]); // add the script tag to the end of the body
+
+    document.getElementsByTagName('body')[0].appendChild(scriptTag);
+    return scriptTag;
+  };
+
+  var _removeWizAlertJS2 = function _removeWizAlertJS2() {
+    const scriptTag = document.getElementById('wzrk-alert-js');
+    scriptTag.parentNode.removeChild(scriptTag);
+  };
+
+  var _handleNotificationRegistration2 = function _handleNotificationRegistration2(displayArgs) {
+    // make sure everything is specified
+    let titleText;
+    let bodyText;
+    let okButtonText;
+    let rejectButtonText;
+    let okButtonColor;
+    let skipDialog;
+    let askAgainTimeInSeconds;
+    let okCallback;
+    let rejectCallback;
+    let subscriptionCallback;
+    let serviceWorkerPath;
+    let httpsPopupPath;
+    let httpsIframePath;
+    let apnsWebPushId;
+    let apnsWebPushServiceUrl;
+
+    if (displayArgs.length === 1) {
+      if (isObject(displayArgs[0])) {
+        const notifObj = displayArgs[0];
+        titleText = notifObj.titleText;
+        bodyText = notifObj.bodyText;
+        okButtonText = notifObj.okButtonText;
+        rejectButtonText = notifObj.rejectButtonText;
+        okButtonColor = notifObj.okButtonColor;
+        skipDialog = notifObj.skipDialog;
+        askAgainTimeInSeconds = notifObj.askAgainTimeInSeconds;
+        okCallback = notifObj.okCallback;
+        rejectCallback = notifObj.rejectCallback;
+        subscriptionCallback = notifObj.subscriptionCallback;
+        serviceWorkerPath = notifObj.serviceWorkerPath;
+        httpsPopupPath = notifObj.httpsPopupPath;
+        httpsIframePath = notifObj.httpsIframePath;
+        apnsWebPushId = notifObj.apnsWebPushId;
+        apnsWebPushServiceUrl = notifObj.apnsWebPushServiceUrl;
+      }
+    } else {
+      titleText = displayArgs[0];
+      bodyText = displayArgs[1];
+      okButtonText = displayArgs[2];
+      rejectButtonText = displayArgs[3];
+      okButtonColor = displayArgs[4];
+      skipDialog = displayArgs[5];
+      askAgainTimeInSeconds = displayArgs[6];
+    }
+
+    if (skipDialog == null) {
+      skipDialog = false;
+    }
+
+    if (serviceWorkerPath == null) {
+      serviceWorkerPath = '/clevertap_sw.js';
+    } // ensure that the browser supports notifications
+
+
+    if (typeof navigator.serviceWorker === 'undefined') {
+      return;
+    }
+
+    const isHTTP = httpsPopupPath != null && httpsIframePath != null; // make sure the site is on https for chrome notifications
+
+    if (window.location.protocol !== 'https:' && document.location.hostname !== 'localhost' && !isHTTP) {
+      _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Make sure you are https or localhost to register for notifications');
+
+      return;
+    } // right now, we only support Chrome V50 & higher & Firefox
+
+
+    if (navigator.userAgent.indexOf('Chrome') !== -1) {
+      const chromeAgent = navigator.userAgent.match(/Chrome\/(\d+)/);
+
+      if (chromeAgent == null || parseInt(chromeAgent[1], 10) < 50) {
+        return;
+      }
+    } else if (navigator.userAgent.indexOf('Firefox') !== -1) {
+      const firefoxAgent = navigator.userAgent.match(/Firefox\/(\d+)/);
+
+      if (firefoxAgent == null || parseInt(firefoxAgent[1], 10) < 50) {
+        return;
+      }
+    } else if (navigator.userAgent.indexOf('Safari') !== -1) {
+      const safariAgent = navigator.userAgent.match(/Safari\/(\d+)/);
+
+      if (safariAgent == null || parseInt(safariAgent[1], 10) < 50) {
+        return;
+      }
+    } else {
+      return;
+    } // we check for the cookie in setUpChromeNotifications() the tokens may have changed
+
+
+    if (!isHTTP) {
+      if (Notification == null) {
+        return;
+      } // handle migrations from other services -> chrome notifications may have already been asked for before
+
+
+      if (Notification.permission === 'granted') {
+        // skip the dialog and register
+        this.setUpWebPushNotifications(subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsWebPushServiceUrl);
+        return;
+      } else if (Notification.permission === 'denied') {
+        // we've lost this profile :'(
+        return;
+      }
+
+      if (skipDialog) {
+        this.setUpWebPushNotifications(subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsWebPushServiceUrl);
+        return;
+      }
+    } // make sure the right parameters are passed
+
+
+    if (!titleText || !bodyText || !okButtonText || !rejectButtonText) {
+      _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Missing input parameters; please specify title, body, ok button and cancel button text');
+
+      return;
+    } // make sure okButtonColor is formatted properly
+
+
+    if (okButtonColor == null || !okButtonColor.match(/^#[a-f\d]{6}$/i)) {
+      okButtonColor = '#f28046'; // default color for positive button
+    } // make sure the user isn't asked for notifications more than askAgainTimeInSeconds
+
+
+    const now = new Date().getTime() / 1000;
+
+    if (StorageManager.getMetaProp('notif_last_time') == null) {
+      StorageManager.setMetaProp('notif_last_time', now);
+    } else {
+      if (askAgainTimeInSeconds == null) {
+        // 7 days by default
+        askAgainTimeInSeconds = 7 * 24 * 60 * 60;
+      }
+
+      if (now - StorageManager.getMetaProp('notif_last_time') < askAgainTimeInSeconds) {
+        return;
+      } else {
+        // continue asking
+        StorageManager.setMetaProp('notif_last_time', now);
+      }
+    }
+
+    if (isHTTP) {
+      // add the https iframe
+      const httpsIframe = document.createElement('iframe');
+      httpsIframe.setAttribute('style', 'display:none;');
+      httpsIframe.setAttribute('src', httpsIframePath);
+      document.body.appendChild(httpsIframe);
+      window.addEventListener('message', event => {
+        if (event.data != null) {
+          let obj = {};
+
+          try {
+            obj = JSON.parse(event.data);
+          } catch (e) {
+            // not a call from our iframe
+            return;
+          }
+
+          if (obj.state != null) {
+            if (obj.from === 'ct' && obj.state === 'not') {
+              _classPrivateFieldLooseBase(this, _addWizAlertJS)[_addWizAlertJS]().onload = () => {
+                // create our wizrocket popup
+                window.wzrkPermissionPopup.wizAlert({
+                  title: titleText,
+                  body: bodyText,
+                  confirmButtonText: okButtonText,
+                  confirmButtonColor: okButtonColor,
+                  rejectButtonText: rejectButtonText
+                }, enabled => {
+                  // callback function
+                  if (enabled) {
+                    // the user accepted on the dialog box
+                    if (typeof okCallback === 'function') {
+                      okCallback();
+                    } // redirect to popup.html
+
+
+                    window.open(httpsPopupPath);
+                  } else {
+                    if (typeof rejectCallback === 'function') {
+                      rejectCallback();
+                    }
+                  }
+
+                  _classPrivateFieldLooseBase(this, _removeWizAlertJS)[_removeWizAlertJS]();
+                });
+              };
+            }
+          }
+        }
+      }, false);
+    } else {
+      _classPrivateFieldLooseBase(this, _addWizAlertJS)[_addWizAlertJS]().onload = () => {
+        // create our wizrocket popup
+        window.wzrkPermissionPopup.wizAlert({
+          title: titleText,
+          body: bodyText,
+          confirmButtonText: okButtonText,
+          confirmButtonColor: okButtonColor,
+          rejectButtonText: rejectButtonText
+        }, enabled => {
+          // callback function
+          if (enabled) {
+            // the user accepted on the dialog box
+            if (typeof okCallback === 'function') {
+              okCallback();
+            }
+
+            this.setUpWebPushNotifications(subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsWebPushServiceUrl);
+          } else {
+            if (typeof rejectCallback === 'function') {
+              rejectCallback();
+            }
+          }
+
+          _classPrivateFieldLooseBase(this, _removeWizAlertJS)[_removeWizAlertJS]();
+        });
+      };
+    }
+  };
+
+  const BELL_BASE64 = 'PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiIGQ9Ik0xMi40OTYyIDUuMjQzOTVDMTIuODM5MSA1LjAzMzE3IDEzLjI4NDcgNS4xNDY4OSAxMy40OTczIDUuNDg4NjdDMTMuNzIyMyA1Ljg1MDE4IDEzLjYwMDIgNi4zMjUxOCAxMy4yMzggNi41NDkwMkM3LjM5Mzk5IDEwLjE2MDYgMy41IDE2LjYyNTcgMy41IDI0LjAwMDNDMy41IDM1LjMyMjEgMTIuNjc4MiA0NC41MDAzIDI0IDQ0LjUwMDNDMjguMDA1NSA0NC41MDAzIDMxLjc0MjYgNDMuMzUxNSAzNC45IDQxLjM2NTVDMzUuMjYwOCA0MS4xMzg1IDM1Ljc0MTYgNDEuMjM4NiAzNS45NjY4IDQxLjYwMDZDMzYuMTc5MiA0MS45NDE5IDM2LjA4NSA0Mi4zOTExIDM1Ljc0NTIgNDIuNjA2QzMyLjM0NjggNDQuNzU1OSAyOC4zMTg3IDQ2LjAwMDMgMjQgNDYuMDAwM0MxMS44NDk3IDQ2LjAwMDMgMiAzNi4xNTA1IDIgMjQuMDAwM0MyIDE2LjA2NjkgNi4xOTkyMSA5LjExNDMyIDEyLjQ5NjIgNS4yNDM5NVpNMzguOCAzOS45MDAzQzM4LjggNDAuMzk3MyAzOC4zOTcxIDQwLjgwMDMgMzcuOSA0MC44MDAzQzM3LjQwMjkgNDAuODAwMyAzNyA0MC4zOTczIDM3IDM5LjkwMDNDMzcgMzkuNDAzMiAzNy40MDI5IDM5LjAwMDMgMzcuOSAzOS4wMDAzQzM4LjM5NzEgMzkuMDAwMyAzOC44IDM5LjQwMzIgMzguOCAzOS45MDAzWiIgZmlsbD0id2hpdGUiLz4KPHBhdGggZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiIGQ9Ik0yNCAxMkMyMi44OTU0IDEyIDIyIDEyLjg5NTQgMjIgMTRWMTQuMjUyQzE4LjU0OTUgMTUuMTQwMSAxNiAxOC4yNzIzIDE2IDIyVjI5LjVIMTUuNDc2OUMxNC42NjEyIDI5LjUgMTQgMzAuMTYxMiAxNCAzMC45NzY5VjMxLjAyMzFDMTQgMzEuODM4OCAxNC42NjEyIDMyLjUgMTUuNDc2OSAzMi41SDMyLjUyMzFDMzMuMzM4OCAzMi41IDM0IDMxLjgzODggMzQgMzEuMDIzMVYzMC45NzY5QzM0IDMwLjE2MTIgMzMuMzM4OCAyOS41IDMyLjUyMzEgMjkuNUgzMlYyMkMzMiAxOC4yNzIzIDI5LjQ1MDUgMTUuMTQwMSAyNiAxNC4yNTJWMTRDMjYgMTIuODk1NCAyNS4xMDQ2IDEyIDI0IDEyWk0yNiAzNFYzMy41SDIyVjM0QzIyIDM1LjEwNDYgMjIuODk1NCAzNiAyNCAzNkMyNS4xMDQ2IDM2IDI2IDM1LjEwNDYgMjYgMzRaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K';
+  const PROMPT_BELL_BASE64 = 'PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByeD0iMzIiIGZpbGw9IiMwMEFFQjkiLz4KPHBhdGggZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiIGQ9Ik0zMS45OTg2IDIwQzMwLjkxOTggMjAgMzAuMDQyOCAyMC44NzQ2IDMwLjA0MjggMjEuOTUzNEwzMC4wNDI5IDIxLjk3MzRDMjYuNTQzNCAyMi41NTM1IDIzLjg3NSAyNS41OTQzIDIzLjg3NSAyOS4yNTgyVjM4LjA5OTVIMjMuODczNUMyMy4wNTg5IDM4LjA5OTUgMjIuMzk4NCAzOC43NiAyMi4zOTg0IDM5LjU3NDZDMjIuMzk4NCA0MC4zODkzIDIzLjA1ODkgNDEuMDQ5NyAyMy44NzM1IDQxLjA0OTdIMjkuNzgxMlY0MS43ODQyQzI5Ljc4MTIgNDMuMDA3NyAzMC43NzMxIDQzLjk5OTYgMzEuOTk2NiA0My45OTk2QzMzLjIyMDIgNDMuOTk5NiAzNC4yMTIgNDMuMDA3NyAzNC4yMTIgNDEuNzg0MlY0MS4wNDk3SDQwLjEyMzNDNDAuOTM4IDQxLjA0OTcgNDEuNTk4NCA0MC4zODkzIDQxLjU5ODQgMzkuNTc0NkM0MS41OTg0IDM4Ljc2IDQwLjkzOCAzOC4wOTk1IDQwLjEyMzMgMzguMDk5NUg0MC4xMjEyVjI5LjI1ODJDNDAuMTIxMiAyNS41OTQ2IDM3LjQ1MzMgMjIuNTU0MiAzMy45NTQzIDIxLjk3MzZMMzMuOTU0NCAyMS45NTM0QzMzLjk1NDQgMjAuODc0NiAzMy4wNzc1IDIwIDMxLjk5ODYgMjBaIiBmaWxsPSJ3aGl0ZSIvPgo8cmVjdCBvcGFjaXR5PSIwLjUiIHg9IjcuNSIgeT0iNy41IiB3aWR0aD0iNDkiIGhlaWdodD0iNDkiIHJ4PSIyNC41IiBzdHJva2U9IndoaXRlIi8+CjxyZWN0IG9wYWNpdHk9IjAuMyIgeD0iNC41IiB5PSI0LjUiIHdpZHRoPSI1NSIgaGVpZ2h0PSI1NSIgcng9IjI3LjUiIHN0cm9rZT0id2hpdGUiLz4KPHJlY3Qgb3BhY2l0eT0iMC44IiB4PSIxMC41IiB5PSIxMC41IiB3aWR0aD0iNDMiIGhlaWdodD0iNDMiIHJ4PSIyMS41IiBzdHJva2U9IndoaXRlIi8+Cjwvc3ZnPgo=';
+
+  let appServerKey = null;
+  let swPath = '/clevertap_sw.js';
+  let notificationHandler = null;
+  const processWebPushConfig = (webPushConfig, logger, request) => {
+    const _pushConfig = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {};
+
+    const updatePushConfig = () => {
+      $ct.pushConfig = webPushConfig;
+      StorageManager.saveToLSorCookie(WEBPUSH_CONFIG, webPushConfig);
+    };
+
+    if (webPushConfig.isPreview) {
+      updatePushConfig();
+      enablePush(logger, null, request);
+    } else if (JSON.stringify(_pushConfig) !== JSON.stringify(webPushConfig)) {
+      updatePushConfig();
+    }
+  };
+  const enablePush = (logger, account, request, customSwPath) => {
+    const _pushConfig = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {};
+
+    $ct.pushConfig = _pushConfig;
+
+    if (!$ct.pushConfig) {
+      logger.error('Web Push config data not present');
+      return;
+    }
+
+    if (customSwPath) {
+      swPath = customSwPath;
+    }
+
+    notificationHandler = new NotificationHandler({
+      logger,
+      session: {},
+      request,
+      account
+    });
+    const {
+      showBox,
+      boxType,
+      showBellIcon,
+      isPreview
+    } = $ct.pushConfig;
+
+    if (isPreview) {
+      if ($ct.pushConfig.boxConfig) createNotificationBox($ct.pushConfig);
+      if ($ct.pushConfig.bellIconConfig) createBellIcon($ct.pushConfig);
+    } else {
+      if (showBox && boxType === 'new') createNotificationBox($ct.pushConfig);
+      if (showBellIcon) createBellIcon($ct.pushConfig);
+    }
+  };
+
+  const createElementWithAttributes = function (tag) {
+    let attributes = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+    const element = document.createElement(tag);
+    Object.entries(attributes).forEach((_ref) => {
+      let [key, value] = _ref;
+      element[key] = value;
+    });
+    return element;
+  };
+
+  const createNotificationBox = configData => {
+    if (document.getElementById('pnWrapper')) return;
+    const {
+      boxConfig: {
+        content,
+        style
+      }
+    } = configData; // Create the wrapper div
+
+    const wrapper = createElementWithAttributes('div', {
+      id: 'pnWrapper'
+    });
+    const overlayDiv = createElementWithAttributes('div', {
+      id: 'pnOverlay'
+    });
+    const pnCard = createElementWithAttributes('div', {
+      id: 'pnCard'
+    });
+    const iconTitleDescWrapper = createElementWithAttributes('div', {
+      id: 'iconTitleDescWrapper'
+    });
+    const iconContainer = createElementWithAttributes('img', {
+      id: 'iconContainer',
+      src: content.icon.type === 'default' ? "data:image/svg+xml;base64,".concat(PROMPT_BELL_BASE64) : content.icon.url
+    });
+    iconTitleDescWrapper.appendChild(iconContainer);
+    const titleDescWrapper = createElementWithAttributes('div', {
+      id: 'titleDescWrapper'
+    });
+    titleDescWrapper.appendChild(createElementWithAttributes('div', {
+      id: 'title',
+      textContent: content.title
+    }));
+    titleDescWrapper.appendChild(createElementWithAttributes('div', {
+      id: 'description',
+      textContent: content.description
+    }));
+    iconTitleDescWrapper.appendChild(titleDescWrapper);
+    const buttonsContainer = createElementWithAttributes('div', {
+      id: 'buttonsContainer'
+    });
+    const primaryButton = createElementWithAttributes('button', {
+      id: 'primaryButton',
+      textContent: content.buttons.primaryButtonText
+    });
+    const secondaryButton = createElementWithAttributes('button', {
+      id: 'secondaryButton',
+      textContent: content.buttons.secondaryButtonText
+    });
+    buttonsContainer.appendChild(secondaryButton);
+    buttonsContainer.appendChild(primaryButton);
+    pnCard.appendChild(iconTitleDescWrapper);
+    pnCard.appendChild(buttonsContainer); // Apply styles
+
+    const styleElement = createElementWithAttributes('style', {
+      textContent: getBoxPromptStyles(style)
+    });
+    wrapper.appendChild(styleElement);
+    wrapper.appendChild(pnCard);
+    wrapper.appendChild(overlayDiv);
+    setElementPosition(pnCard, style.card.position);
+    const now = new Date().getTime() / 1000;
+    const lastNotifTime = StorageManager.getMetaProp('webpush_last_notif_time');
+    const popupFrequency = content.popupFrequency || 7 * 24 * 60 * 60;
+
+    if (!lastNotifTime || now - lastNotifTime >= popupFrequency * 24 * 60 * 60) {
+      document.body.appendChild(wrapper);
+
+      if (!configData.isPreview) {
+        addEventListeners(wrapper);
+      }
+    }
+  };
+  const createBellIcon = configData => {
+    if (document.getElementById('bell_wrapper') || Notification.permission === 'granted') return;
+    const {
+      bellIconConfig: {
+        content,
+        style
+      }
+    } = configData;
+    const bellWrapper = createElementWithAttributes('div', {
+      id: 'bell_wrapper'
+    });
+    const bellIcon = createElementWithAttributes('img', {
+      id: 'bell_icon',
+      src: content.icon.type === 'default' ? "data:image/svg+xml;base64,".concat(BELL_BASE64) : content.icon.url
+    }); // For playing gif
+
+    const gifModal = createElementWithAttributes('div', {
+      id: 'gif_modal',
+      style: 'display: none;'
+    });
+    const gifImage = createElementWithAttributes('img', {
+      id: 'gif_image',
+      src: 'https://d2r1yp2w7bby2u.cloudfront.net/js/permission_grant.gif'
+    });
+    const closeModal = createElementWithAttributes('div', {
+      id: 'close_modal',
+      innerHTML: '&times;'
+    });
+    gifModal.appendChild(gifImage);
+    gifModal.appendChild(closeModal);
+    bellWrapper.appendChild(bellIcon);
+    bellWrapper.appendChild(gifModal);
+
+    if (content.hoverText.enabled) {
+      const tooltip = createElementWithAttributes('div', {
+        id: 'bell_tooltip',
+        textContent: content.hoverText.text
+      });
+      bellWrapper.appendChild(tooltip);
+    }
+
+    setElementPosition(bellWrapper, style.card.position); // Apply styles
+
+    const styleElement = createElementWithAttributes('style', {
+      textContent: getBellIconStyles(style)
+    });
+    document.head.appendChild(styleElement);
+    document.body.appendChild(bellWrapper);
+
+    if (!configData.isPreview) {
+      addBellEventListeners(bellWrapper);
+    }
+
+    return bellWrapper;
+  };
+  const setServerKey = serverKey => {
+    appServerKey = serverKey;
+  };
+  const addEventListeners = wrapper => {
+    const primaryButton = wrapper.querySelector('#primaryButton');
+    const secondaryButton = wrapper.querySelector('#secondaryButton');
+
+    const removeWrapper = () => {
+      var _wrapper$parentNode;
+
+      return (_wrapper$parentNode = wrapper.parentNode) === null || _wrapper$parentNode === void 0 ? void 0 : _wrapper$parentNode.removeChild(wrapper);
+    };
+
+    primaryButton.addEventListener('click', () => {
+      removeWrapper();
+      notificationHandler.setApplicationServerKey(appServerKey);
+      notificationHandler.setUpWebPushNotifications(null, swPath, null, null);
+    });
+    secondaryButton.addEventListener('click', () => {
+      StorageManager.setMetaProp('webpush_last_notif_time', Date.now() / 1000);
+      removeWrapper();
+    });
+  };
+  const addBellEventListeners = bellWrapper => {
+    const bellIcon = bellWrapper.querySelector('#bell_icon');
+    bellIcon.addEventListener('click', () => {
+      if (Notification.permission === 'denied') {
+        toggleGifModal(bellWrapper);
+      } else {
+        notificationHandler.setApplicationServerKey(appServerKey);
+        notificationHandler.setUpWebPushNotifications(null, swPath, null, null);
+
+        if (Notification.permission === 'granted') {
+          bellWrapper.remove();
+        }
+      }
+    });
+    bellIcon.addEventListener('mouseenter', () => displayTooltip(bellWrapper));
+    bellIcon.addEventListener('mouseleave', () => clearTooltip(bellWrapper));
+    bellWrapper.querySelector('#close_modal').addEventListener('click', () => toggleGifModal(bellWrapper));
+  };
+  const setElementPosition = (element, position) => {
+    Object.assign(element.style, {
+      inset: 'auto',
+      transform: 'none'
+    });
+    const positions = {
+      'Top Right': {
+        inset: '16px 16px auto auto'
+      },
+      'Top Left': {
+        inset: '16px auto auto 16px'
+      },
+      'Bottom Right': {
+        inset: 'auto 16px 16px auto'
+      },
+      'Bottom Left': {
+        inset: 'auto auto 16px 16px'
+      },
+      Center: {
+        inset: '50%',
+        transform: 'translate(-50%, -50%)'
+      },
+      Top: {
+        inset: '16px auto auto 50%',
+        transform: 'translateX(-50%)'
+      },
+      Bottom: {
+        inset: 'auto auto 16px 50%',
+        transform: 'translateX(-50%)'
+      }
+    };
+    Object.assign(element.style, positions[position] || positions['top-right']);
+  };
+
+  const displayTooltip = bellWrapper => {
+    const gifModal = bellWrapper.querySelector('#gif_modal');
+
+    if (gifModal.style.display === 'flex') {
+      return;
+    }
+
+    const tooltip = bellWrapper.querySelector('#bell_tooltip');
+
+    if (tooltip) {
+      tooltip.style.display = 'flex';
+    }
+
+    const bellIcon = bellWrapper.querySelector('#bell_icon');
+    const bellRect = bellIcon.getBoundingClientRect();
+    var midX = window.innerWidth / 2;
+    var midY = window.innerHeight / 2;
+    bellWrapper.style['flex-direction'] = bellRect.y > midY ? 'column-reverse' : 'column';
+    bellWrapper.style['align-items'] = bellRect.x > midX ? 'flex-end' : 'flex-start';
+  };
+
+  const clearTooltip = bellWrapper => {
+    const tooltip = bellWrapper.querySelector('#bell_tooltip');
+
+    if (tooltip) {
+      tooltip.style.display = 'none';
+    }
+  };
+
+  const toggleGifModal = bellWrapper => {
+    clearTooltip(bellWrapper);
+    const gifModal = bellWrapper.querySelector('#gif_modal');
+    gifModal.style.display = gifModal.style.display === 'none' ? 'flex' : 'none';
+  };
 
   const _tr = (msg, _ref) => {
     let {
@@ -4984,9 +6155,11 @@
       } // delay
 
 
-      if (targetingMsgJson[DISPLAY].delay != null && targetingMsgJson[DISPLAY].delay > 0) {
-        const delay = targetingMsgJson[DISPLAY].delay;
-        targetingMsgJson[DISPLAY].delay = 0;
+      const displayObj = targetingMsgJson.display;
+
+      if (displayObj.delay != null && displayObj.delay > 0) {
+        const delay = displayObj.delay;
+        displayObj.delay = 0;
         setTimeout(_tr, delay * 1000, msg, {
           device: _device,
           session: _session,
@@ -5015,166 +6188,53 @@
       });
     };
 
-    const getCookieParams = () => {
-      const gcookie = _device.getGuid();
-
-      const scookieObj = _session.getSessionCookieObject();
-
-      return '&t=wc&d=' + encodeURIComponent(compressToBase64(gcookie + '|' + scookieObj.p + '|' + scookieObj.s));
-    };
-
-    const setupClickEvent = (onClick, targetingMsgJson, contentDiv, divId, isLegacy) => {
-      if (onClick !== '' && onClick != null) {
-        let ctaElement;
-        let jsCTAElements;
-
-        if (isLegacy) {
-          ctaElement = contentDiv;
-        } else if (contentDiv !== null) {
-          jsCTAElements = contentDiv.getElementsByClassName('jsCT_CTA');
-
-          if (jsCTAElements != null && jsCTAElements.length === 1) {
-            ctaElement = jsCTAElements[0];
-          }
-        }
-
-        const jsFunc = targetingMsgJson.display.jsFunc;
-        const isPreview = targetingMsgJson.display.preview;
-
-        if (isPreview == null) {
-          onClick += getCookieParams();
-        }
-
-        if (ctaElement != null) {
-          ctaElement.onclick = () => {
-            // invoke js function call
-            if (jsFunc != null) {
-              // track notification clicked event
-              if (isPreview == null) {
-                RequestDispatcher.fireRequest(onClick);
-              }
-
-              invokeExternalJs(jsFunc, targetingMsgJson); // close iframe. using -1 for no campaignId
-
-              closeIframe('-1', divId, _session.sessionId);
-              return;
-            } // pass on the gcookie|page|scookieId for capturing the click event
-
-
-            if (targetingMsgJson.display.window === 1) {
-              window.open(onClick, '_blank');
-            } else {
-              window.location = onClick;
-            }
-          };
-        }
-      }
-    };
-
-    const invokeExternalJs = (jsFunc, targetingMsgJson) => {
-      const func = window.parent[jsFunc];
-
-      if (typeof func === 'function') {
-        if (targetingMsgJson.display.kv != null) {
-          func(targetingMsgJson.display.kv);
-        } else {
-          func();
-        }
-      }
-    };
-
     const setupClickUrl = (onClick, targetingMsgJson, contentDiv, divId, isLegacy) => {
-      incrementImpression(targetingMsgJson);
-      setupClickEvent(onClick, targetingMsgJson, contentDiv, divId, isLegacy);
+      incrementImpression(targetingMsgJson, _request);
+      setupClickEvent(onClick, targetingMsgJson, contentDiv, divId, isLegacy, _device, _session);
     };
 
-    const incrementImpression = targetingMsgJson => {
-      const data = {};
-      data.type = 'event';
-      data.evtName = NOTIFICATION_VIEWED;
-      data.evtData = {
-        [WZRK_ID]: targetingMsgJson.wzrk_id
-      };
-
-      if (targetingMsgJson.wzrk_pivot) {
-        data.evtData = { ...data.evtData,
-          wzrk_pivot: targetingMsgJson.wzrk_pivot
-        };
-      }
-
-      _request.processEvent(data);
-    };
-
-    const renderPersonalisationBanner = targetingMsgJson => {
-      var _targetingMsgJson$dis;
-
-      if (customElements.get('ct-web-personalisation-banner') === undefined) {
-        customElements.define('ct-web-personalisation-banner', CTWebPersonalisationBanner);
-      }
-
-      const divId = (_targetingMsgJson$dis = targetingMsgJson.display.divId) !== null && _targetingMsgJson$dis !== void 0 ? _targetingMsgJson$dis : targetingMsgJson.display.divSelector;
-      const bannerEl = document.createElement('ct-web-personalisation-banner');
-      bannerEl.msgId = targetingMsgJson.wzrk_id;
-      bannerEl.pivotId = targetingMsgJson.wzrk_pivot;
-      bannerEl.divHeight = targetingMsgJson.display.divHeight;
-      bannerEl.details = targetingMsgJson.display.details[0];
-      const containerEl = targetingMsgJson.display.divId ? document.getElementById(divId) : document.querySelector(divId);
-      containerEl.innerHTML = '';
-      containerEl.appendChild(bannerEl);
-    };
-
-    const renderPersonalisationCarousel = targetingMsgJson => {
-      var _targetingMsgJson$dis2;
-
-      if (customElements.get('ct-web-personalisation-carousel') === undefined) {
-        customElements.define('ct-web-personalisation-carousel', CTWebPersonalisationCarousel);
-      }
-
-      const divId = (_targetingMsgJson$dis2 = targetingMsgJson.display.divId) !== null && _targetingMsgJson$dis2 !== void 0 ? _targetingMsgJson$dis2 : targetingMsgJson.display.divSelector;
-      const carousel = document.createElement('ct-web-personalisation-carousel');
-      carousel.target = targetingMsgJson;
-      const container = targetingMsgJson.display.divId ? document.getElementById(divId) : document.querySelector(divId);
-      container.innerHTML = '';
-      container.appendChild(carousel);
-    };
-
-    const renderPopUpImageOnly = targetingMsgJson => {
+    const handleImageOnlyPopup = targetingMsgJson => {
       const divId = 'wzrkImageOnlyDiv';
-      const popupImageOnly = document.createElement('ct-web-popup-imageonly');
-      popupImageOnly.session = _session;
-      popupImageOnly.target = targetingMsgJson;
-      const containerEl = document.getElementById(divId);
-      containerEl.innerHTML = '';
-      containerEl.style.visibility = 'hidden';
-      containerEl.appendChild(popupImageOnly);
+
+      if (doCampHouseKeeping(targetingMsgJson) === false) {
+        return;
+      }
+
+      if ($ct.dismissSpamControl && document.getElementById(divId) != null) {
+        const element = document.getElementById(divId);
+        element.remove();
+      } // ImageOnly campaign and Interstitial/Exit Intent shouldn't coexist
+
+
+      if (document.getElementById(divId) != null || document.getElementById('intentPreview') != null) {
+        return;
+      }
+
+      const msgDiv = document.createElement('div');
+      msgDiv.id = divId;
+      document.body.appendChild(msgDiv);
+
+      if (customElements.get('ct-web-popup-imageonly') === undefined) {
+        customElements.define('ct-web-popup-imageonly', CTWebPopupImageOnly);
+      }
+
+      return renderPopUpImageOnly(targetingMsgJson, _session);
     };
 
-    const renderFooterNotification = targetingMsgJson => {
+    const isExistingCampaign = campaignId => {
+      const testIframe = document.getElementById('wiz-iframe-intent') || document.getElementById('wiz-iframe');
+
+      if (testIframe) {
+        const iframeDocument = testIframe.contentDocument || testIframe.contentWindow.document;
+        return iframeDocument.documentElement.innerHTML.includes(campaignId);
+      }
+
+      return false;
+    };
+
+    const createTemplate = (targetingMsgJson, isExitIntent) => {
       const campaignId = targetingMsgJson.wzrk_id.split('_')[0];
       const displayObj = targetingMsgJson.display;
-
-      if (displayObj.wtarget_type === 2) {
-        // Handling Web Native display
-        // Logic for kv pair data
-        if (targetingMsgJson.msgContent.type === 1) {
-          const inaObj = {};
-          inaObj.msgId = targetingMsgJson.wzrk_id;
-
-          if (targetingMsgJson.wzrk_pivot) {
-            inaObj.pivotId = targetingMsgJson.wzrk_pivot;
-          }
-
-          if (targetingMsgJson.msgContent.kv != null) {
-            inaObj.kv = targetingMsgJson.msgContent.kv;
-          }
-
-          const kvPairsEvent = new CustomEvent('CT_web_native_display', {
-            detail: inaObj
-          });
-          document.dispatchEvent(kvPairsEvent);
-          return;
-        }
-      }
 
       if (displayObj.layout === 1) {
         // Handling Web Exit Intent
@@ -5183,31 +6243,8 @@
 
       if (displayObj.layout === 3) {
         // Handling Web Popup Image Only
-        const divId = 'wzrkImageOnlyDiv';
-
-        if (doCampHouseKeeping(targetingMsgJson) === false) {
-          return;
-        }
-
-        if ($ct.dismissSpamControl && document.getElementById(divId) != null) {
-          const element = document.getElementById(divId);
-          element.remove();
-        } // ImageOnly campaign and Interstitial/Exit Intent shouldn't coexist
-
-
-        if (document.getElementById(divId) != null || document.getElementById('intentPreview') != null) {
-          return;
-        }
-
-        const msgDiv = document.createElement('div');
-        msgDiv.id = divId;
-        document.body.appendChild(msgDiv);
-
-        if (customElements.get('ct-web-popup-imageonly') === undefined) {
-          customElements.define('ct-web-popup-imageonly', CTWebPopupImageOnly);
-        }
-
-        return renderPopUpImageOnly(targetingMsgJson);
+        handleImageOnlyPopup(targetingMsgJson);
+        return;
       }
 
       if (doCampHouseKeeping(targetingMsgJson) === false) {
@@ -5215,11 +6252,22 @@
       }
 
       const divId = 'wizParDiv' + displayObj.layout;
+      const opacityDivId = 'intentOpacityDiv' + displayObj.layout;
 
       if ($ct.dismissSpamControl && document.getElementById(divId) != null) {
         const element = document.getElementById(divId);
-        element.remove();
+        const opacityElement = document.getElementById(opacityDivId);
+
+        if (element) {
+          element.remove();
+        }
+
+        if (opacityElement) {
+          opacityElement.remove();
+        }
       }
+
+      if (isExistingCampaign(campaignId)) return;
 
       if (document.getElementById(divId) != null) {
         return;
@@ -5227,6 +6275,16 @@
 
       $ct.campaignDivMap[campaignId] = divId;
       const isBanner = displayObj.layout === 2;
+
+      if (isExitIntent) {
+        const opacityDiv = document.createElement('div');
+        opacityDiv.id = opacityDivId;
+        const opacity = targetingMsgJson.display.opacity || 0.7;
+        const rgbaColor = "rgba(0,0,0,".concat(opacity, ")");
+        opacityDiv.setAttribute('style', "position: fixed;top: 0;bottom: 0;left: 0;width: 100%;height: 100%;z-index: 2147483646;background: ".concat(rgbaColor, ";"));
+        document.body.appendChild(opacityDiv);
+      }
+
       const msgDiv = document.createElement('div');
       msgDiv.id = divId;
       const viewHeight = window.innerHeight;
@@ -5379,15 +6437,15 @@
       }
     };
 
-    const appendScriptForCustomEvent = (targetingMsgJson, html) => {
-      const script = "<script>\n      const ct__camapignId = '".concat(targetingMsgJson.wzrk_id, "';\n      const ct__formatVal = (v) => {\n          return v && v.trim().substring(0, 20);\n      }\n      const ct__parentOrigin =  window.parent.origin;\n      document.body.addEventListener('click', (event) => {\n        const elem = event.target.closest?.('a[wzrk_c2a], button[wzrk_c2a]');\n        if (elem) {\n            const {innerText, id, name, value, href} = elem;\n            const clickAttr = elem.getAttribute('onclick') || elem.getAttribute('click');\n            const onclickURL = clickAttr?.match(/(window.open)[(](\"|')(.*)(\"|',)/)?.[3] || clickAttr?.match(/(location.href *= *)(\"|')(.*)(\"|')/)?.[3];\n            const props = {innerText, id, name, value};\n            let msgCTkv = Object.keys(props).reduce((acc, c) => {\n                const formattedVal = ct__formatVal(props[c]);\n                formattedVal && (acc['wzrk_click_' + c] = formattedVal);\n                return acc;\n            }, {});\n            if(onclickURL) { msgCTkv['wzrk_click_' + 'url'] = onclickURL; }\n            if(href) { msgCTkv['wzrk_click_' + 'c2a'] = href; }\n            const notifData = { msgId: ct__camapignId, msgCTkv, pivotId: '").concat(targetingMsgJson.wzrk_pivot, "' };\n            window.parent.clevertap.renderNotificationClicked(notifData);\n        }\n      });\n      </script>\n    ");
-      return html.replace(/(<\s*\/\s*body)/, "".concat(script, "\n$1"));
+    const renderFooterNotification = targetingMsgJson => {
+      createTemplate(targetingMsgJson, false);
     };
 
     let _callBackCalled = false;
 
     const showFooterNotification = targetingMsgJson => {
-      let onClick = targetingMsgJson.display.onClick; // TODO: Needs wizrocket as a global variable
+      let onClick = targetingMsgJson.display.onClick;
+      const displayObj = targetingMsgJson.display; // TODO: Needs wizrocket as a global variable
 
       if (window.clevertap.hasOwnProperty('notificationCallback') && typeof window.clevertap.notificationCallback !== 'undefined' && typeof window.clevertap.notificationCallback === 'function') {
         const notificationCallback = window.clevertap.notificationCallback;
@@ -5408,7 +6466,7 @@
           window.clevertap.raiseNotificationClicked = () => {
             if (onClick !== '' && onClick != null) {
               const jsFunc = targetingMsgJson.display.jsFunc;
-              onClick += getCookieParams(); // invoke js function call
+              onClick += getCookieParams(_device, _session); // invoke js function call
 
               if (jsFunc != null) {
                 // track notification clicked event
@@ -5435,7 +6493,32 @@
         }
       } else {
         window.clevertap.popupCurrentWzrkId = targetingMsgJson.wzrk_id;
-        renderFooterNotification(targetingMsgJson);
+
+        if (displayObj.deliveryTrigger) {
+          if (displayObj.deliveryTrigger.inactive) {
+            triggerByInactivity(targetingMsgJson);
+          }
+
+          if (displayObj.deliveryTrigger.scroll) {
+            triggerByScroll(targetingMsgJson);
+          }
+
+          if (displayObj.deliveryTrigger.isExitIntent) {
+            exitintentObj = targetingMsgJson;
+            window.document.body.onmouseleave = showExitIntent;
+          } // delay
+
+
+          const delay = displayObj.delay || displayObj.deliveryTrigger.deliveryDelayed;
+
+          if (delay != null && delay > 0) {
+            setTimeout(() => {
+              renderFooterNotification(targetingMsgJson);
+            }, delay * 1000);
+          }
+        } else {
+          renderFooterNotification(targetingMsgJson);
+        }
 
         if (window.clevertap.hasOwnProperty('popupCallbacks') && typeof window.clevertap.popupCallbacks !== 'undefined' && typeof window.clevertap.popupCallbacks[targetingMsgJson.wzrk_id] === 'function') {
           const popupCallback = window.clevertap.popupCallbacks[targetingMsgJson.wzrk_id];
@@ -5503,26 +6586,111 @@
       }
     };
 
+    const triggerByInactivity = targetNotif => {
+      const IDLE_TIME_THRESHOLD = targetNotif.display.deliveryTrigger.inactive * 1000; // Convert to milliseconds
+
+      let idleTimer;
+      const events = ['mousemove', 'keypress', 'scroll', 'mousedown', 'touchmove', 'click'];
+
+      const resetIdleTimer = () => {
+        clearTimeout(idleTimer);
+        idleTimer = setTimeout(() => {
+          renderFooterNotification(targetNotif);
+          removeEventListeners();
+        }, IDLE_TIME_THRESHOLD);
+      };
+
+      const eventHandler = () => {
+        resetIdleTimer();
+      };
+
+      const setupEventListeners = () => {
+        events.forEach(eventType => window.addEventListener(eventType, eventHandler, {
+          passive: true
+        }));
+      };
+
+      const removeEventListeners = () => {
+        events.forEach(eventType => window.removeEventListener(eventType, eventHandler));
+      };
+
+      setupEventListeners();
+      resetIdleTimer();
+      return removeEventListeners; // Return a cleanup function
+    };
+
+    const triggerByScroll = targetNotif => {
+      const calculateScrollPercentage = () => {
+        const {
+          scrollHeight,
+          clientHeight,
+          scrollTop
+        } = document.documentElement;
+        return scrollTop / (scrollHeight - clientHeight) * 100;
+      };
+
+      const scrollListener = () => {
+        const scrollPercentage = calculateScrollPercentage();
+
+        if (scrollPercentage >= targetNotif.display.deliveryTrigger.scroll) {
+          renderFooterNotification(targetNotif);
+          window.removeEventListener('scroll', throttledScrollListener);
+        }
+      };
+
+      const throttle = (func, limit) => {
+        let inThrottle = false;
+        return function () {
+          const context = this;
+
+          if (!inThrottle) {
+            for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
+              args[_key] = arguments[_key];
+            }
+
+            func.apply(context, args);
+            inThrottle = true;
+            setTimeout(() => {
+              inThrottle = false;
+            }, limit);
+          }
+        };
+      };
+
+      const throttledScrollListener = throttle(scrollListener, 200);
+      window.addEventListener('scroll', throttledScrollListener, {
+        passive: true
+      });
+      return () => window.removeEventListener('scroll', throttledScrollListener); // Return a cleanup function
+    };
+
     let exitintentObj;
 
     const showExitIntent = (event, targetObj) => {
-      let targetingMsgJson;
+      if ((event === null || event === void 0 ? void 0 : event.clientY) > 0) return;
+      const targetingMsgJson = targetObj || exitintentObj;
+      const campaignId = targetingMsgJson.wzrk_id.split('_')[0];
+      const layout = targetingMsgJson.display.layout;
+      if (isExistingCampaign(campaignId)) return;
 
-      if (event != null && event.clientY > 0) {
+      if (targetingMsgJson.display.wtarget_type === 0 && (layout === 0 || layout === 2 || layout === 3)) {
+        createTemplate(targetingMsgJson, true);
         return;
       }
 
-      if (targetObj == null) {
-        targetingMsgJson = exitintentObj;
-      } else {
-        targetingMsgJson = targetObj;
+      if (doCampHouseKeeping(targetingMsgJson) === false) {
+        return;
       }
 
-      if ($ct.dismissSpamControl && targetingMsgJson.display.wtarget_type === 0 && document.getElementById('intentPreview') != null && document.getElementById('intentOpacityDiv') != null) {
-        const element = document.getElementById('intentPreview');
-        element.remove();
-        document.getElementById('intentOpacityDiv').remove();
-      } // ImageOnly campaign and Interstitial/Exit Intent shouldn't coexist
+      if ($ct.dismissSpamControl && targetingMsgJson.display.wtarget_type === 0) {
+        const intentPreview = document.getElementById('intentPreview');
+        const intentOpacityDiv = document.getElementById('intentOpacityDiv');
+
+        if (intentPreview && intentOpacityDiv) {
+          intentPreview.remove();
+          intentOpacityDiv.remove();
+        }
+      } // ImageOnly campaign and Interstitial/Exit Intent shouldn't coexist`
 
 
       if (document.getElementById('intentPreview') != null || document.getElementById('wzrkImageOnlyDiv') != null) {
@@ -5534,11 +6702,6 @@
         return;
       }
 
-      if (doCampHouseKeeping(targetingMsgJson) === false) {
-        return;
-      }
-
-      const campaignId = targetingMsgJson.wzrk_id.split('_')[0];
       $ct.campaignDivMap[campaignId] = 'intentPreview';
       let legacy = false;
       const opacityDiv = document.createElement('div');
@@ -5702,7 +6865,9 @@
           window.document.body.onmouseleave = showExitIntent;
         } else if (targetNotif.display.wtarget_type === 2) {
           // if display['wtarget_type']==2 then web native display
-          if (targetNotif.msgContent.type === 2 || targetNotif.msgContent.type === 3) {
+          if (targetNotif.msgContent.type === 1) {
+            handleKVpairCampaign(targetNotif);
+          } else if (targetNotif.msgContent.type === 2 || targetNotif.msgContent.type === 3) {
             // Check for banner and carousel
             const element = targetNotif.display.divId ? document.getElementById(targetNotif.display.divId) : document.querySelector(targetNotif.display.divSelector);
 
@@ -5728,32 +6893,6 @@
         }
       }
     }
-
-    const mergeEventMap = newEvtMap => {
-      if ($ct.globalEventsMap == null) {
-        $ct.globalEventsMap = StorageManager.readFromLSorCookie(EV_COOKIE);
-
-        if ($ct.globalEventsMap == null) {
-          $ct.globalEventsMap = newEvtMap;
-          return;
-        }
-      }
-
-      for (const key in newEvtMap) {
-        if (newEvtMap.hasOwnProperty(key)) {
-          const oldEvtObj = $ct.globalEventsMap[key];
-          const newEvtObj = newEvtMap[key];
-
-          if ($ct.globalEventsMap[key] != null) {
-            if (newEvtObj[0] != null && newEvtObj[0] > oldEvtObj[0]) {
-              $ct.globalEventsMap[key] = newEvtObj;
-            }
-          } else {
-            $ct.globalEventsMap[key] = newEvtObj;
-          }
-        }
-      }
-    };
 
     const handleInboxNotifications = () => {
       if (msg.inbox_preview) {
@@ -5794,35 +6933,14 @@
       }
     }
 
+    if (msg.webPushConfig) {
+      processWebPushConfig(msg.webPushConfig, logger, request);
+    }
+
     if (msg.vars) {
       $ct.variableStore.mergeVariables(msg.vars);
       return;
     }
-
-    const staleDataUpdate = (staledata, campType) => {
-      const campObj = getCampaignObject();
-      const globalObj = campObj[campType].global;
-
-      if (globalObj != null && campType) {
-        for (const idx in staledata) {
-          if (staledata.hasOwnProperty(idx)) {
-            delete globalObj[staledata[idx]];
-
-            if (StorageManager.read(CAMP_COOKIE_G)) {
-              const guidCampObj = JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)));
-              const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
-
-              if (guidCampObj[guid] && guidCampObj[guid][campType] && guidCampObj[guid][campType][staledata[idx]]) {
-                delete guidCampObj[guid][campType][staledata[idx]];
-                StorageManager.save(CAMP_COOKIE_G, encodeURIComponent(JSON.stringify(guidCampObj)));
-              }
-            }
-          }
-        }
-      }
-
-      saveCampaignObject(campObj);
-    };
 
     if (StorageManager._isLocalStorageSupported()) {
       try {
@@ -5989,7 +7107,7 @@
     return typeof sessionStorage !== 'undefined' && sessionStorage.WZRK_D === '';
   };
 
-  var _logger$5 = _classPrivateFieldLooseKey("logger");
+  var _logger$6 = _classPrivateFieldLooseKey("logger");
 
   var _sessionId = _classPrivateFieldLooseKey("sessionId");
 
@@ -6002,7 +7120,7 @@
         logger,
         isPersonalisationActive
       } = _ref;
-      Object.defineProperty(this, _logger$5, {
+      Object.defineProperty(this, _logger$6, {
         writable: true,
         value: void 0
       });
@@ -6017,7 +7135,7 @@
       this.cookieName = void 0;
       this.scookieObj = void 0;
       this.sessionId = StorageManager.getMetaProp('cs');
-      _classPrivateFieldLooseBase(this, _logger$5)[_logger$5] = logger;
+      _classPrivateFieldLooseBase(this, _logger$6)[_logger$6] = logger;
       _classPrivateFieldLooseBase(this, _isPersonalisationActive$3)[_isPersonalisationActive$3] = isPersonalisationActive;
     }
 
@@ -6128,9 +7246,9 @@
   let seqNo = 0;
   let requestTime = 0;
 
-  var _logger$6 = _classPrivateFieldLooseKey("logger");
+  var _logger$7 = _classPrivateFieldLooseKey("logger");
 
-  var _account$2 = _classPrivateFieldLooseKey("account");
+  var _account$3 = _classPrivateFieldLooseKey("account");
 
   var _device$2 = _classPrivateFieldLooseKey("device");
 
@@ -6154,11 +7272,11 @@
       Object.defineProperty(this, _addToLocalEventMap, {
         value: _addToLocalEventMap2
       });
-      Object.defineProperty(this, _logger$6, {
+      Object.defineProperty(this, _logger$7, {
         writable: true,
         value: void 0
       });
-      Object.defineProperty(this, _account$2, {
+      Object.defineProperty(this, _account$3, {
         writable: true,
         value: void 0
       });
@@ -6179,8 +7297,8 @@
         value: false
       });
       this.processingBackup = false;
-      _classPrivateFieldLooseBase(this, _logger$6)[_logger$6] = logger;
-      _classPrivateFieldLooseBase(this, _account$2)[_account$2] = account;
+      _classPrivateFieldLooseBase(this, _logger$7)[_logger$7] = logger;
+      _classPrivateFieldLooseBase(this, _account$3)[_account$3] = account;
       _classPrivateFieldLooseBase(this, _device$2)[_device$2] = device;
       _classPrivateFieldLooseBase(this, _session$2)[_session$2] = session;
       _classPrivateFieldLooseBase(this, _isPersonalisationActive$4)[_isPersonalisationActive$4] = isPersonalisationActive;
@@ -6203,7 +7321,7 @@
           const backupEvent = backupMap[idx];
 
           if (typeof backupEvent.fired === 'undefined') {
-            _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].debug('Processing backup event : ' + backupEvent.q);
+            _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].debug('Processing backup event : ' + backupEvent.q);
 
             if (typeof backupEvent.q !== 'undefined') {
               RequestDispatcher.fireRequest(backupEvent.q);
@@ -6221,15 +7339,15 @@
     addSystemDataToObject(dataObject, ignoreTrim) {
       // ignore trim for chrome notifications; undefined everywhere else
       if (typeof ignoreTrim === 'undefined') {
-        dataObject = removeUnsupportedChars(dataObject, _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]);
+        dataObject = removeUnsupportedChars(dataObject, _classPrivateFieldLooseBase(this, _logger$7)[_logger$7]);
       }
 
-      if (!isObjectEmpty(_classPrivateFieldLooseBase(this, _logger$6)[_logger$6].wzrkError)) {
-        dataObject.wzrk_error = _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].wzrkError;
-        _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].wzrkError = {};
+      if (!isObjectEmpty(_classPrivateFieldLooseBase(this, _logger$7)[_logger$7].wzrkError)) {
+        dataObject.wzrk_error = _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].wzrkError;
+        _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].wzrkError = {};
       }
 
-      dataObject.id = _classPrivateFieldLooseBase(this, _account$2)[_account$2].id;
+      dataObject.id = _classPrivateFieldLooseBase(this, _account$3)[_account$3].id;
 
       if (isValueValid(_classPrivateFieldLooseBase(this, _device$2)[_device$2].gcookie)) {
         dataObject.g = _classPrivateFieldLooseBase(this, _device$2)[_device$2].gcookie;
@@ -6244,7 +7362,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.9.1',
+        lib: 'web-sdk-v1.11.2',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -6263,7 +7381,7 @@
       if (_classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie] !== undefined && _classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie]) {
         data.rc = true;
 
-        _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].debug('reset cookie sent in request and cleared from meta for future requests.');
+        _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].debug('reset cookie sent in request and cleared from meta for future requests.');
       }
 
       if (_classPrivateFieldLooseBase(this, _isPersonalisationActive$4)[_isPersonalisationActive$4]()) {
@@ -6295,7 +7413,7 @@
       const now = getNow();
       url = addToURL(url, 'rn', ++$ct.globalCache.REQ_N);
       const data = url + '&i=' + now + '&sn=' + seqNo;
-      StorageManager.backupEvent(data, $ct.globalCache.REQ_N, _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]); // if offline is set to true, save the request in backup and return
+      StorageManager.backupEvent(data, $ct.globalCache.REQ_N, _classPrivateFieldLooseBase(this, _logger$7)[_logger$7]); // if offline is set to true, save the request in backup and return
 
       if ($ct.offline) return; // if there is no override
       // and an OUL request is not in progress
@@ -6314,7 +7432,7 @@
         window.oulReqN = $ct.globalCache.REQ_N;
         RequestDispatcher.fireRequest(data, false, sendOULFlag, evtName);
       } else {
-        _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].debug("Not fired due to override - ".concat($ct.blockRequest, " or clearCookie - ").concat(_classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie], " or OUL request in progress - ").concat(window.isOULInProgress));
+        _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].debug("Not fired due to override - ".concat($ct.blockRequest, " or clearCookie - ").concat(_classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie], " or OUL request in progress - ").concat(window.isOULInProgress));
       }
     }
 
@@ -6330,15 +7448,15 @@
         }
 
         data.action = 'unregister';
-        data.id = _classPrivateFieldLooseBase(this, _account$2)[_account$2].id;
+        data.id = _classPrivateFieldLooseBase(this, _account$3)[_account$3].id;
 
         const obj = _classPrivateFieldLooseBase(this, _session$2)[_session$2].getSessionCookieObject();
 
         data.s = obj.s; // session cookie
 
-        const compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]);
+        const compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$7)[_logger$7]);
 
-        let pageLoadUrl = _classPrivateFieldLooseBase(this, _account$2)[_account$2].dataPostURL;
+        let pageLoadUrl = _classPrivateFieldLooseBase(this, _account$3)[_account$3].dataPostURL;
 
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data');
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
@@ -6356,10 +7474,10 @@
       payload = this.addSystemDataToObject(payload, true);
       payload = JSON.stringify(payload);
 
-      let pageLoadUrl = _classPrivateFieldLooseBase(this, _account$2)[_account$2].dataPostURL;
+      let pageLoadUrl = _classPrivateFieldLooseBase(this, _account$3)[_account$3].dataPostURL;
 
       pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data');
-      pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(payload, _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]));
+      pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(payload, _classPrivateFieldLooseBase(this, _logger$7)[_logger$7]));
       RequestDispatcher.fireRequest(pageLoadUrl); // set in localstorage
 
       StorageManager.save(WEBPUSH_LS_KEY, 'ok');
@@ -6371,9 +7489,9 @@
       data = this.addSystemDataToObject(data, undefined);
       this.addFlags(data);
       data[CAMP_COOKIE_NAME] = getCampaignObjForLc();
-      const compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]);
+      const compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$7)[_logger$7]);
 
-      let pageLoadUrl = _classPrivateFieldLooseBase(this, _account$2)[_account$2].dataPostURL;
+      let pageLoadUrl = _classPrivateFieldLooseBase(this, _account$3)[_account$3].dataPostURL;
 
       pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH);
       pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
@@ -6394,11 +7512,11 @@
 
         throw response;
       }).then(data => {
-        _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].debug('Sync data successful', data);
+        _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].debug('Sync data successful', data);
 
         return data;
       }).catch(e => {
-        _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].debug('Error in syncing variables', e);
+        _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].debug('Error in syncing variables', e);
 
         throw e;
       });
@@ -6434,13 +7552,13 @@
     }
   };
 
-  var _request$4 = _classPrivateFieldLooseKey("request");
+  var _request$5 = _classPrivateFieldLooseKey("request");
 
-  var _account$3 = _classPrivateFieldLooseKey("account");
+  var _account$4 = _classPrivateFieldLooseKey("account");
 
-  var _oldValues$3 = _classPrivateFieldLooseKey("oldValues");
+  var _oldValues$4 = _classPrivateFieldLooseKey("oldValues");
 
-  var _logger$7 = _classPrivateFieldLooseKey("logger");
+  var _logger$8 = _classPrivateFieldLooseKey("logger");
 
   var _processPrivacyArray = _classPrivateFieldLooseKey("processPrivacyArray");
 
@@ -6455,26 +7573,26 @@
       Object.defineProperty(this, _processPrivacyArray, {
         value: _processPrivacyArray2
       });
-      Object.defineProperty(this, _request$4, {
+      Object.defineProperty(this, _request$5, {
         writable: true,
         value: void 0
       });
-      Object.defineProperty(this, _account$3, {
+      Object.defineProperty(this, _account$4, {
         writable: true,
         value: void 0
       });
-      Object.defineProperty(this, _oldValues$3, {
+      Object.defineProperty(this, _oldValues$4, {
         writable: true,
         value: void 0
       });
-      Object.defineProperty(this, _logger$7, {
+      Object.defineProperty(this, _logger$8, {
         writable: true,
         value: void 0
       });
-      _classPrivateFieldLooseBase(this, _logger$7)[_logger$7] = logger;
-      _classPrivateFieldLooseBase(this, _request$4)[_request$4] = request;
-      _classPrivateFieldLooseBase(this, _account$3)[_account$3] = account;
-      _classPrivateFieldLooseBase(this, _oldValues$3)[_oldValues$3] = values;
+      _classPrivateFieldLooseBase(this, _logger$8)[_logger$8] = logger;
+      _classPrivateFieldLooseBase(this, _request$5)[_request$5] = request;
+      _classPrivateFieldLooseBase(this, _account$4)[_account$4] = account;
+      _classPrivateFieldLooseBase(this, _oldValues$4)[_oldValues$4] = values;
     }
 
     push() {
@@ -6492,11 +7610,11 @@
     }
 
     _processOldValues() {
-      if (_classPrivateFieldLooseBase(this, _oldValues$3)[_oldValues$3]) {
-        _classPrivateFieldLooseBase(this, _processPrivacyArray)[_processPrivacyArray](_classPrivateFieldLooseBase(this, _oldValues$3)[_oldValues$3]);
+      if (_classPrivateFieldLooseBase(this, _oldValues$4)[_oldValues$4]) {
+        _classPrivateFieldLooseBase(this, _processPrivacyArray)[_processPrivacyArray](_classPrivateFieldLooseBase(this, _oldValues$4)[_oldValues$4]);
       }
 
-      _classPrivateFieldLooseBase(this, _oldValues$3)[_oldValues$3] = null;
+      _classPrivateFieldLooseBase(this, _oldValues$4)[_oldValues$4] = null;
     }
 
   }
@@ -6529,523 +7647,19 @@
       if (!isObjectEmpty(profileObj)) {
         data.type = 'profile';
         data.profile = profileObj;
-        data = _classPrivateFieldLooseBase(this, _request$4)[_request$4].addSystemDataToObject(data, undefined);
-        const compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$7)[_logger$7]);
+        data = _classPrivateFieldLooseBase(this, _request$5)[_request$5].addSystemDataToObject(data, undefined);
+        const compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$8)[_logger$8]);
 
-        let pageLoadUrl = _classPrivateFieldLooseBase(this, _account$3)[_account$3].dataPostURL;
+        let pageLoadUrl = _classPrivateFieldLooseBase(this, _account$4)[_account$4].dataPostURL;
 
         pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH);
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
         pageLoadUrl = addToURL(pageLoadUrl, OPTOUT_KEY, optOut ? 'true' : 'false');
 
-        _classPrivateFieldLooseBase(this, _request$4)[_request$4].saveAndFireRequest(pageLoadUrl, $ct.blockRequest);
+        _classPrivateFieldLooseBase(this, _request$5)[_request$5].saveAndFireRequest(pageLoadUrl, $ct.blockRequest);
 
         privacyArr.splice(0, privacyArr.length);
       }
-    }
-  };
-
-  var _oldValues$4 = _classPrivateFieldLooseKey("oldValues");
-
-  var _logger$8 = _classPrivateFieldLooseKey("logger");
-
-  var _request$5 = _classPrivateFieldLooseKey("request");
-
-  var _account$4 = _classPrivateFieldLooseKey("account");
-
-  var _wizAlertJSPath = _classPrivateFieldLooseKey("wizAlertJSPath");
-
-  var _fcmPublicKey = _classPrivateFieldLooseKey("fcmPublicKey");
-
-  var _setUpWebPush = _classPrivateFieldLooseKey("setUpWebPush");
-
-  var _setUpWebPushNotifications = _classPrivateFieldLooseKey("setUpWebPushNotifications");
-
-  var _setApplicationServerKey = _classPrivateFieldLooseKey("setApplicationServerKey");
-
-  var _setUpSafariNotifications = _classPrivateFieldLooseKey("setUpSafariNotifications");
-
-  var _setUpChromeFirefoxNotifications = _classPrivateFieldLooseKey("setUpChromeFirefoxNotifications");
-
-  var _addWizAlertJS = _classPrivateFieldLooseKey("addWizAlertJS");
-
-  var _removeWizAlertJS = _classPrivateFieldLooseKey("removeWizAlertJS");
-
-  var _handleNotificationRegistration = _classPrivateFieldLooseKey("handleNotificationRegistration");
-
-  class NotificationHandler extends Array {
-    constructor(_ref, values) {
-      let {
-        logger,
-        session,
-        request,
-        account
-      } = _ref;
-      super();
-      Object.defineProperty(this, _handleNotificationRegistration, {
-        value: _handleNotificationRegistration2
-      });
-      Object.defineProperty(this, _removeWizAlertJS, {
-        value: _removeWizAlertJS2
-      });
-      Object.defineProperty(this, _addWizAlertJS, {
-        value: _addWizAlertJS2
-      });
-      Object.defineProperty(this, _setUpChromeFirefoxNotifications, {
-        value: _setUpChromeFirefoxNotifications2
-      });
-      Object.defineProperty(this, _setUpSafariNotifications, {
-        value: _setUpSafariNotifications2
-      });
-      Object.defineProperty(this, _setApplicationServerKey, {
-        value: _setApplicationServerKey2
-      });
-      Object.defineProperty(this, _setUpWebPushNotifications, {
-        value: _setUpWebPushNotifications2
-      });
-      Object.defineProperty(this, _setUpWebPush, {
-        value: _setUpWebPush2
-      });
-      Object.defineProperty(this, _oldValues$4, {
-        writable: true,
-        value: void 0
-      });
-      Object.defineProperty(this, _logger$8, {
-        writable: true,
-        value: void 0
-      });
-      Object.defineProperty(this, _request$5, {
-        writable: true,
-        value: void 0
-      });
-      Object.defineProperty(this, _account$4, {
-        writable: true,
-        value: void 0
-      });
-      Object.defineProperty(this, _wizAlertJSPath, {
-        writable: true,
-        value: void 0
-      });
-      Object.defineProperty(this, _fcmPublicKey, {
-        writable: true,
-        value: void 0
-      });
-      _classPrivateFieldLooseBase(this, _wizAlertJSPath)[_wizAlertJSPath] = 'https://d2r1yp2w7bby2u.cloudfront.net/js/wzrk_dialog.min.js';
-      _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] = null;
-      _classPrivateFieldLooseBase(this, _oldValues$4)[_oldValues$4] = values;
-      _classPrivateFieldLooseBase(this, _logger$8)[_logger$8] = logger;
-      _classPrivateFieldLooseBase(this, _request$5)[_request$5] = request;
-      _classPrivateFieldLooseBase(this, _account$4)[_account$4] = account;
-    }
-
-    push() {
-      for (var _len = arguments.length, displayArgs = new Array(_len), _key = 0; _key < _len; _key++) {
-        displayArgs[_key] = arguments[_key];
-      }
-
-      _classPrivateFieldLooseBase(this, _setUpWebPush)[_setUpWebPush](displayArgs);
-
-      return 0;
-    }
-
-    _processOldValues() {
-      if (_classPrivateFieldLooseBase(this, _oldValues$4)[_oldValues$4]) {
-        _classPrivateFieldLooseBase(this, _setUpWebPush)[_setUpWebPush](_classPrivateFieldLooseBase(this, _oldValues$4)[_oldValues$4]);
-      }
-
-      _classPrivateFieldLooseBase(this, _oldValues$4)[_oldValues$4] = null;
-    }
-
-    _enableWebPush(enabled, applicationServerKey) {
-      $ct.webPushEnabled = enabled;
-
-      if (applicationServerKey != null) {
-        _classPrivateFieldLooseBase(this, _setApplicationServerKey)[_setApplicationServerKey](applicationServerKey);
-      }
-
-      if ($ct.webPushEnabled && $ct.notifApi.notifEnabledFromApi) {
-        _classPrivateFieldLooseBase(this, _handleNotificationRegistration)[_handleNotificationRegistration]($ct.notifApi.displayArgs);
-      } else if (!$ct.webPushEnabled && $ct.notifApi.notifEnabledFromApi) {
-        _classPrivateFieldLooseBase(this, _logger$8)[_logger$8].error('Ensure that web push notifications are fully enabled and integrated before requesting them');
-      }
-    }
-
-  }
-
-  var _setUpWebPush2 = function _setUpWebPush2(displayArgs) {
-    if ($ct.webPushEnabled && displayArgs.length > 0) {
-      _classPrivateFieldLooseBase(this, _handleNotificationRegistration)[_handleNotificationRegistration](displayArgs);
-    } else if ($ct.webPushEnabled == null && displayArgs.length > 0) {
-      $ct.notifApi.notifEnabledFromApi = true;
-      $ct.notifApi.displayArgs = displayArgs.slice();
-    } else if ($ct.webPushEnabled === false && displayArgs.length > 0) {
-      _classPrivateFieldLooseBase(this, _logger$8)[_logger$8].error('Make sure push notifications are fully enabled and integrated');
-    }
-  };
-
-  var _setUpWebPushNotifications2 = function _setUpWebPushNotifications2(subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsServiceUrl) {
-    if (navigator.userAgent.indexOf('Chrome') !== -1 || navigator.userAgent.indexOf('Firefox') !== -1) {
-      _classPrivateFieldLooseBase(this, _setUpChromeFirefoxNotifications)[_setUpChromeFirefoxNotifications](subscriptionCallback, serviceWorkerPath);
-    } else if (navigator.userAgent.indexOf('Safari') !== -1) {
-      _classPrivateFieldLooseBase(this, _setUpSafariNotifications)[_setUpSafariNotifications](subscriptionCallback, apnsWebPushId, apnsServiceUrl);
-    }
-  };
-
-  var _setApplicationServerKey2 = function _setApplicationServerKey2(applicationServerKey) {
-    _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] = applicationServerKey;
-  };
-
-  var _setUpSafariNotifications2 = function _setUpSafariNotifications2(subscriptionCallback, apnsWebPushId, apnsServiceUrl) {
-    // ensure that proper arguments are passed
-    if (typeof apnsWebPushId === 'undefined') {
-      _classPrivateFieldLooseBase(this, _logger$8)[_logger$8].error('Ensure that APNS Web Push ID is supplied');
-    }
-
-    if (typeof apnsServiceUrl === 'undefined') {
-      _classPrivateFieldLooseBase(this, _logger$8)[_logger$8].error('Ensure that APNS Web Push service path is supplied');
-    }
-
-    if ('safari' in window && 'pushNotification' in window.safari) {
-      window.safari.pushNotification.requestPermission(apnsServiceUrl, apnsWebPushId, {}, subscription => {
-        if (subscription.permission === 'granted') {
-          const subscriptionData = JSON.parse(JSON.stringify(subscription));
-          subscriptionData.endpoint = subscription.deviceToken;
-          subscriptionData.browser = 'Safari';
-          StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData);
-
-          _classPrivateFieldLooseBase(this, _request$5)[_request$5].registerToken(subscriptionData);
-
-          _classPrivateFieldLooseBase(this, _logger$8)[_logger$8].info('Safari Web Push registered. Device Token: ' + subscription.deviceToken);
-        } else if (subscription.permission === 'denied') {
-          _classPrivateFieldLooseBase(this, _logger$8)[_logger$8].info('Error subscribing to Safari web push');
-        }
-      });
-    }
-  };
-
-  var _setUpChromeFirefoxNotifications2 = function _setUpChromeFirefoxNotifications2(subscriptionCallback, serviceWorkerPath) {
-    let registrationScope = '';
-
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register(serviceWorkerPath).then(registration => {
-        if (typeof __wzrk_account_id !== 'undefined') {
-          // eslint-disable-line
-          // shopify accounts , since the service worker is not at root, serviceWorker.ready is never resolved.
-          // hence add a timeout and hope serviceWroker is ready within that time.
-          return new Promise(resolve => setTimeout(() => resolve(registration), 5000));
-        }
-
-        registrationScope = registration.scope; // IF SERVICE WORKER IS AT ROOT, RETURN THE READY PROMISE
-        // ELSE IF CHROME RETURN PROMISE AFTER 5 SECONDS
-        // OR getRegistrations PROMISE IF ITS FIREFOX
-
-        const rootDirRegex = /^(\.?)(\/?)([^/]*).js$/;
-        const isServiceWorkerAtRoot = rootDirRegex.test(serviceWorkerPath);
-
-        if (isServiceWorkerAtRoot) {
-          return navigator.serviceWorker.ready;
-        } else {
-          if (navigator.userAgent.indexOf('Chrome') !== -1) {
-            return new Promise(resolve => setTimeout(() => resolve(registration), 5000));
-          } else {
-            return navigator.serviceWorker.getRegistrations();
-          }
-        }
-      }).then(serviceWorkerRegistration => {
-        // ITS AN ARRAY IN CASE OF FIREFOX, SO USE THE REGISTRATION WITH PROPER SCOPE
-        if (navigator.userAgent.indexOf('Firefox') !== -1 && Array.isArray(serviceWorkerRegistration)) {
-          serviceWorkerRegistration = serviceWorkerRegistration.filter(i => i.scope === registrationScope)[0];
-        }
-
-        const subscribeObj = {
-          userVisibleOnly: true
-        };
-
-        if (_classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] != null) {
-          subscribeObj.applicationServerKey = urlBase64ToUint8Array(_classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey]);
-        }
-
-        serviceWorkerRegistration.pushManager.subscribe(subscribeObj).then(subscription => {
-          _classPrivateFieldLooseBase(this, _logger$8)[_logger$8].info('Service Worker registered. Endpoint: ' + subscription.endpoint); // convert the subscription keys to strings; this sets it up nicely for pushing to LC
-
-
-          const subscriptionData = JSON.parse(JSON.stringify(subscription)); // remove the common chrome/firefox endpoint at the beginning of the token
-
-          if (navigator.userAgent.indexOf('Chrome') !== -1) {
-            subscriptionData.endpoint = subscriptionData.endpoint.split('/').pop();
-            subscriptionData.browser = 'Chrome';
-          } else if (navigator.userAgent.indexOf('Firefox') !== -1) {
-            subscriptionData.endpoint = subscriptionData.endpoint.split('/').pop();
-            subscriptionData.browser = 'Firefox';
-          }
-
-          StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData);
-
-          _classPrivateFieldLooseBase(this, _request$5)[_request$5].registerToken(subscriptionData);
-
-          if (typeof subscriptionCallback !== 'undefined' && typeof subscriptionCallback === 'function') {
-            subscriptionCallback();
-          }
-        }).catch(error => {
-          _classPrivateFieldLooseBase(this, _logger$8)[_logger$8].error('Error subscribing: ' + error); // unsubscribe from webpush if error
-
-
-          serviceWorkerRegistration.pushManager.getSubscription().then(subscription => {
-            if (subscription !== null) {
-              subscription.unsubscribe().then(successful => {
-                // You've successfully unsubscribed
-                _classPrivateFieldLooseBase(this, _logger$8)[_logger$8].info('Unsubscription successful');
-              }).catch(e => {
-                // Unsubscription failed
-                _classPrivateFieldLooseBase(this, _logger$8)[_logger$8].error('Error unsubscribing: ' + e);
-              });
-            }
-          });
-        });
-      }).catch(err => {
-        _classPrivateFieldLooseBase(this, _logger$8)[_logger$8].error('error registering service worker: ' + err);
-      });
-    }
-  };
-
-  var _addWizAlertJS2 = function _addWizAlertJS2() {
-    const scriptTag = document.createElement('script');
-    scriptTag.setAttribute('type', 'text/javascript');
-    scriptTag.setAttribute('id', 'wzrk-alert-js');
-    scriptTag.setAttribute('src', _classPrivateFieldLooseBase(this, _wizAlertJSPath)[_wizAlertJSPath]); // add the script tag to the end of the body
-
-    document.getElementsByTagName('body')[0].appendChild(scriptTag);
-    return scriptTag;
-  };
-
-  var _removeWizAlertJS2 = function _removeWizAlertJS2() {
-    const scriptTag = document.getElementById('wzrk-alert-js');
-    scriptTag.parentNode.removeChild(scriptTag);
-  };
-
-  var _handleNotificationRegistration2 = function _handleNotificationRegistration2(displayArgs) {
-    // make sure everything is specified
-    let titleText;
-    let bodyText;
-    let okButtonText;
-    let rejectButtonText;
-    let okButtonColor;
-    let skipDialog;
-    let askAgainTimeInSeconds;
-    let okCallback;
-    let rejectCallback;
-    let subscriptionCallback;
-    let serviceWorkerPath;
-    let httpsPopupPath;
-    let httpsIframePath;
-    let apnsWebPushId;
-    let apnsWebPushServiceUrl;
-
-    if (displayArgs.length === 1) {
-      if (isObject(displayArgs[0])) {
-        const notifObj = displayArgs[0];
-        titleText = notifObj.titleText;
-        bodyText = notifObj.bodyText;
-        okButtonText = notifObj.okButtonText;
-        rejectButtonText = notifObj.rejectButtonText;
-        okButtonColor = notifObj.okButtonColor;
-        skipDialog = notifObj.skipDialog;
-        askAgainTimeInSeconds = notifObj.askAgainTimeInSeconds;
-        okCallback = notifObj.okCallback;
-        rejectCallback = notifObj.rejectCallback;
-        subscriptionCallback = notifObj.subscriptionCallback;
-        serviceWorkerPath = notifObj.serviceWorkerPath;
-        httpsPopupPath = notifObj.httpsPopupPath;
-        httpsIframePath = notifObj.httpsIframePath;
-        apnsWebPushId = notifObj.apnsWebPushId;
-        apnsWebPushServiceUrl = notifObj.apnsWebPushServiceUrl;
-      }
-    } else {
-      titleText = displayArgs[0];
-      bodyText = displayArgs[1];
-      okButtonText = displayArgs[2];
-      rejectButtonText = displayArgs[3];
-      okButtonColor = displayArgs[4];
-      skipDialog = displayArgs[5];
-      askAgainTimeInSeconds = displayArgs[6];
-    }
-
-    if (skipDialog == null) {
-      skipDialog = false;
-    }
-
-    if (serviceWorkerPath == null) {
-      serviceWorkerPath = '/clevertap_sw.js';
-    } // ensure that the browser supports notifications
-
-
-    if (typeof navigator.serviceWorker === 'undefined') {
-      return;
-    }
-
-    const isHTTP = httpsPopupPath != null && httpsIframePath != null; // make sure the site is on https for chrome notifications
-
-    if (window.location.protocol !== 'https:' && document.location.hostname !== 'localhost' && !isHTTP) {
-      _classPrivateFieldLooseBase(this, _logger$8)[_logger$8].error('Make sure you are https or localhost to register for notifications');
-
-      return;
-    } // right now, we only support Chrome V50 & higher & Firefox
-
-
-    if (navigator.userAgent.indexOf('Chrome') !== -1) {
-      const chromeAgent = navigator.userAgent.match(/Chrome\/(\d+)/);
-
-      if (chromeAgent == null || parseInt(chromeAgent[1], 10) < 50) {
-        return;
-      }
-    } else if (navigator.userAgent.indexOf('Firefox') !== -1) {
-      const firefoxAgent = navigator.userAgent.match(/Firefox\/(\d+)/);
-
-      if (firefoxAgent == null || parseInt(firefoxAgent[1], 10) < 50) {
-        return;
-      }
-    } else if (navigator.userAgent.indexOf('Safari') !== -1) {
-      const safariAgent = navigator.userAgent.match(/Safari\/(\d+)/);
-
-      if (safariAgent == null || parseInt(safariAgent[1], 10) < 50) {
-        return;
-      }
-    } else {
-      return;
-    } // we check for the cookie in setUpChromeNotifications() the tokens may have changed
-
-
-    if (!isHTTP) {
-      if (Notification == null) {
-        return;
-      } // handle migrations from other services -> chrome notifications may have already been asked for before
-
-
-      if (Notification.permission === 'granted') {
-        // skip the dialog and register
-        _classPrivateFieldLooseBase(this, _setUpWebPushNotifications)[_setUpWebPushNotifications](subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsWebPushServiceUrl);
-
-        return;
-      } else if (Notification.permission === 'denied') {
-        // we've lost this profile :'(
-        return;
-      }
-
-      if (skipDialog) {
-        _classPrivateFieldLooseBase(this, _setUpWebPushNotifications)[_setUpWebPushNotifications](subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsWebPushServiceUrl);
-
-        return;
-      }
-    } // make sure the right parameters are passed
-
-
-    if (!titleText || !bodyText || !okButtonText || !rejectButtonText) {
-      _classPrivateFieldLooseBase(this, _logger$8)[_logger$8].error('Missing input parameters; please specify title, body, ok button and cancel button text');
-
-      return;
-    } // make sure okButtonColor is formatted properly
-
-
-    if (okButtonColor == null || !okButtonColor.match(/^#[a-f\d]{6}$/i)) {
-      okButtonColor = '#f28046'; // default color for positive button
-    } // make sure the user isn't asked for notifications more than askAgainTimeInSeconds
-
-
-    const now = new Date().getTime() / 1000;
-
-    if (StorageManager.getMetaProp('notif_last_time') == null) {
-      StorageManager.setMetaProp('notif_last_time', now);
-    } else {
-      if (askAgainTimeInSeconds == null) {
-        // 7 days by default
-        askAgainTimeInSeconds = 7 * 24 * 60 * 60;
-      }
-
-      if (now - StorageManager.getMetaProp('notif_last_time') < askAgainTimeInSeconds) {
-        return;
-      } else {
-        // continue asking
-        StorageManager.setMetaProp('notif_last_time', now);
-      }
-    }
-
-    if (isHTTP) {
-      // add the https iframe
-      const httpsIframe = document.createElement('iframe');
-      httpsIframe.setAttribute('style', 'display:none;');
-      httpsIframe.setAttribute('src', httpsIframePath);
-      document.body.appendChild(httpsIframe);
-      window.addEventListener('message', event => {
-        if (event.data != null) {
-          let obj = {};
-
-          try {
-            obj = JSON.parse(event.data);
-          } catch (e) {
-            // not a call from our iframe
-            return;
-          }
-
-          if (obj.state != null) {
-            if (obj.from === 'ct' && obj.state === 'not') {
-              _classPrivateFieldLooseBase(this, _addWizAlertJS)[_addWizAlertJS]().onload = () => {
-                // create our wizrocket popup
-                window.wzrkPermissionPopup.wizAlert({
-                  title: titleText,
-                  body: bodyText,
-                  confirmButtonText: okButtonText,
-                  confirmButtonColor: okButtonColor,
-                  rejectButtonText: rejectButtonText
-                }, enabled => {
-                  // callback function
-                  if (enabled) {
-                    // the user accepted on the dialog box
-                    if (typeof okCallback === 'function') {
-                      okCallback();
-                    } // redirect to popup.html
-
-
-                    window.open(httpsPopupPath);
-                  } else {
-                    if (typeof rejectCallback === 'function') {
-                      rejectCallback();
-                    }
-                  }
-
-                  _classPrivateFieldLooseBase(this, _removeWizAlertJS)[_removeWizAlertJS]();
-                });
-              };
-            }
-          }
-        }
-      }, false);
-    } else {
-      _classPrivateFieldLooseBase(this, _addWizAlertJS)[_addWizAlertJS]().onload = () => {
-        // create our wizrocket popup
-        window.wzrkPermissionPopup.wizAlert({
-          title: titleText,
-          body: bodyText,
-          confirmButtonText: okButtonText,
-          confirmButtonColor: okButtonColor,
-          rejectButtonText: rejectButtonText
-        }, enabled => {
-          // callback function
-          if (enabled) {
-            // the user accepted on the dialog box
-            if (typeof okCallback === 'function') {
-              okCallback();
-            }
-
-            _classPrivateFieldLooseBase(this, _setUpWebPushNotifications)[_setUpWebPushNotifications](subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsWebPushServiceUrl);
-          } else {
-            if (typeof rejectCallback === 'function') {
-              rejectCallback();
-            }
-          }
-
-          _classPrivateFieldLooseBase(this, _removeWizAlertJS)[_removeWizAlertJS]();
-        });
-      };
     }
   };
 
@@ -8121,6 +8735,8 @@
       };
 
       api.enableWebPush = (enabled, applicationServerKey) => {
+        setServerKey(applicationServerKey);
+
         this.notifications._enableWebPush(enabled, applicationServerKey);
       };
 
@@ -8212,12 +8828,17 @@
 
 
     init(accountId, region, targetDomain, token) {
+      let antiFlicker = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : {};
+
+      if (Object.keys(antiFlicker).length > 0) {
+        addAntiFlicker(antiFlicker);
+      }
+
       if (_classPrivateFieldLooseBase(this, _onloadcalled)[_onloadcalled] === 1) {
         // already initailsed
         return;
       }
 
-      checkBuilder(_classPrivateFieldLooseBase(this, _logger$a)[_logger$a]);
       StorageManager.removeCookie('WZRK_P', window.location.hostname);
 
       if (!_classPrivateFieldLooseBase(this, _account$6)[_account$6].id) {
@@ -8230,6 +8851,7 @@
         _classPrivateFieldLooseBase(this, _account$6)[_account$6].id = accountId;
       }
 
+      checkBuilder(_classPrivateFieldLooseBase(this, _logger$a)[_logger$a], _classPrivateFieldLooseBase(this, _account$6)[_account$6].id);
       _classPrivateFieldLooseBase(this, _session$3)[_session$3].cookieName = SCOOKIE_PREFIX + '_' + _classPrivateFieldLooseBase(this, _account$6)[_account$6].id;
 
       if (region) {
@@ -8410,7 +9032,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.9.1';
+      return 'web-sdk-v1.11.2';
     }
 
     defineVariable(name, defaultValue) {
