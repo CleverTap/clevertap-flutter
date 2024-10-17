@@ -110,18 +110,6 @@ class _MyAppState extends State<MyApp> {
         var kv = obj["kv"];
         print(kv);
       });
-      // enable web push
-      var pushData = {
-        'titleText': 'Would you like to receive Push Notifications?',
-        'bodyText':
-            'We promise to only send you relevant content and give you updates on your transactions',
-        'okButtonText': 'Ok',
-        'rejectButtonText': 'Cancel',
-        'okButtonColor': '#F28046',
-        'askAgainTimeInSeconds': 5,
-        'serviceWorkerPath': '/firebase-messaging-sw.js'
-      };
-      CleverTapPlugin.enableWebPush(pushData);
       return;
     }
     if (Platform.isAndroid) {
@@ -1526,28 +1514,26 @@ class _MyAppState extends State<MyApp> {
                       ),
                     ),
                   ),
-                if (!kIsWeb)
-                  Card(
-                    color: Colors.grey.shade300,
-                    child: Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: ListTile(
-                        title: Text("Prompt for Push Notification"),
-                        onTap: promptForPushNotification,
-                      ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Prompt for Push Notification"),
+                      onTap: promptForPushNotification,
                     ),
                   ),
-                if (!kIsWeb)
-                  Card(
-                    color: Colors.grey.shade300,
-                    child: Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: ListTile(
-                        title: Text("Local Half Interstitial Push Primer"),
-                        onTap: localHalfInterstitialPushPrimer,
-                      ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text("Local Half Interstitial Push Primer"),
+                      onTap: localHalfInterstitialPushPrimer,
                     ),
                   ),
+                ),
                 if (!kIsWeb)
                   Card(
                     color: Colors.grey.shade300,
@@ -2219,7 +2205,7 @@ class _MyAppState extends State<MyApp> {
   void getProfileProperty() {
     var propertyName = "Email";
     CleverTapPlugin.profileGetProperty(propertyName).then((prop) {
-      if(prop == null) {
+      if (prop == null) {
         showToast("Property not found");
         return;
       }
@@ -2414,7 +2400,21 @@ class _MyAppState extends State<MyApp> {
 
   void promptForPushNotification() {
     var fallbackToSettings = true;
-    CleverTapPlugin.promptForPushNotification(fallbackToSettings);
+    if (kIsWeb) {
+      var pushData = {
+        'titleText': 'Would you like to receive Push Notifications?',
+        'bodyText':
+            'We promise to only send you relevant content and give you updates on your transactions',
+        'okButtonText': 'Ok',
+        'rejectButtonText': 'Cancel',
+        'okButtonColor': '#F28046',
+        'askAgainTimeInSeconds': 5,
+        'serviceWorkerPath': '/firebase-messaging-sw.js'
+      };
+      CleverTapPlugin.enableWebPush(pushData);
+    } else {
+      CleverTapPlugin.promptForPushNotification(fallbackToSettings);
+    }
     showToast("Prompt Push Permission");
   }
 
@@ -2438,8 +2438,13 @@ class _MyAppState extends State<MyApp> {
       'imageUrl':
           'https://icons.iconarchive.com/icons/treetog/junior/64/camera-icon.png'
     };
-    CleverTapPlugin.promptPushPrimer(pushPrimerJSON);
-    showToast("Half-Interstitial Push Primer");
+    if (kIsWeb) {
+      CleverTapPlugin.enableWebPushNotifications(
+          {'swPath': '/firebase-messaging-sw.js'});
+    } else {
+      CleverTapPlugin.promptPushPrimer(pushPrimerJSON);
+      showToast("Half-Interstitial Push Primer");
+    }
   }
 
   void localAlertPushPrimer() {

@@ -343,7 +343,7 @@ class CleverTapPlugin {
         'renderNotificationViewed', viewedData);
   }
 
-  /// Only for Web - Render notification viewed
+  /// Only for Web - Render notification clicked
   static Future<void> renderNotificationClicked(
       Map<String, dynamic> clickedData) async {
     if (!kIsWeb) {
@@ -353,13 +353,23 @@ class CleverTapPlugin {
         'renderNotificationClicked', clickedData);
   }
 
-  /// Only for Web - Render notification viewed
+  /// Only for Web - enable web push
   static Future<void> enableWebPush(Map<String, dynamic> pushData) async {
     if (!kIsWeb) {
       return;
     }
     await _dartToNativeMethodChannel.invokeMethod<void>(
         'enableWebPush', pushData);
+  }
+
+  /// Only for Web - enable web push for customized prompt
+  static Future<void> enableWebPushNotifications(
+      Map<String, dynamic> pushData) async {
+    if (!kIsWeb) {
+      return;
+    }
+    await _dartToNativeMethodChannel.invokeMethod<void>(
+        'enableWebPushNotifications', pushData);
   }
 
   /// Only for Web - Mark all messages as read
@@ -1063,7 +1073,7 @@ class CleverTapPlugin {
   }
 
   static String getCleverTapDate(DateTime dateTime) {
-    return '\$D_' + (dateTime.millisecondsSinceEpoch~/1000).toString();
+    return '\$D_' + (dateTime.millisecondsSinceEpoch ~/ 1000).toString();
   }
 
   // Push Primer

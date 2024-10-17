@@ -46,6 +46,8 @@ class CleverTapPluginWeb {
         return _profileSet(call);
       case 'enableWebPush':
         return _enableWebPush(call);
+      case 'enableWebPushNotifications':
+        return _enableWebPushNotifications(call);
       case 'setOptOut':
         return _setOptOut(call);
       case 'setUseIP':
@@ -164,6 +166,12 @@ class CleverTapPluginWeb {
   void _enableWebPush(MethodCall call) {
     Map<Object?, Object?> args = call.arguments as Map<Object?, Object?>;
     notifications_push(js_util.jsify(args));
+  }
+
+  /// enable web push for enabling new prompt
+  void _enableWebPushNotifications(MethodCall call) {
+    Map<Object?, Object?> args = call.arguments as Map<Object?, Object?>;
+    notifications_enable(js_util.jsify(args));
   }
 
   /// Profile push request
