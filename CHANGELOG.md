@@ -18,6 +18,10 @@
   *  Supports [CleverTap Web SDK v1.11.2](https://github.com/CleverTap/clevertap-web-sdk/releases/tag/v1.11.2) 
 
 **Bug Fixes**
+* **[All Platforms]**
+  * Fixes [#260](https://github.com/CleverTap/clevertap-flutter/issues/260) - an issue related when running `pub get` from a **Windows Machine**
+
+
 * **[Android Platform]**
   * Fixes an ANR caused by extremely old InApp campaigns. 
   * Fixes an issue where incorrect callbacks were sent for InApps when the phone was rotated. 
