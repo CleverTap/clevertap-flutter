@@ -17,7 +17,9 @@ static NSString *const kCleverTapPushNotificationClicked          = @"pushClicke
 static NSString *const kCleverTapPushPermissionResponseReceived   = @"pushPermissionResponseReceived";
 static NSString *const kCleverTapOnVariablesChanged               = @"onVariablesChanged";
 static NSString *const kCleverTapOnValueChanged                   = @"onValueChanged";
-
+static NSString *const kCleverTapCustomTemplatePresent            = @"customTemplatePresent";
+static NSString *const kCleverTapCustomTemplateClose              = @"customTemplateClose";
+static NSString *const kCleverTapCustomFunctionPresent            = @"cleverTapCustomFunctionPresent";
 
 
 @interface CleverTapPlugin : NSObject <FlutterPlugin>

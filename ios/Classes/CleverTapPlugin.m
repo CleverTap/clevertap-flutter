@@ -257,7 +257,7 @@ static NSDateFormatter *dateFormatter;
     else if ([@"getPushNotificationPermissionStatus" isEqualToString:call.method])
         [self getPushNotificationPermissionStatus:call withResult:result];
     else if ([@"syncVariables" isEqualToString:call.method])
-        [self syncVariables];
+        [self syncVariables:call withResult:result];
     else if ([@"syncVariablesinProd" isEqualToString:call.method])
         [self syncVariablesinProd:call withResult:result];
     else if ([@"fetchVariables" isEqualToString:call.method])
@@ -278,6 +278,28 @@ static NSDateFormatter *dateFormatter;
         [self onValueChanged:call withResult:result];
     else if ([@"setLocale" isEqualToString:call.method])
         [self setLocale:call withResult:result];
+    else if ([@"syncCustomTemplates" isEqualToString:call.method])
+        [self syncCustomTemplates:call withResult:result];
+    else if ([@"syncCustomTemplatesinProd" isEqualToString:call.method])
+        [self syncCustomTemplatesinProd:call withResult:result];
+    else if ([@"customTemplateGetBooleanArg" isEqualToString:call.method])
+        [self customTemplateGetBooleanArg:call withResult:result];
+    else if ([@"customTemplateGetFileArg" isEqualToString:call.method])
+        [self customTemplateGetFileArg:call withResult:result];
+    else if ([@"customTemplateGetNumberArg" isEqualToString:call.method])
+        [self customTemplateGetNumberArg:call withResult:result];
+        else if ([@"customTemplateGetObjectArg" isEqualToString:call.method])
+        [self customTemplateGetObjectArg:call withResult:result];
+    else if ([@"customTemplateGetStringArg" isEqualToString:call.method])
+        [self customTemplateGetStringArg:call withResult:result];
+    else if ([@"customTemplateRunAction" isEqualToString:call.method])
+        [self customTemplateRunAction:call withResult:result];
+    else if ([@"customTemplateSetDismissed" isEqualToString:call.method])
+        [self customTemplateSetDismissed:call withResult:result];
+    else if ([@"customTemplateSetPresented" isEqualToString:call.method])
+        [self customTemplateSetPresented:call withResult:result];
+    else if ([@"customTemplateContextToString" isEqualToString:call.method])
+        [self customTemplateContextToString:call withResult:result];
     else
         result(FlutterMethodNotImplemented);
 }
@@ -1129,6 +1151,22 @@ static NSDateFormatter *dateFormatter;
                                              selector:@selector(emitEventInternal:)
                                                  name:kCleverTapOnValueChanged
                                                object:nil];
+
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(emitEventPushPermissionResponse:)
+                                                 name:kCleverTapCustomTemplatePresent
+                                               object:nil];
+
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(emitEventInternal:)
+                                                 name:kCleverTapCustomFunctionPresent
+                                               object:nil];
+
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(emitEventInternal:)
+                                                 name:kCleverTapCustomTemplateClose
+                                               object:nil];
+
 }
 
 - (void)postNotificationWithName:(NSString *)name andBody:(NSDictionary *)body {
@@ -1391,6 +1429,113 @@ static NSDateFormatter *dateFormatter;
     NSLocale *locale = [[NSLocale alloc] initWithLocaleIdentifier:call.arguments];
     [[CleverTap sharedInstance] setLocale:locale];
     result(nil);
+}
+
+#pragma mark - Custom Code Templates
+
+- (void)syncCustomTemplates:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    [[CleverTap sharedInstance] syncCustomTemplates];
+    result(nil);
+}
+
+- (void)syncCustomTemplatesInProd:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    BOOL isProduction = [call.arguments[@"isProduction"] boolValue];
+    [[CleverTap sharedInstance] syncCustomTemplatesInProd:isProduction];
+    result(nil);
+}
+
+- (void)customTemplateGetBooleanArg:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    NSString *templateName = call.arguments[@"templateName"];
+    NSString *argName = call.arguments[@"argName"];
+    
+    CTTemplateContext *context = [[CleverTap sharedInstance] activeContextForTemplate:templateName];
+    if (context) {
+        NSNumber *number = [context numberNamed:argName];
+        result(number ? number : [NSNull null]);
+    } else {
+        result([FlutterError errorWithCode:@"CustomTemplateError"
+                                   message:[NSString stringWithFormat:@"Custom template: %@ is not currently being presented", templateName]
+                                   details:nil]);
+    }
+}
+
+- (void)customTemplateGetFileArg:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    NSString *templateName = call.arguments[@"templateName"];
+    NSString *argName = call.arguments[@"argName"];
+    
+    CTTemplateContext *context = [[CleverTap sharedInstance] activeContextForTemplate:templateName];
+    if (context) {
+        NSString *filePath = [context fileNamed:argName];
+        result(filePath ? filePath : [NSNull null]);
+    } else {
+        result([FlutterError errorWithCode:@"CustomTemplateError"
+                                   message:[NSString stringWithFormat:@"Custom template: %@ is not currently being presented", templateName]
+                                   details:nil]);
+    }
+}
+
+- (void)customTemplateRunAction:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    NSString *templateName = call.arguments[@"templateName"];
+    NSString *argName = call.arguments[@"argName"];
+    
+    CTTemplateContext *context = [[CleverTap sharedInstance] activeContextForTemplate:templateName];
+    if (context) {
+        [context triggerActionNamed:argName];
+        result(nil);
+    } else {
+        result([FlutterError errorWithCode:@"CustomTemplateError"
+                                   message:[NSString stringWithFormat:@"Custom template: %@ is not currently being presented", templateName]
+                                   details:nil]);
+    }
+}
+
+- (void)customTemplateSetDismissed:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    NSString *templateName = call.arguments[@"templateName"];
+    
+    CTTemplateContext *context = [[CleverTap sharedInstance] activeContextForTemplate:templateName];
+    if (context) {
+        [context dismissed];
+        result(nil);
+    } else {
+        result([FlutterError errorWithCode:@"CustomTemplateError"
+                                   message:[NSString stringWithFormat:@"Custom template: %@ is not currently being presented", templateName]
+                                   details:nil]);
+    }
+}
+
+- (void)customTemplateSetPresented:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    NSString *templateName = call.arguments[@"templateName"];
+    
+    CTTemplateContext *context = [[CleverTap sharedInstance] activeContextForTemplate:templateName];
+    if (context) {
+        [context presented];
+        result(nil);
+    } else {
+        result([FlutterError errorWithCode:@"CustomTemplateError"
+                                   message:[NSString stringWithFormat:@"Custom template: %@ is not currently being presented", templateName]
+                                   details:nil]);
+    }
+}
+
+- (void)customTemplateContextToString:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    NSString *templateName = call.arguments[@"templateName"];
+    
+    if (![CleverTap sharedInstance]) {
+        result([FlutterError errorWithCode:@"CustomTemplateError"
+                                    message:@"CleverTap is not initialized"
+                                    details:nil]);
+        return;
+    }
+    
+    CTTemplateContext *context = [[CleverTap sharedInstance] activeContextForTemplate:templateName];
+    if (!context) {
+        result([FlutterError errorWithCode:@"CustomTemplateError"
+                                    message:[NSString stringWithFormat:@"Custom template: %@ is not currently being presented", templateName]
+                                    details:nil]);
+        return;
+    }
+    
+    result([context debugDescription]);
 }
 
 @end

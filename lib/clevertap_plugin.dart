@@ -1176,4 +1176,65 @@ class CleverTapPlugin {
     return await _dartToNativeMethodChannel.invokeMethod(
         'clearInAppResources', expiredOnly);
   }
+
+  /**
+     * Uploads Custom in-app templates and app functions to the server.
+     * Requires Development/Debug build/configuration.
+     */
+  
+  static Future<void> syncCustomTemplates() async {
+    return await _dartToNativeMethodChannel
+        .invokeMethod('syncCustomTemplates', {});
+  }
+
+  static Future<void> syncCustomTemplatesInProd(bool isProduction) async {
+    return await _dartToNativeMethodChannel
+        .invokeMethod('syncCustomTemplatesInProd', {'isProduction': isProduction});
+  }
+
+  static Future<void> customTemplateSetDismissed(String templateName) async {
+    return await _dartToNativeMethodChannel
+        .invokeMethod('customTemplateSetDismissed', {'templateName': templateName});
+  }
+
+  static Future<void> customTemplateSetPresented(String templateName) async {
+    return await _dartToNativeMethodChannel
+        .invokeMethod('customTemplateSetPresented', {'templateName': templateName});
+  }
+
+  static Future<void> customTemplateRunAction(String templateName, String argName) async {
+    return await _dartToNativeMethodChannel.invokeMethod('customTemplateRunAction',
+        {'templateName': templateName, 'argName': argName});
+  }
+
+  static Future<String?> customTemplateGetStringArg(String templateName, String argName) async {
+    return await _dartToNativeMethodChannel.invokeMethod('customTemplateGetStringArg',
+        {'templateName': templateName, 'argName': argName});
+  }
+
+  static Future<int?> customTemplateGetNumberArg(String templateName, String argName) async {
+    return await _dartToNativeMethodChannel.invokeMethod('customTemplateGetNumberArg',
+        {'templateName': templateName, 'argName': argName});
+  }
+
+  static Future<bool?> customTemplateGetBooleanArg(String templateName, String argName) async {
+    return await _dartToNativeMethodChannel.invokeMethod('customTemplateGetBooleanArg',
+        {'templateName': templateName, 'argName': argName});
+  }
+
+  static Future<String?> customTemplateGetFileArg(String templateName, String argName) async {
+    return await _dartToNativeMethodChannel.invokeMethod('customTemplateGetFileArg',
+        {'templateName': templateName, 'argName': argName});
+  }
+
+  static Future<Object?> customTemplateGetObjectArg(String templateName, String argName) async {
+    return await _dartToNativeMethodChannel.invokeMethod('customTemplateGetObjectArg',
+        {'templateName': templateName, 'argName': argName});
+  }
+
+  static Future<String?> customTemplateContextToString(String templateName) async {
+    return await _dartToNativeMethodChannel.invokeMethod('customTemplateContextToString',
+        {'templateName': templateName});
+  }
+
 }
