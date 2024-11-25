@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_styled_toast/flutter_styled_toast.dart';
 import 'package:workmanager/workmanager.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'custom_template.dart';
 
 @pragma('vm:entry-point')
 void onKilledStateNotificationClickedHandler(Map<String, dynamic> map) async {
@@ -2561,3 +2562,24 @@ class _MyAppState extends State<MyApp> {
     showToast("Clear In-App Resources");
   }
 }
+
+// import 'package:flutter/material.dart';
+// import 'custom_template.dart'; // Ensure the path matches where your CustomTemplate file is located.
+
+// void main() {
+//   runApp(MyApp());
+// }
+
+// class MyApp extends StatelessWidget {
+//   @override
+//   Widget build(BuildContext context) {
+//     return MaterialApp(
+//       debugShowCheckedModeBanner: false,
+//       title: 'Custom Template App',
+//       theme: ThemeData(
+//         primarySwatch: Colors.blue,
+//       ),
+//       home: CustomTemplate(), // Set CustomTemplate as the starting widget.
+//     );
+//   }
+// }
