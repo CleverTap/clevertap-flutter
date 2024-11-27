@@ -257,8 +257,8 @@ static NSDateFormatter *dateFormatter;
         [self promptForPushNotification:call withResult:result];
     else if ([@"getPushNotificationPermissionStatus" isEqualToString:call.method])
         [self getPushNotificationPermissionStatus:call withResult:result];
-    else if ([@"syncVariables" isEqualToString:call.method])
-        [self syncVariables:call withResult:result];
+//    else if ([@"syncVariables" isEqualToString:call.method])
+//        [self syncVariables:call withResult:result];
     else if ([@"syncVariablesinProd" isEqualToString:call.method])
         [self syncVariablesinProd:call withResult:result];
     else if ([@"fetchVariables" isEqualToString:call.method])
@@ -281,8 +281,8 @@ static NSDateFormatter *dateFormatter;
         [self setLocale:call withResult:result];
     else if ([@"syncCustomTemplates" isEqualToString:call.method])
         [self syncCustomTemplates:call withResult:result];
-    else if ([@"syncCustomTemplatesinProd" isEqualToString:call.method])
-        [self syncCustomTemplatesinProd:call withResult:result];
+//    else if ([@"syncCustomTemplatesinProd" isEqualToString:call.method])
+//        [self syncCustomTemplatesinProd:call withResult:result];
     else if ([@"customTemplateSetDismissed" isEqualToString:call.method])
         [self customTemplateSetDismissed:call withResult:result];
     else if ([@"customTemplateSetPresented" isEqualToString:call.method])
@@ -1058,14 +1058,14 @@ static NSDateFormatter *dateFormatter;
         return;
     }
 
-    if (!clevertap) {
+    if (![CleverTap sharedInstance]) {
         dispatch_async(dispatch_get_main_queue(), ^{
             failure(@"CleverTap is not initialized");
         });
         return;
     }
 
-    CTTemplateContext *context = [clevertap activeContextForTemplate:templateName];
+    CTTemplateContext *context = [[CleverTap sharedInstance] activeContextForTemplate:templateName];
     if (!context) {
         NSString *errorMessage = [NSString stringWithFormat:@"Custom template: %@ is not currently being presented", templateName];
         dispatch_async(dispatch_get_main_queue(), ^{
@@ -1203,6 +1203,10 @@ static NSDateFormatter *dateFormatter;
                                              selector:@selector(emitEventInternal:)
                                                  name:kCleverTapCustomTemplateClose
                                                object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(sendEvent:)
+                                                 name:kCleverTapCustomFunctionPresent
+                                               object:nil];
 
 }
 
@@ -1211,6 +1215,11 @@ static NSDateFormatter *dateFormatter;
     [[NSNotificationCenter defaultCenter] postNotificationName:name object:nil userInfo:body];
 }
 
+- (void)sendEvent:(NSNotification *)notification {
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [self.nativeToDartMethodChannel invokeMethod:notification.name arguments:notification.userInfo[@"result"]];
+    });
+}
 
 #pragma mark - Delegates
 #pragma mark CleverTapSyncDelegate
@@ -1475,11 +1484,11 @@ static NSDateFormatter *dateFormatter;
     result(nil);
 }
 
-- (void)syncCustomTemplatesInProd:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    BOOL isProduction = [call.arguments[@"isProduction"] boolValue];
-    [[CleverTap sharedInstance] syncCustomTemplatesInProd:isProduction];
-    result(nil);
-}
+//- (void)syncCustomTemplatesInProd:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+//    BOOL isProduction = [call.arguments[@"isProduction"] boolValue];
+//    [[CleverTap sharedInstance] syncCustomTemplatesInProd:isProduction];
+//    result(nil);
+//}
 
 - (void)customTemplateSetDismissed:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     NSString *templateName = call.arguments[@"templateName"];

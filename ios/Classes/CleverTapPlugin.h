@@ -20,6 +20,7 @@ static NSString *const kCleverTapOnValueChanged                   = @"onValueCha
 static NSString *const kCleverTapCustomTemplatePresent            = @"customTemplatePresent";
 static NSString *const kCleverTapCustomTemplateClose              = @"customTemplateClose";
 static NSString *const kCleverTapCustomFunctionPresent            = @"customFunctionPresent";
+static NSString * const CTSendEvent = @"CTSendEvent";
 
 
 @interface CleverTapPlugin : NSObject <FlutterPlugin>
