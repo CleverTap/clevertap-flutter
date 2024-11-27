@@ -1,9 +1,12 @@
+//
+//  CleverTapPluginCustomTemplates.h
+
 #import <Foundation/Foundation.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
 /// Registers Custom Templates and App Functions using JSON templates definitions.
-@interface CleverTapReactCustomTemplates : NSObject
+@interface CleverTapPluginCustomTemplates : NSObject
 
 /// Registers Custom Templates and App Functions given JSON templates definition file names.
 /// Provide the file name only, without the json extension.
@@ -13,7 +16,7 @@ NS_ASSUME_NONNULL_BEGIN
 /// Example registering Custom Templates and App Functions using JSON templates definition.
 /// The JSON file name is "templates.json".
 /// ```
-/// [CleverTapReactCustomTemplates registerCustomTemplates:@"templates", nil];
+/// [CleverTapPluginCustomTemplates registerCustomTemplates:@"templates", nil];
 /// ```
 ///
 /// @param firstJsonAsset The first JSON templates definition file name.

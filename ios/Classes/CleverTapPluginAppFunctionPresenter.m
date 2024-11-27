@@ -1,10 +1,13 @@
-#import "CleverTapReactAppFunctionPresenter.h"
-#import "CleverTapReact.h"
+//
+//  CleverTapPluginAppFunctionPresenter.m
 
-@implementation CleverTapReactAppFunctionPresenter
+#import "CleverTapPluginAppFunctionPresenter.h"
+#import "CleverTapPlugin.h"
+
+@implementation CleverTapPluginAppFunctionPresenter
 
 - (void)onPresent:(nonnull CTTemplateContext *)context {
-    [CleverTapReact sendEventOnObserving:kCleverTapCustomFunctionPresent body:context.templateName];
+    [[NSNotificationCenter defaultCenter] postNotification:[NSNotification notificationWithName:CTSendEvent object:@"CleverTapCustomFunctionPresent" userInfo:@{@"result": context.templateName}]];
 }
 
 - (void)onCloseClicked:(nonnull CTTemplateContext *)context {

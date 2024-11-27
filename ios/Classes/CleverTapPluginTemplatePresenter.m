@@ -1,14 +1,17 @@
-#import "CleverTapReactTemplatePresenter.h"
-#import "CleverTapReact.h"
+//
+//  CleverTapReactTemplatePresenter.m
 
-@implementation CleverTapReactTemplatePresenter
+#import "CleverTapPlugin.h"
+#import "CleverTapPluginTemplatePresenter.h"
 
-- (void)onPresent:(nonnull CTTemplateContext *)context { 
-    [CleverTapReact sendEventOnObserving:kCleverTapCustomTemplatePresent body:context.templateName];
+@implementation CleverTapPluginTemplatePresenter
+
+- (void)onPresent:(nonnull CTTemplateContext *)context {
+    [[NSNotificationCenter defaultCenter] postNotification:[NSNotification notificationWithName:CTSendEvent object:@"CleverTapCustomTemplatePresent" userInfo:@{@"result": @{@"name": context.templateName}}]];
 }
 
 - (void)onCloseClicked:(nonnull CTTemplateContext *)context {
-    [CleverTapReact sendEventOnObserving:kCleverTapCustomTemplateClose body:context.templateName];
+    [[NSNotificationCenter defaultCenter] postNotification:[NSNotification notificationWithName:CTSendEvent  object:@"CleverTapCustomTemplateClose" userInfo:@{@"result": context.templateName}]];
 }
 
 @end

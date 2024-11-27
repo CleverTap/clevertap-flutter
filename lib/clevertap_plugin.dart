@@ -47,6 +47,12 @@ class CleverTapPlugin {
       cleverTapOnVariablesChangedHandlers = [];
   static List<CleverTapOnValueChangedHandler> cleverTapOnValueChangedHandlers =
       [];
+  static List<CCleverTapCustomTemplatePresentHandler> cleverTapCustomTemplatePresentHandlers =
+      [];
+  static List<CleverTapCustomFunctionPresentHandler> cleverTapCustomFunctionPresentHandlers =
+      [];
+  static List<CleverTapCustomTemplateCloseHandler> cleverTapCustomTemplateCloseHandlers =
+      [];
 
   static const MethodChannel _dartToNativeMethodChannel =
       const MethodChannel('clevertap_plugin/dart_to_native');
@@ -154,6 +160,27 @@ class CleverTapPlugin {
         cleverTapOnValueChangedHandlers
             .forEach((cleverTapOnValueChangedHandler) {
           cleverTapOnValueChangedHandler(args.cast<String, dynamic>());
+        });
+        break;
+      case "customTemplatePresent":
+        Map<dynamic, dynamic> args = call.arguments;
+        cleverTapCustomTemplatePresentHandlers
+            .forEach((cleverTapCustomTemplatePresentHandler) {
+          cleverTapCustomTemplatePresentHandler(args.cast<String, dynamic>());
+        });
+        break;
+      case "customFunctionPresent":
+        Map<dynamic, dynamic> args = call.arguments;
+        cleverTapCustomFunctionPresentHandlers
+            .forEach((cleverTapCustomFunctionPresentHandler) {
+          cleverTapCustomFunctionPresentHandler(args.cast<String, dynamic>());
+        });
+        break;
+      case "customTemplateClose":
+        Map<dynamic, dynamic> args = call.arguments;
+        cleverTapCustomTemplateCloseHandlers
+            .forEach((cleverTapCustomTemplateCloseHandler) {
+          cleverTapCustomTemplateCloseHandler(args.cast<String, dynamic>());
         });
         break;
       default:
@@ -1160,6 +1187,21 @@ class CleverTapPlugin {
     }
   }
 
+  static void customTemplatePresent(CleverTapCustomTemplatePresentHandler handler) {
+      customTemplatePresentHandlers.add(handler);
+      _dartToNativeMethodChannel.invokeMethod('customTemplatePresent', {});
+  }
+
+  static void customFunctionPresent(CleverTapCustomFunctionPresentHandler handler) {
+      customFunctionPresentHandlers.add(handler);
+      _dartToNativeMethodChannel.invokeMethod('customFunctionPresent', {});
+  }
+
+  static void customTemplateClose(CleverTapCustomTemplateCloseHandler handler) {
+      customTemplateCloseHandlers.add(handler);
+      _dartToNativeMethodChannel.invokeMethod('customTemplateClose', {});
+  }
+
   ///Sets the user locale.
   static Future<void> setLocale(Locale locale) async {
     String localeString = locale.toString();
@@ -1212,7 +1254,7 @@ class CleverTapPlugin {
         {'templateName': templateName, 'argName': argName});
   }
 
-  static Future<int?> customTemplateGetNumberArg(String templateName, String argName) async {
+  static Future<num?> customTemplateGetNumberArg(String templateName, String argName) async {
     return await _dartToNativeMethodChannel.invokeMethod('customTemplateGetNumberArg',
         {'templateName': templateName, 'argName': argName});
   }
@@ -1227,7 +1269,7 @@ class CleverTapPlugin {
         {'templateName': templateName, 'argName': argName});
   }
 
-  static Future<Object?> customTemplateGetObjectArg(String templateName, String argName) async {
+  static Future<Map<String, dynamic>?> customTemplateGetObjectArg(String templateName, String argName) async {
     return await _dartToNativeMethodChannel.invokeMethod('customTemplateGetObjectArg',
         {'templateName': templateName, 'argName': argName});
   }

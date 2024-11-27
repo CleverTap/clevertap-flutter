@@ -15,6 +15,7 @@
 #import "CTLocalInApp.h"
 #import "CleverTap+CTVar.h"
 #import "CTVar.h"
+#import "CTTemplateContext.h"
 
 @interface CleverTapPlugin () <CleverTapSyncDelegate, CleverTapInAppNotificationDelegate, CleverTapDisplayUnitDelegate, CleverTapInboxViewControllerDelegate, CleverTapProductConfigDelegate, CleverTapFeatureFlagsDelegate, CleverTapPushNotificationDelegate, CleverTapPushPermissionDelegate>
 
@@ -282,22 +283,22 @@ static NSDateFormatter *dateFormatter;
         [self syncCustomTemplates:call withResult:result];
     else if ([@"syncCustomTemplatesinProd" isEqualToString:call.method])
         [self syncCustomTemplatesinProd:call withResult:result];
-    else if ([@"customTemplateGetBooleanArg" isEqualToString:call.method])
-        [self customTemplateGetBooleanArg:call withResult:result];
-    else if ([@"customTemplateGetFileArg" isEqualToString:call.method])
-        [self customTemplateGetFileArg:call withResult:result];
-    else if ([@"customTemplateGetNumberArg" isEqualToString:call.method])
-        [self customTemplateGetNumberArg:call withResult:result];
-        else if ([@"customTemplateGetObjectArg" isEqualToString:call.method])
-        [self customTemplateGetObjectArg:call withResult:result];
-    else if ([@"customTemplateGetStringArg" isEqualToString:call.method])
-        [self customTemplateGetStringArg:call withResult:result];
-    else if ([@"customTemplateRunAction" isEqualToString:call.method])
-        [self customTemplateRunAction:call withResult:result];
     else if ([@"customTemplateSetDismissed" isEqualToString:call.method])
         [self customTemplateSetDismissed:call withResult:result];
     else if ([@"customTemplateSetPresented" isEqualToString:call.method])
         [self customTemplateSetPresented:call withResult:result];
+    else if ([@"customTemplateRunAction" isEqualToString:call.method])
+        [self customTemplateRunAction:call withResult:result];
+    else if ([@"customTemplateGetStringArg" isEqualToString:call.method])
+        [self customTemplateGetStringArg:call withResult:result];
+    else if ([@"customTemplateGetNumberArg" isEqualToString:call.method])
+        [self customTemplateGetNumberArg:call withResult:result];
+    else if ([@"customTemplateGetBooleanArg" isEqualToString:call.method])
+        [self customTemplateGetBooleanArg:call withResult:result];
+    else if ([@"customTemplateGetFileArg" isEqualToString:call.method])
+        [self customTemplateGetFileArg:call withResult:result];
+    else if ([@"customTemplateGetObjectArg" isEqualToString:call.method])
+        [self customTemplateGetObjectArg:call withResult:result];
     else if ([@"customTemplateContextToString" isEqualToString:call.method])
         [self customTemplateContextToString:call withResult:result];
     else
@@ -1043,6 +1044,42 @@ static NSDateFormatter *dateFormatter;
     return varValues;
 }
 
+- (void)resolveWithTemplateContext:(NSString *)templateName
+                           success:(void (^)(id result))success
+                           failure:(void (^)(NSString *errorMessage))failure
+                             block:(id (^)(CTTemplateContext *context))blockName {
+    if (!templateName || !success || !failure || !blockName) {
+        NSLog(@"Error: Invalid parameters passed to resolveWithTemplateContext");
+        if (failure) {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                failure(@"Invalid parameters provided");
+            });
+        }
+        return;
+    }
+
+    if (!clevertap) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            failure(@"CleverTap is not initialized");
+        });
+        return;
+    }
+
+    CTTemplateContext *context = [clevertap activeContextForTemplate:templateName];
+    if (!context) {
+        NSString *errorMessage = [NSString stringWithFormat:@"Custom template: %@ is not currently being presented", templateName];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            failure(errorMessage);
+        });
+        return;
+    }
+
+    id result = blockName(context);
+    dispatch_async(dispatch_get_main_queue(), ^{
+        success(result ? [NSString stringWithFormat:@"%@", result] : @"");
+    });
+}
+
 #pragma mark - Notifications
 
 - (void)emitEventInternal:(NSNotification *)notification {
@@ -1444,51 +1481,6 @@ static NSDateFormatter *dateFormatter;
     result(nil);
 }
 
-- (void)customTemplateGetBooleanArg:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    NSString *templateName = call.arguments[@"templateName"];
-    NSString *argName = call.arguments[@"argName"];
-    
-    CTTemplateContext *context = [[CleverTap sharedInstance] activeContextForTemplate:templateName];
-    if (context) {
-        NSNumber *number = [context numberNamed:argName];
-        result(number ? number : [NSNull null]);
-    } else {
-        result([FlutterError errorWithCode:@"CustomTemplateError"
-                                   message:[NSString stringWithFormat:@"Custom template: %@ is not currently being presented", templateName]
-                                   details:nil]);
-    }
-}
-
-- (void)customTemplateGetFileArg:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    NSString *templateName = call.arguments[@"templateName"];
-    NSString *argName = call.arguments[@"argName"];
-    
-    CTTemplateContext *context = [[CleverTap sharedInstance] activeContextForTemplate:templateName];
-    if (context) {
-        NSString *filePath = [context fileNamed:argName];
-        result(filePath ? filePath : [NSNull null]);
-    } else {
-        result([FlutterError errorWithCode:@"CustomTemplateError"
-                                   message:[NSString stringWithFormat:@"Custom template: %@ is not currently being presented", templateName]
-                                   details:nil]);
-    }
-}
-
-- (void)customTemplateRunAction:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    NSString *templateName = call.arguments[@"templateName"];
-    NSString *argName = call.arguments[@"argName"];
-    
-    CTTemplateContext *context = [[CleverTap sharedInstance] activeContextForTemplate:templateName];
-    if (context) {
-        [context triggerActionNamed:argName];
-        result(nil);
-    } else {
-        result([FlutterError errorWithCode:@"CustomTemplateError"
-                                   message:[NSString stringWithFormat:@"Custom template: %@ is not currently being presented", templateName]
-                                   details:nil]);
-    }
-}
-
 - (void)customTemplateSetDismissed:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     NSString *templateName = call.arguments[@"templateName"];
     
@@ -1517,25 +1509,97 @@ static NSDateFormatter *dateFormatter;
     }
 }
 
-- (void)customTemplateContextToString:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+- (void)customTemplateRunAction:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     NSString *templateName = call.arguments[@"templateName"];
-    
-    if (![CleverTap sharedInstance]) {
-        result([FlutterError errorWithCode:@"CustomTemplateError"
-                                    message:@"CleverTap is not initialized"
-                                    details:nil]);
-        return;
-    }
+    NSString *argName = call.arguments[@"argName"];
     
     CTTemplateContext *context = [[CleverTap sharedInstance] activeContextForTemplate:templateName];
-    if (!context) {
+    if (context) {
+        [context triggerActionNamed:argName];
+        result(nil);
+    } else {
         result([FlutterError errorWithCode:@"CustomTemplateError"
-                                    message:[NSString stringWithFormat:@"Custom template: %@ is not currently being presented", templateName]
-                                    details:nil]);
-        return;
+                                   message:[NSString stringWithFormat:@"Custom template: %@ is not currently being presented", templateName]
+                                   details:nil]);
     }
-    
-    result([context debugDescription]);
+}
+
+- (void)customTemplateGetStringArg:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    [self handleCustomTemplateArgWithCall:call
+                                    result:result
+                                     block:^id(CTTemplateContext *context, NSString *argName) {
+                                         return [context stringNamed:argName];
+                                     }];
+}
+
+- (void)customTemplateGetNumberArg:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    [self handleCustomTemplateArgWithCall:call
+                                    result:result
+                                     block:^id(CTTemplateContext *context, NSString *argName) {
+                                         return [context numberNamed:argName];
+                                     }];
+}
+
+- (void)customTemplateGetObjectArg:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    [self handleCustomTemplateArgWithCall:call
+                                    result:result
+                                     block:^id(CTTemplateContext *context, NSString *argName) {
+                                         return [context dictionaryNamed:argName];
+                                     }];
+}
+
+- (void)customTemplateGetFileArg:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    [self handleCustomTemplateArgWithCall:call
+                                    result:result
+                                     block:^id(CTTemplateContext *context, NSString *argName) {
+                                         NSString *filePath = [context fileNamed:argName];
+                                         return filePath ?: [NSNull null];
+                                     }];
+}
+
+- (void)customTemplateGetBooleanArg:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    [self handleCustomTemplateArgWithCall:call
+                                    result:result
+                                     block:^id(CTTemplateContext *context, NSString *argName) {
+                                         return [context numberNamed:argName];
+                                     }];
+}
+
+- (void)handleCustomTemplateArgWithCall:(FlutterMethodCall *)call
+                                 result:(FlutterResult)result
+                                  block:(id (^)(CTTemplateContext *context, NSString *argName))block {
+    NSString *templateName = call.arguments[@"templateName"];
+    NSString *argName = call.arguments[@"argName"];
+
+    [self resolveWithTemplateContext:templateName
+                             success:^(id resolvedResult) {
+                                 result(resolvedResult ?: [NSNull null]);
+                             }
+                             failure:^(NSString *errorMessage) {
+                                 result([FlutterError errorWithCode:@"CustomTemplateError"
+                                                            message:errorMessage
+                                                            details:nil]);
+                             }
+                               block:^id(CTTemplateContext *context) {
+                                   return block(context, argName);
+                               }];
+}
+
+- (void)customTemplateContextToString:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    NSString *templateName = call.arguments[@"templateName"];
+
+    [self resolveWithTemplateContext:templateName
+                             success:^(id resolvedResult) {
+                                 result(resolvedResult ?: @"");
+                             }
+                             failure:^(NSString *errorMessage) {
+                                 result([FlutterError errorWithCode:@"CustomTemplateError"
+                                                            message:errorMessage
+                                                            details:nil]);
+                             }
+                               block:^id(CTTemplateContext *context) {
+                                   return [context debugDescription];
+                               }];
 }
 
 @end
