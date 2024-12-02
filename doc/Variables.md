@@ -48,6 +48,14 @@ The CleverTap Flutter plugin provides several callbacks for the developer to rec
 - `onVariablesChanged`
 - `onValueChanged`
 
+From version `3.0.0` onwards, the following callbacks are also supported:
+
+- `onOneTimeVariablesChanged`
+- `onVariablesChangedAndNoDownloadsPending`
+- `onceVariablesChangedAndNoDownloadsPending`
+- `onFileValueChanged`
+
+
 ## Status of Variables Fetch Request
 
 This method provides a boolean flag to ensure that the variables are successfully fetched from the server.
