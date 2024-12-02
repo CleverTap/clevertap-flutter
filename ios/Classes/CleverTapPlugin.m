@@ -1393,7 +1393,7 @@ static NSDateFormatter *dateFormatter;
 - (void)defineFileVariable:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     NSString *fileVariable = call.arguments[@"fileVariable"];
     if (!fileVariable) return;
-        CTVar *fileVar = [self defineFileVar:fileVariable];
+        CTVar *fileVar = [[CleverTap sharedInstance]defineFileVar:fileVariable];
         if (fileVar) {
         self.allVariables[fileVariable] = fileVar;
     }

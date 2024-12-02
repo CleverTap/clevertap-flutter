@@ -2606,9 +2606,6 @@ class _MyAppState extends State<MyApp> {
     CleverTapPlugin.onValueChanged('flutter_var_string', (variable) {
       print("PE -> onValueChanged: " + variable.toString());
     });
-    CleverTapPlugin.onValueChanged('folder1.fileVariable', (variable) {
-      print("PE -> onValueChanged: " + variable.toString());
-    });
   }
 
   void onVariablesChangedAndNoDownloadsPending() {

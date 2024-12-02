@@ -45,7 +45,7 @@ class CleverTapPlugin {
       cleverTapPushPermissionResponseReceivedHandler;
   static List<CleverTapOnVariablesChangedHandler>
       cleverTapOnVariablesChangedHandlers = [];
-  static List<CleverTapOnOneTimeVariablesChanged>
+  static List<CleverTapOnOneTimeVariablesChangedHandler>
       cleverTapOnOneTimeVariablesChangedHandlers = [];
   static List<CleverTapOnValueChangedHandler> cleverTapOnValueChangedHandlers =
       [];
