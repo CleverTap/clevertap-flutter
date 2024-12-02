@@ -582,6 +582,11 @@ public class CleverTapPlugin implements ActivityAware,
                 break;
             }
 
+            case "defineFileVariable": {
+                defineFileVariable(call, result);
+                break;
+            }
+
             case "fetchVariables": {
                 fetchVariables(result);
                 break;
@@ -602,8 +607,28 @@ public class CleverTapPlugin implements ActivityAware,
                 break;
             }
 
+            case "onOneTimeVariablesChanged": {
+                onOneTimeVariablesChanged();
+                break;
+            }
+
+            case "onVariablesChangedAndNoDownloadsPending": {
+                onVariablesChangedAndNoDownloadsPending();
+                break;
+            }
+
+            case "onceVariablesChangedAndNoDownloadsPending": {
+                onceVariablesChangedAndNoDownloadsPending();
+                break;
+            }
+
             case "onValueChanged": {
                 onValueChanged(call);
+                break;
+            }
+
+            case "onFileValueChanged": {
+                onFileValueChanged(call);
                 break;
             }
 
@@ -752,6 +777,16 @@ public class CleverTapPlugin implements ActivityAware,
         }
     }
 
+    public void defineFileVariable(MethodCall call, Result result) {
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            String fileVar = call.argument("fileVariable");
+            variables.put(fileVar, cleverTapAPI.defineFileVariable(fileVar));
+            result.success(null);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
     public void fetchVariables(Result result) {
         if (isCleverTapNotNull(cleverTapAPI)) {
             cleverTapAPI.fetchVariables(new FetchVariablesCallback() {
@@ -803,6 +838,45 @@ public class CleverTapPlugin implements ActivityAware,
         }
     }
 
+    public void onOneTimeVariablesChanged() {
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            cleverTapAPI.addOneTimeVariablesChangedCallback(new VariablesChangedCallback() {
+                @Override
+                public void variablesChanged() {
+                    invokeMethodOnUiThread("onOneTimeVariablesChanged", getVariablesValues());
+                }
+            });
+        } else {
+            Log.d(TAG, ERROR_MSG);
+        }
+    }
+
+    public void onVariablesChangedAndNoDownloadsPending() {
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            cleverTapAPI.onVariablesChangedAndNoDownloadsPending(new VariablesChangedCallback() {
+                @Override
+                public void variablesChanged() {
+                    invokeMethodOnUiThread("onVariablesChangedAndNoDownloadsPending", getVariablesValues());
+                }
+            });
+        } else {
+            Log.d(TAG, ERROR_MSG);
+        }
+    }
+
+    public void onceVariablesChangedAndNoDownloadsPending() {
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            cleverTapAPI.onceVariablesChangedAndNoDownloadsPending(new VariablesChangedCallback() {
+                @Override
+                public void variablesChanged() {
+                    invokeMethodOnUiThread("onceVariablesChangedAndNoDownloadsPending", getVariablesValues());
+                }
+            });
+        } else {
+            Log.d(TAG, ERROR_MSG);
+        }
+    }
+
     public void onValueChanged(MethodCall call) {
         String name = call.argument("name");
         if (variables.containsKey(name)) {
@@ -820,6 +894,35 @@ public class CleverTapPlugin implements ActivityAware,
                             Log.d(TAG, "Unable to handle onValueChanged callback: " + e.getLocalizedMessage(), null);
                         }
                         invokeMethodOnUiThread("onValueChanged", variablesMap);
+                    }
+                });
+            } else {
+                String errorMessage = "Variable value with name = " + name + " contains null value. Not setting onValueChanged callback.";
+                Log.d(TAG, errorMessage);
+            }
+        } else {
+            String errorMessage = "Variable name = " + name + " does not exist. Make sure you set variable first.";
+            Log.e(TAG, errorMessage);
+        }
+    }
+
+    public void onFileValueChanged(MethodCall call) {
+        String name = call.argument("name");
+        if (variables.containsKey(name)) {
+
+            Var<Object> var = (Var<Object>) variables.get(name);
+            if (var != null) {
+                var.addFileReadyHandler(new VariableCallback<Object>() {
+                    @SuppressLint("RestrictedApi")
+                    @Override
+                    public void onValueChanged(final Var<Object> variable) {
+                        Map<String, Object> variablesMap = new HashMap<>();
+                        try {
+                            variablesMap = getVariableValueAsMap(name);
+                        } catch (Exception e) {
+                            Log.d(TAG, "Unable to handle onValueChanged callback: " + e.getLocalizedMessage(), null);
+                        }
+                        invokeMethodOnUiThread("onFileValueChanged", variablesMap);
                     }
                 });
             } else {
