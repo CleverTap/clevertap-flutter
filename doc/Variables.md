@@ -31,6 +31,15 @@ var variables = {
 CleverTapPlugin.defineVariables(variables);
 ```
 
+# Define File Variables
+
+CleverTap Flutter SDK supports file types for variables from version `3.0.0`. Supported file types include but are not limited to images (jpg, jpeg, png, gif), text files, and PDFs.
+
+```Dart
+CleverTapPlugin.defineFileVariable("fileVariable");
+```
+
+
 # Setup Callbacks
 
 The CleverTap Flutter plugin provides several callbacks for the developer to receive feedback from the plugin. You can use them as per your requirement, using all of them is not mandatory. They are as follows:

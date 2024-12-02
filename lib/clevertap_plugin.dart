@@ -45,7 +45,15 @@ class CleverTapPlugin {
       cleverTapPushPermissionResponseReceivedHandler;
   static List<CleverTapOnVariablesChangedHandler>
       cleverTapOnVariablesChangedHandlers = [];
+  static List<CleverTapOnOneTimeVariablesChanged>
+      cleverTapOnOneTimeVariablesChangedHandlers = [];
   static List<CleverTapOnValueChangedHandler> cleverTapOnValueChangedHandlers =
+      [];
+  static List<CleverTapOnVariablesChangedAndNoDownloadsPendingHandler> cleverTapOnVariablesChangedAndNoDownloadsPendingHandlers =
+      [];
+  static List<CleverTapOnceVariablesChangedAndNoDownloadsPendingHandler> cleverTapOnceVariablesChangedAndNoDownloadsPendingHandlers =
+      [];
+  static List<CleverTapOnFileValueChangedHandler> cleverTapOnFileValueChangedHandlers =
       [];
 
   static const MethodChannel _dartToNativeMethodChannel =
@@ -149,11 +157,39 @@ class CleverTapPlugin {
           cleverTapOnVariablesChangedHandler(args.cast<String, dynamic>());
         });
         break;
+      case "onOneTimeVariablesChanged":
+        Map<dynamic, dynamic> args = call.arguments;
+        cleverTapOnOneTimeVariablesChangedHandlers
+            .forEach((cleverTapOnOneTimeVariablesChangedHandler) {
+          cleverTapOnOneTimeVariablesChangedHandler(args.cast<String, dynamic>());
+        });
+        break;
       case "onValueChanged":
         Map<dynamic, dynamic> args = call.arguments;
         cleverTapOnValueChangedHandlers
             .forEach((cleverTapOnValueChangedHandler) {
           cleverTapOnValueChangedHandler(args.cast<String, dynamic>());
+        });
+        break;
+      case "onVariablesChangedAndNoDownloadsPending":
+        Map<dynamic, dynamic> args = call.arguments;
+        cleverTapOnVariablesChangedAndNoDownloadsPendingHandlers
+            .forEach((cleverTapOnVariablesChangedAndNoDownloadsPendingHandler) {
+          cleverTapOnVariablesChangedAndNoDownloadsPendingHandler(args.cast<String, dynamic>());
+        });
+        break;      
+      case "onceVariablesChangedAndNoDownloadsPending":
+        Map<dynamic, dynamic> args = call.arguments;
+        cleverTapOnceVariablesChangedAndNoDownloadsPendingHandlers
+            .forEach((cleverTapOnceVariablesChangedAndNoDownloadsPendingHandler) {
+          cleverTapOnceVariablesChangedAndNoDownloadsPendingHandler(args.cast<String, dynamic>());
+        });
+        break;      
+      case "onFileValueChanged":
+        Map<dynamic, dynamic> args = call.arguments;
+        cleverTapOnFileValueChangedHandlers
+            .forEach((cleverTapOnFileValueChangedHandler) {
+          cleverTapOnFileValueChangedHandler(args.cast<String, dynamic>());
         });
         break;
       default:
@@ -1129,6 +1165,13 @@ class CleverTapPlugin {
         .invokeMethod('defineVariables', {'variables': variables});
   }
 
+  ///Create File variable.
+  /// * @param {object} variables The JSON Object specifying the varibles to be created.
+  static Future<void> defineFileVariable(String fileVariable) async {
+    return await _dartToNativeMethodChannel
+        .invokeMethod('defineFileVariable', {'fileVariable': fileVariable});
+  }
+
   ///Get all variables via a JSON object.
   static Future<Map<Object?, Object?>> getVariables() async {
     return await _dartToNativeMethodChannel.invokeMethod('getVariables', {});
@@ -1150,6 +1193,11 @@ class CleverTapPlugin {
     }
   }
 
+  static void onOneTimeVariablesChanged(CleverTapOnOneTimeVariablesChangedHandler handler) {
+      cleverTapOnOneTimeVariablesChangedHandlers.add(handler);
+      _dartToNativeMethodChannel.invokeMethod('onOneTimeVariablesChanged', {});
+  }
+
   static void onValueChanged(
       String name, CleverTapOnValueChangedHandler handler) {
     if (!kIsWeb) {
@@ -1158,6 +1206,21 @@ class CleverTapPlugin {
     } else {
       CleverTapPluginWeb.onValueChanged(name, handler);
     }
+  }
+
+  static void onVariablesChangedAndNoDownloadsPending(CleverTapOnVariablesChangedAndNoDownloadsPendingHandler handler) {
+      cleverTapOnVariablesChangedAndNoDownloadsPendingHandlers.add(handler);
+      _dartToNativeMethodChannel.invokeMethod('onVariablesChangedAndNoDownloadsPending', {});
+  }
+
+  static void onceVariablesChangedAndNoDownloadsPending(CleverTapOnceVariablesChangedAndNoDownloadsPendingHandler handler) {
+      cleverTapOnceVariablesChangedAndNoDownloadsPendingHandlers.add(handler);
+      _dartToNativeMethodChannel.invokeMethod('onceVariablesChangedAndNoDownloadsPending', {});
+  }
+
+  static void onFileValueChanged(String name, CleverTapOnFileValueChangedHandler handler) {
+      cleverTapOnFileValueChangedHandlers.add(handler);
+      _dartToNativeMethodChannel.invokeMethod('onFileValueChanged', {'name': name});
   }
 
   ///Sets the user locale.

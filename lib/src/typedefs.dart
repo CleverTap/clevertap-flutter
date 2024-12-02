@@ -21,7 +21,10 @@ typedef void CleverTapPushClickedPayloadReceivedHandler(
     Map<String, dynamic> map);
 typedef void CleverTapPushPermissionResponseReceivedHandler(bool accepted);
 typedef void CleverTapOnVariablesChangedHandler(Map<String, dynamic> variables);
-typedef void CleverTapOnValueChangedHandler(Map<String, dynamic> variable);
+typedef void CleverTapOnOneTimeVariablesChangeHandler(Map<String, dynamic> variables);
+typedef void CleverTapOnVariablesChangedAndNoDownloadsPendingHandler(Map<String, dynamic> variables);
+typedef void CleverTapOnceVariablesChangedAndNoDownloadsPendingHandler(Map<String, dynamic> variables);
+typedef void CleverTapOnFileValueChangedHandler(Map<String, dynamic> variable);
 typedef void CleverTapOnKVDataChangedHandler(Map<String, Object?> kvData);
 
 /// Signature of callback triggered on background isolate when a user taps on a

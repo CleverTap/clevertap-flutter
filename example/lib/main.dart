@@ -485,6 +485,16 @@ class _MyAppState extends State<MyApp> {
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
+                      title: Text("Define File Variable"),
+                      onTap: defineFileVariable,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
                       title: Text("Get Variables"),
                       onTap: getVariables,
                     ),
@@ -506,8 +516,29 @@ class _MyAppState extends State<MyApp> {
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
+                      title: Text(
+                          'Get Variable Value for name \'folder1.fileVariable\''),
+                      onTap: getFileVariable,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
                       title: Text('Add \'OnVariablesChanged\' listener'),
                       onTap: onVariablesChanged,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text('Add \'OnOneTimeVariablesChanged\' listener'),
+                      onTap: onOneTimeVariablesChanged,
                     ),
                   ),
                 ),
@@ -519,6 +550,39 @@ class _MyAppState extends State<MyApp> {
                       title: Text(
                           'Add \'OnValueChanged\' listener for name \'flutter_var_string\''),
                       onTap: onValueChanged,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text(
+                          'Add \'OnFileVariablesChangedAndNoDownloadsPending\' listener'),
+                      onTap: onVariablesChangedAndNoDownloadsPending,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text(
+                          'Add \'OnceFileVariablesChangedAndNoDownloadsPending\' listener'),
+                      onTap: onceVariablesChangedAndNoDownloadsPending,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text(
+                          'Add \'OnFileChanged\' listener for name \'folder1.fileVariable\''),
+                      onTap: onFileChanged,
                     ),
                   ),
                 ),
@@ -2497,6 +2561,12 @@ class _MyAppState extends State<MyApp> {
     print("PE -> Define Variables: " + variables.toString());
   }
 
+  void defineFileVariable() {
+    CleverTapPlugin.defineFileVariable("folder1.fileVariable");
+    showToast("Define File Variable");
+    print("PE -> Define File Variables: \'folder1.fileVariable\'");
+  }
+
   void getVariables() async {
     showToast("Get Variables");
     Map<Object?, Object?> variables = await CleverTapPlugin.getVariables();
@@ -2510,6 +2580,13 @@ class _MyAppState extends State<MyApp> {
         variable.toString());
   }
 
+  void getFileVariable() async {
+    showToast("Get File Variable");
+    var variable = await CleverTapPlugin.getVariable('folder1.fileVariable');
+    print('PE -> variable value for key \'folder1.fileVariable\': ' +
+        variable.toString());
+  }
+
   void onVariablesChanged() {
     showToast("onVariablesChanged");
     CleverTapPlugin.onVariablesChanged((variables) {
@@ -2517,10 +2594,41 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
+  void onOneTimeVariablesChanged() {
+    showToast("onOneTimeVariablesChanged");
+    CleverTapPlugin.onOneTimeVariablesChanged((variables) {
+      print("PE -> onOneTimeVariablesChanged: " + variables.toString());
+    });
+  }
+
   void onValueChanged() {
     showToast("onValueChanged");
     CleverTapPlugin.onValueChanged('flutter_var_string', (variable) {
       print("PE -> onValueChanged: " + variable.toString());
+    });
+    CleverTapPlugin.onValueChanged('folder1.fileVariable', (variable) {
+      print("PE -> onValueChanged: " + variable.toString());
+    });
+  }
+
+  void onVariablesChangedAndNoDownloadsPending() {
+    showToast("onVariablesChangedAndNoDownloadsPending");
+    CleverTapPlugin.onVariablesChangedAndNoDownloadsPending((variable) {
+      print("PE -> onVariablesChangedAndNoDownloadsPending: " + variable.toString());
+    });
+  }
+
+  void onceVariablesChangedAndNoDownloadsPending() {
+    showToast("onceVariablesChangedAndNoDownloadsPending");
+    CleverTapPlugin.onceVariablesChangedAndNoDownloadsPending((variable) {
+      print("PE -> onceVariablesChangedAndNoDownloadsPending: " + variable.toString());
+    });
+  }
+
+  void onFileChanged() {
+    showToast("onFileValueChanged");
+    CleverTapPlugin.onFileValueChanged('folder1.fileVariable', (variable) {
+      print("PE -> onFileValueChanged: " + variable.toString());
     });
   }
 

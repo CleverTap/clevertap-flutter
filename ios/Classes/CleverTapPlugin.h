@@ -16,7 +16,11 @@ static NSString *const kCleverTapFeatureFlagsUpdated              = @"featureFla
 static NSString *const kCleverTapPushNotificationClicked          = @"pushClickedPayloadReceived";
 static NSString *const kCleverTapPushPermissionResponseReceived   = @"pushPermissionResponseReceived";
 static NSString *const kCleverTapOnVariablesChanged               = @"onVariablesChanged";
+static NSString *const kCleverTapOnOneTimeVariablesChanged        = @"onOneTimeVariablesChanged";
 static NSString *const kCleverTapOnValueChanged                   = @"onValueChanged";
+static NSString *const kCleverTapOnVariablesChangedAndNoDownloadsPending = @"onVariablesChangedAndNoDownloadsPending";
+static NSString *const kCleverTapOnceVariablesChangedAndNoDownloadsPending = @"onceVariablesChangedAndNoDownloadsPending";
+static NSString *const kCleverTapOnFileValueChanged               = @"onFileValueChanged";
 
 
 

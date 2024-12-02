@@ -264,12 +264,22 @@ static NSDateFormatter *dateFormatter;
         [self fetchVariables:call withResult:result];
     else if ([@"defineVariables" isEqualToString:call.method])
         [self defineVariables:call withResult:result];
+    else if ([@"defineFileVariable" isEqualToString:call.method])
+        [self defineFileVariable:call withResult:result];
     else if ([@"getVariables" isEqualToString:call.method])
         [self getVariables:call withResult:result];
     else if ([@"getVariable" isEqualToString:call.method])
         [self getVariable:call withResult:result];
     else if ([@"onVariablesChanged" isEqualToString:call.method])
         [self onVariablesChanged:call withResult:result];
+    else if ([@"onOneTimeVariablesChanged" isEqualToString:call.method])
+        [self onOneTimeVariablesChanged:call withResult:result];
+    else if ([@"onVariablesChangedAndNoDownloadsPending" isEqualToString:call.method])
+        [self onVariablesChangedAndNoDownloadsPending:call withResult:result];
+    else if ([@"onceVariablesChangedAndNoDownloadsPending" isEqualToString:call.method])
+        [self onceVariablesChangedAndNoDownloadsPending:call withResult:result];
+    else if ([@"onFileValueChanged" isEqualToString:call.method])
+        [self onFileValueChanged:call withResult:result];
     else if ([@"fetchInApps" isEqualToString:call.method])
         [self fetchInApps:call withResult:result];
     else if ([@"clearInAppResources" isEqualToString:call.method])
@@ -1127,6 +1137,26 @@ static NSDateFormatter *dateFormatter;
 
     [[NSNotificationCenter defaultCenter] addObserver:self
                                              selector:@selector(emitEventInternal:)
+                                                 name:kCleverTapOnOneTimeVariablesChanged
+                                               object:nil];
+
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(emitEventInternal:)
+                                                 name:kCleverTapOnVariablesChangedAndNoDownloadsPending
+                                               object:nil];
+
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(emitEventInternal:)
+                                                 name:kCleverTapOnceVariablesChangedAndNoDownloadsPending
+                                               object:nil];       
+
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(emitEventInternal:)
+                                                 name:kCleverTapOnFileValueChanged
+                                               object:nil];                               
+
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(emitEventInternal:)
                                                  name:kCleverTapOnValueChanged
                                                object:nil];
 }
@@ -1359,6 +1389,16 @@ static NSDateFormatter *dateFormatter;
         }
     }];
 }
+
+- (void)defineFileVariable:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    NSString *fileVariable = call.arguments[@"fileVariable"];
+    if (!fileVariable) return;
+        CTVar *fileVar = [self defineFileVar:fileVariable];
+        if (fileVar) {
+        self.allVariables[fileVariable] = fileVar;
+    }
+}
+
 - (void)getVariables:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     NSMutableDictionary *varValues = [self getVariableValues];
     result(varValues);
@@ -1375,6 +1415,12 @@ static NSDateFormatter *dateFormatter;
     }];
 }
 
+- (void)onOneTimeVariablesChanged:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    [[CleverTap sharedInstance]onceVariablesChanged:^{
+        [self postNotificationWithName:kCleverTapOnOneTimeVariablesChanged andBody:[self getVariableValues]];
+    }];
+}
+
 - (void)onValueChanged:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     CTVar *var = self.allVariables[call.arguments[@"name"]];
     if (var) {
@@ -1383,6 +1429,30 @@ static NSDateFormatter *dateFormatter;
                 var.name: var.value
             };
             [self postNotificationWithName:kCleverTapOnValueChanged andBody:varResult];
+        }];
+    }
+}
+
+- (void)onVariablesChangedAndNoDownloadsPending:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    [[CleverTap sharedInstance]onVariablesChangedAndNoDownloadsPending:^{
+        [self postNotificationWithName:kCleverTapOnVariablesChangedAndNoDownloadsPending andBody:[self getVariableValues]];
+    }];
+}
+
+- (void)onceVariablesChangedAndNoDownloadsPending:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    [[CleverTap sharedInstance]onceVariablesChangedAndNoDownloadsPending:^{
+        [self postNotificationWithName:kCleverTapOnceVariablesChangedAndNoDownloadsPending andBody:[self getVariableValues]];
+    }];
+}
+
+- (void)onFileValueChanged:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CTVar *var = self.allVariables[call.arguments[@"name"]];
+    if (var) {
+        [var onFileIsReady:^{
+            NSDictionary *varFileResult = @{
+                var.name: var.value
+            };
+            [self postNotificationWithName:kCleverTapOnFileValueChanged andBody:varFileResult];
         }];
     }
 }
