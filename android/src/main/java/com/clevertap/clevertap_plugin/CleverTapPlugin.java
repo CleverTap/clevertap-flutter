@@ -32,6 +32,7 @@ import com.clevertap.android.sdk.displayunits.model.CleverTapDisplayUnit;
 import com.clevertap.android.sdk.events.EventDetail;
 import com.clevertap.android.sdk.inapp.CTInAppNotification;
 import com.clevertap.android.sdk.inapp.callbacks.FetchInAppsCallback;
+import com.clevertap.android.sdk.inapp.customtemplates.CustomTemplateContext;
 import com.clevertap.android.sdk.inbox.CTInboxMessage;
 import com.clevertap.android.sdk.interfaces.OnInitCleverTapIDListener;
 import com.clevertap.android.sdk.product_config.CTProductConfigListener;
@@ -91,6 +92,10 @@ public class CleverTapPlugin implements ActivityAware,
 
     private static final String ERROR_IOS = " method is only applicable for iOS";
 
+    private static final String ERROR_TEMPLATE_NAME = "Custom template: " + " is not currently being presented";
+    public static final String KEY_TEMPLATE_NAME_CC = "templateName";
+    public static final String KEY_TEMPLATE_ARGUMENT_CC = "argName";
+
     private Activity activity;
 
     private MethodChannel dartToNativeMethodChannel;
@@ -102,7 +107,7 @@ public class CleverTapPlugin implements ActivityAware,
     private Context context;
 
     public static Map<String, Object> variables = new HashMap<>();
-    private static final Set<MethodChannel> nativeToDartMethodChannelSet = new HashSet<>();
+    public static final Set<MethodChannel> nativeToDartMethodChannelSet = new HashSet<>();
 
     /**
      * Plugin registration.
@@ -734,12 +739,74 @@ public class CleverTapPlugin implements ActivityAware,
                 break;
             }
 
+            case "syncCustomTemplatesInProd":
+            case "syncCustomTemplates" : {
+                syncCustomTemplates(result);
+                break;
+            }
+
+            case "customTemplateSetDismissed": {
+                String templateName = call.arguments();
+                customTemplateSetDismissed(templateName, result);
+                break;
+            }
+            case "customTemplateSetPresented": {
+                String templateName = call.arguments();
+                customTemplateSetPresented(templateName, result);
+                break;
+            }
+            case "customTemplateRunAction": {
+                String templateName = call.argument(KEY_TEMPLATE_NAME_CC);
+                String argumentName = call.argument(KEY_TEMPLATE_ARGUMENT_CC);
+                customTemplateRunAction(templateName, argumentName, result);
+                break;
+            }
+            case "customTemplateGetStringArg": {
+                String templateName = call.argument(KEY_TEMPLATE_NAME_CC);
+                String argumentName = call.argument(KEY_TEMPLATE_ARGUMENT_CC);
+                customTemplateGetStringArg(templateName, argumentName, result);
+                break;
+            }
+            case "customTemplateGetNumberArg": {
+                String templateName = call.argument(KEY_TEMPLATE_NAME_CC);
+                String argumentName = call.argument(KEY_TEMPLATE_ARGUMENT_CC);
+                customTemplateGetNumberArg(templateName, argumentName, result);
+                break;
+            }
+            case "customTemplateGetBooleanArg": {
+                String templateName = call.argument(KEY_TEMPLATE_NAME_CC);
+                String argumentName = call.argument(KEY_TEMPLATE_ARGUMENT_CC);
+                customTemplateGetBooleanArg(templateName, argumentName, result);
+                break;
+            }
+            case "customTemplateGetFileArg": {
+                String templateName = call.argument(KEY_TEMPLATE_NAME_CC);
+                String argumentName = call.argument(KEY_TEMPLATE_ARGUMENT_CC);
+                customTemplateGetFileArg(templateName, argumentName, result);
+                break;
+            }
+            case "customTemplateGetObjectArg": {
+                String templateName = call.argument(KEY_TEMPLATE_NAME_CC);
+                String argumentName = call.argument(KEY_TEMPLATE_ARGUMENT_CC);
+                customTemplateGetObjectArg(templateName, argumentName, result);
+                break;
+            }
+            case "customTemplateContextToString": {
+                String templateName = call.arguments();
+                customTemplateContextToString(templateName, result);
+                break;
+            }
+
             default: {
                 result.notImplemented();
             }
         }
 
+
+
+
     }
+
 
     private void setLocale(MethodCall call, Result result) {
         String locale = call.arguments();
@@ -1850,8 +1917,6 @@ public class CleverTapPlugin implements ActivityAware,
                 e.printStackTrace();
             }
         }
-
-
     }
 
     private void sessionGetPreviousVisitTime(Result result) {
@@ -2041,5 +2106,128 @@ public class CleverTapPlugin implements ActivityAware,
         } else {
             result.error(TAG, ERROR_MSG, null);
         }
+    }
+
+    public void syncCustomTemplates(Result result) {
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            cleverTapAPI.syncRegisteredInAppTemplates();
+            result.success(null);
+        } else {
+            result.error(TAG, ERROR_MSG, null);
+        }
+    }
+
+    public void customTemplateSetDismissed(String templateName, Result result) {
+        resolveWithTemplateContext(templateName, result, templateContext -> {
+            templateContext.setDismissed();
+            return null;
+        });
+    }
+
+    public void customTemplateSetPresented(String templateName, Result result) {
+        resolveWithTemplateContext(templateName, result, templateContext -> {
+            templateContext.setPresented();
+            return null;
+        });
+    }
+
+    public void customTemplateRunAction(String templateName, String argName, Result result) {
+        resolveWithTemplateContext(
+                templateName,
+                result,
+                customTemplateContext -> {
+                    if (customTemplateContext instanceof CustomTemplateContext.TemplateContext) {
+                        ((CustomTemplateContext.TemplateContext) customTemplateContext).triggerActionArgument(argName, null);
+                    }
+                    return null;
+                }
+        );
+    }
+
+    public void customTemplateGetStringArg(String templateName, String argName, Result result) {
+        resolveWithTemplateContext(
+                templateName,
+                result,
+                templateContext -> templateContext.getString(argName)
+        );
+    }
+
+    public void customTemplateGetNumberArg(String templateName, String argName, Result result) {
+        resolveWithTemplateContext(
+                templateName,
+                result,
+                templateContext -> templateContext.getDouble(argName)
+        );
+    }
+
+    public void customTemplateGetBooleanArg(String templateName, String argName, Result result) {
+        resolveWithTemplateContext(
+                templateName,
+                result,
+                templateContext -> templateContext.getBoolean(argName)
+        );
+    }
+
+    public void customTemplateGetFileArg(String templateName, String argName, Result result) {
+        resolveWithTemplateContext(
+                templateName,
+                result,
+                templateContext -> templateContext.getFile(argName)
+        );
+    }
+
+    public void customTemplateGetObjectArg(String templateName, String argName, Result result) {
+        resolveWithTemplateContext(
+                templateName,
+                result,
+                templateContext -> {
+                    Map<String, Object> mapArg = templateContext.getMap(argName);
+                    /*if (mapArg != null) {
+                        return CleverTapUtils.MapUtil.toWritableMap(mapArg);
+                    } else {
+                        return null;
+                    }*/
+
+                    return mapArg;
+                }
+        );
+    }
+
+    public void customTemplateContextToString(String templateName, Result result) {
+        resolveWithTemplateContext(
+                templateName,
+                result,
+                templateContext -> templateContext.toString()
+        );
+    }
+
+    private void resolveWithTemplateContext(
+            String templateName,
+            Result result,
+            TemplateContextAction action
+    ) {
+        if (isCleverTapNotNull(cleverTapAPI)) {
+            CustomTemplateContext templateContext = cleverTapAPI.getActiveContextForTemplate(templateName);
+            if (templateContext != null) {
+                result.success(action.execute(templateContext));
+            } else {
+                result.error(
+                        TAG,
+                        ERROR_TEMPLATE_NAME,
+                        "For template" + templateName
+                );
+            }
+        } else {
+            result.error(
+                    TAG,
+                    ERROR_MSG,
+                    "Cannot resolve template with context" // todo check if needed
+            );
+        }
+    }
+
+    @FunctionalInterface
+    private interface TemplateContextAction {
+        Object execute(CustomTemplateContext context);
     }
 }

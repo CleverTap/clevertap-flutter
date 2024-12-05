@@ -166,6 +166,19 @@ class _MyAppState extends State<MyApp> {
         .setCleverTapProductConfigActivatedHandler(productConfigActivated);
     _clevertapPlugin.setCleverTapPushPermissionResponseReceivedHandler(
         pushPermissionResponseReceived);
+    _clevertapPlugin.setCleverTapCustomTemplatePresentHandlers(one);
+    _clevertapPlugin.setCleverTapCustomTemplateCloseHandlers(two);
+    _clevertapPlugin.setCleverTapCustomFunctionPresentHandlers(three);
+  }
+
+  void one(String templateName) {
+    print("setCleverTapCustomTemplatePresentHandlers called");
+  }
+  void two(String templateName) {
+    print("setCleverTapCustomTemplateCloseHandlers called");
+  }
+  void three(String templateName) {
+    print("setCleverTapCustomFunctionPresentHandlers called");
   }
 
   void inAppNotificationDismissed(Map<String, dynamic> map) {
@@ -1789,7 +1802,8 @@ class _MyAppState extends State<MyApp> {
       'date': CleverTapPlugin.getCleverTapDate(now),
       'number': 1
     };
-    CleverTapPlugin.recordEvent("Flutter Event", eventData);
+    //CleverTapPlugin.recordEvent("Flutter Event", eventData);
+    CleverTapPlugin.recordEvent("foo", eventData);
     showToast("Raised event - Flutter Event");
   }
 
