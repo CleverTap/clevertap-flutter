@@ -21,6 +21,9 @@ static NSString *const kCleverTapOnValueChanged                   = @"onValueCha
 static NSString *const kCleverTapOnVariablesChangedAndNoDownloadsPending = @"onVariablesChangedAndNoDownloadsPending";
 static NSString *const kCleverTapOnceVariablesChangedAndNoDownloadsPending = @"onceVariablesChangedAndNoDownloadsPending";
 static NSString *const kCleverTapOnFileValueChanged               = @"onFileValueChanged";
+static NSString *const kCleverTapCustomTemplatePresent       = @"customTemplatePresent";
+static NSString *const kCleverTapCustomFunctionPresent       = @"customFunctionPresent";
+static NSString *const kCleverTapCustomTemplateClose      = @"customTemplateClose";
 
 
 
@@ -29,6 +32,7 @@ static NSString *const kCleverTapOnFileValueChanged               = @"onFileValu
 + (instancetype)sharedInstance;
 
 - (void)applicationDidLaunchWithOptions:(NSDictionary *)options;
+- (void)postTemplateEvent:(NSString *)name andBody:(NSDictionary *)body;
 
 @property NSString *launchDeepLink;
 

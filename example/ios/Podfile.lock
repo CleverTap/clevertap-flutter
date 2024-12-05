@@ -1,8 +1,8 @@
 PODS:
-  - CleverTap-iOS-SDK (7.0.2):
+  - CleverTap-iOS-SDK (7.0.3):
     - SDWebImage (~> 5.11)
   - clevertap_plugin (3.0.0):
-    - CleverTap-iOS-SDK (= 7.0.2)
+    - CleverTap-iOS-SDK (= 7.0.3)
     - Flutter
   - Firebase/CoreOnly (10.25.0):
     - FirebaseCore (= 10.25.0)
@@ -112,8 +112,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/workmanager/ios"
 
 SPEC CHECKSUMS:
-  CleverTap-iOS-SDK: 09d1762523c87c14ffbd82b69b070afbe6e3d845
-  clevertap_plugin: 4f31b5ab84111d93702ab2cb1010337fd7bcef73
+  CleverTap-iOS-SDK: 04730793327667e70602d131d34954f1fee86bc6
+  clevertap_plugin: 2f1c9285d5e2e47e606f630095a16104495adb61
   Firebase: 0312a2352584f782ea56f66d91606891d4607f06
   firebase_core: a626d00494efa398e7c54f25f1454a64c8abf197
   firebase_messaging: 06391e8f35dc65a00c56580266285263d2861f10
