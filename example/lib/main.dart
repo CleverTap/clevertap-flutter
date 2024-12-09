@@ -11,6 +11,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_styled_toast/flutter_styled_toast.dart';
 import 'package:workmanager/workmanager.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'custom_template.dart';
+
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 @pragma('vm:entry-point')
 void onKilledStateNotificationClickedHandler(Map<String, dynamic> map) async {
@@ -64,6 +67,7 @@ void main() async {
   CleverTapPlugin.onKilledStateNotificationClicked(
       onKilledStateNotificationClickedHandler);
   runApp(MaterialApp(
+    navigatorKey: navigatorKey,
     title: 'Home Page',
     home: MyApp(),
   ));
@@ -171,16 +175,42 @@ class _MyAppState extends State<MyApp> {
     _clevertapPlugin.setCleverTapCustomFunctionPresentHandlers(three);
   }
 
-  void one(String templateName) {
-    print("setCleverTapCustomTemplatePresentHandlers called");
+ void one(Map<String, dynamic>? map) {
+  print("setCleverTapCustomTemplatePresentHandlers called");
+
+  if (map != null) {
+    var templateName = map['templateName'] ?? "Default Template";
+    var data = map['data'] ?? "No data provided";
+
+    // Ensure the dialog is shown using the navigator key
+    showDialog(
+      context: navigatorKey.currentContext!,
+      builder: (BuildContext context) {
+        return CustomTemplateDialog(
+          templateName: templateName,
+          data: data,
+        );
+      },
+    );
   }
-  void two(String templateName) {
+}
+
+  void two(Map<String, dynamic>? map) {
     print("setCleverTapCustomTemplateCloseHandlers called");
-  }
-  void three(String templateName) {
-    print("setCleverTapCustomFunctionPresentHandlers called");
+    if (map != null) {
+    var templateName = map['templateName'];
+    print(templateName);
+    }
   }
 
+  void three(Map<String, dynamic>? map) {
+    print("setCleverTapCustomFunctionPresentHandlers called");
+    if (map != null) {
+    var templateName = map['templateName'];
+    print(templateName);
+    }
+  }
+  
   void inAppNotificationDismissed(Map<String, dynamic> map) {
     this.setState(() {
       print("inAppNotificationDismissed called");

@@ -193,24 +193,25 @@ class CleverTapPlugin {
         });
         break;
       case "customTemplatePresent":
-        String templateName = call.arguments;
+        Map<dynamic, dynamic> args = call.arguments;
+        print("_platformCallHandler call kush ${args}");
         cleverTapCustomTemplatePresentHandlers
             .forEach((cleverTapCustomTemplatePresentHandler) {
-          cleverTapCustomTemplatePresentHandler(templateName);
+          cleverTapCustomTemplatePresentHandler(args.cast<String, dynamic>());
         });
         break;
       case "customFunctionPresent":
-        String functionName = call.arguments;
+        Map<dynamic, dynamic> args = call.arguments;
         cleverTapCustomFunctionPresentHandlers
             .forEach((cleverTapCustomFunctionPresentHandler) {
-          cleverTapCustomFunctionPresentHandler(functionName);
+          cleverTapCustomFunctionPresentHandler(args.cast<String, dynamic>());
         });
         break;
       case "customTemplateClose":
-        String templateName = call.arguments;
+        Map<dynamic, dynamic> args = call.arguments;
         cleverTapCustomTemplateCloseHandlers
             .forEach((cleverTapCustomTemplateCloseHandler) {
-          cleverTapCustomTemplateCloseHandler(templateName);
+          cleverTapCustomTemplateCloseHandler(args.cast<String, dynamic>());
         });
         break;
 
@@ -221,6 +222,7 @@ class CleverTapPlugin {
   }
 
   void setCleverTapCustomTemplatePresentHandlers(CleverTapCustomTemplatePresentHandler handler) {
+    print("CleverTapCustomTemplatePresentHandler called");
     cleverTapCustomTemplatePresentHandlers.add(handler);
   }
   void setCleverTapCustomFunctionPresentHandlers(CleverTapCustomTemplateCloseHandler handler) {
