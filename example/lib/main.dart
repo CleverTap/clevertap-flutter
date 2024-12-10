@@ -9,6 +9,7 @@ import 'package:clevertap_plugin/clevertap_plugin.dart';
 import 'package:example/deeplink_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_styled_toast/flutter_styled_toast.dart';
+import 'package:open_file/open_file.dart';
 import 'package:workmanager/workmanager.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'custom_template.dart';
@@ -170,46 +171,81 @@ class _MyAppState extends State<MyApp> {
         .setCleverTapProductConfigActivatedHandler(productConfigActivated);
     _clevertapPlugin.setCleverTapPushPermissionResponseReceivedHandler(
         pushPermissionResponseReceived);
-    _clevertapPlugin.setCleverTapCustomTemplatePresentHandlers(one);
-    _clevertapPlugin.setCleverTapCustomTemplateCloseHandlers(two);
-    _clevertapPlugin.setCleverTapCustomFunctionPresentHandlers(three);
+    _clevertapPlugin.setCleverTapCustomTemplatePresentHandlers(presentCustomTemplate);
+    _clevertapPlugin.setCleverTapCustomTemplateCloseHandlers(closeCustomTemplate);
+    _clevertapPlugin.setCleverTapCustomFunctionPresentHandlers(presentCustomFunction);
   }
 
- void one(Map<String, dynamic>? map) {
-  print("setCleverTapCustomTemplatePresentHandlers called");
+ void presentCustomTemplate(String templateName) async {
+  print("presentCustomTemplate dart called for + $templateName");
 
-  if (map != null) {
-    var templateName = map['templateName'] ?? "Default Template";
-    var data = map['data'] ?? "No data provided";
+  var data = await printArgsAsString(templateName);
 
-    // Ensure the dialog is shown using the navigator key
-    showDialog(
-      context: navigatorKey.currentContext!,
-      builder: (BuildContext context) {
-        return CustomTemplateDialog(
-          templateName: templateName,
-          data: data,
-        );
-      },
-    );
-  }
+  showDialog(
+    context: navigatorKey.currentContext!,
+    builder: (BuildContext context) {
+      return CustomTemplateDialog(
+        templateName: templateName,
+        data: data,
+        handleClose: closeCustomTemplate,
+        handlePresented: handlePresented,
+        handleAction: handleAction,
+        handleFile: handleFile,
+        printArgument: printArgument,
+      );
+    },
+  );
 }
 
-  void two(Map<String, dynamic>? map) {
-    print("setCleverTapCustomTemplateCloseHandlers called");
-    if (map != null) {
-    var templateName = map['templateName'];
+  void closeCustomTemplate(String templateName) {
+    print("closeCustomTemplate dart called for $templateName");
+    CleverTapPlugin.customTemplateSetDismissed(templateName);
     print(templateName);
-    }
   }
 
-  void three(Map<String, dynamic>? map) {
-    print("setCleverTapCustomFunctionPresentHandlers called");
-    if (map != null) {
-    var templateName = map['templateName'];
+  void presentCustomFunction(String templateName) {
+    print("presentCustomFunction dart called for $templateName");
+    CleverTapPlugin.customTemplateSetPresented(templateName);
     print(templateName);
-    }
   }
+
+  // Start utility for custom code templates
+
+  Future<String> printArgsAsString(String templateName) async {
+    StringBuffer buffer = StringBuffer();
+    buffer.write('string = ');
+    buffer.write(await CleverTapPlugin.customTemplateGetStringArg(templateName, "string"));
+    buffer.write('\n');
+    buffer.write('bool  =');
+    buffer.write(await CleverTapPlugin.customTemplateGetBooleanArg(templateName, "bool"));
+    buffer.write('\n');
+    buffer.write('map.int  =');
+    buffer.write(await CleverTapPlugin.customTemplateGetNumberArg(templateName, "map.int"));
+    buffer.write('\n');
+    buffer.write('map.string  =');
+    buffer.write(await CleverTapPlugin.customTemplateGetStringArg(templateName, "map.string"));
+    buffer.write('\n');
+    buffer.write('file  =');
+    buffer.write(await CleverTapPlugin.customTemplateGetFileArg(templateName, "file"));
+    buffer.write('\n');
+    return buffer.toString();
+  }
+
+  void handlePresented(String templateName) {
+    CleverTapPlugin.customTemplateSetPresented(templateName);
+  }
+  void handleAction(String templateName, String argumentName) {
+    CleverTapPlugin.customTemplateRunAction(templateName, "action");
+  }
+  void handleFile(String templateName, String argumentName) async {
+    var filePath = await CleverTapPlugin.customTemplateGetFileArg(templateName, "file");
+    OpenFile.open(filePath);
+  }
+  void printArgument(String templateName, String argumentName) {
+    printArgsAsString(templateName);
+  }
+
+  // End utility for custom code templates
   
   void inAppNotificationDismissed(Map<String, dynamic> map) {
     this.setState(() {
@@ -1833,7 +1869,7 @@ class _MyAppState extends State<MyApp> {
       'number': 1
     };
     //CleverTapPlugin.recordEvent("Flutter Event", eventData);
-    CleverTapPlugin.recordEvent("foo", eventData);
+    CleverTapPlugin.recordEvent("lalit", eventData);
     showToast("Raised event - Flutter Event");
   }
 

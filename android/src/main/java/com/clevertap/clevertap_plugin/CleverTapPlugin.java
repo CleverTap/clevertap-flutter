@@ -801,10 +801,6 @@ public class CleverTapPlugin implements ActivityAware,
                 result.notImplemented();
             }
         }
-
-
-
-
     }
 
 

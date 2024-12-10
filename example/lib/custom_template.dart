@@ -3,15 +3,27 @@ import 'package:flutter/material.dart';
 class CustomTemplateDialog extends StatelessWidget {
   final String templateName;
   final String data;
+  final void Function(String) handleClose;
+  final void Function(String) handlePresented;
+  final void Function(String, String) handleAction;
+  final void Function(String, String) handleFile;
+  final void Function(String, String) printArgument;
 
   const CustomTemplateDialog({
     Key? key,
     required this.templateName,
     required this.data,
+    required this.handleClose,
+    required this.handlePresented,
+    required this.handleAction,
+    required this.handleFile,
+    required this.printArgument,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final textController = TextEditingController();
+
     return AlertDialog(
       title: Text(templateName),
       content: SingleChildScrollView(
@@ -21,31 +33,11 @@ class CustomTemplateDialog extends StatelessWidget {
             Text(data),
             const SizedBox(height: 16.0),
             TextField(
+              controller: textController,
               decoration: const InputDecoration(
                 border: OutlineInputBorder(),
                 labelText: 'Enter text',
               ),
-            ),
-            const SizedBox(height: 16.0),
-            ElevatedButton(
-              onPressed: () {
-                print("Button 1 pressed");
-              },
-              child: const Text('Button 1'),
-            ),
-            const SizedBox(height: 16.0),
-            TextField(
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                labelText: 'Enter text',
-              ),
-            ),
-            const SizedBox(height: 16.0),
-            ElevatedButton(
-              onPressed: () {
-                print("Button 2 pressed");
-              },
-              child: const Text('Button 2'),
             ),
             const SizedBox(height: 16.0),
             Row(
@@ -53,15 +45,36 @@ class CustomTemplateDialog extends StatelessWidget {
               children: [
                 ElevatedButton(
                   onPressed: () {
-                    print("Button 3 pressed");
+                    printArgument(templateName, textController.text);
+                    print("Print argument pressed");
                   },
-                  child: const Text('Button 3'),
+                  child: const Text('Print'),
                 ),
                 ElevatedButton(
                   onPressed: () {
-                    print("Button 4 pressed");
+                    handlePresented(templateName);
+                    print("Set presented pressed");
                   },
-                  child: const Text('Button 4'),
+                  child: const Text('Set Presented'),
+                ),
+              ],
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                ElevatedButton(
+                  onPressed: () {
+                    handleAction(templateName, textController.text);
+                    print("handle action requested");
+                  },
+                  child: const Text('Action'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    handleFile(templateName, textController.text);
+                    print("handle file requested");
+                  },
+                  child: const Text('File'),
                 ),
               ],
             ),
@@ -71,6 +84,7 @@ class CustomTemplateDialog extends StatelessWidget {
       actions: [
         TextButton(
           onPressed: () {
+            handleClose(templateName);
             Navigator.of(context).pop(); // Close dialog
           },
           child: const Text('Close'),

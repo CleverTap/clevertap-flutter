@@ -64,7 +64,10 @@ class CleverTapPlugin {
   static final CleverTapPlugin _clevertapPlugin =
       new CleverTapPlugin._internal();
 
-  factory CleverTapPlugin() => _clevertapPlugin;
+  factory CleverTapPlugin() {
+    print("CleverTapPlugin() called");
+    return _clevertapPlugin;
+  }
 
   static const libName = 'Flutter';
 
@@ -193,25 +196,24 @@ class CleverTapPlugin {
         });
         break;
       case "customTemplatePresent":
-        Map<dynamic, dynamic> args = call.arguments;
-        print("_platformCallHandler call kush ${args}");
+        String templateName = call.arguments;
         cleverTapCustomTemplatePresentHandlers
             .forEach((cleverTapCustomTemplatePresentHandler) {
-          cleverTapCustomTemplatePresentHandler(args.cast<String, dynamic>());
+          cleverTapCustomTemplatePresentHandler(templateName);
         });
         break;
       case "customFunctionPresent":
-        Map<dynamic, dynamic> args = call.arguments;
+        String functionName = call.arguments;
         cleverTapCustomFunctionPresentHandlers
             .forEach((cleverTapCustomFunctionPresentHandler) {
-          cleverTapCustomFunctionPresentHandler(args.cast<String, dynamic>());
+          cleverTapCustomFunctionPresentHandler(functionName);
         });
         break;
       case "customTemplateClose":
-        Map<dynamic, dynamic> args = call.arguments;
+        String templateName = call.arguments;
         cleverTapCustomTemplateCloseHandlers
             .forEach((cleverTapCustomTemplateCloseHandler) {
-          cleverTapCustomTemplateCloseHandler(args.cast<String, dynamic>());
+          cleverTapCustomTemplateCloseHandler(templateName);
         });
         break;
 
@@ -1292,12 +1294,12 @@ class CleverTapPlugin {
 
   static Future<void> customTemplateSetDismissed(String templateName) async {
     return await _dartToNativeMethodChannel
-        .invokeMethod('customTemplateSetDismissed', {'templateName': templateName});
+        .invokeMethod('customTemplateSetDismissed', templateName);
   }
 
   static Future<void> customTemplateSetPresented(String templateName) async {
     return await _dartToNativeMethodChannel
-        .invokeMethod('customTemplateSetPresented', {'templateName': templateName});
+        .invokeMethod('customTemplateSetPresented', templateName);
   }
 
   static Future<void> customTemplateRunAction(String templateName, String argName) async {
@@ -1310,7 +1312,7 @@ class CleverTapPlugin {
         {'templateName': templateName, 'argName': argName});
   }
 
-  static Future<int?> customTemplateGetNumberArg(String templateName, String argName) async {
+  static Future<num?> customTemplateGetNumberArg(String templateName, String argName) async {
     return await _dartToNativeMethodChannel.invokeMethod('customTemplateGetNumberArg',
         {'templateName': templateName, 'argName': argName});
   }

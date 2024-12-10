@@ -28,11 +28,13 @@ public class ClevertapCustomTemplates {
         private static final TemplatePresenter templatePresenter = new TemplatePresenter() {
             @Override
             public void onPresent(CustomTemplateContext.TemplateContext context) {
+                Log.d(TAG, "from native onPresent: " + context.getTemplateName());
                 invokeMethodOnUiThread("customTemplatePresent", context.getTemplateName());
             }
 
             @Override
             public void onClose(CustomTemplateContext.TemplateContext context) {
+                Log.d(TAG, "from native onClose: " + context.getTemplateName());
                 invokeMethodOnUiThread("customTemplateClose", context.getTemplateName());
             }
         };
@@ -40,6 +42,7 @@ public class ClevertapCustomTemplates {
         private static final FunctionPresenter functionPresenter = new FunctionPresenter() {
             @Override
             public void onPresent(CustomTemplateContext.FunctionContext context) {
+                Log.d(TAG, "from native function onPresent: " + context.getTemplateName());
                 invokeMethodOnUiThread("customFunctionPresent", context.getTemplateName());
             }
         };
