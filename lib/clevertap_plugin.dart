@@ -43,6 +43,7 @@ class CleverTapPlugin {
       cleverTapPushClickedPayloadReceivedHandler;
   late CleverTapPushPermissionResponseReceivedHandler
       cleverTapPushPermissionResponseReceivedHandler;
+
   static List<CleverTapOnVariablesChangedHandler>
       cleverTapOnVariablesChangedHandlers = [];
   static List<CleverTapOnOneTimeVariablesChangedHandler>
@@ -52,9 +53,9 @@ class CleverTapPlugin {
   static List<CleverTapOnceVariablesChangedAndNoDownloadsPendingHandler> cleverTapOnceVariablesChangedAndNoDownloadsPendingHandlers = [];
   static List<CleverTapOnFileValueChangedHandler> cleverTapOnFileValueChangedHandlers = [];
 
-  static List<CleverTapCustomTemplatePresentHandler> cleverTapCustomTemplatePresentHandlers = [];
-  static List<CleverTapCustomFunctionPresentHandler> cleverTapCustomFunctionPresentHandlers = [];
-  static List<CleverTapCustomTemplateCloseHandler> cleverTapCustomTemplateCloseHandlers = [];
+  late CleverTapCustomTemplatePresentHandler cleverTapCustomTemplatePresentHandler;
+  late CleverTapCustomFunctionPresentHandler cleverTapCustomFunctionPresentHandler;
+  late CleverTapCustomTemplateCloseHandler cleverTapCustomTemplateCloseHandler;
 
   static const MethodChannel _dartToNativeMethodChannel =
       const MethodChannel('clevertap_plugin/dart_to_native');
@@ -197,24 +198,15 @@ class CleverTapPlugin {
         break;
       case "customTemplatePresent":
         String templateName = call.arguments;
-        cleverTapCustomTemplatePresentHandlers
-            .forEach((cleverTapCustomTemplatePresentHandler) {
-          cleverTapCustomTemplatePresentHandler(templateName);
-        });
+        cleverTapCustomTemplatePresentHandler(templateName);
         break;
       case "customFunctionPresent":
         String functionName = call.arguments;
-        cleverTapCustomFunctionPresentHandlers
-            .forEach((cleverTapCustomFunctionPresentHandler) {
-          cleverTapCustomFunctionPresentHandler(functionName);
-        });
+        cleverTapCustomFunctionPresentHandler(functionName);
         break;
       case "customTemplateClose":
         String templateName = call.arguments;
-        cleverTapCustomTemplateCloseHandlers
-            .forEach((cleverTapCustomTemplateCloseHandler) {
-          cleverTapCustomTemplateCloseHandler(templateName);
-        });
+        cleverTapCustomTemplateCloseHandler(templateName);
         break;
 
       default:
@@ -223,15 +215,15 @@ class CleverTapPlugin {
     }
   }
 
-  void setCleverTapCustomTemplatePresentHandlers(CleverTapCustomTemplatePresentHandler handler) {
+  void setCleverTapCustomTemplatePresentHandler(CleverTapCustomTemplatePresentHandler handler) {
     print("CleverTapCustomTemplatePresentHandler called");
-    cleverTapCustomTemplatePresentHandlers.add(handler);
+    cleverTapCustomTemplatePresentHandler = handler;
   }
-  void setCleverTapCustomFunctionPresentHandlers(CleverTapCustomTemplateCloseHandler handler) {
-    cleverTapCustomFunctionPresentHandlers.add(handler);
+  void setCleverTapCustomFunctionPresentHandler(CleverTapCustomTemplateCloseHandler handler) {
+    cleverTapCustomFunctionPresentHandler = handler;
   }
-  void setCleverTapCustomTemplateCloseHandlers(CleverTapCustomFunctionPresentHandler handler) {
-    cleverTapCustomTemplateCloseHandlers.add(handler);
+  void setCleverTapCustomTemplateCloseHandler(CleverTapCustomFunctionPresentHandler handler) {
+    cleverTapCustomTemplateCloseHandler = handler;
   }
 
   /// Define a method to handle inApp notification dismissed

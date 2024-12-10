@@ -171,9 +171,9 @@ class _MyAppState extends State<MyApp> {
         .setCleverTapProductConfigActivatedHandler(productConfigActivated);
     _clevertapPlugin.setCleverTapPushPermissionResponseReceivedHandler(
         pushPermissionResponseReceived);
-    _clevertapPlugin.setCleverTapCustomTemplatePresentHandlers(presentCustomTemplate);
-    _clevertapPlugin.setCleverTapCustomTemplateCloseHandlers(closeCustomTemplate);
-    _clevertapPlugin.setCleverTapCustomFunctionPresentHandlers(presentCustomFunction);
+    _clevertapPlugin.setCleverTapCustomTemplatePresentHandler(presentCustomTemplate);
+    _clevertapPlugin.setCleverTapCustomTemplateCloseHandler(closeCustomTemplate);
+    _clevertapPlugin.setCleverTapCustomFunctionPresentHandler(presentCustomFunction);
   }
 
  void presentCustomTemplate(String templateName) async {
