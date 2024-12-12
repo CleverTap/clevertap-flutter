@@ -18,9 +18,4 @@ public class MyApplication extends CleverTapApplication {
         ActivityLifecycleCallback.register(this);
         super.onCreate();
     }
-
-    @Override
-    protected String[] templateJsonFilePaths() {
-        return new String[] {"1", "2"};
-    }
 }

@@ -58,6 +58,8 @@ class DartToNativePlatformCommunicator(
         private const val KEY_TEMPLATE_NAME_CC: String = "templateName"
 
         private const val KEY_TEMPLATE_ARGUMENT_CC: String = "argName"
+
+        val variables: HashMap<String, Any> = java.util.HashMap()
     }
 
     override fun onMethodCall(
@@ -635,7 +637,7 @@ class DartToNativePlatformCommunicator(
         if (cleverTapAPI != null) {
             val variablesMap = call.argument<Map<String, Any>>("variables")!!
             for ((key, value) in variablesMap) {
-                CleverTapPlugin.variables[key] = cleverTapAPI.defineVariable<Any>(key, value)
+                variables[key] = cleverTapAPI.defineVariable<Any>(key, value)
             }
             result.success(null)
         } else {
@@ -646,7 +648,7 @@ class DartToNativePlatformCommunicator(
     private fun defineFileVariable(call: MethodCall, result: MethodChannel.Result) {
         if (cleverTapAPI != null) {
             val fileVar = call.argument<String>("fileVariable")
-            CleverTapPlugin.variables[fileVar] = cleverTapAPI.defineFileVariable(fileVar)
+            variables[fileVar!!] = cleverTapAPI.defineFileVariable(fileVar)
             result.success(null)
         } else {
             result.error(TAG, ERROR_MSG, null)
@@ -762,8 +764,8 @@ class DartToNativePlatformCommunicator(
 
     private fun onValueChanged(call: MethodCall) {
         val name = call.argument<String>("name")
-        if (CleverTapPlugin.variables.containsKey(name)) {
-            val `var` = CleverTapPlugin.variables[name] as Var<Any>?
+        if (variables.containsKey(name)) {
+            val `var` = variables[name] as Var<Any>?
             if (`var` != null) {
                 `var`.addValueChangedCallback(object : VariableCallback<Any?>() {
                     @SuppressLint("RestrictedApi")
@@ -795,8 +797,8 @@ class DartToNativePlatformCommunicator(
 
     private fun onFileValueChanged(call: MethodCall) {
         val name = call.argument<String>("name")
-        if (CleverTapPlugin.variables.containsKey(name)) {
-            val `var` = CleverTapPlugin.variables[name] as Var<Any>?
+        if (variables.containsKey(name)) {
+            val `var` = variables[name] as Var<Any>?
             if (`var` != null) {
                 `var`.addFileReadyHandler(object : VariableCallback<Any?>() {
                     @SuppressLint("RestrictedApi")
@@ -853,8 +855,8 @@ class DartToNativePlatformCommunicator(
      */
     @SuppressLint("RestrictedApi")
     private fun getVariableValue(name: String): Any {
-        if (CleverTapPlugin.variables.containsKey(name)) {
-            val variable = CleverTapPlugin.variables[name] as Var<*>?
+        if (variables.containsKey(name)) {
+            val variable = variables[name] as Var<*>?
             return variable!!.value()
         }
         throw IllegalArgumentException(
@@ -864,7 +866,7 @@ class DartToNativePlatformCommunicator(
 
     private fun getVariablesValues(): Map<String, Any> {
         val variablesMapObject: MutableMap<String, Any> = java.util.HashMap()
-        for ((key, value) in CleverTapPlugin.variables) {
+        for ((key, value) in variables) {
             val variable = value as Var<*>
 
             val variableWritableMap = CleverTapTypeUtils.MapUtil.addValue(key, variable.value())
@@ -875,8 +877,8 @@ class DartToNativePlatformCommunicator(
 
     @SuppressLint("RestrictedApi")
     private fun getVariableValueAsMap(name: String): Map<String, Any> {
-        if (CleverTapPlugin.variables.containsKey(name)) {
-            val variable = CleverTapPlugin.variables[name] as Var<*>?
+        if (variables.containsKey(name)) {
+            val variable = variables[name] as Var<*>?
             return CleverTapTypeUtils.MapUtil.addValue(name, variable!!.value())
         }
         throw IllegalArgumentException(

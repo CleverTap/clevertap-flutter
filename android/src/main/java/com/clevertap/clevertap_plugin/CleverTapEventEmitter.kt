@@ -24,6 +24,7 @@ object CleverTapEventEmitter {
      *
      * @see [disableBuffer]
      */
+    @JvmStatic
     fun enableBuffer(event: CleverTapEvent) {
         eventsBuffers[event]?.enabled = true
     }
@@ -34,6 +35,7 @@ object CleverTapEventEmitter {
      *
      * @see [enableBuffer]
      */
+    @JvmStatic
     fun disableBuffer(event: CleverTapEvent) {
         eventsBuffers[event]?.enabled = false
     }
@@ -44,6 +46,7 @@ object CleverTapEventEmitter {
      *
      * @param enableBuffers enable/disable all buffers after they are cleared
      */
+    @JvmStatic
     fun resetAllBuffers(enableBuffers: Boolean) {
         eventsBuffers = createBuffersMap(enableBuffers)
         Log.i(LOG_TAG, "Buffers reset and enabled: $enableBuffers")
@@ -52,6 +55,7 @@ object CleverTapEventEmitter {
     /**
      * Emit all currently buffered events for the specified event name.
      */
+    @JvmStatic
     fun flushBuffer(event: CleverTapEvent) {
         val buffer = eventsBuffers[event] ?: return
         while (buffer.size() > 0) {
@@ -70,6 +74,7 @@ object CleverTapEventEmitter {
      * @see [enableBuffer]
      * @see [disableBuffer]
      */
+    @JvmStatic
     fun emit(event: CleverTapEvent, params: Any?) {
         if (eventsBuffers[event]?.enabled == true) {
             addToBuffer(event, params)
@@ -91,7 +96,10 @@ object CleverTapEventEmitter {
         Log.i(LOG_TAG, "Event $event added to buffer.")
     }
 
-    private fun sendEvent(event: CleverTapEvent, params: Any?) {
+    private fun sendEvent(
+        event: CleverTapEvent,
+        params: Any?
+    ) {
         try {
             invokeMethodOnUiThread(event.eventName, params)
             Log.i(LOG_TAG, "Sending event $event")
@@ -104,12 +112,12 @@ object CleverTapEventEmitter {
         CleverTapEvent.values().filter { it.bufferable }.associateWith {
             Buffer(enabled = enableBuffers)
         }
+}
 
-    private class Buffer(var enabled: Boolean) {
-        private val items: Queue<Any?> by lazy(LazyThreadSafetyMode.SYNCHRONIZED) { LinkedList() }
+private class Buffer(var enabled: Boolean) {
+    private val items: Queue<Any?> by lazy(LazyThreadSafetyMode.SYNCHRONIZED) { LinkedList() }
 
-        fun add(item: Any?) = items.add(item)
-        fun remove(): Any? = items.remove()
-        fun size(): Int = items.size
-    }
+    fun add(item: Any?) = items.add(item)
+    fun remove(): Any? = items.remove()
+    fun size(): Int = items.size
 }

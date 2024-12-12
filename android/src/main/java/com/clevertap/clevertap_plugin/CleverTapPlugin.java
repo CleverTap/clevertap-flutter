@@ -11,9 +11,7 @@ import androidx.annotation.NonNull;
 import com.clevertap.android.sdk.CleverTapAPI;
 
 import java.lang.ref.WeakReference;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
 import io.flutter.embedding.engine.plugins.FlutterPlugin;
@@ -36,14 +34,17 @@ public class CleverTapPlugin implements ActivityAware, FlutterPlugin {
 
     private MethodChannel lastNativeToDartMethodChannel;
 
-    private CleverTapAPI cleverTapAPI;
-
     private Context context;
 
     private DartToNativePlatformCommunicator dartToNativePlatformCommunicator;
 
-    public static Map<String, Object> variables = new HashMap<>();
     public static final Set<MethodChannel> nativeToDartMethodChannelSet = new HashSet<>();
+
+    private static final Handler mainHandler = new Handler(Looper.getMainLooper());
+
+    private final Runnable runnable = () -> {
+        CleverTapEventEmitter.resetAllBuffers(false);
+    };
 
     /**
      * Plugin registration.
@@ -52,24 +53,6 @@ public class CleverTapPlugin implements ActivityAware, FlutterPlugin {
         CleverTapPlugin plugin = new CleverTapPlugin();
         plugin.setupPlugin(registrar.context(), null, registrar);
         activity = new WeakReference<>((Activity) registrar.activeContext());
-    }
-
-    private void setupPlugin(Context context, BinaryMessenger messenger, Registrar registrar) {
-        this.dartToNativeMethodChannel = getMethodChannel("clevertap_plugin/dart_to_native", messenger, registrar);
-
-        // lastNativeToDartMethodChannel is added to a set and not kept as a static field to ensure callbacks work when a background isolate is spawned
-        // Background Isolates are spawned by several libraries like flutter_workmanager and flutter_firebasemessaging
-        lastNativeToDartMethodChannel = getMethodChannel("clevertap_plugin/native_to_dart", messenger, registrar);
-        nativeToDartMethodChannelSet.add(lastNativeToDartMethodChannel);
-
-        this.context = context.getApplicationContext();
-        this.cleverTapAPI = CleverTapAPI.getDefaultInstance(this.context);
-        dartToNativePlatformCommunicator = new DartToNativePlatformCommunicator(context, cleverTapAPI);
-        this.dartToNativeMethodChannel.setMethodCallHandler(dartToNativePlatformCommunicator);
-        if (this.cleverTapAPI != null) {
-            CleverTapListenerProxy.INSTANCE.attachToInstance(this.cleverTapAPI);
-            this.cleverTapAPI.setLibrary("Flutter");
-        }
     }
 
     public CleverTapPlugin() {
@@ -81,15 +64,15 @@ public class CleverTapPlugin implements ActivityAware, FlutterPlugin {
     }
 
     @Override
-    public void onAttachedToEngine(@NonNull FlutterPluginBinding binding) {
-        Log.d(TAG, "onAttachedToEngine");
-        setupPlugin(binding.getApplicationContext(), binding.getBinaryMessenger(), null);
-    }
-
-    @Override
     public void onDetachedFromActivity() {
         activity.clear();
         activity = null;
+    }
+
+    @SuppressWarnings("ConstantConditions")
+    @Override
+    public void onReattachedToActivityForConfigChanges(@NonNull ActivityPluginBinding binding) {
+        activity = new WeakReference<>(binding.getActivity());
     }
 
     @Override
@@ -99,19 +82,43 @@ public class CleverTapPlugin implements ActivityAware, FlutterPlugin {
     }
 
     @Override
+    public void onAttachedToEngine(@NonNull FlutterPluginBinding binding) {
+        Log.d(TAG, "onAttachedToEngine");
+        setupPlugin(binding.getApplicationContext(), binding.getBinaryMessenger(), null);
+        mainHandler.postDelayed(runnable, 5000);
+    }
+
+    @Override
     public void onDetachedFromEngine(@NonNull FlutterPluginBinding binding) {
         Log.d(TAG, "onDetachedFromEngine");
+        mainHandler.removeCallbacks(runnable); // todo lp check if all in set are removed, this is called multiple times
         dartToNativePlatformCommunicator = null;
         nativeToDartMethodChannelSet.remove(this.lastNativeToDartMethodChannel);
-        this.lastNativeToDartMethodChannel = null;
+        lastNativeToDartMethodChannel = null;
         dartToNativeMethodChannel = null;
         context = null;
     }
 
-    @SuppressWarnings("ConstantConditions")
-    @Override
-    public void onReattachedToActivityForConfigChanges(@NonNull ActivityPluginBinding binding) {
-        activity = new WeakReference<>(binding.getActivity());
+    private void setupPlugin(
+            Context context,
+            BinaryMessenger messenger,
+            Registrar registrar
+    ) {
+        this.dartToNativeMethodChannel = getMethodChannel("clevertap_plugin/dart_to_native", messenger, registrar);
+
+        // lastNativeToDartMethodChannel is added to a set and not kept as a static field to ensure callbacks work when a background isolate is spawned
+        // Background Isolates are spawned by several libraries like flutter_workmanager and flutter_firebasemessaging
+        lastNativeToDartMethodChannel = getMethodChannel("clevertap_plugin/native_to_dart", messenger, registrar);
+        nativeToDartMethodChannelSet.add(lastNativeToDartMethodChannel);
+
+        this.context = context.getApplicationContext();
+        CleverTapAPI cleverTapAPI = CleverTapAPI.getDefaultInstance(this.context);
+        this.dartToNativePlatformCommunicator = new DartToNativePlatformCommunicator(context, cleverTapAPI);
+        this.dartToNativeMethodChannel.setMethodCallHandler(dartToNativePlatformCommunicator);
+        if (cleverTapAPI != null) {
+            CleverTapListenerProxy.INSTANCE.attachToInstance(cleverTapAPI);
+            cleverTapAPI.setLibrary("Flutter");
+        }
     }
 
     private MethodChannel getMethodChannel(
@@ -161,7 +168,6 @@ public class CleverTapPlugin implements ActivityAware, FlutterPlugin {
             activity.get().runOnUiThread(runnable);
         } else {
             try {
-                Handler mainHandler = new Handler(Looper.getMainLooper());
                 mainHandler.post(runnable);
             } catch (Exception e) {
                 Log.e(TAG, "Exception while running on main thread - ");

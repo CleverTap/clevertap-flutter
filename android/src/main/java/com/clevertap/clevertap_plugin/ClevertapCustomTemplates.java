@@ -29,13 +29,20 @@ public class ClevertapCustomTemplates {
             @Override
             public void onPresent(CustomTemplateContext.TemplateContext context) {
                 Log.d(TAG, "from native onPresent: " + context.getTemplateName());
-                invokeMethodOnUiThread("customTemplatePresent", context.getTemplateName());
+
+                CleverTapEventEmitter.emit(
+                        CleverTapEvent.CLEVERTAP_CUSTOM_TEMPLATE_PRESENT,
+                        context.getTemplateName()
+                );
             }
 
             @Override
             public void onClose(CustomTemplateContext.TemplateContext context) {
                 Log.d(TAG, "from native onClose: " + context.getTemplateName());
-                invokeMethodOnUiThread("customTemplateClose", context.getTemplateName());
+                CleverTapEventEmitter.emit(
+                        CleverTapEvent.CLEVERTAP_CUSTOM_TEMPLATE_CLOSE,
+                        context.getTemplateName()
+                );
             }
         };
 
@@ -43,7 +50,10 @@ public class ClevertapCustomTemplates {
             @Override
             public void onPresent(CustomTemplateContext.FunctionContext context) {
                 Log.d(TAG, "from native function onPresent: " + context.getTemplateName());
-                invokeMethodOnUiThread("customFunctionPresent", context.getTemplateName());
+                CleverTapEventEmitter.emit(
+                        CleverTapEvent.CLEVERTAP_CUSTOM_FUNCTION_PRESENT,
+                        context.getTemplateName()
+                );
             }
         };
 
