@@ -62,6 +62,7 @@ object CleverTapListenerProxy : SyncListener, InAppNotificationListener, CTInbox
 
     // InAppNotificationListener
     override fun beforeShow(extras: MutableMap<String, Any>?): Boolean {
+        // todo lp anyway we drop this
         CleverTapEventEmitter.emit(
             event = CLEVERTAP_IN_APP_NOTIFICATION_BEFORE_SHOW,
             params = extras
@@ -201,6 +202,9 @@ object CleverTapListenerProxy : SyncListener, InAppNotificationListener, CTInbox
     }
 
     override fun onPushAmpPayloadReceived(extras: Bundle?) {
-        // todo lp fix me, emit bundle as is
+        CleverTapEventEmitter.emit(
+            event = CLEVERTAP_ON_PUSH_AMP_PAYLOAD_RECEIVED,
+            params = Utils.bundleToMap(extras)
+        )
     }
 }
