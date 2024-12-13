@@ -90,7 +90,6 @@ public class CleverTapPlugin implements ActivityAware, FlutterPlugin {
     @Override
     public void onDetachedFromEngine(@NonNull FlutterPluginBinding binding) {
         Log.d(TAG, "onDetachedFromEngine " + binding);
-        CleverTapEventEmitter.enableAll();
         dartToNativePlatformCommunicator = null;
         nativeToDartMethodChannelSet.remove(this.lastNativeToDartMethodChannel);
         lastNativeToDartMethodChannel = null;
@@ -163,15 +162,11 @@ public class CleverTapPlugin implements ActivityAware, FlutterPlugin {
     }
 
     public static void runOnMainThread(final Runnable runnable) {
-        if (activity != null && activity.get() != null) {
-            activity.get().runOnUiThread(runnable);
-        } else {
-            try {
-                mainHandler.post(runnable);
-            } catch (Exception e) {
-                Log.e(TAG, "Exception while running on main thread - ");
-                e.printStackTrace();
-            }
+        try {
+            mainHandler.post(runnable);
+        } catch (Exception e) {
+            Log.e(TAG, "Exception while running on main thread - ");
+            e.printStackTrace();
         }
     }
 }
