@@ -140,37 +140,23 @@ class _MyAppState extends State<MyApp> {
 
   void activateCleverTapFlutterPluginHandlers() {
     _clevertapPlugin = new CleverTapPlugin();
-    _clevertapPlugin
-        .setCleverTapPushAmpPayloadReceivedHandler(pushAmpPayloadReceived);
-    _clevertapPlugin.setCleverTapPushClickedPayloadReceivedHandler(
-        pushClickedPayloadReceived);
-    _clevertapPlugin.setCleverTapInAppNotificationDismissedHandler(
-        inAppNotificationDismissed);
-    _clevertapPlugin
-        .setCleverTapInAppNotificationShowHandler(inAppNotificationShow);
-    _clevertapPlugin
-        .setCleverTapProfileDidInitializeHandler(profileDidInitialize);
+    _clevertapPlugin.setCleverTapPushAmpPayloadReceivedHandler(pushAmpPayloadReceived);
+    _clevertapPlugin.setCleverTapPushClickedPayloadReceivedHandler(pushClickedPayloadReceived);
+    _clevertapPlugin.setCleverTapInAppNotificationDismissedHandler(inAppNotificationDismissed);
+    _clevertapPlugin.setCleverTapInAppNotificationShowHandler(inAppNotificationShow);
+    _clevertapPlugin.setCleverTapProfileDidInitializeHandler(profileDidInitialize);
     _clevertapPlugin.setCleverTapProfileSyncHandler(profileDidUpdate);
     _clevertapPlugin.setCleverTapInboxDidInitializeHandler(inboxDidInitialize);
-    _clevertapPlugin
-        .setCleverTapInboxMessagesDidUpdateHandler(inboxMessagesDidUpdate);
-    _clevertapPlugin
-        .setCleverTapDisplayUnitsLoadedHandler(onDisplayUnitsLoaded);
-    _clevertapPlugin.setCleverTapInAppNotificationButtonClickedHandler(
-        inAppNotificationButtonClicked);
-    _clevertapPlugin.setCleverTapInboxNotificationButtonClickedHandler(
-        inboxNotificationButtonClicked);
-    _clevertapPlugin.setCleverTapInboxNotificationMessageClickedHandler(
-        inboxNotificationMessageClicked);
+    _clevertapPlugin.setCleverTapInboxMessagesDidUpdateHandler(inboxMessagesDidUpdate);
+    _clevertapPlugin.setCleverTapDisplayUnitsLoadedHandler(onDisplayUnitsLoaded);
+    _clevertapPlugin.setCleverTapInAppNotificationButtonClickedHandler(inAppNotificationButtonClicked);
+    _clevertapPlugin.setCleverTapInboxNotificationButtonClickedHandler(inboxNotificationButtonClicked);
+    _clevertapPlugin.setCleverTapInboxNotificationMessageClickedHandler(inboxNotificationMessageClicked);
     _clevertapPlugin.setCleverTapFeatureFlagUpdatedHandler(featureFlagsUpdated);
-    _clevertapPlugin
-        .setCleverTapProductConfigInitializedHandler(productConfigInitialized);
-    _clevertapPlugin
-        .setCleverTapProductConfigFetchedHandler(productConfigFetched);
-    _clevertapPlugin
-        .setCleverTapProductConfigActivatedHandler(productConfigActivated);
-    _clevertapPlugin.setCleverTapPushPermissionResponseReceivedHandler(
-        pushPermissionResponseReceived);
+    _clevertapPlugin.setCleverTapProductConfigInitializedHandler(productConfigInitialized);
+    _clevertapPlugin.setCleverTapProductConfigFetchedHandler(productConfigFetched);
+    _clevertapPlugin.setCleverTapProductConfigActivatedHandler(productConfigActivated);
+    _clevertapPlugin.setCleverTapPushPermissionResponseReceivedHandler(pushPermissionResponseReceived);
     _clevertapPlugin.setCleverTapCustomTemplatePresentHandler(presentCustomTemplate);
     _clevertapPlugin.setCleverTapCustomTemplateCloseHandler(closeCustomTemplate);
     _clevertapPlugin.setCleverTapCustomFunctionPresentHandler(presentCustomFunction);

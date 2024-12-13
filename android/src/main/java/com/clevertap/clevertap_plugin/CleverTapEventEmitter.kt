@@ -64,6 +64,21 @@ object CleverTapEventEmitter {
         }
     }
 
+    @JvmStatic
+    fun enableAll() {
+        eventsBuffers.forEach {  pair ->
+            pair.value.enabled = true
+        }
+    }
+
+    @JvmStatic
+    fun disableAllAndFlush() {
+        eventsBuffers.forEach {  pair ->
+            flushBuffer(pair.key)
+            pair.value.enabled = false
+        }
+    }
+
     /**
      * Emit an event with specified params. It will be buffered if buffering for the event is enabled or
      * it will be send immediately otherwise.
@@ -101,7 +116,10 @@ object CleverTapEventEmitter {
         params: Any?
     ) {
         try {
-            invokeMethodOnUiThread(event.eventName, params)
+            invokeMethodOnUiThread(
+                EventNameMapper.fromCleverTapEvent(event),
+                params
+            )
             Log.i(LOG_TAG, "Sending event $event")
         } catch (t: Throwable) {
             Log.e(LOG_TAG, "Sending event $event failed", t)

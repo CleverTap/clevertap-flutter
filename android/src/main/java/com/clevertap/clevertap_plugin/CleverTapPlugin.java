@@ -42,10 +42,6 @@ public class CleverTapPlugin implements ActivityAware, FlutterPlugin {
 
     private static final Handler mainHandler = new Handler(Looper.getMainLooper());
 
-    private final Runnable runnable = () -> {
-        CleverTapEventEmitter.resetAllBuffers(false);
-    };
-
     /**
      * Plugin registration.
      */
@@ -61,37 +57,40 @@ public class CleverTapPlugin implements ActivityAware, FlutterPlugin {
     @Override
     public void onAttachedToActivity(@NonNull ActivityPluginBinding binding) {
         activity = new WeakReference<>(binding.getActivity());
+        CleverTapEventEmitter.disableAllAndFlush();
     }
 
     @Override
     public void onDetachedFromActivity() {
         activity.clear();
         activity = null;
+        CleverTapEventEmitter.enableAll();
     }
 
     @SuppressWarnings("ConstantConditions")
     @Override
     public void onReattachedToActivityForConfigChanges(@NonNull ActivityPluginBinding binding) {
         activity = new WeakReference<>(binding.getActivity());
+        CleverTapEventEmitter.disableAllAndFlush();
     }
 
     @Override
     public void onDetachedFromActivityForConfigChanges() {
+        CleverTapEventEmitter.enableAll();
         activity.clear();
         activity = null;
     }
 
     @Override
     public void onAttachedToEngine(@NonNull FlutterPluginBinding binding) {
-        Log.d(TAG, "onAttachedToEngine");
+        Log.d(TAG, "onAttachedToEngine " + binding);
         setupPlugin(binding.getApplicationContext(), binding.getBinaryMessenger(), null);
-        mainHandler.postDelayed(runnable, 5000);
     }
 
     @Override
     public void onDetachedFromEngine(@NonNull FlutterPluginBinding binding) {
-        Log.d(TAG, "onDetachedFromEngine");
-        mainHandler.removeCallbacks(runnable); // todo lp check if all in set are removed, this is called multiple times
+        Log.d(TAG, "onDetachedFromEngine " + binding);
+        CleverTapEventEmitter.enableAll();
         dartToNativePlatformCommunicator = null;
         nativeToDartMethodChannelSet.remove(this.lastNativeToDartMethodChannel);
         lastNativeToDartMethodChannel = null;
