@@ -120,7 +120,7 @@ public class CleverTapPlugin implements ActivityAware, FlutterPlugin {
         this.dartToNativePlatformCommunicator = new DartToNativePlatformCommunicator(context, cleverTapAPI);
         this.dartToNativeMethodChannel.setMethodCallHandler(dartToNativePlatformCommunicator);
         if (cleverTapAPI != null) {
-            CleverTapListenerProxy.INSTANCE.attachToInstance(cleverTapAPI);
+            CleverTapListenerProxy.attachToInstance(cleverTapAPI);
             cleverTapAPI.setLibrary("Flutter");
         }
     }

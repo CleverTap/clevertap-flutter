@@ -30,6 +30,7 @@ object CleverTapListenerProxy : SyncListener, InAppNotificationListener, CTInbox
 
     private const val LOG_TAG = "CleverTapListenerProxy"
 
+    @JvmStatic
     fun attachToInstance(instance: CleverTapAPI) {
         instance.unregisterPushPermissionNotificationResponseListener(this)
         instance.registerPushPermissionNotificationResponseListener(this)
