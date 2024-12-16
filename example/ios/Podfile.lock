@@ -71,6 +71,8 @@ PODS:
     - nanopb/encode (= 2.30910.0)
   - nanopb/decode (2.30910.0)
   - nanopb/encode (2.30910.0)
+  - open_file_ios (0.0.1):
+    - Flutter
   - PromisesObjC (2.4.0)
   - SDWebImage (5.20.0):
     - SDWebImage/Core (= 5.20.0)
@@ -83,6 +85,7 @@ DEPENDENCIES:
   - firebase_core (from `.symlinks/plugins/firebase_core/ios`)
   - firebase_messaging (from `.symlinks/plugins/firebase_messaging/ios`)
   - Flutter (from `Flutter`)
+  - open_file_ios (from `.symlinks/plugins/open_file_ios/ios`)
   - workmanager (from `.symlinks/plugins/workmanager/ios`)
 
 SPEC REPOS:
@@ -108,6 +111,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/firebase_messaging/ios"
   Flutter:
     :path: Flutter
+  open_file_ios:
+    :path: ".symlinks/plugins/open_file_ios/ios"
   workmanager:
     :path: ".symlinks/plugins/workmanager/ios"
 
@@ -125,6 +130,7 @@ SPEC CHECKSUMS:
   GoogleDataTransport: 6c09b596d841063d76d4288cc2d2f42cc36e1e2a
   GoogleUtilities: ea963c370a38a8069cc5f7ba4ca849a60b6d7d15
   nanopb: 438bc412db1928dac798aa6fd75726007be04262
+  open_file_ios: 461db5853723763573e140de3193656f91990d9e
   PromisesObjC: f5707f49cb48b9636751c5b2e7d227e43fba9f47
   SDWebImage: 73c6079366fea25fa4bb9640d5fb58f0893facd8
   workmanager: 0afdcf5628bbde6924c21af7836fed07b42e30e6

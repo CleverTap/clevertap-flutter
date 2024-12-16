@@ -1516,7 +1516,7 @@ static NSDateFormatter *dateFormatter;
 }
 
 - (void)customTemplateSetDismissed:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    NSString *templateName = call.arguments[@"templateName"];
+    NSString *templateName = call.arguments;
     
     CTTemplateContext *context = [[CleverTap sharedInstance] activeContextForTemplate:templateName];
     if (context) {
@@ -1530,7 +1530,7 @@ static NSDateFormatter *dateFormatter;
 }
 
 - (void)customTemplateSetPresented:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    NSString *templateName = call.arguments[@"templateName"];
+    NSString *templateName = call.arguments;
     
     CTTemplateContext *context = [[CleverTap sharedInstance] activeContextForTemplate:templateName];
     if (context) {
