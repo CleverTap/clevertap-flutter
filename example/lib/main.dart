@@ -115,7 +115,6 @@ class _MyAppState extends State<MyApp> {
 
   @override
   void initState() {
-    print("initState");
     print("CleverTapPlugin initState");
     super.initState();
     initPlatformState();

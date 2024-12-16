@@ -42,6 +42,10 @@ public class CleverTapPlugin implements ActivityAware, FlutterPlugin {
 
     private static final Handler mainHandler = new Handler(Looper.getMainLooper());
 
+    private final Runnable runnable = () -> {
+        CleverTapEventEmitter.resetAllBuffers(false);
+    };
+
     /**
      * Plugin registration.
      */
@@ -58,11 +62,13 @@ public class CleverTapPlugin implements ActivityAware, FlutterPlugin {
     public void onAttachedToActivity(@NonNull ActivityPluginBinding binding) {
         Log.d(TAG, "onAttachedToActivity: " + binding + " activity " + binding.getActivity());
         activity = new WeakReference<>(binding.getActivity());
+        mainHandler.postDelayed(runnable, 5000);
     }
 
     @Override
     public void onDetachedFromActivity() {
         Log.d(TAG, "onDetachedFromActivity");
+        mainHandler.removeCallbacks(runnable);
         activity.clear();
         activity = null;
     }
@@ -134,8 +140,6 @@ public class CleverTapPlugin implements ActivityAware, FlutterPlugin {
     }
 
     public static void invokeMethodOnUiThread(final String methodName, final String cleverTapID) {
-        //Log.d(TAG, "methodChannelSet in invokeMethodOnUiThread(String) is of size " + nativeToDartMethodChannelSet.size());
-
         for (MethodChannel channel : nativeToDartMethodChannelSet) {
             if (channel != null) {
                 Log.d(TAG, "methodChannelSet in invokeMethodOnUiThread(String) " + channel);
@@ -151,8 +155,6 @@ public class CleverTapPlugin implements ActivityAware, FlutterPlugin {
     }
 
     public static void invokeMethodOnUiThread(final String methodName, final Object obj) {
-        //Log.d(TAG, "methodChannelSet in invokeMethodOnUiThread(Map) is of size " + nativeToDartMethodChannelSet.size());
-
         for (MethodChannel channel : nativeToDartMethodChannelSet) {
             if (channel != null) {
                 Log.d(TAG, "methodChannel in invokeMethodOnUiThread(Object) " + channel);
