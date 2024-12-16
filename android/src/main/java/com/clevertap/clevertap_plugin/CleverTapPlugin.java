@@ -56,27 +56,27 @@ public class CleverTapPlugin implements ActivityAware, FlutterPlugin {
 
     @Override
     public void onAttachedToActivity(@NonNull ActivityPluginBinding binding) {
+        Log.d(TAG, "onAttachedToActivity: " + binding + " activity " + binding.getActivity());
         activity = new WeakReference<>(binding.getActivity());
-        CleverTapEventEmitter.disableAllAndFlush();
     }
 
     @Override
     public void onDetachedFromActivity() {
+        Log.d(TAG, "onDetachedFromActivity");
         activity.clear();
         activity = null;
-        CleverTapEventEmitter.enableAll();
     }
 
     @SuppressWarnings("ConstantConditions")
     @Override
     public void onReattachedToActivityForConfigChanges(@NonNull ActivityPluginBinding binding) {
+        Log.d(TAG, "onReattachedToActivityForConfigChanges: " + binding);
         activity = new WeakReference<>(binding.getActivity());
-        CleverTapEventEmitter.disableAllAndFlush();
     }
 
     @Override
     public void onDetachedFromActivityForConfigChanges() {
-        CleverTapEventEmitter.enableAll();
+        Log.d(TAG, "onDetachedFromActivityForConfigChanges");
         activity.clear();
         activity = null;
     }
@@ -134,7 +134,7 @@ public class CleverTapPlugin implements ActivityAware, FlutterPlugin {
     }
 
     public static void invokeMethodOnUiThread(final String methodName, final String cleverTapID) {
-        Log.d(TAG, "methodChannelSet in invokeMethodOnUiThread(String) is of size " + nativeToDartMethodChannelSet.size());
+        //Log.d(TAG, "methodChannelSet in invokeMethodOnUiThread(String) is of size " + nativeToDartMethodChannelSet.size());
 
         for (MethodChannel channel : nativeToDartMethodChannelSet) {
             if (channel != null) {
@@ -151,7 +151,7 @@ public class CleverTapPlugin implements ActivityAware, FlutterPlugin {
     }
 
     public static void invokeMethodOnUiThread(final String methodName, final Object obj) {
-        Log.d(TAG, "methodChannelSet in invokeMethodOnUiThread(Map) is of size " + nativeToDartMethodChannelSet.size());
+        //Log.d(TAG, "methodChannelSet in invokeMethodOnUiThread(Map) is of size " + nativeToDartMethodChannelSet.size());
 
         for (MethodChannel channel : nativeToDartMethodChannelSet) {
             if (channel != null) {

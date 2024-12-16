@@ -16,6 +16,9 @@ import 'custom_template.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
+final int TEST_RUN_APP_DELAY = 0;
+final int CLEVERTAP_LISTENER_ATTACH_DELAY = 0;
+
 @pragma('vm:entry-point')
 void onKilledStateNotificationClickedHandler(Map<String, dynamic> map) async {
   print("onKilledStateNotificationClickedHandler called from headless task!");
@@ -50,6 +53,7 @@ void _firebaseForegroundMessageHandler(RemoteMessage remoteMessage) {
 }
 
 void main() async {
+  print("CleverTapPlugin main pre ensure");
   WidgetsFlutterBinding.ensureInitialized();
   if (!kIsWeb && !Platform.isIOS) {
     Workmanager().initialize(
@@ -67,11 +71,17 @@ void main() async {
 
   CleverTapPlugin.onKilledStateNotificationClicked(
       onKilledStateNotificationClickedHandler);
-  runApp(MaterialApp(
-    navigatorKey: navigatorKey,
-    title: 'Home Page',
-    home: MyApp(),
-  ));
+
+  print("CleverTapPlugin main pre runapp");
+
+  Future.delayed(Duration(seconds: TEST_RUN_APP_DELAY), () {
+    runApp(MaterialApp(
+      navigatorKey: navigatorKey,
+      title: 'Home Page',
+      home: MyApp(),
+    ));
+    print("CleverTapPlugin main POSTTT runapp");
+  });
 }
 
 class MyApp extends StatefulWidget {
@@ -81,6 +91,9 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   late CleverTapPlugin _clevertapPlugin;
+
+  late final AppLifecycleListener _listener;
+
   var inboxInitialized = false;
   var optOut = false;
   var offLine = false;
@@ -103,13 +116,15 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     print("initState");
+    print("CleverTapPlugin initState");
     super.initState();
     initPlatformState();
-    activateCleverTapFlutterPluginHandlers();
+    Future.delayed(Duration(seconds: CLEVERTAP_LISTENER_ATTACH_DELAY), () {
+      activateCleverTapFlutterPluginHandlers();
+    });
     CleverTapPlugin.setDebugLevel(3);
     if (kIsWeb) {
-      CleverTapPlugin.init("CLEVERTAP_ACCOUNT_ID", "CLEVERTAP_REGION",
-          "CLEVERTAP_TARGET_DOMAIN");
+      CleverTapPlugin.init("CLEVERTAP_ACCOUNT_ID", "CLEVERTAP_REGION", "CLEVERTAP_TARGET_DOMAIN");
       CleverTapPlugin.setDebugLevel(3);
       CleverTapPlugin.addKVDataChangeListener((obj) {
         var kv = obj["kv"];
@@ -120,8 +135,7 @@ class _MyAppState extends State<MyApp> {
     if (Platform.isAndroid) {
       _handleKilledStateNotificationInteraction();
     }
-    CleverTapPlugin.createNotificationChannel(
-        "fluttertest", "Flutter Test", "Flutter Test", 3, true);
+    CleverTapPlugin.createNotificationChannel("fluttertest", "Flutter Test", "Flutter Test", 3, true);
     CleverTapPlugin.initializeInbox();
     CleverTapPlugin.registerForPush(); //only for iOS
     //var initialUrl = CleverTapPlugin.getInitialUrl();
@@ -139,27 +153,35 @@ class _MyAppState extends State<MyApp> {
   }
 
   void activateCleverTapFlutterPluginHandlers() {
+    print("activateCleverTapFlutterPluginHandlers()");
     _clevertapPlugin = new CleverTapPlugin();
-    _clevertapPlugin.setCleverTapPushAmpPayloadReceivedHandler(pushAmpPayloadReceived);
-    _clevertapPlugin.setCleverTapPushClickedPayloadReceivedHandler(pushClickedPayloadReceived);
-    _clevertapPlugin.setCleverTapInAppNotificationDismissedHandler(inAppNotificationDismissed);
-    _clevertapPlugin.setCleverTapInAppNotificationShowHandler(inAppNotificationShow);
     _clevertapPlugin.setCleverTapProfileDidInitializeHandler(profileDidInitialize);
     _clevertapPlugin.setCleverTapProfileSyncHandler(profileDidUpdate);
+    _clevertapPlugin.setCleverTapInAppNotificationDismissedHandler(inAppNotificationDismissed);
+    //before-show
+    _clevertapPlugin.setCleverTapInAppNotificationShowHandler(inAppNotificationShow);
     _clevertapPlugin.setCleverTapInboxDidInitializeHandler(inboxDidInitialize);
     _clevertapPlugin.setCleverTapInboxMessagesDidUpdateHandler(inboxMessagesDidUpdate);
-    _clevertapPlugin.setCleverTapDisplayUnitsLoadedHandler(onDisplayUnitsLoaded);
-    _clevertapPlugin.setCleverTapInAppNotificationButtonClickedHandler(inAppNotificationButtonClicked);
     _clevertapPlugin.setCleverTapInboxNotificationButtonClickedHandler(inboxNotificationButtonClicked);
     _clevertapPlugin.setCleverTapInboxNotificationMessageClickedHandler(inboxNotificationMessageClicked);
+    _clevertapPlugin.setCleverTapDisplayUnitsLoadedHandler(onDisplayUnitsLoaded);
     _clevertapPlugin.setCleverTapFeatureFlagUpdatedHandler(featureFlagsUpdated);
     _clevertapPlugin.setCleverTapProductConfigInitializedHandler(productConfigInitialized);
     _clevertapPlugin.setCleverTapProductConfigFetchedHandler(productConfigFetched);
     _clevertapPlugin.setCleverTapProductConfigActivatedHandler(productConfigActivated);
+    // push notif clicked handler
+
     _clevertapPlugin.setCleverTapPushPermissionResponseReceivedHandler(pushPermissionResponseReceived);
+    _clevertapPlugin.setCleverTapPushAmpPayloadReceivedHandler(pushAmpPayloadReceived);
+    //CLEVERTAP_ON_VARIABLES_CHA
+    //CLEVERTAP_ON_ONE_TIME_VARI
+    //CLEVERTAP_ON_VALUE_CHANGED
     _clevertapPlugin.setCleverTapCustomTemplatePresentHandler(presentCustomTemplate);
     _clevertapPlugin.setCleverTapCustomTemplateCloseHandler(closeCustomTemplate);
     _clevertapPlugin.setCleverTapCustomFunctionPresentHandler(presentCustomFunction);
+
+    _clevertapPlugin.setCleverTapPushClickedPayloadReceivedHandler(pushClickedPayloadReceived);
+    _clevertapPlugin.setCleverTapInAppNotificationButtonClickedHandler(inAppNotificationButtonClicked);
   }
 
  void presentCustomTemplate(String templateName) async {

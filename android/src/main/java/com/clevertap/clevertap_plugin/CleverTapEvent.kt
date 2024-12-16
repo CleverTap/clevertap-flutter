@@ -22,7 +22,7 @@ enum class CleverTapEvent(
     CLEVERTAP_PRODUCT_CONFIG_DID_ACTIVATE("CleverTapProductConfigDidActivate"),
     CLEVERTAP_PUSH_NOTIFICATION_CLICKED("CleverTapPushNotificationClicked", bufferable = true),
     CLEVERTAP_ON_PUSH_PERMISSION_RESPONSE("CleverTapPushPermissionResponseReceived"),
-    CLEVERTAP_ON_PUSH_AMP_PAYLOAD_RECEIVED("CleverTapPushPermissionResponseReceived"),
+    CLEVERTAP_ON_PUSH_AMP_PAYLOAD_RECEIVED("CleverTapPushAmpPayloadReceived"), // todo make bufferable?
     CLEVERTAP_ON_VARIABLES_CHANGED("CleverTapOnVariablesChanged"),
     CLEVERTAP_ON_ONE_TIME_VARIABLES_CHANGED("CleverTapOnOneTimeVariablesChanged"),
     CLEVERTAP_ON_VALUE_CHANGED("CleverTapOnValueChanged"),
@@ -31,7 +31,8 @@ enum class CleverTapEvent(
     CLEVERTAP_CUSTOM_TEMPLATE_CLOSE("CleverTapCustomTemplateClose"),
     CLEVERTAP_ON_FILE_VALUE_CHANGED("CleverTapOnFileValueChanged"),
     CLEVERTAP_ON_VARIABLES_CHANGED_AND_NO_DOWNLOADS_PENDING("CleverTapOnVariablesChangedAndNoDownloadsPending"),
-    CLEVERTAP_ONCE_VARIABLES_CHANGED_AND_NO_DOWNLOADS_PENDING("CleverTapOnceVariablesChangedAndNoDownloadsPending");
+    CLEVERTAP_ONCE_VARIABLES_CHANGED_AND_NO_DOWNLOADS_PENDING("CleverTapOnceVariablesChangedAndNoDownloadsPending"),
+    CLEVERTAP_UNKNOWN("CleverTapUnknown");
 
     override fun toString(): String {
         return eventName
@@ -40,8 +41,8 @@ enum class CleverTapEvent(
     companion object {
 
         @JvmStatic
-        fun fromName(eventName: String): CleverTapEvent? {
-            return values().find { it.eventName == eventName }
+        fun fromName(eventName: String): CleverTapEvent {
+            return values().find { it.eventName == eventName } ?: CLEVERTAP_UNKNOWN
         }
     }
 }
