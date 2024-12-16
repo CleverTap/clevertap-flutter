@@ -139,21 +139,6 @@ public class CleverTapPlugin implements ActivityAware, FlutterPlugin {
         }
     }
 
-    public static void invokeMethodOnUiThread(final String methodName, final String cleverTapID) {
-        for (MethodChannel channel : nativeToDartMethodChannelSet) {
-            if (channel != null) {
-                Log.d(TAG, "methodChannelSet in invokeMethodOnUiThread(String) " + channel);
-                runOnMainThread(() -> {
-                    if (!cleverTapID.isEmpty()) {
-                        channel.invokeMethod(methodName, cleverTapID);
-                    } else {
-                        channel.invokeMethod(methodName, null);
-                    }
-                });
-            }
-        }
-    }
-
     public static void invokeMethodOnUiThread(final String methodName, final Object obj) {
         for (MethodChannel channel : nativeToDartMethodChannelSet) {
             if (channel != null) {
