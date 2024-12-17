@@ -197,30 +197,16 @@ class CleverTapPlugin {
         });
         break;
       case "customTemplatePresent":
-        if (call.arguments is Map) {
-          Map<dynamic, dynamic> args = call.arguments;
-          cleverTapCustomTemplatePresentHandler(args["templateName"]);
-        } else if (call.arguments is String) {
-          cleverTapCustomTemplatePresentHandler(call.arguments);
-        }
-        // String templateName = call.arguments;
-        // cleverTapCustomTemplatePresentHandler(templateName);
+        String templateName = call.arguments;
+        cleverTapCustomTemplatePresentHandler(templateName);
         break;
       case "customFunctionPresent":
-      if (call.arguments is Map) {
-          Map<dynamic, dynamic> args = call.arguments;
-          cleverTapCustomFunctionPresentHandler(args["templateName"]);
-        } else if (call.arguments is String) {
-          cleverTapCustomFunctionPresentHandler(call.arguments);
-        }
+        String templateName = call.arguments;
+        cleverTapCustomFunctionPresentHandler(templateName);
         break;
       case "customTemplateClose":
-      if (call.arguments is Map) {
-          Map<dynamic, dynamic> args = call.arguments;
-          cleverTapCustomTemplateCloseHandler(args["templateName"]);
-        } else if (call.arguments is String) {
-          cleverTapCustomTemplateCloseHandler(call.arguments);
-        }
+        String templateName = call.arguments;
+        cleverTapCustomTemplateCloseHandler(templateName);
         break;
       default:
         print('error');

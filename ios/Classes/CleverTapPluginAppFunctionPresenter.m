@@ -13,7 +13,7 @@
 - (void)onPresent:(nonnull CTTemplateContext *)context {
     NSMutableDictionary *body = [NSMutableDictionary new];
     body[@"templateName"] = (context.templateName != nil) ? context.templateName : [NSMutableDictionary new];
-    [[CleverTapPlugin sharedInstance] postTemplateEvent:kCleverTapCustomTemplatePresent andBody:body];
+    [[CleverTapPlugin sharedInstance] postNotificationWithName:kCleverTapCustomTemplatePresent andBody:body];
 }
 
 - (void)onCloseClicked:(nonnull CTTemplateContext *)context {

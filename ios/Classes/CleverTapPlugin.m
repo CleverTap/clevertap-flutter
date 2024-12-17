@@ -291,8 +291,8 @@ static NSDateFormatter *dateFormatter;
         [self setLocale:call withResult:result];
     else if ([@"syncCustomTemplates" isEqualToString:call.method])
         [self syncCustomTemplates:call withResult:result];
-    else if ([@"syncCustomTemplatesinProd" isEqualToString:call.method])
-        [self syncCustomTemplates:call withResult:result];
+    else if ([@"syncCustomTemplatesInProd" isEqualToString:call.method])
+        [self syncCustomTemplatesInProd:call withResult:result];
     else if ([@"customTemplateGetBooleanArg" isEqualToString:call.method])
         [self customTemplateGetBooleanArg:call withResult:result];
     else if ([@"customTemplateGetFileArg" isEqualToString:call.method])
@@ -1076,6 +1076,13 @@ static NSDateFormatter *dateFormatter;
     });
 }
 
+- (void)emitCustomTemplate:(NSNotification *)notification {
+    // Passed Custom Template String directly.
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [self.nativeToDartMethodChannel invokeMethod:notification.name arguments:notification.userInfo[@"templateName"]];
+    });
+}
+
 - (void)addObservers {
     
     [[NSNotificationCenter defaultCenter] addObserver:self
@@ -1176,35 +1183,29 @@ static NSDateFormatter *dateFormatter;
     [[NSNotificationCenter defaultCenter] addObserver:self
                                              selector:@selector(emitEventInternal:)
                                                  name:kCleverTapOnFileValueChanged
-                                               object:nil];                               
-
+                                               object:nil];
+    
     [[NSNotificationCenter defaultCenter] addObserver:self
                                              selector:@selector(emitEventInternal:)
                                                  name:kCleverTapOnValueChanged
                                                object:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(emitEventInternal:)
+                                             selector:@selector(emitCustomTemplate:)
                                                  name:kCleverTapCustomTemplatePresent
                                                object:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(emitEventInternal:)
+                                             selector:@selector(emitCustomTemplate:)
                                                  name:kCleverTapCustomFunctionPresent
                                                object:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(emitEventInternal:)
+                                             selector:@selector(emitCustomTemplate:)
                                                  name:kCleverTapCustomTemplateClose
                                                object:nil];
 }
 
 - (void)postNotificationWithName:(NSString *)name andBody:(NSDictionary *)body {
-    
     [[NSNotificationCenter defaultCenter] postNotificationName:name object:nil userInfo:body];
 }
-
-- (void)postTemplateEvent:(NSString *)name andBody:(NSDictionary *)body {
-    [self postNotificationWithName:name andBody:body];
-}
-
 
 #pragma mark - Delegates
 #pragma mark CleverTapSyncDelegate
