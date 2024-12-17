@@ -22,7 +22,7 @@ enum class CleverTapEvent(
     CLEVERTAP_PRODUCT_CONFIG_DID_ACTIVATE("CleverTapProductConfigDidActivate"),
     CLEVERTAP_PUSH_NOTIFICATION_CLICKED("CleverTapPushNotificationClicked", bufferable = true),
     CLEVERTAP_ON_PUSH_PERMISSION_RESPONSE("CleverTapPushPermissionResponseReceived"),
-    CLEVERTAP_ON_PUSH_AMP_PAYLOAD_RECEIVED("CleverTapPushAmpPayloadReceived"), // todo make bufferable?
+    CLEVERTAP_ON_PUSH_AMP_PAYLOAD_RECEIVED("CleverTapPushAmpPayloadReceived", bufferable = true),
     CLEVERTAP_ON_VARIABLES_CHANGED("CleverTapOnVariablesChanged"),
     CLEVERTAP_ON_ONE_TIME_VARIABLES_CHANGED("CleverTapOnOneTimeVariablesChanged"),
     CLEVERTAP_ON_VALUE_CHANGED("CleverTapOnValueChanged"),

@@ -92,8 +92,6 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   late CleverTapPlugin _clevertapPlugin;
 
-  late final AppLifecycleListener _listener;
-
   var inboxInitialized = false;
   var optOut = false;
   var offLine = false;

@@ -27,6 +27,7 @@ import io.flutter.plugin.common.PluginRegistry.Registrar;
 public class CleverTapPlugin implements ActivityAware, FlutterPlugin {
 
     private static final String TAG = "CleverTapPlugin";
+    private static final long FLUSH_DELAY = 5000L;
 
     public static WeakReference<Activity> activity;
 
@@ -42,7 +43,7 @@ public class CleverTapPlugin implements ActivityAware, FlutterPlugin {
 
     private static final Handler mainHandler = new Handler(Looper.getMainLooper());
 
-    private final Runnable runnable = () -> {
+    private final Runnable resetBufferRunnable = () -> {
         CleverTapEventEmitter.resetAllBuffers(false);
     };
 
@@ -62,13 +63,13 @@ public class CleverTapPlugin implements ActivityAware, FlutterPlugin {
     public void onAttachedToActivity(@NonNull ActivityPluginBinding binding) {
         Log.d(TAG, "onAttachedToActivity: " + binding + " activity " + binding.getActivity());
         activity = new WeakReference<>(binding.getActivity());
-        mainHandler.postDelayed(runnable, 5000);
+        mainHandler.postDelayed(resetBufferRunnable, FLUSH_DELAY);
     }
 
     @Override
     public void onDetachedFromActivity() {
         Log.d(TAG, "onDetachedFromActivity");
-        mainHandler.removeCallbacks(runnable);
+        mainHandler.removeCallbacks(resetBufferRunnable);
         activity.clear();
         activity = null;
     }

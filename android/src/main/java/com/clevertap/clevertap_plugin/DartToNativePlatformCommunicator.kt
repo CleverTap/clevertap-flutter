@@ -2005,14 +2005,14 @@ class DartToNativePlatformCommunicator(
                 result.error(
                     TAG,
                     ERROR_TEMPLATE_NAME(templateName),
-                    "For template$templateName"
+                    null
                 )
             }
         } else {
             result.error(
                 TAG,
                 ERROR_MSG,
-                "Cannot resolve template with context" // todo check if needed
+                null
             )
         }
     }
