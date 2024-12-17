@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:ui';
+import 'dart:io';
 
 import 'package:clevertap_plugin/clevertap_plugin_web_wrapper.dart';
 import 'package:clevertap_plugin/src/types.dart';
@@ -233,9 +234,11 @@ class CleverTapPlugin {
    * failed
    */
   void invokeStartEmission(String name) {
+    if (Platform.isAndroid) {
     _dartToNativeMethodChannel.invokeMethod('startEmission', name);
+    }
   }
-
+  
   void setCleverTapCustomTemplatePresentHandler(CleverTapCustomTemplatePresentHandler handler) {
     invokeStartEmission('CleverTapCustomTemplatePresent');
     cleverTapCustomTemplatePresentHandler = handler;
