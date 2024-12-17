@@ -32,6 +32,7 @@ object EventNameMapper {
             CLEVERTAP_ON_VARIABLES_CHANGED_AND_NO_DOWNLOADS_PENDING -> "onVariablesChangedAndNoDownloadsPending"
             CLEVERTAP_ONCE_VARIABLES_CHANGED_AND_NO_DOWNLOADS_PENDING -> "onceVariablesChangedAndNoDownloadsPending"
             CLEVERTAP_ON_PUSH_AMP_PAYLOAD_RECEIVED -> "pushAmpPayloadReceived"
+            CLEVERTAP_UNKNOWN -> "noop"
         }
     }
 }

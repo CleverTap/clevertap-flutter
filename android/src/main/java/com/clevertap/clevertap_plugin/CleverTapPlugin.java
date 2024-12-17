@@ -27,6 +27,7 @@ import io.flutter.plugin.common.PluginRegistry.Registrar;
 public class CleverTapPlugin implements ActivityAware, FlutterPlugin {
 
     private static final String TAG = "CleverTapPlugin";
+    private static final long FLUSH_DELAY = 5000L;
 
     public static WeakReference<Activity> activity;
 
@@ -42,6 +43,10 @@ public class CleverTapPlugin implements ActivityAware, FlutterPlugin {
 
     private static final Handler mainHandler = new Handler(Looper.getMainLooper());
 
+    private final Runnable resetBufferRunnable = () -> {
+        CleverTapEventEmitter.resetAllBuffers(false);
+    };
+
     /**
      * Plugin registration.
      */
@@ -56,27 +61,29 @@ public class CleverTapPlugin implements ActivityAware, FlutterPlugin {
 
     @Override
     public void onAttachedToActivity(@NonNull ActivityPluginBinding binding) {
+        Log.d(TAG, "onAttachedToActivity: " + binding + " activity " + binding.getActivity());
         activity = new WeakReference<>(binding.getActivity());
-        CleverTapEventEmitter.disableAllAndFlush();
+        mainHandler.postDelayed(resetBufferRunnable, FLUSH_DELAY);
     }
 
     @Override
     public void onDetachedFromActivity() {
+        Log.d(TAG, "onDetachedFromActivity");
+        mainHandler.removeCallbacks(resetBufferRunnable);
         activity.clear();
         activity = null;
-        CleverTapEventEmitter.enableAll();
     }
 
     @SuppressWarnings("ConstantConditions")
     @Override
     public void onReattachedToActivityForConfigChanges(@NonNull ActivityPluginBinding binding) {
+        Log.d(TAG, "onReattachedToActivityForConfigChanges: " + binding);
         activity = new WeakReference<>(binding.getActivity());
-        CleverTapEventEmitter.disableAllAndFlush();
     }
 
     @Override
     public void onDetachedFromActivityForConfigChanges() {
-        CleverTapEventEmitter.enableAll();
+        Log.d(TAG, "onDetachedFromActivityForConfigChanges");
         activity.clear();
         activity = null;
     }
@@ -114,7 +121,7 @@ public class CleverTapPlugin implements ActivityAware, FlutterPlugin {
         this.dartToNativePlatformCommunicator = new DartToNativePlatformCommunicator(context, cleverTapAPI);
         this.dartToNativeMethodChannel.setMethodCallHandler(dartToNativePlatformCommunicator);
         if (cleverTapAPI != null) {
-            CleverTapListenerProxy.INSTANCE.attachToInstance(cleverTapAPI);
+            CleverTapListenerProxy.attachToInstance(cleverTapAPI);
             cleverTapAPI.setLibrary("Flutter");
         }
     }
@@ -133,26 +140,7 @@ public class CleverTapPlugin implements ActivityAware, FlutterPlugin {
         }
     }
 
-    public static void invokeMethodOnUiThread(final String methodName, final String cleverTapID) {
-        Log.d(TAG, "methodChannelSet in invokeMethodOnUiThread(String) is of size " + nativeToDartMethodChannelSet.size());
-
-        for (MethodChannel channel : nativeToDartMethodChannelSet) {
-            if (channel != null) {
-                Log.d(TAG, "methodChannelSet in invokeMethodOnUiThread(String) " + channel);
-                runOnMainThread(() -> {
-                    if (!cleverTapID.isEmpty()) {
-                        channel.invokeMethod(methodName, cleverTapID);
-                    } else {
-                        channel.invokeMethod(methodName, null);
-                    }
-                });
-            }
-        }
-    }
-
     public static void invokeMethodOnUiThread(final String methodName, final Object obj) {
-        Log.d(TAG, "methodChannelSet in invokeMethodOnUiThread(Map) is of size " + nativeToDartMethodChannelSet.size());
-
         for (MethodChannel channel : nativeToDartMethodChannelSet) {
             if (channel != null) {
                 Log.d(TAG, "methodChannel in invokeMethodOnUiThread(Object) " + channel);

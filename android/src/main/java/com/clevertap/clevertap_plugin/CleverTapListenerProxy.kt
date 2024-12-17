@@ -16,6 +16,7 @@ import com.clevertap.android.sdk.displayunits.DisplayUnitListener
 import com.clevertap.android.sdk.displayunits.model.CleverTapDisplayUnit
 import com.clevertap.android.sdk.inapp.CTInAppNotification
 import com.clevertap.android.sdk.inbox.CTInboxMessage
+import com.clevertap.android.sdk.isNotNullAndBlank
 import com.clevertap.android.sdk.product_config.CTProductConfigListener
 import com.clevertap.android.sdk.pushnotification.CTPushNotificationListener
 import com.clevertap.android.sdk.pushnotification.amp.CTPushAmpListener
@@ -29,6 +30,7 @@ object CleverTapListenerProxy : SyncListener, InAppNotificationListener, CTInbox
 
     private const val LOG_TAG = "CleverTapListenerProxy"
 
+    @JvmStatic
     fun attachToInstance(instance: CleverTapAPI) {
         instance.unregisterPushPermissionNotificationResponseListener(this)
         instance.registerPushPermissionNotificationResponseListener(this)
@@ -54,19 +56,23 @@ object CleverTapListenerProxy : SyncListener, InAppNotificationListener, CTInbox
 
     // SyncListener
     override fun profileDidInitialize(cleverTapID: String?) {
+        // we set it to null as this check was in invokeMethodOnUiThread in old code,
+        // we can check and remove if not needed
+        val id = if (cleverTapID.isNotNullAndBlank()) {
+            cleverTapID
+        } else {
+            null
+        }
+
         CleverTapEventEmitter.emit(
             event = CLEVERTAP_PROFILE_DID_INITIALIZE,
-            params = cleverTapID
+            params = id
         )
     }
 
     // InAppNotificationListener
     override fun beforeShow(extras: MutableMap<String, Any>?): Boolean {
-        // todo lp anyway we drop this
-        CleverTapEventEmitter.emit(
-            event = CLEVERTAP_IN_APP_NOTIFICATION_BEFORE_SHOW,
-            params = extras
-        )
+        //no-op
         return true
     }
 
@@ -97,7 +103,7 @@ object CleverTapListenerProxy : SyncListener, InAppNotificationListener, CTInbox
     override fun inboxDidInitialize() {
         CleverTapEventEmitter.emit(
             event = CLEVERTAP_INBOX_DID_INITIALIZE,
-            params = ""
+            params = null
         )
     }
 
@@ -105,7 +111,7 @@ object CleverTapListenerProxy : SyncListener, InAppNotificationListener, CTInbox
     override fun inboxMessagesDidUpdate() {
         CleverTapEventEmitter.emit(
             event = CLEVERTAP_INBOX_MESSAGES_DID_UPDATE,
-            params = ""
+            params = null
         )
     }
 
@@ -154,7 +160,7 @@ object CleverTapListenerProxy : SyncListener, InAppNotificationListener, CTInbox
         // passing an empty map
         CleverTapEventEmitter.emit(
             event = CLEVERTAP_PRODUCT_CONFIG_DID_ACTIVATE,
-            params = ""
+            params = null
         )
     }
 
@@ -163,7 +169,7 @@ object CleverTapListenerProxy : SyncListener, InAppNotificationListener, CTInbox
         // passing an empty map
         CleverTapEventEmitter.emit(
             event = CLEVERTAP_PRODUCT_CONFIG_DID_FETCH,
-            params = ""
+            params = null
         )
     }
 
@@ -172,7 +178,7 @@ object CleverTapListenerProxy : SyncListener, InAppNotificationListener, CTInbox
         // passing an empty map
         CleverTapEventEmitter.emit(
             event = CLEVERTAP_PRODUCT_CONFIG_DID_INITIALIZE,
-            params = ""
+            params = null
         )
     }
 
@@ -180,7 +186,7 @@ object CleverTapListenerProxy : SyncListener, InAppNotificationListener, CTInbox
         // passing an empty map
         CleverTapEventEmitter.emit(
             event = CLEVERTAP_FEATURE_FLAGS_DID_UPDATE,
-            params = ""
+            params = null
         )
     }
 

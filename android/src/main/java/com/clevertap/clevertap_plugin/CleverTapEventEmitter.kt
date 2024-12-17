@@ -116,6 +116,10 @@ object CleverTapEventEmitter {
         params: Any?
     ) {
         try {
+            if (event == CleverTapEvent.CLEVERTAP_UNKNOWN) {
+                Log.i(LOG_TAG, "Not Sending event since its unknown")
+                return
+            }
             invokeMethodOnUiThread(
                 EventNameMapper.fromCleverTapEvent(event),
                 params

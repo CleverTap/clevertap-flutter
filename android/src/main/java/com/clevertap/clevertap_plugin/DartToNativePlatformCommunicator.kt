@@ -52,8 +52,13 @@ class DartToNativePlatformCommunicator(
         private const val ERROR_IOS: String = " method is only applicable for iOS"
 
 
-        private const val ERROR_TEMPLATE_NAME: String =
-            "Custom template: " + " is not currently being presented"
+        private val ERROR_TEMPLATE_NAME: (templateName: String) -> String = { templateName ->
+            "Custom template: $templateName not currently being presented"
+        }
+
+        private val ERROR_EMIT_EVENT_PROBLEM: (name: String?) -> String = { methodName ->
+            "Incorrect Clevertap event disabled, no such event - $methodName"
+        }
 
         private const val KEY_TEMPLATE_NAME_CC: String = "templateName"
 
@@ -67,6 +72,9 @@ class DartToNativePlatformCommunicator(
         result: MethodChannel.Result
     ) {
         when (call.method) {
+            "startEmission" -> {
+                startEmission(call = call, result = result)
+            }
             "getAppLaunchNotification" -> {
                 getAppLaunchNotification(result)
             }
@@ -612,6 +620,28 @@ class DartToNativePlatformCommunicator(
                 result.notImplemented()
             }
         }
+    }
+
+    private fun startEmission(
+        call: MethodCall,
+        result: MethodChannel.Result
+    ) {
+        val flushForEvent = call.arguments<String>()
+
+        if (flushForEvent == null) {
+            result.error(TAG, ERROR_EMIT_EVENT_PROBLEM(flushForEvent), null)
+            return
+        }
+
+        val ctEvent = CleverTapEvent.fromName(flushForEvent)
+        if (ctEvent == CleverTapEvent.CLEVERTAP_UNKNOWN) {
+            result.error(TAG, ERROR_EMIT_EVENT_PROBLEM(flushForEvent), null)
+            return
+        }
+
+        CleverTapEventEmitter.flushBuffer(ctEvent)
+        CleverTapEventEmitter.disableBuffer(ctEvent)
+        result.success(true)
     }
 
     private fun setLocale(call: MethodCall, result: MethodChannel.Result) {
@@ -1974,15 +2004,15 @@ class DartToNativePlatformCommunicator(
             } else {
                 result.error(
                     TAG,
-                    ERROR_TEMPLATE_NAME,
-                    "For template$templateName"
+                    ERROR_TEMPLATE_NAME(templateName),
+                    null
                 )
             }
         } else {
             result.error(
                 TAG,
                 ERROR_MSG,
-                "Cannot resolve template with context" // todo check if needed
+                null
             )
         }
     }
