@@ -53,6 +53,10 @@
             android:name="CLEVERTAP_REGION"
             android:value="CLEVERTAP_REGION"/>
 
+        <meta-data
+            android:name="CLEVERTAP_HANDSHAKE_DOMAIN"
+            android:value="YOUR HANDSHAKE DOMAIN"/>
+
         <!-- IMPORTANT: To force use Google AD ID to uniquely identify  users, use the following meta tag. GDPR mandates that if you are using this tag, there is prominent disclousure to your end customer in their application. Read more about GDPR here - https://clevertap.com/blog/in-preparation-of-gdpr-compliance/ -->
         <meta-data
             android:name="CLEVERTAP_USE_GOOGLE_AD_ID"
