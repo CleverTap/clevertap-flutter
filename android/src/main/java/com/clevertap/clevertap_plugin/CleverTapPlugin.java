@@ -151,7 +151,11 @@ public class CleverTapPlugin implements ActivityAware, FlutterPlugin {
 
     public static void runOnMainThread(final Runnable runnable) {
         try {
-            mainHandler.post(runnable);
+            if (Looper.getMainLooper() == Looper.myLooper()) {
+                runnable.run();
+            } else {
+                mainHandler.post(runnable);
+            }
         } catch (Exception e) {
             Log.e(TAG, "Exception while running on main thread - ");
             e.printStackTrace();
