@@ -32,3 +32,9 @@ typedef void CleverTapOnKVDataChangedHandler(Map<String, Object?> kvData);
 /// notification from killed state.
 typedef void CleverTapOnKilledStateNotificationClickedHandler(
     Map<String, dynamic> map);
+
+/// custom code templates - start
+typedef void CleverTapCustomTemplatePresentHandler(String templateName);
+typedef void CleverTapCustomTemplateCloseHandler(String templateName);
+typedef void CleverTapCustomFunctionPresentHandler(String functionName);
+/// custom code templates - end

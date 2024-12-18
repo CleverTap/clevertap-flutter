@@ -17,7 +17,6 @@ public class CleverTapApplication extends FlutterApplication implements CTPushNo
     @Override
     public void onCreate() {
         super.onCreate();
-
         CleverTapAPI cleverTapAPI = CleverTapAPI.getDefaultInstance(this);
         if (cleverTapAPI != null) {
             cleverTapAPI.setCTPushNotificationListener(this);

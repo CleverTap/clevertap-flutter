@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:ui';
+import 'dart:io';
 
 import 'package:clevertap_plugin/clevertap_plugin_web_wrapper.dart';
 import 'package:clevertap_plugin/src/types.dart';
@@ -43,18 +44,19 @@ class CleverTapPlugin {
       cleverTapPushClickedPayloadReceivedHandler;
   late CleverTapPushPermissionResponseReceivedHandler
       cleverTapPushPermissionResponseReceivedHandler;
+
   static List<CleverTapOnVariablesChangedHandler>
       cleverTapOnVariablesChangedHandlers = [];
   static List<CleverTapOnOneTimeVariablesChangedHandler>
       cleverTapOnOneTimeVariablesChangedHandlers = [];
-  static List<CleverTapOnValueChangedHandler> cleverTapOnValueChangedHandlers =
-      [];
-  static List<CleverTapOnVariablesChangedAndNoDownloadsPendingHandler> cleverTapOnVariablesChangedAndNoDownloadsPendingHandlers =
-      [];
-  static List<CleverTapOnceVariablesChangedAndNoDownloadsPendingHandler> cleverTapOnceVariablesChangedAndNoDownloadsPendingHandlers =
-      [];
-  static List<CleverTapOnFileValueChangedHandler> cleverTapOnFileValueChangedHandlers =
-      [];
+  static List<CleverTapOnValueChangedHandler> cleverTapOnValueChangedHandlers = [];
+  static List<CleverTapOnVariablesChangedAndNoDownloadsPendingHandler> cleverTapOnVariablesChangedAndNoDownloadsPendingHandlers = [];
+  static List<CleverTapOnceVariablesChangedAndNoDownloadsPendingHandler> cleverTapOnceVariablesChangedAndNoDownloadsPendingHandlers = [];
+  static List<CleverTapOnFileValueChangedHandler> cleverTapOnFileValueChangedHandlers = [];
+
+  late CleverTapCustomTemplatePresentHandler cleverTapCustomTemplatePresentHandler;
+  late CleverTapCustomFunctionPresentHandler cleverTapCustomFunctionPresentHandler;
+  late CleverTapCustomTemplateCloseHandler cleverTapCustomTemplateCloseHandler;
 
   static const MethodChannel _dartToNativeMethodChannel =
       const MethodChannel('clevertap_plugin/dart_to_native');
@@ -64,7 +66,10 @@ class CleverTapPlugin {
   static final CleverTapPlugin _clevertapPlugin =
       new CleverTapPlugin._internal();
 
-  factory CleverTapPlugin() => _clevertapPlugin;
+  factory CleverTapPlugin() {
+    print("CleverTapPlugin() called");
+    return _clevertapPlugin;
+  }
 
   static const libName = 'Flutter';
 
@@ -73,8 +78,7 @@ class CleverTapPlugin {
 
   CleverTapPlugin._internal() {
     /// Set the CleverTap Flutter library name and the current version for version tracking
-    _dartToNativeMethodChannel.invokeMethod(
-        'setLibrary', {'libName': libName, 'libVersion': libVersion});
+    _dartToNativeMethodChannel.invokeMethod('setLibrary', {'libName': libName, 'libVersion': libVersion});
     _nativeToDartMethodChannel.setMethodCallHandler(_platformCallHandler);
   }
 
@@ -192,95 +196,149 @@ class CleverTapPlugin {
           cleverTapOnFileValueChangedHandler(args.cast<String, dynamic>());
         });
         break;
+      case "customTemplatePresent":
+        String templateName = call.arguments;
+        cleverTapCustomTemplatePresentHandler(templateName);
+        break;
+      case "customFunctionPresent":
+        String templateName = call.arguments;
+        cleverTapCustomFunctionPresentHandler(templateName);
+        break;
+      case "customTemplateClose":
+        String templateName = call.arguments;
+        cleverTapCustomTemplateCloseHandler(templateName);
+        break;
       default:
         print('error');
         break;
     }
   }
 
+  /**
+   * Flushes any finished events on clevertap sdk side, maybe the client attaches
+   * listener at a later point and sdk has already tried to provide callback and
+   * failed
+   */
+  void invokeStartEmission(String name) {
+    if (Platform.isAndroid) {
+    _dartToNativeMethodChannel.invokeMethod('startEmission', name);
+    }
+  }
+  
+  void setCleverTapCustomTemplatePresentHandler(CleverTapCustomTemplatePresentHandler handler) {
+    invokeStartEmission('CleverTapCustomTemplatePresent');
+    cleverTapCustomTemplatePresentHandler = handler;
+  }
+  void setCleverTapCustomFunctionPresentHandler(CleverTapCustomTemplateCloseHandler handler) {
+    invokeStartEmission('CleverTapCustomFunctionPresent');
+    cleverTapCustomFunctionPresentHandler = handler;
+  }
+  void setCleverTapCustomTemplateCloseHandler(CleverTapCustomFunctionPresentHandler handler) {
+    invokeStartEmission('CleverTapCustomTemplateClose');
+    cleverTapCustomTemplateCloseHandler = handler;
+  }
+
   /// Define a method to handle inApp notification dismissed
-  void setCleverTapInAppNotificationDismissedHandler(
-          CleverTapInAppNotificationDismissedHandler handler) =>
-      cleverTapInAppNotificationDismissedHandler = handler;
+  void setCleverTapInAppNotificationDismissedHandler(CleverTapInAppNotificationDismissedHandler handler) {
+    invokeStartEmission('CleverTapInAppNotificationDismissed');
+    cleverTapInAppNotificationDismissedHandler = handler;
+  }
 
   /// Only for Android - Define a method to handle inApp notification shown
-  void setCleverTapInAppNotificationShowHandler(
-          CleverTapInAppNotificationShowHandler handler) =>
-      cleverTapInAppNotificationShowHandler = handler;
+  void setCleverTapInAppNotificationShowHandler(CleverTapInAppNotificationShowHandler handler) {
+    invokeStartEmission('CleverTapInAppNotificationShowed');
+    cleverTapInAppNotificationShowHandler = handler;
+  }
 
   /// Define a method to handle inApp notification button clicked
-  void setCleverTapInAppNotificationButtonClickedHandler(
-          CleverTapInAppNotificationButtonClickedHandler handler) =>
-      cleverTapInAppNotificationButtonClickedHandler = handler;
+  void setCleverTapInAppNotificationButtonClickedHandler(CleverTapInAppNotificationButtonClickedHandler handler) {
+    invokeStartEmission('CleverTapInAppNotificationButtonTapped');
+    cleverTapInAppNotificationButtonClickedHandler = handler;
+  }
 
   /// Define a method to handle profile initialization
-  void setCleverTapProfileDidInitializeHandler(
-          CleverTapProfileDidInitializeHandler handler) =>
-      cleverTapProfileDidInitializeHandler = handler;
+  void setCleverTapProfileDidInitializeHandler(CleverTapProfileDidInitializeHandler handler) {
+    invokeStartEmission('CleverTapProfileDidInitialize');
+    cleverTapProfileDidInitializeHandler = handler;
+  }
 
   /// Define a method to handle profile sync
-  void setCleverTapProfileSyncHandler(CleverTapProfileSyncHandler handler) =>
-      cleverTapProfileSyncHandler = handler;
+  void setCleverTapProfileSyncHandler(CleverTapProfileSyncHandler handler) {
+    invokeStartEmission('CleverTapProfileSync');
+    cleverTapProfileSyncHandler = handler;
+  }
 
   /// Define a method to handle inbox initialization
-  void setCleverTapInboxDidInitializeHandler(
-          CleverTapInboxDidInitializeHandler handler) =>
-      cleverTapInboxDidInitializeHandler = handler;
+  void setCleverTapInboxDidInitializeHandler(CleverTapInboxDidInitializeHandler handler) {
+    invokeStartEmission('CleverTapInboxDidInitialize');
+    cleverTapInboxDidInitializeHandler = handler;
+  }
 
   /// Define a method to handle inbox update
-  void setCleverTapInboxMessagesDidUpdateHandler(
-          CleverTapInboxMessagesDidUpdateHandler handler) =>
-      cleverTapInboxMessagesDidUpdateHandler = handler;
+  void setCleverTapInboxMessagesDidUpdateHandler(CleverTapInboxMessagesDidUpdateHandler handler) {
+    invokeStartEmission('CleverTapInboxMessagesDidUpdate');
+    cleverTapInboxMessagesDidUpdateHandler = handler;
+  }
 
   /// Define a method to handle inbox notification button clicked
-  void setCleverTapInboxNotificationButtonClickedHandler(
-          CleverTapInboxNotificationButtonClickedHandler handler) =>
-      cleverTapInboxNotificationButtonClickedHandler = handler;
+  void setCleverTapInboxNotificationButtonClickedHandler(CleverTapInboxNotificationButtonClickedHandler handler) {
+    invokeStartEmission('CleverTapInboxMessageButtonTapped');
+    cleverTapInboxNotificationButtonClickedHandler = handler;
+  }
 
   /// Define a method to handle inbox notification message clicked
-  void setCleverTapInboxNotificationMessageClickedHandler(
-          CleverTapInboxNotificationMessageClickedHandler handler) =>
-      cleverTapInboxNotificationMessageClickedHandler = handler;
+  void setCleverTapInboxNotificationMessageClickedHandler(CleverTapInboxNotificationMessageClickedHandler handler) {
+    invokeStartEmission('CleverTapInboxMessageTapped');
+    cleverTapInboxNotificationMessageClickedHandler = handler;
+  }
 
   /// Define a method to handle Native Display Unit updates
-  void setCleverTapDisplayUnitsLoadedHandler(
-          CleverTapDisplayUnitsLoadedHandler handler) =>
-      cleverTapDisplayUnitsLoadedHandler = handler;
+  void setCleverTapDisplayUnitsLoadedHandler(CleverTapDisplayUnitsLoadedHandler handler) {
+    invokeStartEmission('CleverTapDisplayUnitsLoaded');
+    cleverTapDisplayUnitsLoadedHandler = handler;
+  }
 
   /// Define a method to handle Feature Flag updates
-  void setCleverTapFeatureFlagUpdatedHandler(
-          CleverTapFeatureFlagUpdatedHandler handler) =>
-      cleverTapFeatureFlagUpdatedHandler = handler;
+  void setCleverTapFeatureFlagUpdatedHandler(CleverTapFeatureFlagUpdatedHandler handler) {
+    invokeStartEmission('CleverTapFeatureFlagsDidUpdate');
+    cleverTapFeatureFlagUpdatedHandler = handler;
+  }
 
   /// Define a method to handle Product config initialization
-  void setCleverTapProductConfigInitializedHandler(
-          CleverTapProductConfigInitializedHandler handler) =>
-      cleverTapProductConfigInitializedHandler = handler;
+  void setCleverTapProductConfigInitializedHandler(CleverTapProductConfigInitializedHandler handler) {
+    invokeStartEmission('CleverTapProductConfigDidInitialize');
+    cleverTapProductConfigInitializedHandler = handler;
+  }
 
   /// Define a method to handle Product config fetch updates
-  void setCleverTapProductConfigFetchedHandler(
-          CleverTapProductConfigFetchedHandler handler) =>
-      cleverTapProductConfigFetchedHandler = handler;
+  void setCleverTapProductConfigFetchedHandler(CleverTapProductConfigFetchedHandler handler) {
+    invokeStartEmission('CleverTapProductConfigDidFetch');
+    cleverTapProductConfigFetchedHandler = handler;
+  }
 
   /// Define a method to handle Product config activation updates
-  void setCleverTapProductConfigActivatedHandler(
-          CleverTapProductConfigActivatedHandler handler) =>
-      cleverTapProductConfigActivatedHandler = handler;
+  void setCleverTapProductConfigActivatedHandler(CleverTapProductConfigActivatedHandler handler) {
+    invokeStartEmission('CleverTapProductConfigDidActivate');
+    cleverTapProductConfigActivatedHandler = handler;
+  }
 
   /// Define a method to handle Push Amplification payload
-  void setCleverTapPushAmpPayloadReceivedHandler(
-          CleverTapPushAmpPayloadReceivedHandler handler) =>
-      cleverTapPushAmpPayloadReceivedHandler = handler;
+  void setCleverTapPushAmpPayloadReceivedHandler(CleverTapPushAmpPayloadReceivedHandler handler) {
+    invokeStartEmission('CleverTapPushAmpPayloadReceived');
+    cleverTapPushAmpPayloadReceivedHandler = handler;
+  }
 
   /// Define a method to handle Push Clicked payload
-  void setCleverTapPushClickedPayloadReceivedHandler(
-          CleverTapPushClickedPayloadReceivedHandler handler) =>
-      cleverTapPushClickedPayloadReceivedHandler = handler;
+  void setCleverTapPushClickedPayloadReceivedHandler(CleverTapPushClickedPayloadReceivedHandler handler) {
+    invokeStartEmission('CleverTapPushNotificationClicked');
+    cleverTapPushClickedPayloadReceivedHandler = handler;
+  }
 
   /// Define a method to handle Push permission response
-  void setCleverTapPushPermissionResponseReceivedHandler(
-          CleverTapPushPermissionResponseReceivedHandler handler) =>
-      cleverTapPushPermissionResponseReceivedHandler = handler;
+  void setCleverTapPushPermissionResponseReceivedHandler(CleverTapPushPermissionResponseReceivedHandler handler) {
+    invokeStartEmission('CleverTapPushPermissionResponseReceived');
+    cleverTapPushPermissionResponseReceivedHandler = handler;
+  }
 
   /// Set a message handler function which is called when the app is in the
   /// terminated or killed state.
@@ -1258,12 +1316,12 @@ class CleverTapPlugin {
 
   static Future<void> customTemplateSetDismissed(String templateName) async {
     return await _dartToNativeMethodChannel
-        .invokeMethod('customTemplateSetDismissed', {'templateName': templateName});
+        .invokeMethod('customTemplateSetDismissed', templateName);
   }
 
   static Future<void> customTemplateSetPresented(String templateName) async {
     return await _dartToNativeMethodChannel
-        .invokeMethod('customTemplateSetPresented', {'templateName': templateName});
+        .invokeMethod('customTemplateSetPresented', templateName);
   }
 
   static Future<void> customTemplateRunAction(String templateName, String argName) async {
@@ -1276,7 +1334,7 @@ class CleverTapPlugin {
         {'templateName': templateName, 'argName': argName});
   }
 
-  static Future<int?> customTemplateGetNumberArg(String templateName, String argName) async {
+  static Future<num?> customTemplateGetNumberArg(String templateName, String argName) async {
     return await _dartToNativeMethodChannel.invokeMethod('customTemplateGetNumberArg',
         {'templateName': templateName, 'argName': argName});
   }
@@ -1300,5 +1358,4 @@ class CleverTapPlugin {
     return await _dartToNativeMethodChannel.invokeMethod('customTemplateContextToString',
         {'templateName': templateName});
   }
-
 }

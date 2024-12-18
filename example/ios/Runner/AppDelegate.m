@@ -4,16 +4,18 @@
 
 #import "CleverTap.h"
 #import "CleverTapPlugin.h"
+#import "CleverTapPluginCustomTemplates.h"
 
 @implementation AppDelegate
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
+    [CleverTapPluginCustomTemplates registerCustomTemplates:@"templates", nil];
     [GeneratedPluginRegistrant registerWithRegistry:self];
     UNUserNotificationCenter *center = [UNUserNotificationCenter currentNotificationCenter];
     center.delegate = self;
     // Override point for customization after application launch.
-    [CleverTap autoIntegrate]; // integrate CleverTap SDK using the autoIntegrate option
     [[CleverTapPlugin sharedInstance] applicationDidLaunchWithOptions:launchOptions];
+    [CleverTap autoIntegrate]; // integrate CleverTap SDK using the autoIntegrate option
     return [super application:application didFinishLaunchingWithOptions:launchOptions];
 }
 
