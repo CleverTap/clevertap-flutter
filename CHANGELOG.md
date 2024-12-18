@@ -1,5 +1,17 @@
 ## CHANGE LOG
 
+Version 3.0.0 *(xx December 2024)*
+-------------------------------------------
+**What's new**
+
+* **[iOS Platform]**
+  * Supports [CleverTap iOS SDK v7.0.3](https://github.com/CleverTap/clevertap-ios-sdk/blob/master/CHANGELOG.md#version-703-november-29-2024).
+
+* **[Android and iOS Platform]**
+  * Adds support for File Type Variables in Remote Config. Please refer to the [Remote Config Variables](https://github.com/CleverTap/clevertap-ios-sdk/blob/master/docs/Variables.md) doc to read more on how to integrate this in your app.
+  * Adds support for Custom Code Templates. Please refer to the [CustomCodeTemplates.md](https://github.com/CleverTap/clevertap-android-sdk/blob/master/docs/CustomCodeTemplates.md) doc to read more on how to integrate this in your app.
+  * Adds support for custom code in-app templates definitions through a json scheme.
+
 ### Version 2.5.0 *(17th October 2024)*
 -------------------------------------------
 **What's new**
@@ -18,6 +30,10 @@
   *  Supports [CleverTap Web SDK v1.11.2](https://github.com/CleverTap/clevertap-web-sdk/releases/tag/v1.11.2) 
 
 **Bug Fixes**
+* **[All Platforms]**
+  * Fixes [#260](https://github.com/CleverTap/clevertap-flutter/issues/260) - an issue related when running `pub get` from a **Windows Machine**
+
+
 * **[Android Platform]**
   * Fixes an ANR caused by extremely old InApp campaigns. 
   * Fixes an issue where incorrect callbacks were sent for InApps when the phone was rotated. 

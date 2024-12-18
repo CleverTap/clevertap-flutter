@@ -27,6 +27,7 @@ dependencies:
   workmanager: ^0.5.2
   firebase_messaging: ^14.9.2
   firebase_core: ^2.31.0
+  open_file: ^3.5.4
 
 dev_dependencies:
   flutter_test:

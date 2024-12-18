@@ -9,8 +9,15 @@ import 'package:clevertap_plugin/clevertap_plugin.dart';
 import 'package:example/deeplink_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_styled_toast/flutter_styled_toast.dart';
+import 'package:open_file/open_file.dart';
 import 'package:workmanager/workmanager.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'custom_template.dart';
+
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
+final int TEST_RUN_APP_DELAY = 0;
+final int CLEVERTAP_LISTENER_ATTACH_DELAY = 0;
 
 @pragma('vm:entry-point')
 void onKilledStateNotificationClickedHandler(Map<String, dynamic> map) async {
@@ -46,6 +53,7 @@ void _firebaseForegroundMessageHandler(RemoteMessage remoteMessage) {
 }
 
 void main() async {
+  print("CleverTapPlugin main pre ensure");
   WidgetsFlutterBinding.ensureInitialized();
   if (!kIsWeb && !Platform.isIOS) {
     Workmanager().initialize(
@@ -63,10 +71,17 @@ void main() async {
 
   CleverTapPlugin.onKilledStateNotificationClicked(
       onKilledStateNotificationClickedHandler);
-  runApp(MaterialApp(
-    title: 'Home Page',
-    home: MyApp(),
-  ));
+
+  print("CleverTapPlugin main pre runapp");
+
+  Future.delayed(Duration(seconds: TEST_RUN_APP_DELAY), () {
+    runApp(MaterialApp(
+      navigatorKey: navigatorKey,
+      title: 'Home Page',
+      home: MyApp(),
+    ));
+    print("CleverTapPlugin main POSTTT runapp");
+  });
 }
 
 class MyApp extends StatefulWidget {
@@ -76,6 +91,7 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   late CleverTapPlugin _clevertapPlugin;
+
   var inboxInitialized = false;
   var optOut = false;
   var offLine = false;
@@ -97,14 +113,15 @@ class _MyAppState extends State<MyApp> {
 
   @override
   void initState() {
-    print("initState");
+    print("CleverTapPlugin initState");
     super.initState();
     initPlatformState();
-    activateCleverTapFlutterPluginHandlers();
+    Future.delayed(Duration(seconds: CLEVERTAP_LISTENER_ATTACH_DELAY), () {
+      activateCleverTapFlutterPluginHandlers();
+    });
     CleverTapPlugin.setDebugLevel(3);
     if (kIsWeb) {
-      CleverTapPlugin.init("CLEVERTAP_ACCOUNT_ID", "CLEVERTAP_REGION",
-          "CLEVERTAP_TARGET_DOMAIN");
+      CleverTapPlugin.init("CLEVERTAP_ACCOUNT_ID", "CLEVERTAP_REGION", "CLEVERTAP_TARGET_DOMAIN");
       CleverTapPlugin.setDebugLevel(3);
       CleverTapPlugin.addKVDataChangeListener((obj) {
         var kv = obj["kv"];
@@ -115,8 +132,7 @@ class _MyAppState extends State<MyApp> {
     if (Platform.isAndroid) {
       _handleKilledStateNotificationInteraction();
     }
-    CleverTapPlugin.createNotificationChannel(
-        "fluttertest", "Flutter Test", "Flutter Test", 3, true);
+    CleverTapPlugin.createNotificationChannel("fluttertest", "Flutter Test", "Flutter Test", 3, true);
     CleverTapPlugin.initializeInbox();
     CleverTapPlugin.registerForPush(); //only for iOS
     //var initialUrl = CleverTapPlugin.getInitialUrl();
@@ -134,40 +150,108 @@ class _MyAppState extends State<MyApp> {
   }
 
   void activateCleverTapFlutterPluginHandlers() {
+    print("activateCleverTapFlutterPluginHandlers()");
     _clevertapPlugin = new CleverTapPlugin();
-    _clevertapPlugin
-        .setCleverTapPushAmpPayloadReceivedHandler(pushAmpPayloadReceived);
-    _clevertapPlugin.setCleverTapPushClickedPayloadReceivedHandler(
-        pushClickedPayloadReceived);
-    _clevertapPlugin.setCleverTapInAppNotificationDismissedHandler(
-        inAppNotificationDismissed);
-    _clevertapPlugin
-        .setCleverTapInAppNotificationShowHandler(inAppNotificationShow);
-    _clevertapPlugin
-        .setCleverTapProfileDidInitializeHandler(profileDidInitialize);
+    _clevertapPlugin.setCleverTapProfileDidInitializeHandler(profileDidInitialize);
     _clevertapPlugin.setCleverTapProfileSyncHandler(profileDidUpdate);
+    _clevertapPlugin.setCleverTapInAppNotificationDismissedHandler(inAppNotificationDismissed);
+    //before-show
+    _clevertapPlugin.setCleverTapInAppNotificationShowHandler(inAppNotificationShow);
     _clevertapPlugin.setCleverTapInboxDidInitializeHandler(inboxDidInitialize);
-    _clevertapPlugin
-        .setCleverTapInboxMessagesDidUpdateHandler(inboxMessagesDidUpdate);
-    _clevertapPlugin
-        .setCleverTapDisplayUnitsLoadedHandler(onDisplayUnitsLoaded);
-    _clevertapPlugin.setCleverTapInAppNotificationButtonClickedHandler(
-        inAppNotificationButtonClicked);
-    _clevertapPlugin.setCleverTapInboxNotificationButtonClickedHandler(
-        inboxNotificationButtonClicked);
-    _clevertapPlugin.setCleverTapInboxNotificationMessageClickedHandler(
-        inboxNotificationMessageClicked);
+    _clevertapPlugin.setCleverTapInboxMessagesDidUpdateHandler(inboxMessagesDidUpdate);
+    _clevertapPlugin.setCleverTapInboxNotificationButtonClickedHandler(inboxNotificationButtonClicked);
+    _clevertapPlugin.setCleverTapInboxNotificationMessageClickedHandler(inboxNotificationMessageClicked);
+    _clevertapPlugin.setCleverTapDisplayUnitsLoadedHandler(onDisplayUnitsLoaded);
     _clevertapPlugin.setCleverTapFeatureFlagUpdatedHandler(featureFlagsUpdated);
-    _clevertapPlugin
-        .setCleverTapProductConfigInitializedHandler(productConfigInitialized);
-    _clevertapPlugin
-        .setCleverTapProductConfigFetchedHandler(productConfigFetched);
-    _clevertapPlugin
-        .setCleverTapProductConfigActivatedHandler(productConfigActivated);
-    _clevertapPlugin.setCleverTapPushPermissionResponseReceivedHandler(
-        pushPermissionResponseReceived);
+    _clevertapPlugin.setCleverTapProductConfigInitializedHandler(productConfigInitialized);
+    _clevertapPlugin.setCleverTapProductConfigFetchedHandler(productConfigFetched);
+    _clevertapPlugin.setCleverTapProductConfigActivatedHandler(productConfigActivated);
+    // push notif clicked handler
+
+    _clevertapPlugin.setCleverTapPushPermissionResponseReceivedHandler(pushPermissionResponseReceived);
+    _clevertapPlugin.setCleverTapPushAmpPayloadReceivedHandler(pushAmpPayloadReceived);
+    //CLEVERTAP_ON_VARIABLES_CHA
+    //CLEVERTAP_ON_ONE_TIME_VARI
+    //CLEVERTAP_ON_VALUE_CHANGED
+    _clevertapPlugin.setCleverTapCustomTemplatePresentHandler(presentCustomTemplate);
+    _clevertapPlugin.setCleverTapCustomTemplateCloseHandler(closeCustomTemplate);
+    _clevertapPlugin.setCleverTapCustomFunctionPresentHandler(presentCustomFunction);
+
+    _clevertapPlugin.setCleverTapPushClickedPayloadReceivedHandler(pushClickedPayloadReceived);
+    _clevertapPlugin.setCleverTapInAppNotificationButtonClickedHandler(inAppNotificationButtonClicked);
   }
 
+ void presentCustomTemplate(String templateName) async {
+  print("presentCustomTemplate dart called for + $templateName");
+
+  var data = await printArgsAsString(templateName);
+
+  showDialog(
+    context: navigatorKey.currentContext!,
+    builder: (BuildContext context) {
+      return CustomTemplateDialog(
+        templateName: templateName,
+        data: data,
+        handleClose: closeCustomTemplate,
+        handlePresented: handlePresented,
+        handleAction: handleAction,
+        handleFile: handleFile,
+        printArgument: printArgument,
+      );
+    },
+  );
+}
+
+  void closeCustomTemplate(String templateName) {
+    print("closeCustomTemplate dart called for $templateName");
+    CleverTapPlugin.customTemplateSetDismissed(templateName);
+    print(templateName);
+  }
+
+  void presentCustomFunction(String templateName) {
+    print("presentCustomFunction dart called for $templateName");
+    CleverTapPlugin.customTemplateSetPresented(templateName);
+    print(templateName);
+  }
+
+  // Start utility for custom code templates
+
+  Future<String> printArgsAsString(String templateName) async {
+    StringBuffer buffer = StringBuffer();
+    buffer.write('string = ');
+    buffer.write(await CleverTapPlugin.customTemplateGetStringArg(templateName, "string"));
+    buffer.write('\n');
+    buffer.write('bool  =');
+    buffer.write(await CleverTapPlugin.customTemplateGetBooleanArg(templateName, "bool"));
+    buffer.write('\n');
+    buffer.write('map.int  =');
+    buffer.write(await CleverTapPlugin.customTemplateGetNumberArg(templateName, "map.int"));
+    buffer.write('\n');
+    buffer.write('map.string  =');
+    buffer.write(await CleverTapPlugin.customTemplateGetStringArg(templateName, "map.string"));
+    buffer.write('\n');
+    buffer.write('file  =');
+    buffer.write(await CleverTapPlugin.customTemplateGetFileArg(templateName, "file"));
+    buffer.write('\n');
+    return buffer.toString();
+  }
+
+  void handlePresented(String templateName) {
+    CleverTapPlugin.customTemplateSetPresented(templateName);
+  }
+  void handleAction(String templateName, String argumentName) {
+    CleverTapPlugin.customTemplateRunAction(templateName, "action");
+  }
+  void handleFile(String templateName, String argumentName) async {
+    var filePath = await CleverTapPlugin.customTemplateGetFileArg(templateName, "file");
+    OpenFile.open(filePath);
+  }
+  void printArgument(String templateName, String argumentName) {
+    printArgsAsString(templateName);
+  }
+
+  // End utility for custom code templates
+  
   void inAppNotificationDismissed(Map<String, dynamic> map) {
     this.setState(() {
       print("inAppNotificationDismissed called");
@@ -485,6 +569,16 @@ class _MyAppState extends State<MyApp> {
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
+                      title: Text("Define File Variable"),
+                      onTap: defineFileVariable,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
                       title: Text("Get Variables"),
                       onTap: getVariables,
                     ),
@@ -506,8 +600,29 @@ class _MyAppState extends State<MyApp> {
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
                     child: ListTile(
+                      title: Text(
+                          'Get Variable Value for name \'folder1.fileVariable\''),
+                      onTap: getFileVariable,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
                       title: Text('Add \'OnVariablesChanged\' listener'),
                       onTap: onVariablesChanged,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text('Add \'OnOneTimeVariablesChanged\' listener'),
+                      onTap: onOneTimeVariablesChanged,
                     ),
                   ),
                 ),
@@ -519,6 +634,39 @@ class _MyAppState extends State<MyApp> {
                       title: Text(
                           'Add \'OnValueChanged\' listener for name \'flutter_var_string\''),
                       onTap: onValueChanged,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text(
+                          'Add \'OnFileVariablesChangedAndNoDownloadsPending\' listener'),
+                      onTap: onVariablesChangedAndNoDownloadsPending,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text(
+                          'Add \'OnceFileVariablesChangedAndNoDownloadsPending\' listener'),
+                      onTap: onceVariablesChangedAndNoDownloadsPending,
+                    ),
+                  ),
+                ),
+                Card(
+                  color: Colors.grey.shade300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ListTile(
+                      title: Text(
+                          'Add \'OnFileChanged\' listener for name \'folder1.fileVariable\''),
+                      onTap: onFileChanged,
                     ),
                   ),
                 ),
@@ -1725,7 +1873,8 @@ class _MyAppState extends State<MyApp> {
       'date': CleverTapPlugin.getCleverTapDate(now),
       'number': 1
     };
-    CleverTapPlugin.recordEvent("Flutter Event", eventData);
+    //CleverTapPlugin.recordEvent("Flutter Event", eventData);
+    CleverTapPlugin.recordEvent("lalit", eventData);
     showToast("Raised event - Flutter Event");
   }
 
@@ -2497,6 +2646,12 @@ class _MyAppState extends State<MyApp> {
     print("PE -> Define Variables: " + variables.toString());
   }
 
+  void defineFileVariable() {
+    CleverTapPlugin.defineFileVariable("folder1.fileVariable");
+    showToast("Define File Variable");
+    print("PE -> Define File Variables: \'folder1.fileVariable\'");
+  }
+
   void getVariables() async {
     showToast("Get Variables");
     Map<Object?, Object?> variables = await CleverTapPlugin.getVariables();
@@ -2510,6 +2665,13 @@ class _MyAppState extends State<MyApp> {
         variable.toString());
   }
 
+  void getFileVariable() async {
+    showToast("Get File Variable");
+    var variable = await CleverTapPlugin.getVariable('folder1.fileVariable');
+    print('PE -> variable value for key \'folder1.fileVariable\': ' +
+        variable.toString());
+  }
+
   void onVariablesChanged() {
     showToast("onVariablesChanged");
     CleverTapPlugin.onVariablesChanged((variables) {
@@ -2517,10 +2679,38 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
+  void onOneTimeVariablesChanged() {
+    showToast("onOneTimeVariablesChanged");
+    CleverTapPlugin.onOneTimeVariablesChanged((variables) {
+      print("PE -> onOneTimeVariablesChanged: " + variables.toString());
+    });
+  }
+
   void onValueChanged() {
     showToast("onValueChanged");
     CleverTapPlugin.onValueChanged('flutter_var_string', (variable) {
       print("PE -> onValueChanged: " + variable.toString());
+    });
+  }
+
+  void onVariablesChangedAndNoDownloadsPending() {
+    showToast("onVariablesChangedAndNoDownloadsPending");
+    CleverTapPlugin.onVariablesChangedAndNoDownloadsPending((variable) {
+      print("PE -> onVariablesChangedAndNoDownloadsPending: " + variable.toString());
+    });
+  }
+
+  void onceVariablesChangedAndNoDownloadsPending() {
+    showToast("onceVariablesChangedAndNoDownloadsPending");
+    CleverTapPlugin.onceVariablesChangedAndNoDownloadsPending((variable) {
+      print("PE -> onceVariablesChangedAndNoDownloadsPending: " + variable.toString());
+    });
+  }
+
+  void onFileChanged() {
+    showToast("onFileValueChanged");
+    CleverTapPlugin.onFileValueChanged('folder1.fileVariable', (variable) {
+      print("PE -> onFileValueChanged: " + variable.toString());
     });
   }
 
