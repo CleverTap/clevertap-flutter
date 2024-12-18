@@ -1,75 +1,80 @@
-package com.clevertap.clevertap_plugin;
+package com.clevertap.clevertap_plugin
 
-import android.content.Context;
-import android.util.Log;
+import android.content.Context
+import android.util.Log
+import com.clevertap.android.sdk.CleverTapAPI
+import com.clevertap.android.sdk.inapp.customtemplates.CustomTemplateException
+import com.clevertap.android.sdk.inapp.customtemplates.FunctionPresenter
+import com.clevertap.android.sdk.inapp.customtemplates.TemplatePresenter
+import com.clevertap.android.sdk.inapp.customtemplates.CustomTemplateContext.FunctionContext
+import com.clevertap.android.sdk.inapp.customtemplates.CustomTemplateContext.TemplateContext
+import com.clevertap.clevertap_plugin.CleverTapEventEmitter.emit
+import java.io.BufferedReader
+import java.io.IOException
+import java.io.InputStreamReader
+import java.nio.charset.StandardCharsets
 
-import com.clevertap.android.sdk.CleverTapAPI;
-import com.clevertap.android.sdk.inapp.customtemplates.CustomTemplateContext;
-import com.clevertap.android.sdk.inapp.customtemplates.CustomTemplateException;
-import com.clevertap.android.sdk.inapp.customtemplates.FunctionPresenter;
-import com.clevertap.android.sdk.inapp.customtemplates.TemplatePresenter;
+object ClevertapCustomTemplates {
+    private const val TAG = "ClevertapCustomTemplate"
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
+    private val templatePresenter: TemplatePresenter = object : TemplatePresenter {
+        override fun onPresent(context: TemplateContext) {
+            Log.d(TAG, "from native onPresent: " + context.templateName)
 
-public class ClevertapCustomTemplates {
-
-    private static final String TAG = "ClevertapCustomTemplate";
-
-    private static final TemplatePresenter templatePresenter = new TemplatePresenter() {
-        @Override
-        public void onPresent(CustomTemplateContext.TemplateContext context) {
-            Log.d(TAG, "from native onPresent: " + context.getTemplateName());
-
-            CleverTapEventEmitter.emit(
-                    CleverTapEvent.CLEVERTAP_CUSTOM_TEMPLATE_PRESENT,
-                    context.getTemplateName()
-            );
+            emit(
+                CleverTapEvent.CLEVERTAP_CUSTOM_TEMPLATE_PRESENT,
+                context.templateName
+            )
         }
 
-        @Override
-        public void onClose(CustomTemplateContext.TemplateContext context) {
-            Log.d(TAG, "from native onClose: " + context.getTemplateName());
-            CleverTapEventEmitter.emit(
-                    CleverTapEvent.CLEVERTAP_CUSTOM_TEMPLATE_CLOSE,
-                    context.getTemplateName()
-            );
-        }
-    };
-
-    private static final FunctionPresenter functionPresenter = new FunctionPresenter() {
-        @Override
-        public void onPresent(CustomTemplateContext.FunctionContext context) {
-            Log.d(TAG, "from native function onPresent: " + context.getTemplateName());
-            CleverTapEventEmitter.emit(
-                    CleverTapEvent.CLEVERTAP_CUSTOM_FUNCTION_PRESENT,
-                    context.getTemplateName()
-            );
-        }
-    };
-
-    public static void registerCustomTemplates(Context context, String... jsonAssets) {
-        for (String jsonAsset: jsonAssets) {
-            String jsonDefinitions = readAsset(context, jsonAsset);
-            CleverTapAPI.registerCustomInAppTemplates(jsonDefinitions, templatePresenter, functionPresenter);
+        override fun onClose(context: TemplateContext) {
+            Log.d(TAG, "from native onClose: " + context.templateName)
+            emit(
+                CleverTapEvent.CLEVERTAP_CUSTOM_TEMPLATE_CLOSE,
+                context.templateName
+            )
         }
     }
 
-    private static String readAsset(Context context, String asset) {
-        try (InputStream assetInputStream = context.getAssets().open(asset);
-             BufferedReader reader = new BufferedReader(new InputStreamReader(assetInputStream, StandardCharsets.UTF_8))) {
+    private val functionPresenter = FunctionPresenter { context: FunctionContext ->
+        Log.d(TAG, "from native function onPresent: " + context.templateName)
+        emit(
+            CleverTapEvent.CLEVERTAP_CUSTOM_FUNCTION_PRESENT,
+            context.templateName
+        )
+    }
 
-            StringBuilder builder = new StringBuilder();
-            String line;
-            while ((line = reader.readLine()) != null) {
-                builder.append(line);
+    @JvmStatic
+    fun registerCustomTemplates(context: Context, vararg jsonAssets: String) {
+        for (jsonAsset in jsonAssets) {
+            val jsonDefinitions = readAsset(context, jsonAsset)
+            CleverTapAPI.registerCustomInAppTemplates(
+                jsonDefinitions,
+                templatePresenter,
+                functionPresenter
+            )
+        }
+    }
+
+    private fun readAsset(context: Context, asset: String): String {
+        try {
+            context.assets.open(asset).use { assetInputStream ->
+                BufferedReader(
+                    InputStreamReader(
+                        assetInputStream,
+                        StandardCharsets.UTF_8
+                    )
+                ).use { reader ->
+                    val builder = StringBuilder()
+                    var line: String?
+                    while ((reader.readLine().also { line = it }) != null) {
+                        builder.append(line)
+                    }
+                    return builder.toString()
+                }
             }
-            return builder.toString();
-        } catch (IOException e) {
-            throw new CustomTemplateException("Could not read json asset", e);
+        } catch (e: IOException) {
+            throw CustomTemplateException("Could not read json asset", e)
         }
     }
 }
