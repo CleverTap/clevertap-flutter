@@ -5,14 +5,20 @@ Version 3.0.0 *(19 December 2024)*
 **What's new**
 * **[Android Platform]**
   * Supports [CleverTap Android SDK v7.0.3](https://github.com/CleverTap/clevertap-android-sdk/blob/master/docs/CTCORECHANGELOG.md#version-703-november-29-2024).
-  * Adds support for custom handshake domain configuration in android manifest
+  * Adds support for custom handshake domain configuration in android manifest.
+  
 * **[iOS Platform]**
   * Supports [CleverTap iOS SDK v7.0.3](https://github.com/CleverTap/clevertap-ios-sdk/blob/master/CHANGELOG.md#version-703-november-29-2024).
   * Adds support for custom handshake domains.
+  
 * **[Android and iOS Platform]**
   * Adds support for File Type Variables in Remote Config. Please refer to the [Remote Config Variables](https://github.com/CleverTap/clevertap-ios-sdk/blob/master/docs/Variables.md) doc to read more on how to integrate this in your app.
   * Adds support for Custom Code Templates. Please refer to the [CustomCodeTemplates.md](https://github.com/CleverTap/clevertap-android-sdk/blob/master/docs/CustomCodeTemplates.md) doc to read more on how to integrate this in your app.
   * Adds support for custom code in-app templates definitions through a json scheme.
+
+**Bug Fixes**
+* **[Android Platform]**
+* Fixes [#275](https://github.com/CleverTap/clevertap-flutter/issues/275) - Fixes NPE when casting object to string for PN clicked event.
 
 ### Version 2.5.0 *(17th October 2024)*
 -------------------------------------------
@@ -34,7 +40,6 @@ Version 3.0.0 *(19 December 2024)*
 **Bug Fixes**
 * **[All Platforms]**
   * Fixes [#260](https://github.com/CleverTap/clevertap-flutter/issues/260) - an issue related when running `pub get` from a **Windows Machine**
-
 
 * **[Android Platform]**
   * Fixes an ANR caused by extremely old InApp campaigns. 

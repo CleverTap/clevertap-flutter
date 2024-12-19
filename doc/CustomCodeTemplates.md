@@ -46,7 +46,7 @@ The JSON definitions should be placed in one or more files in the following loca
  - Android: in `assets` directory
  - iOS: in any directory linked to the project
 
-For a working example, see the Example project: `Example/assets/templates.json` and `Example/android/app/src/main/assets/custom/templates.json`.
+For a working example, see the Example project: `example/ios/Runner/templates.json` and `Example/android/app/src/main/assets/templates.json`.
 
 ### Arguments
 An `argument` is a structure that represents the configuration of the custom code templates. It consists of a `type` and a `value`.
@@ -139,7 +139,7 @@ public class MainApplication extends CleverTapApplication {
     @Override
     public void onCreate() {
         ActivityLifecycleCallback.register(this);
-        CleverTapCustomTemplates.registerCustomTemplates(this, "templateDefinitionsFileInAssets.json");
+        CleverTapCustomTemplates.registerCustomTemplates(this, "templates.json");
         super.onCreate();
     }
 }
