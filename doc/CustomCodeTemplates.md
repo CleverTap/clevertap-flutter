@@ -172,7 +172,7 @@ Call `[CleverTapPluginCustomTemplates registerCustomTemplates]` in your `AppDele
 
 ## Syncing in-app templates to the dashboard
 
-For the templates to be usable in campaigns they must be synced with the dashboard. When all templates and functions are defined and registered in the SDK, they can be synced by calling `CleverTap.syncCustomTemplates()` or `CleverTap.syncCustomTemplatesInProd()` in your React application. The syncing can only be done in debug builds and with an SDK user marked as a "test user". We recommend only calling this function while developing the templates and deleting the invocation in release builds.
+For the templates to be usable in campaigns they must be synced with the dashboard. When all templates and functions are defined and registered in the SDK, they can be synced by calling `CleverTap.syncCustomTemplates()` or `CleverTap.syncCustomTemplatesInProd()` in your Flutter application. The syncing can only be done in debug builds and with an SDK user marked as a "test user". We recommend only calling this function while developing the templates and deleting the invocation in release builds.
 
 ## Presenting templates
 
