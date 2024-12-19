@@ -48,8 +48,6 @@ The JSON definitions should be placed in one or more files in the following loca
 
 For a working example, see the Example project: `Example/assets/templates.json` and `Example/android/app/src/main/assets/custom/templates.json`.
 
-Optionally the `react-native-assets` package can be utilized to keep both files in sync.
-
 ### Arguments
 An `argument` is a structure that represents the configuration of the custom code templates. It consists of a `type` and a `value`.
 The supported argument types are:
