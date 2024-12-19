@@ -133,25 +133,14 @@ Templates must be registered within the native applications:
 
 ### For Android
 Call `CleverTapCustomTemplates.registerCustomTemplates` in your `Application.onCreate` method.
- - If you are extending `CleverTapApplication` add this line before calling `super.onCreate()`:
+ - If you are extending `CleverTapApplication` or otherwise add these lines before calling `super.onCreate()`:
 ```java
 public class MainApplication extends CleverTapApplication {
     @Override
     public void onCreate() {
-        CleverTapCustomTemplates.registerCustomTemplates(this, "templateDefinitionsFileInAssets.json");
-        super.onCreate();
-    }
-}
-```
- - Otherwise add the line before calling `CleverTapRnAPI.initReactNativeIntegration(this)`:
-```java
-public class MainApplication extends Application {
-    @Override
-    public void onCreate() {
         ActivityLifecycleCallback.register(this);
-        super.onCreate();
         CleverTapCustomTemplates.registerCustomTemplates(this, "templateDefinitionsFileInAssets.json");
-        CleverTapRnAPI.initReactNativeIntegration(this);
+        super.onCreate();
     }
 }
 ```
@@ -189,24 +178,32 @@ Applications should also set another handler to `setCleverTapCustomTemplateClose
 ### Example
 
 ```dart
-
 void activateCleverTapFlutterPluginHandlers() {
-_clevertapPlugin.setCleverTapCustomTemplatePresentHandler(presentCustomTemplate);
-_clevertapPlugin.setCleverTapCustomTemplateCloseHandler(closeCustomTemplate);
-_clevertapPlugin.setCleverTapCustomFunctionPresentHandler(presentCustomFunction);
+  _clevertapPlugin.setCleverTapCustomTemplatePresentHandler(presentCustomTemplate);
+  _clevertapPlugin.setCleverTapCustomTemplateCloseHandler(closeCustomTemplate);
+  _clevertapPlugin.setCleverTapCustomFunctionPresentHandler(presentCustomFunction);
 }
 
- void presentCustomTemplate(String templateName) async {
+void presentCustomTemplate(String templateName) async {
+  // some function which shows ui
+  showDialog(
+    data: Data,
+    onClose: closeCustomTemplate(templateName),
+    onPresented: setCustomTemplatePresented(templateName)
+  );
+}
+
+void setCustomTemplatePresented(String templateName) {
   CleverTapPlugin.customTemplateSetPresented(templateName);
 }
 
-  void closeCustomTemplate(String templateName) {
-    CleverTapPlugin.customTemplateSetDismissed(templateName);
-  }
+void closeCustomTemplate(String templateName) {
+  CleverTapPlugin.customTemplateSetDismissed(templateName);
+}
 
-  void presentCustomFunction(String templateName) {
-    CleverTapPlugin.customTemplateSetPresented(templateName);
-  }
+void presentCustomFunction(String templateName) {
+  CleverTapPlugin.customTemplateSetPresented(templateName);
+}
 ```
 
 ### In-App queue
