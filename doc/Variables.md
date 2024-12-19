@@ -31,6 +31,15 @@ var variables = {
 CleverTapPlugin.defineVariables(variables);
 ```
 
+# Define File Variables
+
+CleverTap Flutter SDK supports file types for variables from version `3.0.0`. Supported file types include but are not limited to images (jpg, jpeg, png, gif), text files, and PDFs.
+
+```Dart
+CleverTapPlugin.defineFileVariable("fileVariable");
+```
+
+
 # Setup Callbacks
 
 The CleverTap Flutter plugin provides several callbacks for the developer to receive feedback from the plugin. You can use them as per your requirement, using all of them is not mandatory. They are as follows:
@@ -38,6 +47,14 @@ The CleverTap Flutter plugin provides several callbacks for the developer to rec
 - Status of fetch variables request
 - `onVariablesChanged`
 - `onValueChanged`
+
+From version `3.0.0` onwards, the following callbacks are also supported:
+
+- `onOneTimeVariablesChanged`
+- `onVariablesChangedAndNoDownloadsPending`
+- `onceVariablesChangedAndNoDownloadsPending`
+- `onFileValueChanged`
+
 
 ## Status of Variables Fetch Request
 
@@ -60,6 +77,16 @@ CleverTapPlugin.onVariablesChanged((variables) {
 });
 ```
 
+## `onOneTimeVariablesChanged`
+
+This callback is invoked once when variables are initialized with a value or changed with a new server value. Callback is triggered only once on app start, or when added if server values are already received.
+
+```dart
+CleverTapPlugin.onOneTimeVariablesChanged((variables) {
+    print("onOneTimeVariablesChanged: " + variables.toString());
+});
+```
+
 ## `onValueChanged`
 
 This callback is invoked when the value of the variable changes. You must provide the name of the variable whose value needs to be observed.
@@ -67,6 +94,36 @@ This callback is invoked when the value of the variable changes. You must provid
 ```Dart
 CleverTapPlugin.onValueChanged('variable_name', (variable) {
     print("onValueChanged: " + variable.toString());
+});
+```
+
+## `onVariablesChangedAndNoDownloadsPending`
+
+This callback is invoked when variable values are changed and the files associated with it are downloaded and ready to be used. Callback is triggered each time new values are fetched and downloaded.
+
+```dart
+CleverTapPlugin.onVariablesChangedAndNoDownloadsPending((variables) => {
+    print('onVariablesChangedAndNoDownloadsPending', variables);
+});
+```
+
+## `onceVariablesChangedAndNoDownloadsPending`
+
+This callback is invoked only once when variable values are changed and the files associated with it are downloaded and ready to be used. Callback is triggered only once for when new values are fetched and downloaded
+
+```dart
+CleverTapPlugin.onceVariablesChangedAndNoDownloadsPending((variables) => {
+    print('onceVariablesChangedAndNoDownloadsPending', variables);
+});
+```
+
+## `onFileValueChanged`
+
+This callback is registered per file variable. It is called when the file associated with the file variable is downloaded and ready to be used.
+
+```dart
+CleverTapPlugin.onFileValueChanged('fileVariable', (variable) => {
+    print('onFileValueChanged: ', variable);
 });
 ```
 

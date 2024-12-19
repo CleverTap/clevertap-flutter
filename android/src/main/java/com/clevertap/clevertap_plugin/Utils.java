@@ -440,7 +440,11 @@ public class Utils {
     static Bundle mapToBundle(HashMap<String, Object> hashMap) {
         Bundle bundle = new Bundle();
         for (Map.Entry<String, Object> entry : hashMap.entrySet()) {
-            bundle.putString(entry.getKey(), entry.getValue().toString());
+            String key = entry.getKey();
+            Object value = entry.getValue();
+            if(value != null) {
+                bundle.putString(key, value.toString());
+            }
         }
         return bundle;
     }
