@@ -1,6 +1,6 @@
 
 #import <Foundation/Foundation.h>
-#import "CTTemplatePresenter.h"
+#import <CleverTapSDK/CTTemplatePresenter.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
