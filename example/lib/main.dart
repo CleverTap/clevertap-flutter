@@ -445,6 +445,32 @@ class _MyAppState extends State<MyApp> {
         (accepted ? "true" : "false"));
   }
 
+
+  Widget _buildExpansionTile(String title, List<Widget> children) {
+    return Card(
+      color: Colors.lightBlueAccent.shade100,
+      child: ExpansionTile(
+        title: Text(title, style: TextStyle(fontWeight: FontWeight.bold)),
+        children: children,
+      ),
+    );
+  }
+
+  Widget _buildListTile(String title, VoidCallback onTap, [String subtitle = ""]) {
+    return Card(
+      color: Colors.grey.shade300,
+      child: Padding(
+        padding: const EdgeInsets.all(4.0),
+        child: ListTile(
+          title: Text(title),
+          subtitle: subtitle.isNotEmpty ? Text(subtitle) : null,
+          onTap: onTap,
+        ),
+      ),
+    );
+  }
+
+
   @override
   Widget build(BuildContext context) {
     return StyledToast(
@@ -484,1115 +510,153 @@ class _MyAppState extends State<MyApp> {
                     ),
                   ),
                 ),
-                Card(
-                  color: Colors.lightBlueAccent,
-                  child: Padding(
-                    padding: const EdgeInsets.all(0.0),
-                    child: ListTile(
-                      title: Text("Product Experiences"),
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Sync Variables"),
-                      onTap: syncVariables,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Fetch Variables"),
-                      onTap: fetchVariables,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Define Variables"),
-                      onTap: defineVariables,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Define File Variable"),
-                      onTap: defineFileVariable,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Get Variables"),
-                      onTap: getVariables,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text(
-                          'Get Variable Value for name \'flutter_var_string\''),
-                      onTap: getVariable,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text(
-                          'Get Variable Value for name \'folder1.fileVariable\''),
-                      onTap: getFileVariable,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text('Add \'OnVariablesChanged\' listener'),
-                      onTap: onVariablesChanged,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text('Add \'OnOneTimeVariablesChanged\' listener'),
-                      onTap: onOneTimeVariablesChanged,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text(
-                          'Add \'OnValueChanged\' listener for name \'flutter_var_string\''),
-                      onTap: onValueChanged,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text(
-                          'Add \'OnFileVariablesChangedAndNoDownloadsPending\' listener'),
-                      onTap: onVariablesChangedAndNoDownloadsPending,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text(
-                          'Add \'OnceFileVariablesChangedAndNoDownloadsPending\' listener'),
-                      onTap: onceVariablesChangedAndNoDownloadsPending,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text(
-                          'Add \'OnFileChanged\' listener for name \'folder1.fileVariable\''),
-                      onTap: onFileChanged,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.lightBlueAccent,
-                  child: Padding(
-                    padding: const EdgeInsets.all(0.0),
-                    child: ListTile(
-                      title: Text("User Profiles"),
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Push User"),
-                      subtitle: Text("Pushes/Records a user"),
-                      onTap: recordUser,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Set Profile Multi Values"),
-                      subtitle: Text("Sets a multi valued user property"),
-                      onTap: setProfileMultiValue,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Remove Profile Value For Key"),
-                      subtitle: Text("Removes user property of given key"),
-                      onTap: removeProfileValue,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Add Profile Multi Value"),
-                      subtitle: Text("Add user property"),
-                      onTap: addMultiValue,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Profile increment value"),
-                      subtitle: Text("Increment value by 15"),
-                      onTap: incrementValue,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Profile decrement value"),
-                      subtitle: Text("Decrement value by 10"),
-                      onTap: decrementValue,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Add Profile Multi values"),
-                      subtitle: Text("Add a multi valued user property"),
-                      onTap: addMultiValues,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Remove Multi Value"),
-                      subtitle: Text("Remove user property"),
-                      onTap: removeMultiValue,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Remove Multi Values"),
-                      subtitle: Text("Remove a multi valued user property"),
-                      onTap: removeMultiValues,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.lightBlueAccent,
-                  child: Padding(
-                    padding: const EdgeInsets.all(0.0),
-                    child: ListTile(
-                      title: Text("Identity Management"),
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Performs onUserLogin"),
-                      subtitle: Text("Used to identify multiple profiles"),
-                      onTap: onUserLogin,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Get Profile Property"),
-                      subtitle: Text("Returns the specified Profile Property"),
-                      onTap: getProfileProperty,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Get CleverTap ID"),
-                      subtitle: Text("Returns Clevertap ID"),
-                      onTap: getCleverTapId,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.lightBlueAccent,
-                  child: Padding(
-                    padding: const EdgeInsets.all(0.0),
-                    child: ListTile(
-                      title: Text("Location"),
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Set Location"),
-                      subtitle: Text("Use to set Location of a user"),
-                      onTap: setLocation,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.lightBlueAccent,
-                  child: Padding(
-                    padding: const EdgeInsets.all(0.0),
-                    child: ListTile(
-                      title: Text("User Events"),
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Push Event"),
-                      subtitle: Text("Pushes/Records an event"),
-                      onTap: recordEvent,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Push Charged Event"),
-                      subtitle: Text("Pushes/Records a Charged event"),
-                      onTap: recordChargedEvent,
-                    ),
-                  ),
-                ),
+                _buildExpansionTile("Product Experiences", [
+                  _buildListTile("Sync Variables", syncVariables),
+                  _buildListTile("Fetch Variables", fetchVariables),
+                  _buildListTile("Define Variables", defineVariables),
+                  _buildListTile("Define File Variable", defineFileVariable),
+                  _buildListTile("Get Variables", getVariables),
+                  _buildListTile('Get Variable Value for name \'flutter_var_string\'', getVariable),
+                  _buildListTile('Get Variable Value for name \'folder1.fileVariable\'', getFileVariable),
+                  _buildListTile('Add \'OnVariablesChanged\' listener', onVariablesChanged),
+                  _buildListTile('Add \'OnOneTimeVariablesChanged\' listener', onOneTimeVariablesChanged),
+                  _buildListTile('Add \'OnValueChanged\' listener for name \'flutter_var_string\'', onValueChanged),
+                  _buildListTile('Add \'OnFileVariablesChangedAndNoDownloadsPending\' listener', onVariablesChangedAndNoDownloadsPending),
+                  _buildListTile('Add \'OnceFileVariablesChangedAndNoDownloadsPending\' listener', onceVariablesChangedAndNoDownloadsPending),
+                  _buildListTile('Add \'OnFileChanged\' listener for name \'folder1.fileVariable\'', onFileChanged),
+                ]),
+              _buildExpansionTile("User Profiles", [
+                  _buildListTile("Push User", recordUser, "Pushes/Records a user"),
+                  _buildListTile("Set Profile Multi Values", setProfileMultiValue, "Sets a multi valued user property"),
+                  _buildListTile("Remove Profile Value For Key", removeProfileValue, "Removes user property of given key"),
+                  _buildListTile("Add Profile Multi Value", addMultiValue, "Add user property"),
+                  _buildListTile("Profile increment value", incrementValue, "Increment value by 15"),
+                  _buildListTile("Profile decrement value", decrementValue, "Decrement value by 10"),
+                  _buildListTile("Add Profile Multi values", addMultiValues, "Add a multi valued user property"),
+                  _buildListTile("Remove Multi Value", removeMultiValue, "Remove user property"),
+                  _buildListTile("Remove Multi Values", removeMultiValues, "Remove a multi valued user property"),
+                ]),
+
+                _buildExpansionTile("Identity Management", [
+                  _buildListTile("Performs onUserLogin", onUserLogin, "Used to identify multiple profiles"),
+                  _buildListTile("Get Profile Property", getProfileProperty, "Returns the specified Profile Property"),
+                  _buildListTile("Get CleverTap ID", getCleverTapId, "Returns Clevertap ID"),
+                ]),
+
+                _buildExpansionTile("Location", [
+                  _buildListTile("Set Location", setLocation, "Use to set Location of a user"),
+                ]),
+
+                _buildExpansionTile("User Events", [
+                  _buildListTile("Push Event", recordEvent, "Pushes/Records an event"),
+                  _buildListTile("Push Charged Event", recordChargedEvent, "Pushes/Records a Charged event"),
+                  if (!kIsWeb) _buildListTile("Get User Event Log", getEventLog, "Get User Event Log"),
+                  if (!kIsWeb) _buildListTile("Get Event History", getEventHistory, "Get history of an event"),
+                ]),
+
+                _buildExpansionTile("App Inbox", [
+                  if (!kIsWeb) _buildListTile("Show Inbox", showInbox, "Opens sample App Inbox"),
+                  if (!kIsWeb) _buildListTile("Show Inbox with sections", showInboxWithTabs, "Opens sample App Inbox"),
+                  _buildListTile("Get All Inbox Messages", getAllInboxMessages, "Returns all inbox messages"),
+                  _buildListTile("Get Unread Inbox Messages", getUnreadInboxMessages, "Returns unread inbox messages"),
+                  _buildListTile("Get Inbox Message for given ID", getInboxMessageForId, "Returns inbox message for given ID"),
+                  _buildListTile("Delete Inbox Message for given ID", deleteInboxMessageForId, "Deletes inbox message for given ID"),
+                  if (!kIsWeb) _buildListTile("Delete Inbox Messages for list of IDs", deleteInboxMessagesForIds, "Deletes inbox messages for list of IDs"),
+                  _buildListTile("Mark Read Inbox Message for given ID", markReadInboxMessageForId, "Mark read inbox message for given ID"),
+                  _buildListTile("Mark Read Inbox Messages for list of IDs", markReadInboxMessagesForIds, "Mark read inbox messages for list of IDs"),
+                  if (!kIsWeb) _buildListTile("Push Inbox Message Clicked", pushInboxNotificationClickedEventForId, "Pushes/Records inbox message clicked event"),
+                  if (!kIsWeb) _buildListTile("Push Inbox Message Viewed", pushInboxNotificationViewedEventForId, "Pushes/Records inbox message viewed event"),
+                ]),
+
+                _buildExpansionTile("Enable Debugging", [
+                  _buildListTile("Set Debug Level", () {
+                    CleverTapPlugin.setDebugLevel(3);
+                  }, "Sets the debug level to show console logs"),
+                ]),
+
                 if (!kIsWeb)
-                  Card(
-                    color: Colors.grey.shade300,
-                    child: Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: ListTile(
-                        title: Text("Get User Event Log"),
-                        subtitle: Text("Get User Event Log"),
-                        onTap: getEventLog,
-                      ),
-                    ),
-                  ),
+                  _buildExpansionTile("In-App Messaging Controls", [
+                    _buildListTile("Suspend InApp notifications", suspendInAppNotifications, "Suspends display of InApp Notifications."),
+                    _buildListTile("Discard InApp notifications", discardInAppNotifications,
+                        "Suspends the display of InApp Notifications and discards any new InApp Notifications to be shown after this method is called."),
+                    _buildListTile("Resume InApp notifications", resumeInAppNotifications, "Resumes display of InApp Notifications."),
+                  ]),
+
                 if (!kIsWeb)
-                  Card(
-                    color: Colors.grey.shade300,
-                    child: Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: ListTile(
-                        title: Text("Get Event History"),
-                        subtitle: Text("Get history of an event"),
-                        onTap: getEventHistory,
-                      ),
-                    ),
-                  ),
-                Card(
-                  color: Colors.lightBlueAccent,
-                  child: Padding(
-                    padding: const EdgeInsets.all(0.0),
-                    child: ListTile(
-                      title: Text("App Inbox"),
-                    ),
-                  ),
-                ),
+                  _buildExpansionTile("Event History", [
+                    _buildListTile("Get Event First Time", eventGetFirstTime, "Gets first epoch of an event"),
+                    _buildListTile("Get Event Count", getEventLogCount, "Get count of an event"),
+                    _buildListTile("Get Event Last Time", eventGetLastTime, "Returns last epoch value for an event"),
+                    _buildListTile("Session Time Elapsed", getTimeElapsed, "Returns session time elapsed"),
+                    _buildListTile("App Launch Count", getUserAppLaunchCount, "Returns App Launch Count for current User"),
+                    _buildListTile("Session Screen Count", getScreenCount, "Returns session screen count"),
+                    _buildListTile("User Last Visit Time", getUserLastVisitTs, "Returns user last visit time"),
+                    _buildListTile("Session UTM Details", getUTMDetails, "Returns session UTM details"),
+                    _buildListTile("Get Ad Units", getAdUnits, "Returns all Display Units set"),
+                  ]),
+
+                _buildExpansionTile("GDPR", [
+                  _buildListTile("Set Opt Out", setOptOut, "Used to opt out of sending data to CleverTap"),
+                  if (!kIsWeb)
+                    _buildListTile("Device Networking Info", setEnableDeviceNetworkingInfo,
+                        "Enables/Disable device networking info as per GDPR"),
+                ]),
+
                 if (!kIsWeb)
-                  Card(
-                    color: Colors.grey.shade300,
-                    child: Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: ListTile(
-                        title: Text("Show Inbox"),
-                        subtitle: Text("Opens sample App Inbox"),
-                        onTap: showInbox,
-                      ),
-                    ),
-                  ),
+                  _buildExpansionTile("Multi-Instance", [
+                    _buildListTile("Enable Personalization", enablePersonalization, "Enables Personalization"),
+                    _buildListTile("Disable Personalization", disablePersonalization, "Disables Personalization"),
+                  ]),
+
+                _buildExpansionTile("Offline Mode", [
+                  _buildListTile("Set Offline", setOffline, "Switches CleverTap to offline mode"),
+                ]),
+
+                _buildExpansionTile("Push Templates", [
+                  _buildListTile("Basic Push", sendBasicPush),
+                  if (!kIsWeb) _buildListTile("Carousel Push", sendAutoCarouselPush),
+                  if (!kIsWeb) _buildListTile("Manual Carousel Push", sendManualCarouselPush),
+                  if (!kIsWeb) _buildListTile("FilmStrip Carousel Push", sendFilmStripCarouselPush),
+                  if (!kIsWeb) _buildListTile("Rating Push", sendRatingCarouselPush),
+                  if (!kIsWeb) _buildListTile("Product Display", sendProductDisplayPush),
+                  if (!kIsWeb) _buildListTile("Linear Product Display", sendLinearProductDisplayPush),
+                  if (!kIsWeb) _buildListTile("Five CTA", sendCTAPush),
+                  if (!kIsWeb) _buildListTile("Zero Bezel", sendZeroBezelPush),
+                  if (!kIsWeb) _buildListTile("Zero Bezel Text Only", sendZeroBezelTextOnlyPush),
+                  if (!kIsWeb) _buildListTile("Timer Push", sendTimerPush),
+                ]),
+
                 if (!kIsWeb)
-                  Card(
-                    color: Colors.grey.shade300,
-                    child: Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: ListTile(
-                        title: Text("Show Inbox with sections"),
-                        subtitle: Text("Opens sample App Inbox"),
-                        onTap: showInboxWithTabs,
-                      ),
-                    ),
-                  ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Get All Inbox Messages"),
-                      subtitle: Text("Returns all inbox messages"),
-                      onTap: getAllInboxMessages,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Get Unread Inbox Messages"),
-                      subtitle: Text("Returns unread inbox messages"),
-                      onTap: getUnreadInboxMessages,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Get Inbox Message for given ID"),
-                      subtitle: Text("Returns inbox message for given ID"),
-                      onTap: getInboxMessageForId,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Delete Inbox Message for given ID"),
-                      subtitle: Text("Deletes inbox message for given ID"),
-                      onTap: deleteInboxMessageForId,
-                    ),
-                  ),
-                ),
+                  _buildExpansionTile("Input Box Push Notifications", [
+                    _buildListTile("CTA + reminder Push Campaign - DOC true", sendInputBoxPush),
+                    _buildListTile("Reply with Event", sendInputBoxReplyEventPush),
+                    _buildListTile("Reply with Intent", sendInputBoxReplyAutoOpenPush),
+                    _buildListTile("CTA + reminder Push Campaign - DOC false", sendInputBoxRemindDOCFalsePush),
+                    _buildListTile("CTA - DOC true", sendInputBoxCTADOCTruePush),
+                    _buildListTile("CTA - DOC false", sendInputBoxCTADOCFalsePush),
+                    _buildListTile("Reminder - DOC true", sendInputBoxReminderDOCTruePush),
+                    _buildListTile("Reminder - DOC false", sendInputBoxReminderDOCFalsePush),
+                  ]),
+
                 if (!kIsWeb)
-                  Card(
-                    color: Colors.grey.shade300,
-                    child: Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: ListTile(
-                        title: Text("Delete Inbox Messages for list of IDs"),
-                        subtitle:
-                            Text("Deletes inbox messages for list of IDs"),
-                        onTap: deleteInboxMessagesForIds,
-                      ),
-                    ),
-                  ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Mark Read Inbox Message for given ID"),
-                      subtitle: Text("Mark read inbox message for given ID"),
-                      onTap: markReadInboxMessageForId,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Mark Read Inbox Messagess for list of IDs"),
-                      subtitle:
-                          Text("Mark read inbox messages for list of IDs"),
-                      onTap: markReadInboxMessagesForIds,
-                    ),
-                  ),
-                ),
+                  _buildExpansionTile("Push Tokens", [
+                    _buildListTile("Set Push Token: FCM", setPushTokenFCM),
+                    _buildListTile("Set Push Token: HMS", setPushTokenHMS),
+                  ]),
+
                 if (!kIsWeb)
-                  Card(
-                    color: Colors.grey.shade300,
-                    child: Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: ListTile(
-                        title: Text("Push Inbox Message Clicked"),
-                        subtitle:
-                            Text("Pushes/Records inbox message clicked event"),
-                        onTap: pushInboxNotificationClickedEventForId,
-                      ),
-                    ),
-                  ),
-                if (!kIsWeb)
-                  Card(
-                    color: Colors.grey.shade300,
-                    child: Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: ListTile(
-                        title: Text("Push Inbox Message Viewed"),
-                        subtitle:
-                            Text("Pushes/Records inbox message viewed event"),
-                        onTap: pushInboxNotificationViewedEventForId,
-                      ),
-                    ),
-                  ),
-                Card(
-                  color: Colors.lightBlueAccent,
-                  child: Padding(
-                    padding: const EdgeInsets.all(0.0),
-                    child: ListTile(
-                      title: Text("Enable Debugging"),
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Set Debug Level"),
-                      subtitle:
-                          Text("Sets the debug level to show console logs"),
-                      onTap: () {
-                        CleverTapPlugin.setDebugLevel(3);
-                      },
-                      trailing: Icon(Icons.info),
-                    ),
-                  ),
-                ),
-                if (!kIsWeb)
-                  Card(
-                    color: Colors.lightBlueAccent,
-                    child: Padding(
-                      padding: const EdgeInsets.all(0.0),
-                      child: ListTile(
-                        title: Text("In-App messaging controls"),
-                      ),
-                    ),
-                  ),
-                if (!kIsWeb)
-                  Card(
-                    color: Colors.grey.shade300,
-                    child: Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: ListTile(
-                        title: Text("Suspend InApp notifications"),
-                        subtitle:
-                            Text("Suspends display of InApp Notifications."),
-                        onTap: suspendInAppNotifications,
-                      ),
-                    ),
-                  ),
-                if (!kIsWeb)
-                  Card(
-                    color: Colors.grey.shade300,
-                    child: Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: ListTile(
-                        title: Text("Discard InApp notifications"),
-                        subtitle: Text(
-                            "Suspends the display of InApp Notifications "
-                            "and discards any new InApp Notifications to be shown"
-                            " after this method is called."),
-                        onTap: discardInAppNotifications,
-                      ),
-                    ),
-                  ),
-                if (!kIsWeb)
-                  Card(
-                    color: Colors.grey.shade300,
-                    child: Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: ListTile(
-                        title: Text("Resume InApp notifications"),
-                        subtitle:
-                            Text("Resumes display of InApp Notifications."),
-                        onTap: resumeInAppNotifications,
-                      ),
-                    ),
-                  ),
-                if (!kIsWeb)
-                  Card(
-                    color: Colors.lightBlueAccent,
-                    child: Padding(
-                      padding: const EdgeInsets.all(0.0),
-                      child: ListTile(
-                        title: Text("Event History"),
-                      ),
-                    ),
-                  ),
-                if (!kIsWeb)
-                  Card(
-                    color: Colors.grey.shade300,
-                    child: Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: ListTile(
-                        title: Text("Get Event First Time"),
-                        subtitle: Text("Gets first epoch of an event"),
-                        onTap: eventGetFirstTime,
-                      ),
-                    ),
-                  ),
-                if (!kIsWeb)
-                  Card(
-                    color: Colors.grey.shade300,
-                    child: Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: ListTile(
-                        title: Text("Get Event Count"),
-                        subtitle: Text("Get count of an event"),
-                        onTap: getEventLogCount,
-                      ),
-                    ),
-                  ),
-                if (!kIsWeb)
-                  Card(
-                    color: Colors.grey.shade300,
-                    child: Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: ListTile(
-                        title: Text("Get Event Last Time"),
-                        subtitle: Text("Returns last epoch value for an event"),
-                        onTap: eventGetLastTime,
-                      ),
-                    ),
-                  ),
-                if (!kIsWeb)
-                  Card(
-                    color: Colors.grey.shade300,
-                    child: Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: ListTile(
-                        title: Text("Session Time Elapsed"),
-                        subtitle: Text("Returns session time elapsed"),
-                        onTap: getTimeElapsed,
-                      ),
-                    ),
-                  ),
-                if (!kIsWeb)
-                  Card(
-                    color: Colors.grey.shade300,
-                    child: Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: ListTile(
-                        title: Text("App Launch Count"),
-                        subtitle: Text("Returns App Launch Count for current User"),
-                        onTap: getUserAppLaunchCount,
-                      ),
-                    ),
-                  ),
-                if (!kIsWeb)
-                  Card(
-                    color: Colors.grey.shade300,
-                    child: Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: ListTile(
-                        title: Text("Session Screen Count"),
-                        subtitle: Text("Returns session screen count"),
-                        onTap: getScreenCount,
-                      ),
-                    ),
-                  ),
-                if (!kIsWeb)
-                  Card(
-                    color: Colors.grey.shade300,
-                    child: Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: ListTile(
-                        title: Text("User Last Visit Time"),
-                        subtitle: Text("Returns user last visit time"),
-                        onTap: getUserLastVisitTs,
-                      ),
-                    ),
-                  ),
-                if (!kIsWeb)
-                  Card(
-                    color: Colors.grey.shade300,
-                    child: Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: ListTile(
-                        title: Text("Session UTM Details"),
-                        subtitle: Text("Returns session UTM details"),
-                        onTap: getUTMDetails,
-                      ),
-                    ),
-                  ),
-                if (!kIsWeb)
-                  Card(
-                    color: Colors.grey.shade300,
-                    child: Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: ListTile(
-                        title: Text("Get Ad Units"),
-                        subtitle: Text("Returns all Display Units set"),
-                        onTap: getAdUnits,
-                      ),
-                    ),
-                  ),
-                Card(
-                  color: Colors.lightBlueAccent,
-                  child: Padding(
-                    padding: const EdgeInsets.all(0.0),
-                    child: ListTile(
-                      title: Text("GDPR"),
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Set Opt Out"),
-                      subtitle:
-                          Text("Used to opt out of sending data to CleverTap"),
-                      onTap: setOptOut,
-                    ),
-                  ),
-                ),
-                if (!kIsWeb)
-                  Card(
-                    color: Colors.grey.shade300,
-                    child: Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: ListTile(
-                        title: Text("Device Networking Info"),
-                        subtitle: Text(
-                            "Enables/Disable device networking info as per GDPR"),
-                        onTap: setEnableDeviceNetworkingInfo,
-                      ),
-                    ),
-                  ),
-                if (!kIsWeb)
-                  Card(
-                    color: Colors.lightBlueAccent,
-                    child: Padding(
-                      padding: const EdgeInsets.all(0.0),
-                      child: ListTile(
-                        title: Text("Multi-Instance"),
-                      ),
-                    ),
-                  ),
-                if (!kIsWeb)
-                  Card(
-                    color: Colors.grey.shade300,
-                    child: Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: ListTile(
-                        title: Text("Enable Personalization"),
-                        subtitle: Text("Enables Personalization"),
-                        onTap: enablePersonalization,
-                      ),
-                    ),
-                  ),
-                if (!kIsWeb)
-                  Card(
-                    color: Colors.grey.shade300,
-                    child: Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: ListTile(
-                        title: Text("Disables Personalization"),
-                        subtitle: Text("Disables Personalization"),
-                        onTap: disablePersonalization,
-                      ),
-                    ),
-                  ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Set Offline"),
-                      subtitle: Text("Switches CleverTap to offline mode"),
-                      onTap: setOffline,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.lightBlueAccent,
-                  child: Padding(
-                    padding: const EdgeInsets.all(0.0),
-                    child: ListTile(
-                      title: Text("Push Templates"),
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Basic Push"),
-                      onTap: sendBasicPush,
-                    ),
-                  ),
-                ),
-                if (!kIsWeb)
-                  Card(
-                    color: Colors.grey.shade300,
-                    child: Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: ListTile(
-                        title: Text("Carousel Push"),
-                        onTap: sendAutoCarouselPush,
-                      ),
-                    ),
-                  ),
-                if (!kIsWeb)
-                  Card(
-                    color: Colors.grey.shade300,
-                    child: Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: ListTile(
-                        title: Text("Manual Carousel Push"),
-                        onTap: sendManualCarouselPush,
-                      ),
-                    ),
-                  ),
-                if (!kIsWeb)
-                  Card(
-                    color: Colors.grey.shade300,
-                    child: Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: ListTile(
-                        title: Text("FilmStrip Carousel Push"),
-                        onTap: sendFilmStripCarouselPush,
-                      ),
-                    ),
-                  ),
-                if (!kIsWeb)
-                  Card(
-                    color: Colors.grey.shade300,
-                    child: Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: ListTile(
-                        title: Text("Rating Push"),
-                        onTap: sendRatingCarouselPush,
-                      ),
-                    ),
-                  ),
-                if (!kIsWeb)
-                  Card(
-                    color: Colors.grey.shade300,
-                    child: Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: ListTile(
-                        title: Text("Product Display"),
-                        onTap: sendProductDisplayPush,
-                      ),
-                    ),
-                  ),
-                if (!kIsWeb)
-                  Card(
-                    color: Colors.grey.shade300,
-                    child: Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: ListTile(
-                        title: Text("Linear Product Display"),
-                        onTap: sendLinearProductDisplayPush,
-                      ),
-                    ),
-                  ),
-                if (!kIsWeb)
-                  Card(
-                    color: Colors.grey.shade300,
-                    child: Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: ListTile(
-                        title: Text("Five CTA"),
-                        onTap: sendCTAPush,
-                      ),
-                    ),
-                  ),
-                if (!kIsWeb)
-                  Card(
-                    color: Colors.grey.shade300,
-                    child: Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: ListTile(
-                        title: Text("Zero Bezel"),
-                        onTap: sendZeroBezelPush,
-                      ),
-                    ),
-                  ),
-                if (!kIsWeb)
-                  Card(
-                    color: Colors.grey.shade300,
-                    child: Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: ListTile(
-                        title: Text("Zero Bezel Text Only"),
-                        onTap: sendZeroBezelTextOnlyPush,
-                      ),
-                    ),
-                  ),
-                if (!kIsWeb)
-                  Card(
-                    color: Colors.grey.shade300,
-                    child: Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: ListTile(
-                        title: Text("Timer Push"),
-                        onTap: sendTimerPush,
-                      ),
-                    ),
-                  ),
-                if (!kIsWeb)
-                  Card(
-                    color: Colors.grey.shade300,
-                    child: Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: ListTile(
-                        title: Text(
-                            "Input Box - CTA + reminder Push Campaign - DOC true"),
-                        onTap: sendInputBoxPush,
-                      ),
-                    ),
-                  ),
-                if (!kIsWeb)
-                  Card(
-                    color: Colors.grey.shade300,
-                    child: Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: ListTile(
-                        title: Text("Input Box - Reply with Event"),
-                        onTap: sendInputBoxReplyEventPush,
-                      ),
-                    ),
-                  ),
-                if (!kIsWeb)
-                  Card(
-                    color: Colors.grey.shade300,
-                    child: Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: ListTile(
-                        title: Text("Input Box - Reply with Intent"),
-                        onTap: sendInputBoxReplyAutoOpenPush,
-                      ),
-                    ),
-                  ),
-                if (!kIsWeb)
-                  Card(
-                    color: Colors.grey.shade300,
-                    child: Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: ListTile(
-                        title: Text(
-                            "Input Box - CTA + reminder Push Campaign - DOC false"),
-                        onTap: sendInputBoxRemindDOCFalsePush,
-                      ),
-                    ),
-                  ),
-                if (!kIsWeb)
-                  Card(
-                    color: Colors.grey.shade300,
-                    child: Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: ListTile(
-                        title: Text("Input Box - CTA - DOC true"),
-                        onTap: sendInputBoxCTADOCTruePush,
-                      ),
-                    ),
-                  ),
-                if (!kIsWeb)
-                  Card(
-                    color: Colors.grey.shade300,
-                    child: Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: ListTile(
-                        title: Text("Input Box - CTA - DOC false"),
-                        onTap: sendInputBoxCTADOCFalsePush,
-                      ),
-                    ),
-                  ),
-                if (!kIsWeb)
-                  Card(
-                    color: Colors.grey.shade300,
-                    child: Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: ListTile(
-                        title: Text("Input Box - reminder - DOC true"),
-                        onTap: sendInputBoxReminderDOCTruePush,
-                      ),
-                    ),
-                  ),
-                if (!kIsWeb)
-                  Card(
-                    color: Colors.grey.shade300,
-                    child: Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: ListTile(
-                        title: Text("Input Box - reminder - DOC false"),
-                        onTap: sendInputBoxReminderDOCFalsePush,
-                      ),
-                    ),
-                  ),
-                if (!kIsWeb)
-                  Card(
-                    color: Colors.grey.shade300,
-                    child: Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: ListTile(
-                        title: Text("Set Push token : FCM"),
-                        onTap: setPushTokenFCM,
-                      ),
-                    ),
-                  ),
-                if (!kIsWeb)
-                  Card(
-                    color: Colors.grey.shade300,
-                    child: Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: ListTile(
-                        title: Text("Set Push token : HMS"),
-                        onTap: setPushTokenHMS,
-                      ),
-                    ),
-                  ),
-                if (!kIsWeb)
-                  Card(
-                    color: Colors.lightBlueAccent,
-                    child: Padding(
-                      padding: const EdgeInsets.all(0.0),
-                      child: ListTile(
-                        title: Text("Client Side InApps"),
-                      ),
-                    ),
-                  ),
-                if (!kIsWeb)
-                  Card(
-                    color: Colors.grey.shade300,
-                    child: Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: ListTile(
-                        title: Text("Fetch Client Side InApps"),
-                        subtitle: Text("Fetch Client Side InApps"),
-                        onTap: fetchInApps,
-                      ),
-                    ),
-                  ),
-                if (!kIsWeb)
-                  Card(
-                    color: Colors.grey.shade300,
-                    child: Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: ListTile(
-                        title: Text("Clear All InApp Resources"),
-                        subtitle: Text("Clear All InApp Resources"),
-                        onTap: clearInAppResources,
-                      ),
-                    ),
-                  ),
-                if (!kIsWeb)
-                  Card(
-                    color: Colors.grey.shade300,
-                    child: Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: ListTile(
-                        title: Text("Clear Expired Only InApp Resources"),
-                        subtitle: Text("Clear Expired Only InApp Resources"),
-                        onTap: clearExpiredInAppResources,
-                      ),
-                    ),
-                  ),
-                if (!kIsWeb)
-                  Card(
-                    color: Colors.lightBlueAccent,
-                    child: Padding(
-                      padding: const EdgeInsets.all(0.0),
-                      child: ListTile(
-                        title: Text("Push Primer"),
-                      ),
-                    ),
-                  ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Prompt for Push Notification"),
-                      onTap: promptForPushNotification,
-                    ),
-                  ),
-                ),
-                Card(
-                  color: Colors.grey.shade300,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: ListTile(
-                      title: Text("Local Half Interstitial Push Primer"),
-                      onTap: localHalfInterstitialPushPrimer,
-                    ),
-                  ),
-                ),
-                if (!kIsWeb)
-                  Card(
-                    color: Colors.grey.shade300,
-                    child: Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: ListTile(
-                        title: Text("Local Alert Push Primer"),
-                        onTap: localAlertPushPrimer,
-                      ),
-                    ),
-                  ),
+                  _buildExpansionTile("Client Side InApps", [
+                    _buildListTile("Fetch Client Side InApps", fetchInApps, "Fetches In-App notifications"),
+                    _buildListTile("Clear All InApp Resources", clearInAppResources, "Removes all In-App data"),
+                    _buildListTile("Clear Expired Only InApp Resources", clearExpiredInAppResources, "Removes only expired In-App data"),
+                  ]),
+
+                _buildExpansionTile("Push Primer", [
+                  _buildListTile("Prompt for Push Notification", promptForPushNotification),
+                  _buildListTile("Local Half Interstitial Push Primer", localHalfInterstitialPushPrimer),
+                  if (!kIsWeb) _buildListTile("Local Alert Push Primer", localAlertPushPrimer),
+                ]),
+
               ],
             )),
       ),
