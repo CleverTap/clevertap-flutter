@@ -13,6 +13,7 @@ import com.clevertap.android.sdk.inapp.customtemplates.CustomTemplateContext
 import com.clevertap.android.sdk.inbox.CTInboxMessage
 import com.clevertap.android.sdk.pushnotification.PushConstants.PushType
 import com.clevertap.android.sdk.pushnotification.PushNotificationHandler
+import com.clevertap.android.sdk.usereventlogs.UserEventLog
 import com.clevertap.android.sdk.variables.Var
 import com.clevertap.android.sdk.variables.callbacks.VariableCallback
 import com.clevertap.android.sdk.variables.callbacks.VariablesChangedCallback
@@ -63,6 +64,8 @@ class DartToNativePlatformCommunicator(
         private const val KEY_TEMPLATE_NAME_CC: String = "templateName"
 
         private const val KEY_TEMPLATE_ARGUMENT_CC: String = "argName"
+
+        private const val KEY_EVENT_NAME: String = "eventName"
 
         val variables: HashMap<String, Any> = java.util.HashMap()
     }
@@ -240,6 +243,24 @@ class DartToNativePlatformCommunicator(
 
             "getEventHistory" -> {
                 getEventHistory(result)
+            }
+
+            "getUserEventLog" -> {
+                val eventName = call.argument<String>(KEY_EVENT_NAME)
+                getUserEventLog(eventName, result)
+            }
+            "getUserEventLogCount" -> {
+                val eventName = call.argument<String>(KEY_EVENT_NAME)
+                getUserEventLogCount(eventName, result)
+            }
+            "getUserEventLogHistory" -> {
+                getUserEventLogHistory(result)
+            }
+            "getUserAppLaunchCount" -> {
+                getUserAppLaunchCount(result)
+            }
+            "getUserLastVisitTs" -> {
+                getUserLastVisitTs(result)
             }
 
             "pushNotificationClickedEvent" -> {
@@ -1193,6 +1214,48 @@ class DartToNativePlatformCommunicator(
         }
     }
 
+    private fun getUserEventLog(eventName: String?, result: MethodChannel.Result) {
+        if (cleverTapAPI != null && eventName != null) {
+            val eventLog: UserEventLog? = cleverTapAPI.getUserEventLog(eventName)
+            result.success(Utils.eventLogToMap(eventLog))
+        } else {
+            result.error(TAG, ERROR_MSG, null)
+        }
+    }
+
+    private fun getUserEventLogCount(eventName: String?, result: MethodChannel.Result) {
+        if (cleverTapAPI != null && eventName != null) {
+            result.success(cleverTapAPI.getUserEventLogCount(eventName))
+        } else {
+            result.error(TAG, ERROR_MSG, null)
+        }
+    }
+
+    private fun getUserEventLogHistory(result: MethodChannel.Result) {
+        if (cleverTapAPI != null) {
+            result.success(Utils.historyEventLogToMap(cleverTapAPI.userEventLogHistory))
+        } else {
+            result.error(TAG, ERROR_MSG, null)
+        }
+    }
+
+    private fun getUserAppLaunchCount(result: MethodChannel.Result) {
+        if (cleverTapAPI != null) {
+            result.success(cleverTapAPI.userAppLaunchCount)
+        } else {
+            result.error(TAG, ERROR_MSG, null)
+        }
+    }
+
+    private fun getUserLastVisitTs(result: MethodChannel.Result) {
+        if (cleverTapAPI != null) {
+            result.success(cleverTapAPI.userLastVisitTs)
+        } else {
+            result.error(TAG, ERROR_MSG, null)
+        }
+    }
+
+    @Deprecated(message = "Deprecated Since v3.1.0")
     private fun eventGetDetail(call: MethodCall, result: MethodChannel.Result) {
         val eventName = call.argument<String>("eventName")
         if (cleverTapAPI != null) {
@@ -1203,6 +1266,7 @@ class DartToNativePlatformCommunicator(
         }
     }
 
+    @Deprecated(message = "Deprecated Since v3.1.0")
     private fun eventGetFirstTime(call: MethodCall, result: MethodChannel.Result) {
         val eventName = call.argument<String>("eventName")
         if (cleverTapAPI != null) {
@@ -1212,6 +1276,7 @@ class DartToNativePlatformCommunicator(
         }
     }
 
+    @Deprecated(message = "Deprecated Since v3.1.0")
     private fun eventGetLastTime(call: MethodCall, result: MethodChannel.Result) {
         val eventName = call.argument<String>("eventName")
         if (cleverTapAPI != null) {
@@ -1221,6 +1286,7 @@ class DartToNativePlatformCommunicator(
         }
     }
 
+    @Deprecated(message = "Deprecated Since v3.1.0")
     private fun eventGetOccurrences(call: MethodCall, result: MethodChannel.Result) {
         val eventName = call.argument<String>("eventName")
         if (cleverTapAPI != null) {
@@ -1311,6 +1377,7 @@ class DartToNativePlatformCommunicator(
         }
     }
 
+    @Deprecated(message = "Deprecated Since v3.1.0")
     private fun getEventHistory(result: MethodChannel.Result) {
         if (cleverTapAPI != null) {
             result.success(Utils.historyEventDetailToMap(cleverTapAPI.history))
@@ -1714,6 +1781,7 @@ class DartToNativePlatformCommunicator(
         }
     }
 
+    @Deprecated(message = "Deprecated Since v3.1.0")
     private fun sessionGetPreviousVisitTime(result: MethodChannel.Result) {
         if (cleverTapAPI != null) {
             result.success(cleverTapAPI.previousVisitTime)
@@ -1738,6 +1806,7 @@ class DartToNativePlatformCommunicator(
         }
     }
 
+    @Deprecated(message = "Deprecated Since v3.1.0")
     private fun sessionGetTotalVisits(result: MethodChannel.Result) {
         if (cleverTapAPI != null) {
             result.success(cleverTapAPI.getTotalVisits())

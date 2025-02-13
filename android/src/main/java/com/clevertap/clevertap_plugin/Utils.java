@@ -9,6 +9,7 @@ import com.clevertap.android.sdk.displayunits.model.CleverTapDisplayUnit;
 import com.clevertap.android.sdk.events.EventDetail;
 import com.clevertap.android.sdk.inapp.CTLocalInApp;
 import com.clevertap.android.sdk.inbox.CTInboxMessage;
+import com.clevertap.android.sdk.usereventlogs.UserEventLog;
 
 
 import java.util.List;
@@ -79,6 +80,7 @@ public class Utils {
         return displayUnitList;
     }
 
+    @Deprecated
     static Map<String, Object> eventDetailToMap(EventDetail eventDetail) {
         Map<String, Object> eventDetailMap = new HashMap<>();
         if (eventDetail != null) {
@@ -91,6 +93,32 @@ public class Utils {
         return eventDetailMap;
     }
 
+    static Map<String, Object> eventLogToMap(UserEventLog eventLog) {
+        Map<String, Object> eventLogMap = new HashMap<>();
+
+        if (eventLog != null) {
+            eventLogMap.put("eventName", eventLog.getEventName());
+            eventLogMap.put("normalizedEventName", eventLog.getNormalizedEventName());
+            eventLogMap.put("firstTime", eventLog.getFirstTs());
+            eventLogMap.put("lastTime", eventLog.getLastTs());
+            eventLogMap.put("count", eventLog.getCountOfEvents());
+            eventLogMap.put("deviceID", eventLog.getDeviceID());
+        }
+
+        return eventLogMap;
+    }
+
+    static Map<String, Object> historyEventLogToMap(Map<String, UserEventLog> history) {
+        Map<String, Object> eventLogMap = new HashMap<>();
+        if (history != null) {
+            for (String key : history.keySet()) {
+                eventLogMap.put(key, eventLogToMap(history.get(key)));
+            }
+        }
+        return eventLogMap;
+    }
+
+    @Deprecated
     static Map<String, Object> historyEventDetailToMap(Map<String, EventDetail> history) {
         Map<String, Object> eventDetailMap = new HashMap<>();
         if (history != null) {
