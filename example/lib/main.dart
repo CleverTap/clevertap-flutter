@@ -162,11 +162,6 @@ class _MyAppState extends State<MyApp> {
     _clevertapPlugin.setCleverTapInboxNotificationButtonClickedHandler(inboxNotificationButtonClicked);
     _clevertapPlugin.setCleverTapInboxNotificationMessageClickedHandler(inboxNotificationMessageClicked);
     _clevertapPlugin.setCleverTapDisplayUnitsLoadedHandler(onDisplayUnitsLoaded);
-    _clevertapPlugin.setCleverTapFeatureFlagUpdatedHandler(featureFlagsUpdated);
-    _clevertapPlugin.setCleverTapProductConfigInitializedHandler(productConfigInitialized);
-    _clevertapPlugin.setCleverTapProductConfigFetchedHandler(productConfigFetched);
-    _clevertapPlugin.setCleverTapProductConfigActivatedHandler(productConfigActivated);
-    // push notif clicked handler
 
     _clevertapPlugin.setCleverTapPushPermissionResponseReceivedHandler(pushPermissionResponseReceived);
     _clevertapPlugin.setCleverTapPushAmpPayloadReceivedHandler(pushAmpPayloadReceived);
@@ -428,42 +423,6 @@ class _MyAppState extends State<MyApp> {
         print("Value for key: ${key.toString()} is: ${value.toString()}");
       });
     }
-  }
-
-  void featureFlagsUpdated() {
-    print("Feature Flags Updated");
-    this.setState(() async {
-      bool? booleanVar = await CleverTapPlugin.getFeatureFlag("BoolKey", false);
-      print("Feature flag = " + booleanVar.toString());
-    });
-  }
-
-  void productConfigInitialized() {
-    print("Product Config Initialized");
-    this.setState(() async {
-      await CleverTapPlugin.fetch();
-    });
-  }
-
-  void productConfigFetched() {
-    print("Product Config Fetched");
-    this.setState(() async {
-      await CleverTapPlugin.activate();
-    });
-  }
-
-  void productConfigActivated() {
-    print("Product Config Activated");
-    this.setState(() async {
-      String? stringvar =
-          await CleverTapPlugin.getProductConfigString("StringKey");
-      print("PC String = " + stringvar.toString());
-      int? intvar = await CleverTapPlugin.getProductConfigLong("IntKey");
-      print("PC int = " + intvar.toString());
-      double? doublevar =
-          await CleverTapPlugin.getProductConfigDouble("DoubleKey");
-      print("PC double = " + doublevar.toString());
-    });
   }
 
   void pushAmpPayloadReceived(Map<String, dynamic> map) {
@@ -877,9 +836,9 @@ class _MyAppState extends State<MyApp> {
                     child: Padding(
                       padding: const EdgeInsets.all(4.0),
                       child: ListTile(
-                        title: Text("Get Event Detail"),
-                        subtitle: Text("Get details of an event"),
-                        onTap: getEventDetail,
+                        title: Text("Get User Event Log"),
+                        subtitle: Text("Get User Event Log"),
+                        onTap: getEventLog,
                       ),
                     ),
                   ),
@@ -1115,7 +1074,7 @@ class _MyAppState extends State<MyApp> {
                     child: Padding(
                       padding: const EdgeInsets.all(0.0),
                       child: ListTile(
-                        title: Text("Product Config"),
+                        title: Text("Event History"),
                       ),
                     ),
                   ),
@@ -1137,9 +1096,9 @@ class _MyAppState extends State<MyApp> {
                     child: Padding(
                       padding: const EdgeInsets.all(4.0),
                       child: ListTile(
-                        title: Text("Get Event Occurrences"),
-                        subtitle: Text("Get number of occurences of an event"),
-                        onTap: eventGetOccurrences,
+                        title: Text("Get Event Count"),
+                        subtitle: Text("Get count of an event"),
+                        onTap: getEventLogCount,
                       ),
                     ),
                   ),
@@ -1161,42 +1120,6 @@ class _MyAppState extends State<MyApp> {
                     child: Padding(
                       padding: const EdgeInsets.all(4.0),
                       child: ListTile(
-                        title: Text("Fetch"),
-                        subtitle: Text("Fetches Product Config values"),
-                        onTap: fetch,
-                      ),
-                    ),
-                  ),
-                if (!kIsWeb)
-                  Card(
-                    color: Colors.grey.shade300,
-                    child: Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: ListTile(
-                        title: Text("Activate"),
-                        subtitle: Text("Activates Product Config values"),
-                        onTap: activate,
-                      ),
-                    ),
-                  ),
-                if (!kIsWeb)
-                  Card(
-                    color: Colors.grey.shade300,
-                    child: Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: ListTile(
-                        title: Text("Fetch and Activate"),
-                        subtitle: Text("Fetches and Activates Config values"),
-                        onTap: fetchAndActivate,
-                      ),
-                    ),
-                  ),
-                if (!kIsWeb)
-                  Card(
-                    color: Colors.grey.shade300,
-                    child: Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: ListTile(
                         title: Text("Session Time Elapsed"),
                         subtitle: Text("Returns session time elapsed"),
                         onTap: getTimeElapsed,
@@ -1209,9 +1132,9 @@ class _MyAppState extends State<MyApp> {
                     child: Padding(
                       padding: const EdgeInsets.all(4.0),
                       child: ListTile(
-                        title: Text("Session Total Visits"),
-                        subtitle: Text("Returns session total visits"),
-                        onTap: getTotalVisits,
+                        title: Text("App Launch Count"),
+                        subtitle: Text("Returns App Launch Count for current User"),
+                        onTap: getUserAppLaunchCount,
                       ),
                     ),
                   ),
@@ -1233,9 +1156,9 @@ class _MyAppState extends State<MyApp> {
                     child: Padding(
                       padding: const EdgeInsets.all(4.0),
                       child: ListTile(
-                        title: Text("Session Previous Visit Time"),
-                        subtitle: Text("Returns session previous visit time"),
-                        onTap: getPreviousVisitTime,
+                        title: Text("User Last Visit Time"),
+                        subtitle: Text("Returns user last visit time"),
+                        onTap: getUserLastVisitTs,
                       ),
                     ),
                   ),
@@ -1260,29 +1183,6 @@ class _MyAppState extends State<MyApp> {
                         title: Text("Get Ad Units"),
                         subtitle: Text("Returns all Display Units set"),
                         onTap: getAdUnits,
-                      ),
-                    ),
-                  ),
-                if (!kIsWeb)
-                  Card(
-                    color: Colors.lightBlueAccent,
-                    child: Padding(
-                      padding: const EdgeInsets.all(0.0),
-                      child: ListTile(
-                        title: Text("Attribution"),
-                      ),
-                    ),
-                  ),
-                if (!kIsWeb)
-                  Card(
-                    color: Colors.grey.shade300,
-                    child: Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: ListTile(
-                        title: Text("Get Attribution ID"),
-                        subtitle: Text(
-                            "Returns Attribution ID to send to attribution partners"),
-                        onTap: getCTAttributionId,
                       ),
                     ),
                   ),
@@ -1873,8 +1773,7 @@ class _MyAppState extends State<MyApp> {
       'date': CleverTapPlugin.getCleverTapDate(now),
       'number': 1
     };
-    //CleverTapPlugin.recordEvent("Flutter Event", eventData);
-    CleverTapPlugin.recordEvent("lalit", eventData);
+    CleverTapPlugin.recordEvent("Flutter Event", eventData);
     showToast("Raised event - Flutter Event");
   }
 
@@ -2234,11 +2133,10 @@ class _MyAppState extends State<MyApp> {
 
   void eventGetFirstTime() {
     var eventName = "Flutter Event";
-    CleverTapPlugin.eventGetFirstTime(eventName).then((eventFirstTime) {
-      if (eventFirstTime == null) return;
+    CleverTapPlugin.getUserEventLog(eventName).then((userEventLog) {
       setState((() {
-        showToast("Event First time CleverTap = " + eventFirstTime.toString());
-        print("Event First time CleverTap = " + eventFirstTime.toString());
+        showToast("Event First time for $eventName =  ${userEventLog["firstTime"]}");
+        print("Event First time for $eventName =  ${userEventLog["firstTime"]}");
       }));
     }).catchError((error) {
       setState(() {
@@ -2249,11 +2147,10 @@ class _MyAppState extends State<MyApp> {
 
   void eventGetLastTime() {
     var eventName = "Flutter Event";
-    CleverTapPlugin.eventGetLastTime(eventName).then((eventLastTime) {
-      if (eventLastTime == null) return;
+    CleverTapPlugin.getUserEventLog(eventName).then((userEventLog) {
       setState((() {
-        showToast("Event Last time CleverTap = " + eventLastTime.toString());
-        print("Event Last time CleverTap = " + eventLastTime.toString());
+        showToast("Event Last time for $eventName =  ${userEventLog["lastTime"]}");
+        print("Event Last time for $eventName =  ${userEventLog["lastTime"]}");
       }));
     }).catchError((error) {
       setState(() {
@@ -2262,14 +2159,13 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
-  void eventGetOccurrences() {
+  void getEventLogCount() {
     var eventName = "Flutter Event";
-    CleverTapPlugin.eventGetOccurrences(eventName).then((eventOccurrences) {
-      if (eventOccurrences == null) return;
+    CleverTapPlugin.getUserEventLogCount(eventName).then((eventCount) {
+      if (eventCount == null) return;
       setState((() {
-        showToast(
-            "Event detail from CleverTap = " + eventOccurrences.toString());
-        print("Event detail from CleverTap = " + eventOccurrences.toString());
+        showToast("Event Count for $eventName = $eventCount");
+        print("Event Count for $eventName =  $eventCount");
       }));
     }).catchError((error) {
       setState(() {
@@ -2278,13 +2174,12 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
-  void getEventDetail() {
+  void getEventLog() {
     var eventName = "Flutter Event";
-    CleverTapPlugin.eventGetDetail(eventName).then((eventDetailMap) {
-      if (eventDetailMap == null) return;
+    CleverTapPlugin.getUserEventLog(eventName).then((userEventLog) {
       setState((() {
-        showToast("Event detail from CleverTap = " + eventDetailMap.toString());
-        print("Event detail from CleverTap = " + eventDetailMap.toString());
+        showToast("Event Log for $eventName = " + userEventLog.toString());
+        print("Event Log for $eventName = " + userEventLog.toString());
       }));
     }).catchError((error) {
       setState(() {
@@ -2294,13 +2189,10 @@ class _MyAppState extends State<MyApp> {
   }
 
   void getEventHistory() {
-    var eventName = "Flutter Event";
-    CleverTapPlugin.getEventHistory(eventName).then((eventDetailMap) {
-      if (eventDetailMap == null) return;
+    CleverTapPlugin.getUserEventLogHistory().then((eventLogMap) {
       setState((() {
-        showToast(
-            "Event History from CleverTap = " + eventDetailMap.toString());
-        print("Event History from CleverTap = " + eventDetailMap.toString());
+        showToast("Event History = " + eventLogMap.toString());
+        print("Event History = " + eventLogMap.toString());
       }));
     }).catchError((error) {
       setState(() {
@@ -2322,20 +2214,6 @@ class _MyAppState extends State<MyApp> {
     showToast("Locale is set");
   }
 
-  void getCTAttributionId() {
-    CleverTapPlugin.profileGetCleverTapAttributionIdentifier()
-        .then((attributionId) {
-      if (attributionId == null) return;
-      setState((() {
-        showToast("Attribution Id = " + "$attributionId");
-        print("Attribution Id = " + "$attributionId");
-      }));
-    }).catchError((error) {
-      setState(() {
-        print("$error");
-      });
-    });
-  }
 
   void getCleverTapId() {
     CleverTapPlugin.getCleverTapID().then((clevertapId) {
@@ -2437,12 +2315,12 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
-  void getTotalVisits() {
-    CleverTapPlugin.sessionGetTotalVisits().then((totalVisits) {
+  void getUserAppLaunchCount() {
+    CleverTapPlugin.getUserAppLaunchCount().then((totalVisits) {
       if (totalVisits == null) return;
       setState((() {
-        showToast("Session Total Visits = " + totalVisits.toString());
-        print("Session Total Visits = " + totalVisits.toString());
+        showToast("App Launch Count = " + totalVisits.toString());
+        print("App Launch Count = " + totalVisits.toString());
       }));
     }).catchError((error) {
       setState(() {
@@ -2465,12 +2343,12 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
-  void getPreviousVisitTime() {
-    CleverTapPlugin.sessionGetPreviousVisitTime().then((previousTime) {
+  void getUserLastVisitTs() {
+    CleverTapPlugin.getUserLastVisitTs().then((previousTime) {
       if (previousTime == null) return;
       setState((() {
-        showToast("Session Previous Visit Time = " + previousTime.toString());
-        print("Session Previous Visit Time = " + previousTime.toString());
+        showToast("User Previous Visit Time = " + previousTime.toString());
+        print("User Previous Visit Time = " + previousTime.toString());
       }));
     }).catchError((error) {
       setState(() {
@@ -2481,7 +2359,6 @@ class _MyAppState extends State<MyApp> {
 
   void getUTMDetails() {
     CleverTapPlugin.sessionGetUTMDetails().then((utmDetails) {
-      if (utmDetails == null) return;
       setState((() {
         showToast("Session UTM Details = " + utmDetails.toString());
         print("Session UTM Details = " + utmDetails.toString());
@@ -2527,24 +2404,6 @@ class _MyAppState extends State<MyApp> {
 
     // Uncomment to print payload.
     // printDisplayUnitPayload(displayUnits);
-  }
-
-  void fetch() {
-    CleverTapPlugin.fetch();
-    showToast("check console for logs");
-
-    ///CleverTapPlugin.fetchWithMinimumIntervalInSeconds(0);
-  }
-
-  void activate() {
-    super.activate();
-    CleverTapPlugin.activate();
-    showToast("check console for logs");
-  }
-
-  void fetchAndActivate() {
-    CleverTapPlugin.fetchAndActivate();
-    showToast("check console for logs");
   }
 
   void promptForPushNotification() {
