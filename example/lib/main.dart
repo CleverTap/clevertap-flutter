@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io' show Platform, sleep;
+import 'dart:math';
 import 'package:example/notification_button.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -470,6 +471,91 @@ class _MyAppState extends State<MyApp> {
     );
   }
 
+  void _buildDialogSingleInput(BuildContext context, Function(String) onTap, String textFieldValue) {
+    TextEditingController eventController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text("Enter $textFieldValue"),
+          content: TextField(
+            controller: eventController,
+            decoration: InputDecoration(hintText: "$textFieldValue"),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context), // Close dialog
+              child: Text("Cancel"),
+            ),
+            TextButton(
+              onPressed: () {
+                String eventName = eventController.text.trim();
+                if (eventName.isNotEmpty) {
+                  onTap(eventName); // Call function with user input
+                  Navigator.pop(context); // Close dialog
+                } else {
+                  showToast("Please enter $textFieldValue.");
+                }
+              },
+              child: Text("Submit"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _buildDialogMultipleInput(BuildContext context, Function(String, String) onTap, List<String> hintTexts) {
+    TextEditingController firstController = TextEditingController();
+    TextEditingController secondController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text("Enter Details"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: firstController,
+                decoration: InputDecoration(hintText: hintTexts[0]), // Custom hint text for first input
+              ),
+              SizedBox(height: 10), // Space between fields
+              TextField(
+                controller: secondController,
+                decoration: InputDecoration(hintText: hintTexts[1]), // Custom hint text for second input
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context), // Close dialog
+              child: Text("Cancel"),
+            ),
+            TextButton(
+              onPressed: () {
+                String firstInput = firstController.text.trim();
+                String secondInput = secondController.text.trim();
+
+                if (firstInput.isNotEmpty && secondInput.isNotEmpty) {
+                  onTap(firstInput, secondInput); // Pass both inputs
+                  Navigator.pop(context); // Close dialog
+                } else {
+                  showToast("Please fill in both fields.");
+                }
+              },
+              child: Text("Submit"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -527,6 +613,7 @@ class _MyAppState extends State<MyApp> {
                 ]),
               _buildExpansionTile("User Profiles", [
                   _buildListTile("Push User", recordUser, "Pushes/Records a user"),
+                  _buildListTile("Push User with custom attributes", () => _buildDialogMultipleInput(context, recordCustomUser, ["Enter Attribute Name", "Enter Attribute Value"]), "Pushes/Records a user"),
                   _buildListTile("Set Profile Multi Values", setProfileMultiValue, "Sets a multi valued user property"),
                   _buildListTile("Remove Profile Value For Key", removeProfileValue, "Removes user property of given key"),
                   _buildListTile("Add Profile Multi Value", addMultiValue, "Add user property"),
@@ -539,6 +626,7 @@ class _MyAppState extends State<MyApp> {
 
                 _buildExpansionTile("Identity Management", [
                   _buildListTile("Performs onUserLogin", onUserLogin, "Used to identify multiple profiles"),
+                  _buildListTile("Performs random onUserLogin ", onRandomUserLogin, "Perform Login with Random Identity"),
                   _buildListTile("Get Profile Property", getProfileProperty, "Returns the specified Profile Property"),
                   _buildListTile("Get CleverTap ID", getCleverTapId, "Returns Clevertap ID"),
                 ]),
@@ -548,10 +636,9 @@ class _MyAppState extends State<MyApp> {
                 ]),
 
                 _buildExpansionTile("User Events", [
-                  _buildListTile("Push Event", recordEvent, "Pushes/Records an event"),
+                  _buildListTile("Push Event", recordEvent, "Pushes/Records an event called Flutter Event"),
+                  _buildListTile("Push Custom Event", () => _buildDialogSingleInput(context, recordCustomEvent, "Event Name"), "Pushes/Records a custom event"),
                   _buildListTile("Push Charged Event", recordChargedEvent, "Pushes/Records a Charged event"),
-                  if (!kIsWeb) _buildListTile("Get User Event Log", getEventLog, "Get User Event Log"),
-                  if (!kIsWeb) _buildListTile("Get Event History", getEventHistory, "Get history of an event"),
                 ]),
 
                 _buildExpansionTile("App Inbox", [
@@ -584,13 +671,15 @@ class _MyAppState extends State<MyApp> {
 
                 if (!kIsWeb)
                   _buildExpansionTile("Event History", [
-                    _buildListTile("Get Event First Time", eventGetFirstTime, "Gets first epoch of an event"),
-                    _buildListTile("Get Event Count", getEventLogCount, "Get count of an event"),
-                    _buildListTile("Get Event Last Time", eventGetLastTime, "Returns last epoch value for an event"),
-                    _buildListTile("Session Time Elapsed", getTimeElapsed, "Returns session time elapsed"),
+                    if (!kIsWeb) _buildListTile("Get User Event Log", () => _buildDialogSingleInput(context, getEventLog, "Event Name"), "Get User Event Log for Flutter Event"),
+                    if (!kIsWeb) _buildListTile("Get Event History", getEventHistory, "Get history of all Events"),
+                    _buildListTile("Get Event First Time", () => _buildDialogSingleInput(context, getEventFirstTime, "Event Name"), "Gets first epoch of the event Flutter Event"),
+                    _buildListTile("Get Event Count", () => _buildDialogSingleInput(context, getEventLogCount, "Event Name"), "Get count of the event Flutter Event"),
+                    _buildListTile("Get Event Last Time", () => _buildDialogSingleInput(context, getEventLastTime, "Event Name"), "Returns last epoch value for the event Flutter Event"),
                     _buildListTile("App Launch Count", getUserAppLaunchCount, "Returns App Launch Count for current User"),
-                    _buildListTile("Session Screen Count", getScreenCount, "Returns session screen count"),
                     _buildListTile("User Last Visit Time", getUserLastVisitTs, "Returns user last visit time"),
+                    _buildListTile("Session Time Elapsed", getTimeElapsed, "Returns session time elapsed"),
+                    _buildListTile("Session Screen Count", getScreenCount, "Returns session screen count"),
                     _buildListTile("Session UTM Details", getUTMDetails, "Returns session UTM details"),
                     _buildListTile("Get Ad Units", getAdUnits, "Returns all Display Units set"),
                   ]),
@@ -828,6 +917,11 @@ class _MyAppState extends State<MyApp> {
     CleverTapPlugin.setHuaweiPushToken("token_fcm");
   }
 
+  void recordCustomEvent(String eventName) {
+    CleverTapPlugin.recordEvent(eventName, {});
+    showToast("Raised event $eventName");
+  }
+
   void recordEvent() {
     var now = new DateTime.now();
     var eventData = {
@@ -890,6 +984,14 @@ class _MyAppState extends State<MyApp> {
     };
     CleverTapPlugin.recordChargedEvent(chargeDetails, items);
     showToast("Raised event - Charged");
+  }
+
+  void recordCustomUser(String attributeKey, String attributeValue) {
+    var profile = {
+      attributeKey: attributeValue,
+    };
+    CleverTapPlugin.profileSet(profile);
+    showToast("Pushed profile " + profile.toString());
   }
 
   void recordUser() {
@@ -1195,8 +1297,7 @@ class _MyAppState extends State<MyApp> {
     CleverTapPlugin.recordScreenView(screenName);
   }
 
-  void eventGetFirstTime() {
-    var eventName = "Flutter Event";
+  void getEventFirstTime(String eventName) {
     CleverTapPlugin.getUserEventLog(eventName).then((userEventLog) {
       setState((() {
         showToast("Event First time for $eventName =  ${userEventLog["firstTime"]}");
@@ -1209,8 +1310,7 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
-  void eventGetLastTime() {
-    var eventName = "Flutter Event";
+  void getEventLastTime(String eventName) {
     CleverTapPlugin.getUserEventLog(eventName).then((userEventLog) {
       setState((() {
         showToast("Event Last time for $eventName =  ${userEventLog["lastTime"]}");
@@ -1223,8 +1323,7 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
-  void getEventLogCount() {
-    var eventName = "Flutter Event";
+  void getEventLogCount(String eventName) {
     CleverTapPlugin.getUserEventLogCount(eventName).then((eventCount) {
       if (eventCount == null) return;
       setState((() {
@@ -1238,8 +1337,7 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
-  void getEventLog() {
-    var eventName = "Flutter Event";
+  void getEventLog(String eventName) {
     CleverTapPlugin.getUserEventLog(eventName).then((userEventLog) {
       setState((() {
         showToast("Event Log for $eventName = " + userEventLog.toString());
@@ -1316,6 +1414,19 @@ class _MyAppState extends State<MyApp> {
     };
     CleverTapPlugin.onUserLogin(profile);
     showToast("onUserLogin called, check console for details");
+  }
+
+  void onRandomUserLogin() {
+    var random = Random();
+    int randomIdentity = random.nextInt(10000);
+    var stuff = ["bags", "shoes"];
+    var profile = {
+      'Identity': randomIdentity,
+      'Custom': 'Gold',
+      'stuff': stuff
+    };
+    CleverTapPlugin.onUserLogin(profile);
+    showToast("onUserLogin called with identity = $randomIdentity");
   }
 
   void removeProfileValue() {
