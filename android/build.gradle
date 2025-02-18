@@ -1,5 +1,5 @@
 group = 'com.clevertap.clevertap_plugin'
-version = '3.1.0'
+version = '3.2.0'
 
 buildscript {
     ext.kotlin_version = "1.8.22"
@@ -9,7 +9,7 @@ buildscript {
     }
 
     dependencies {
-        classpath("com.android.tools.build:gradle:8.1.0")
+        classpath("com.android.tools.build:gradle:8.6.1")
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version")
     }
 }
@@ -35,11 +35,15 @@ apply plugin: "com.android.library"
 apply plugin: "kotlin-android"
 
 android {
+    buildFeatures {
+        buildConfig = true
+    }
+
     if (project.android.hasProperty("namespace")) {
         namespace = "com.clevertap.clevertap_plugin"
     }
 
-    compileSdk = 34
+    compileSdk = 35
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
@@ -58,7 +62,7 @@ android {
     dependencies {
         implementation 'androidx.core:core-ktx:1.9.0'
         testImplementation 'junit:junit:4.13.2'
-        api 'com.clevertap.android:clevertap-android-sdk:7.1.2'
+        api 'com.clevertap.android:clevertap-android-sdk:7.2.2'
         compileOnly 'androidx.fragment:fragment:1.3.6'
         compileOnly 'androidx.core:core:1.9.0'
     }
