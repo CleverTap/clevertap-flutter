@@ -5,7 +5,7 @@ Version 3.1.0 *(xx February 2025)*
 **What's new**
 * **[Android Platform]**
   * Supports [CleverTap Android SDK v7.1.2](https://github.com/CleverTap/clevertap-android-sdk/blob/develop/docs/CTCORECHANGELOG.md#version-712-january-29-2025).
-  * Adds support for Flutter 3.29 by removing Embedding v1 support, which was deprecated long ago. If your project still relies on Embedding v1, follow the [migration guide](https://github.com/flutter/flutter/blob/main/docs/platforms/android/Upgrading-pre-1.12-Android-projects.md) to update it. (by @rwrz)
+  * Adds support for Flutter 3.29 by removing Embedding v1 support, which was deprecated long ago. If your project still relies on Embedding v1, follow the [migration guide](https://github.com/flutter/flutter/blob/main/docs/platforms/android/Upgrading-pre-1.12-Android-projects.md) to update it. (by [@rwrz](https://github.com/rwrz))
   * Adds support to hide large icon in android notifications by sending `wzrk_hide_large_icon` key in notification payload. 
 
 * **[iOS Platform]**
@@ -29,9 +29,6 @@ Version 3.1.0 *(xx February 2025)*
       - `sessionGetPreviousVisitTime()`: Use `getUserLastVisitTs()` instead for user-specific last visit timestamp
       - `sessionGetTotalVisits()`: Use `getUserAppLaunchCount()` instead for user-specific app launch count
       - `getEventHistory()`: Use `getUserEventLogHistory()` instead for user-specific event history
-
-**Breaking Changes**
-- 
 
 Version 3.0.0 *(19 December 2024)*
 -------------------------------------------
