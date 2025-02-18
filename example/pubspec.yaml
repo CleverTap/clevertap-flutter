@@ -24,10 +24,13 @@ dependencies:
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.3
-  workmanager: ^0.5.2
+  workmanager:
+    git:
+      url: https://github.com/fluttercommunity/flutter_workmanager.git
+      path: workmanager
+      ref: main
   firebase_messaging: ^14.9.2
   firebase_core: ^2.31.0
-  open_file: ^3.5.4
 
 dev_dependencies:
   flutter_test:

@@ -19,7 +19,6 @@ import io.flutter.embedding.engine.plugins.activity.ActivityAware;
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding;
 import io.flutter.plugin.common.BinaryMessenger;
 import io.flutter.plugin.common.MethodChannel;
-import io.flutter.plugin.common.PluginRegistry.Registrar;
 
 /**
  * CleverTapPlugin
@@ -46,15 +45,6 @@ public class CleverTapPlugin implements ActivityAware, FlutterPlugin {
     private final Runnable resetBufferRunnable = () -> {
         CleverTapEventEmitter.resetAllBuffers(false);
     };
-
-    /**
-     * Plugin registration.
-     */
-    public static void registerWith(Registrar registrar) {
-        CleverTapPlugin plugin = new CleverTapPlugin();
-        plugin.setupPlugin(registrar.context(), null, registrar);
-        activity = new WeakReference<>((Activity) registrar.activeContext());
-    }
 
     public CleverTapPlugin() {
     }
@@ -91,7 +81,7 @@ public class CleverTapPlugin implements ActivityAware, FlutterPlugin {
     @Override
     public void onAttachedToEngine(@NonNull FlutterPluginBinding binding) {
         Log.d(TAG, "onAttachedToEngine " + binding);
-        setupPlugin(binding.getApplicationContext(), binding.getBinaryMessenger(), null);
+        setupPlugin(binding.getApplicationContext(), binding.getBinaryMessenger());
     }
 
     @Override
@@ -106,14 +96,13 @@ public class CleverTapPlugin implements ActivityAware, FlutterPlugin {
 
     private void setupPlugin(
             Context context,
-            BinaryMessenger messenger,
-            Registrar registrar
+            BinaryMessenger messenger
     ) {
-        this.dartToNativeMethodChannel = getMethodChannel("clevertap_plugin/dart_to_native", messenger, registrar);
+        this.dartToNativeMethodChannel = getMethodChannel("clevertap_plugin/dart_to_native", messenger);
 
         // lastNativeToDartMethodChannel is added to a set and not kept as a static field to ensure callbacks work when a background isolate is spawned
         // Background Isolates are spawned by several libraries like flutter_workmanager and flutter_firebasemessaging
-        lastNativeToDartMethodChannel = getMethodChannel("clevertap_plugin/native_to_dart", messenger, registrar);
+        lastNativeToDartMethodChannel = getMethodChannel("clevertap_plugin/native_to_dart", messenger);
         nativeToDartMethodChannelSet.add(lastNativeToDartMethodChannel);
 
         this.context = context.getApplicationContext();
@@ -128,16 +117,10 @@ public class CleverTapPlugin implements ActivityAware, FlutterPlugin {
 
     private MethodChannel getMethodChannel(
             String channelName,
-            BinaryMessenger messenger,
-            Registrar registrar
+            BinaryMessenger messenger
     ) {
-        if (registrar != null) {
-            //V1 setup
-            return new MethodChannel(registrar.messenger(), channelName);
-        } else {
-            //V2 setup
-            return new MethodChannel(messenger, channelName);
-        }
+        //V2 setup
+        return new MethodChannel(messenger, channelName);
     }
 
     public static void invokeMethodOnUiThread(final String methodName, final Object obj) {
