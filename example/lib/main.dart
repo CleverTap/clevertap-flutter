@@ -9,7 +9,6 @@ import 'package:clevertap_plugin/clevertap_plugin.dart';
 import 'package:example/deeplink_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_styled_toast/flutter_styled_toast.dart';
-import 'package:open_file/open_file.dart';
 import 'package:workmanager/workmanager.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'custom_template.dart';
@@ -239,7 +238,7 @@ class _MyAppState extends State<MyApp> {
   }
   void handleFile(String templateName, String argumentName) async {
     var filePath = await CleverTapPlugin.customTemplateGetFileArg(templateName, "file");
-    OpenFile.open(filePath);
+    showToast(filePath);
   }
   void printArgument(String templateName, String argumentName) {
     printArgsAsString(templateName);
