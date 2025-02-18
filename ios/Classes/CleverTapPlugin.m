@@ -311,6 +311,16 @@ static NSDateFormatter *dateFormatter;
         [self customTemplateSetPresented:call withResult:result];
     else if ([@"customTemplateContextToString" isEqualToString:call.method])
         [self customTemplateContextToString:call withResult:result];
+    else if ([@"getUserEventLog" isEqualToString:call.method])
+        [self getUserEventLog:call withResult:result];
+    else if ([@"getUserEventLogCount" isEqualToString:call.method])
+        [self getUserEventLogCount:call withResult:result];
+    else if ([@"getUserEventLogHistory" isEqualToString:call.method])
+        [self getUserEventLogHistory:call withResult:result];
+    else if ([@"getUserAppLaunchCount" isEqualToString:call.method])
+        [self getUserAppLaunchCount:call withResult:result];
+    else if ([@"getUserLastVisitTs" isEqualToString:call.method])
+        [self getUserLastVisitTs:call withResult:result];
     else
         result(FlutterMethodNotImplemented);
 }
@@ -475,6 +485,31 @@ static NSDateFormatter *dateFormatter;
     result(res);
 }
 
+- (void)getUserEventLog:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    
+    CleverTapEventDetail *detail = [[CleverTap sharedInstance] getUserEventLog:call.arguments[@"eventName"]];
+    NSDictionary *res = [self _eventDetailToDict:detail];
+    result(res);
+}
+
+- (void)getUserEventLogHistory:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    
+    NSDictionary *history = [[CleverTap sharedInstance] getUserEventLogHistory];
+    NSMutableDictionary *res = [NSMutableDictionary new];
+    for (NSString *eventName in [history keyEnumerator]) {
+        CleverTapEventDetail *detail = history[eventName];
+        NSDictionary * _inner = [self _eventDetailToDict:detail];
+        res[eventName] = _inner;
+    }
+    result(res);
+}
+
+- (void)getUserEventLogCount:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    
+    int res = [[CleverTap sharedInstance] getUserEventLogCount:call.arguments[@"eventName"]];
+    result(@(res));
+}
+
 - (void)setLocation:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     
     double lat = [call.arguments[@"latitude"] doubleValue];
@@ -569,6 +604,12 @@ static NSDateFormatter *dateFormatter;
     result(@(res));
 }
 
+- (void)getUserAppLaunchCount:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    
+    int res = [[CleverTap sharedInstance] getUserAppLaunchCount];
+    result(@(res));
+}
+
 - (void)sessionGetScreenCount:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     
     int res = [[CleverTap sharedInstance] userGetScreenCount];
@@ -578,6 +619,12 @@ static NSDateFormatter *dateFormatter;
 - (void)sessionGetPreviousVisitTime:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     
     NSTimeInterval res = [[CleverTap sharedInstance] userGetPreviousVisitTime];
+    result(@(res));
+}
+
+- (void)getUserLastVisitTs:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    
+    NSTimeInterval res = [[CleverTap sharedInstance] getUserLastVisitTs];
     result(@(res));
 }
 
@@ -950,6 +997,10 @@ static NSDateFormatter *dateFormatter;
         if(detail.eventName) {
             [_dict setObject:detail.eventName forKey:@"eventName"];
         }
+
+        if(detail.normalizedEventName){
+            [_dict setObject:detail.normalizedEventName forKey:@"normalizedEventName"];
+        }
         
         if(detail.firstTime){
             [_dict setObject:@(detail.firstTime) forKey:@"firstTime"];
@@ -961,6 +1012,10 @@ static NSDateFormatter *dateFormatter;
         
         if(detail.count){
             [_dict setObject:@(detail.count) forKey:@"count"];
+        }
+
+        if(detail.deviceID){
+            [_dict setObject:detail.deviceID forKey:@"deviceID"];
         }
     }
     
