@@ -1,6 +1,10 @@
 
 #import <Foundation/Foundation.h>
+#if __has_include(<CleverTapSDK/CTTemplatePresenter.h>)
+#import <CleverTapSDK/CTTemplatePresenter.h>
+#else
 #import "CTTemplatePresenter.h"
+#endif
 
 NS_ASSUME_NONNULL_BEGIN
 
