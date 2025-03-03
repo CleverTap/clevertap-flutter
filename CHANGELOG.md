@@ -13,7 +13,8 @@ After upgrading the SDK to v3.2.0, don't downgrade in subsequent app releases. I
   * Updates `minSdkVersion` to API 21 (Android 5.0).
   * Upgrades `Android Gradle Plugin (A.G.P)` to 8.6.1 as [recommended for Android 15](https://developer.android.com/about/versions/15/setup-sdk#:~:text=Update%20your%20app's%20build%20configuration,-Warning%3A%20If%20your&text=1%20or%20higher%2C%20first%20run,1.)
 
-Version 3.1.0 *(xx February 2025)*
+
+Version 3.1.0 *(3rd March 2025)*
 -------------------------------------------
 **What's new**
 * **[Android Platform]**
