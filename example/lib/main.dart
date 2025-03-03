@@ -18,6 +18,7 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 final int TEST_RUN_APP_DELAY = 0;
 final int CLEVERTAP_LISTENER_ATTACH_DELAY = 0;
+final bool testWithWorkManager = false;
 
 @pragma('vm:entry-point')
 void onKilledStateNotificationClickedHandler(Map<String, dynamic> map) async {
@@ -28,15 +29,16 @@ void onKilledStateNotificationClickedHandler(Map<String, dynamic> map) async {
 @pragma(
     'vm:entry-point') // Mandatory if the App is obfuscated or using Flutter 3.1+
 void callbackDispatcher() {
-  // This is a dummy work manager to test usecases with background isolates
-
-  Workmanager().executeTask((task, inputData) {
-    print("Native started background task: $task");
-    sleep(Duration(seconds: 30));
-    print(
-        "Native called background task: $task"); //simpleTask will be emitted here.
-    return Future.value(true);
-  });
+  if (testWithWorkManager) {
+    // This is a dummy work manager to test usecases with background isolates
+    Workmanager().executeTask((task, inputData) {
+      print("Native started background task: $task");
+      sleep(Duration(seconds: 30));
+      print(
+          "Native called background task: $task"); //simpleTask will be emitted here.
+      return Future.value(true);
+    });
+  }
 }
 
 Future<void> _firebaseBackgroundMessageHandler(RemoteMessage message) async {
@@ -55,14 +57,13 @@ void _firebaseForegroundMessageHandler(RemoteMessage remoteMessage) {
 void main() async {
   print("CleverTapPlugin main pre ensure");
   WidgetsFlutterBinding.ensureInitialized();
-  if (!kIsWeb && !Platform.isIOS) {
+  if (!kIsWeb && !Platform.isIOS  && testWithWorkManager) {
     Workmanager().initialize(
         callbackDispatcher, // The top level function, aka callbackDispatcher
         isInDebugMode:
             true // If enabled it will post a notification whenever the task is running. Handy for debugging tasks
         );
-    Workmanager()
-        .registerOneOffTask("periodic-task-identifier", "simplePeriodicTask");
+    Workmanager().registerOneOffTask("periodic-task-identifier", "simplePeriodicTask");
 
     await Firebase.initializeApp();
     FirebaseMessaging.onMessage.listen(_firebaseForegroundMessageHandler);
