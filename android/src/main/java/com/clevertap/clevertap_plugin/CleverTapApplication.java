@@ -8,9 +8,9 @@ import com.clevertap.clevertap_plugin.isolate.CleverTapBackgroundIsolateRunner;
 
 import java.util.HashMap;
 
-import io.flutter.app.FlutterApplication;
+import android.app.Application;
 
-public class CleverTapApplication extends FlutterApplication implements CTPushNotificationListener {
+public class CleverTapApplication extends Application implements CTPushNotificationListener {
 
     private static final String TAG = "CleverTapApplication";
 

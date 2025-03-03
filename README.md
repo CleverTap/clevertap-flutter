@@ -21,7 +21,7 @@ To get started, sign up [here](https://clevertap.com/live-product-demo/).
 
 ```yaml
 dependencies:
-clevertap_plugin: 3.0.0
+clevertap_plugin: 3.1.0
 ```
 
 - Run `flutter packages get` to install the SDK
