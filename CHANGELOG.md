@@ -1,6 +1,6 @@
 ## CHANGE LOG
 
-Version 3.1.0 *(xx February 2025)*
+Version 3.1.0 *(3rd March 2025)*
 -------------------------------------------
 **What's new**
 * **[Android Platform]**
