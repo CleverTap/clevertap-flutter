@@ -1,6 +1,20 @@
 ## CHANGE LOG
 
-Version 3.1.0 *(3rd March 2025)*
+Version 3.2.0 *(3 March 2025)*
+-------------------------------------------
+> ⚠️ **NOTE**
+After upgrading the SDK to v3.2.0, don't downgrade in subsequent app releases. If you encounter any issues, please contact the CleverTap support team for assistance. 
+
+**What's new**
+* **[Android Platform]**
+  * Supports [CleverTap Android SDK v7.2.2](https://github.com/CleverTap/clevertap-android-sdk/blob/master/docs/CTCORECHANGELOG.md#version-722-january-21-2025).
+  * Adds support for Android 15, making it compliant with Android 15 requirements. Details [here](https://developer.android.com/about/versions/15/summary).
+  * Upgrades the algorithm used for encryption of PII data, making it compliant with [OWASP](https://mas.owasp.org/MASTG/0x04g-Testing-Cryptography/). Uses `AndroidKeyStore` for securely backing up encryption key on API levels 23+.
+  * Updates `minSdkVersion` to API 21 (Android 5.0).
+  * Upgrades `Android Gradle Plugin (A.G.P)` to 8.6.1 as [recommended for Android 15](https://developer.android.com/about/versions/15/setup-sdk#:~:text=Update%20your%20app's%20build%20configuration,-Warning%3A%20If%20your&text=1%20or%20higher%2C%20first%20run,1.)
+
+
+Version 3.1.0 *(3 March 2025)*
 -------------------------------------------
 **What's new**
 * **[Android Platform]**
