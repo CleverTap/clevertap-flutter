@@ -52,7 +52,7 @@
 - In your app's Android Application class add the following code.
 
     ```java
-        public class MyApplication extends FlutterApplication {
+        public class MyApplication extends Application {
             @java.lang.Override
             public void onCreate() {
                 ActivityLifecycleCallback.register(this); //<--- Add this before super.onCreate()

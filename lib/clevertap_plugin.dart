@@ -74,7 +74,7 @@ class CleverTapPlugin {
   static const libName = 'Flutter';
 
   static const libVersion =
-      30000; // If the current version is X.X.X then pass as X0X0X
+      30100; // If the current version is X.X.X then pass as X0X0X
 
   CleverTapPlugin._internal() {
     /// Set the CleverTap Flutter library name and the current version for version tracking
@@ -685,24 +685,28 @@ class CleverTapPlugin {
         'recordChargedEvent', {'chargeDetails': chargeDetails, 'items': items});
   }
 
+  @Deprecated("This method is deprecated since 3.1.0. User getUserEventLog() instead")
   /// Returns the timestamp of the first time the given event was raised
   static Future<dynamic> eventGetFirstTime(String eventName) async {
     return await _dartToNativeMethodChannel
         .invokeMethod('eventGetFirstTime', {'eventName': eventName});
   }
 
+  @Deprecated("This method is deprecated since 3.1.0. User getUserEventLog() instead")
   /// Returns the timestamp of the last time the given event was raised
   static Future<dynamic> eventGetLastTime(String eventName) async {
     return await _dartToNativeMethodChannel
         .invokeMethod('eventGetLastTime', {'eventName': eventName});
   }
 
+  @Deprecated("This method is deprecated since 3.1.0. User getUserEventLogCount() instead")
   /// Returns the total count of the specified event
   static Future<int?> eventGetOccurrences(String eventName) async {
     return await _dartToNativeMethodChannel
         .invokeMethod('eventGetOccurrences', {'eventName': eventName});
   }
 
+  @Deprecated("This method is deprecated since 3.1.0. User getUserEventLog() instead")
   /// Returns a Map object for the particular event passed. EventDetail consists of event name, count, first time
   //  and last time timestamp of the event.
   static Future<Map<String, dynamic>> eventGetDetail(String eventName) async {
@@ -711,12 +715,46 @@ class CleverTapPlugin {
     return response.cast<String, dynamic>();
   }
 
+  @Deprecated("This method is deprecated since 3.1.0. User getUserEventLogHistory() instead")
   /// Returns a Map of event names and corresponding event details of all the events raised
   static Future<Map<String, dynamic>> getEventHistory(String eventName) async {
     Map<dynamic, dynamic> response = await _dartToNativeMethodChannel
         .invokeMethod('getEventHistory', {'eventName': eventName});
     return response.cast<String, dynamic>();
   }
+
+  /// Returns a Map object for the particular event passed. UserEventLog consists of eventName, normalizedEventName, count, deviceID, firstTime and lastTime timestamp of the event.
+  static Future<Map<String, dynamic>> getUserEventLog(String eventName) async {
+    Map<dynamic, dynamic> response = await _dartToNativeMethodChannel
+        .invokeMethod('getUserEventLog', {'eventName': eventName});
+    return response.cast<String, dynamic>();
+  }
+
+  /// Returns the total count of the specified event
+  static Future<int?> getUserEventLogCount(String eventName) async {
+    return await _dartToNativeMethodChannel
+        .invokeMethod('getUserEventLogCount', {'eventName': eventName});
+  }
+
+  /// Returns a Map of event names and corresponding UserEventLog of all the events raised
+  static Future<Map<String, dynamic>> getUserEventLogHistory() async {
+    Map<dynamic, dynamic> response = await _dartToNativeMethodChannel
+        .invokeMethod('getUserEventLogHistory', {});
+    return response.cast<String, dynamic>();
+  }
+
+  /// Returns the total number of times user has launched the app
+  static Future<int?> getUserAppLaunchCount() async {
+    return await _dartToNativeMethodChannel
+        .invokeMethod('getUserAppLaunchCount', {});
+  }
+
+  /// Returns the timestamp of user's last app visit
+  static Future<num?> getUserLastVisitTs() async {
+    return await _dartToNativeMethodChannel
+        .invokeMethod('getUserLastVisitTs', {});
+  }
+
 
   /// Set the user profile location in CleverTap
   static Future<void> setLocation(double latitude, double longitude) async {
@@ -877,6 +915,7 @@ class CleverTapPlugin {
         .invokeMethod('sessionGetTimeElapsed', {});
   }
 
+  @Deprecated("This method is deprecated since 3.1.0. User getUserAppLaunchCount() instead")
   /// Returns the total number of times the app has been launched
   static Future<int?> sessionGetTotalVisits() async {
     return await _dartToNativeMethodChannel
@@ -889,6 +928,7 @@ class CleverTapPlugin {
         .invokeMethod('sessionGetScreenCount', {});
   }
 
+  @Deprecated("This method is deprecated since 3.1.0. User getUserLastVisitTs() instead")
   /// Returns the timestamp of the previous visit
   static Future<dynamic> sessionGetPreviousVisitTime() async {
     return await _dartToNativeMethodChannel
