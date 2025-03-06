@@ -23,6 +23,35 @@
 @property (strong, nonatomic) FlutterMethodChannel *nativeToDartMethodChannel;
 @property(nonatomic, strong) NSMutableDictionary *allVariables;
 
+
+- (void)initializeWithConfig:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    NSDictionary *config = call.arguments;
+    NSString *accountId = config[@"accountId"];
+    NSString *token = config[@"token"];
+    NSString *region = config[@"region"];
+    
+    if (!accountId || !token) {
+        result([FlutterError errorWithCode:@"CleverTapError"
+                                 message:@"accountId and token are required for initialization"
+                                 details:nil]);
+        return;
+    }
+
+    CleverTapInstanceConfig *instanceConfig = [[CleverTapInstanceConfig alloc] initWithAccountId:accountId
+                                                                                 accountToken:token];
+    if (region) {
+        instanceConfig.regionCode = region;
+    }
+    
+    NSString *targetDomain = config[@"targetDomain"];
+    if (targetDomain) {
+        instanceConfig.domain = targetDomain;
+    }
+    
+    [CleverTap instanceConfigWithConfig:instanceConfig];
+    result(nil);
+}
+
 @end
 
 static NSDateFormatter *dateFormatter;

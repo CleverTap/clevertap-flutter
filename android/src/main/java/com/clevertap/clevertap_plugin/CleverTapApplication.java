@@ -16,6 +16,7 @@ public class CleverTapApplication extends Application implements CTPushNotificat
 
     @Override
     public void onCreate() {
+        ActivityLifecycleCallback.register(this); // Register ActivityLifecycleCallback automatically
         super.onCreate();
         CleverTapAPI cleverTapAPI = CleverTapAPI.getDefaultInstance(this);
         if (cleverTapAPI != null) {

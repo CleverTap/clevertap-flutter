@@ -49,19 +49,6 @@
         apply plugin: 'com.google.gms.google-services' //skip if not using FCM
     ```
 
-- In your app's Android Application class add the following code.
-
-    ```java
-        public class MyApplication extends Application {
-            @java.lang.Override
-            public void onCreate() {
-                ActivityLifecycleCallback.register(this); //<--- Add this before super.onCreate()
-                super.onCreate();
-            }
-        }
-
-    ```
-
 #### Note
 
 - To use Header & Footer InApp Notification Templates of CleverTap, change the class from which MainActivity is inherited from `FlutterActivity` to `FlutterFragmentActivity`
@@ -90,8 +77,8 @@
         <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
     ```
 
-- Add your CleverTap Account ID and Token to your `AndroidManifest.xml`, within the <application></application> tags.
-
+- Add your CleverTap Account ID and Token either:
+  1. In your `AndroidManifest.xml`, within the <application></application> tags:
     ```xml
         <meta-data
             android:name="CLEVERTAP_ACCOUNT_ID"
@@ -99,6 +86,16 @@
         <meta-data
             android:name="CLEVERTAP_TOKEN"
             android:value="Your CleverTap Account Token"/>
+    ```
+  2. Or through environment variables in a .env file and initialize in your code:
+    ```dart
+    await CleverTapPlugin.initialize(
+      accountId: 'YOUR_ACCOUNT_ID',
+      token: 'YOUR_ACCOUNT_TOKEN',
+      region: 'YOUR_REGION',  // Optional
+      targetDomain: 'YOUR_DOMAIN'  // Optional
+    );
+    ```
         <!-- IMPORTANT: To force use Google AD ID to uniquely identify  users, use the following meta tag. GDPR mandates that if you are using this tag, there is prominent disclousure to your end customer in their application. Read more about GDPR here - https://clevertap.com/blog/in-preparation-of-gdpr-compliance/ -->
         <meta-data
             android:name="CLEVERTAP_USE_GOOGLE_AD_ID"

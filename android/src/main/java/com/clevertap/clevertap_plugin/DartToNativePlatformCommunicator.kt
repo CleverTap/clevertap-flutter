@@ -75,6 +75,9 @@ class DartToNativePlatformCommunicator(
         result: MethodChannel.Result
     ) {
         when (call.method) {
+            "initialize" -> {
+                initializeCleverTap(call = call, result = result)
+            }
             "startEmission" -> {
                 startEmission(call = call, result = result)
             }
@@ -2086,6 +2089,29 @@ class DartToNativePlatformCommunicator(
         }
     }
 
+}
+
+private fun initializeCleverTap(call: MethodCall, result: MethodChannel.Result) {
+    val accountId = call.argument<String>("accountId")
+    val token = call.argument<String>("token")
+    val region = call.argument<String>("region")
+
+    if (accountId == null || token == null) {
+        result.error(TAG, "accountId and token are required for initialization", null)
+        return
+    }
+
+    try {
+        val configMap = CleverTapAPI.getDefaultInstance(context)?.config
+        configMap?.let {
+            it.accountId = accountId
+            it.accountToken = token
+            region?.let { reg -> it.accountRegion = reg }
+        }
+        result.success(null)
+    } catch (e: Exception) {
+        result.error(TAG, "Failed to initialize CleverTap: ${e.message}", null)
+    }
 }
 
 private fun interface TemplateContextAction {
