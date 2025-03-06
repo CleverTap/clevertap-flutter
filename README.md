@@ -32,7 +32,43 @@ clevertap_plugin: 3.2.0
 import 'package:clevertap_plugin/clevertap_plugin.dart';
 ```
 
-See our [Technical Documentation for Android](doc/Integrate-Android.md) and [Technical Documentation for iOS](doc/Integrate-iOS.md) for instructions on integrating CleverTap into your Flutter app.
+### Initialize CleverTap
+
+You can initialize CleverTap using either:
+
+1. Platform-specific configuration files (recommended):
+   - Follow the instructions in [Technical Documentation for Android](doc/Integrate-Android.md) and [Technical Documentation for iOS](doc/Integrate-iOS.md)
+
+2. Or using environment variables:
+   - Copy `.env.example` to `.env` in your project root:
+     ```bash
+     cp .env.example .env
+     ```
+   - Update the `.env` file with your CleverTap credentials:
+     ```
+     CLEVERTAP_ACCOUNT_ID=your_account_id_here
+     CLEVERTAP_ACCOUNT_TOKEN=your_token_here
+     CLEVERTAP_ACCOUNT_REGION=your_region_here      # Optional
+     CLEVERTAP_HANDSHAKE_DOMAIN=your_domain_here    # Optional
+     ```
+   - ⚠️ Security Measures:
+     - Always add `.env` to your `.gitignore` to prevent committing sensitive credentials
+     - Never commit actual credentials to version control
+     - Use different credentials for development and production environments
+     - Regularly rotate your account tokens as a security best practice
+     - Restrict environment variable access to only necessary team members
+
+3. Or programmatically in your Flutter code:
+```dart
+await CleverTapPlugin.initialize(
+  accountId: 'YOUR_ACCOUNT_ID',
+  token: 'YOUR_ACCOUNT_TOKEN',
+  region: 'YOUR_REGION',  // Optional
+  targetDomain: 'YOUR_DOMAIN'  // Optional
+);
+```
+
+See our [Technical Documentation for Android](doc/Integrate-Android.md) and [Technical Documentation for iOS](doc/Integrate-iOS.md) for complete instructions on integrating CleverTap into your Flutter app.
 
 ## 📑 Documentation & Example
 

@@ -73,6 +73,14 @@ void main() async {
   CleverTapPlugin.onKilledStateNotificationClicked(
       onKilledStateNotificationClickedHandler);
 
+  // Initialize CleverTap with your credentials (Optional)
+  await CleverTapPlugin.initialize(
+    accountId: 'YOUR_ACCOUNT_ID',
+    token: 'YOUR_ACCOUNT_TOKEN',
+    region: 'YOUR_REGION',      // Optional
+    targetDomain: 'YOUR_DOMAIN' // Optional
+  );
+  
   print("CleverTapPlugin main pre runapp");
 
   Future.delayed(Duration(seconds: TEST_RUN_APP_DELAY), () {

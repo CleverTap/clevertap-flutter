@@ -379,7 +379,29 @@ class CleverTapPlugin {
     return CleverTapAppLaunchNotification.fromMap(result);
   }
 
-  /// Only for Web - Initialize clevertap sdk
+  /// Initialize the CleverTap SDK
+  static Future<void> initialize({
+    required String accountId,
+    required String token,
+    String? region,
+    String? targetDomain,
+  }) async {
+    final initProps = {
+      'accountId': accountId,
+      'token': token,
+      'region': region,
+      'targetDomain': targetDomain,
+    };
+
+    if (kIsWeb) {
+      await _dartToNativeMethodChannel.invokeMethod<void>('init', initProps);
+    } else {
+      await _dartToNativeMethodChannel.invokeMethod<void>('initialize', initProps);
+    }
+  }
+
+  /// Only for Web - Initialize clevertap sdk directly with parameters (legacy method)
+  @Deprecated('Use initialize() instead')
   static Future<void> init(String accountId,
       [String? region, String? targetDomain, String? token]) async {
     if (!kIsWeb) {
