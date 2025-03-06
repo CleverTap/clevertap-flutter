@@ -43,6 +43,11 @@
         instanceConfig.regionCode = region;
     }
     
+    NSString *targetDomain = config[@"targetDomain"];
+    if (targetDomain) {
+        instanceConfig.domain = targetDomain;
+    }
+    
     [CleverTap instanceConfigWithConfig:instanceConfig];
     result(nil);
 }

@@ -130,7 +130,16 @@ class _MyAppState extends State<MyApp> {
     });
     CleverTapPlugin.setDebugLevel(3);
     if (kIsWeb) {
-      CleverTapPlugin.init("CLEVERTAP_ACCOUNT_ID", "CLEVERTAP_REGION", "CLEVERTAP_TARGET_DOMAIN");
+      // @deprecated Use initialize() method instead. This method will be removed in a future release.
+      // @deprecated: Use CleverTapPlugin.initialize() instead.
+      // Example of new initialization:
+      // await CleverTapPlugin.initialize(
+      //   accountId: "CLEVERTAP_ACCOUNT_ID",
+      //   token: "YOUR_ACCOUNT_TOKEN",
+      //   region: "CLEVERTAP_REGION",
+      //   targetDomain: "CLEVERTAP_TARGET_DOMAIN"
+      // );
+      CleverTapPlugin.init("CLEVERTAP_ACCOUNT_ID", "CLEVERTAP_REGION", "CLEVERTAP_TARGET_DOMAIN");  // deprecated
       CleverTapPlugin.setDebugLevel(3);
       CleverTapPlugin.addKVDataChangeListener((obj) {
         var kv = obj["kv"];

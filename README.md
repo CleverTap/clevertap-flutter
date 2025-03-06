@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://github.com/CleverTap/clevertap-ios-sdk/blob/master/docs/images/clevertap-logo.png" width="50%"/>
+  <img src="https://github.com/CleverTap/clevertap-ios-sdk/blob/master/docs/images/clevertap-logo.png" width="50%" alt="CleverTap Logo"/>
 </p>
 
 # CleverTap Flutter SDK
@@ -87,8 +87,8 @@ By implementing these security practices, you can safeguard your application and
 
 ## Documentation & Example
 
-- Checkout our [CleverTap Flutter Usage documentation](doc/Usage.md).
-- Checkout our [Example Dart project](./example).
+- Check out our [CleverTap Flutter Usage documentation](doc/Usage.md).
+- Check out our [Example Dart project](./example).
 
 ## CleverTap Push Templates SDK (Available only for Android OS)
 
