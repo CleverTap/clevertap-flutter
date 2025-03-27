@@ -2,14 +2,17 @@
 
 Version 3.3.0 *(27 March 2025)*
 -------------------------------------------
+> ⚠️ **NOTE**  
+> Please refer to [this guide](https://developer.clevertap.com/docs/clevertap-huawei-push-integration) for changed integration steps for Huawei PushProvider.
+
 **What's new**
 * **[Android Platform]**
   * Supports [CleverTap Android SDK v7.3.1](https://github.com/CleverTap/clevertap-android-sdk/blob/master/docs/CTCORECHANGELOG.md#version-731-march-27-2025).
-  * Adds new API to register push tokens for providers other than FCM
-    * `pushRegistrationToken(String value, Map<String, String> pushType)`: Register the token for the specified PushType. Refer [here](doc/Usage.md#registering-fcm-baidu-huawei-token) for example usage
+  * Adds new API to register push tokens for providers other than `FCM`
+    * `pushRegistrationToken(String value, Map<String, String> pushType)`: Register the token for the specified PushType. Refer [here](doc/Usage.md#registering-fcm-baidu-huawei-token) for example usage.
 
 **Breaking API Changes**
-  - **Removes:** The older token registration APIs have been removed to make push providers injectable. The removed APIs include:
+  - **Removes:** The legacy token registration APIs have been removed to make push providers injectable. The removed APIs include:
     - `setBaiduPushToken(String value)`
     - `setHuaweiPushToken(String value)`
   
