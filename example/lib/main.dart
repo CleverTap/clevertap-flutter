@@ -10,7 +10,6 @@ import 'package:clevertap_plugin/clevertap_plugin.dart';
 import 'package:example/deeplink_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_styled_toast/flutter_styled_toast.dart';
-import 'package:workmanager/workmanager.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'custom_template.dart';
 
@@ -24,21 +23,6 @@ final bool testWithWorkManager = false;
 void onKilledStateNotificationClickedHandler(Map<String, dynamic> map) async {
   print("onKilledStateNotificationClickedHandler called from headless task!");
   print("Notification Payload received: " + map.toString());
-}
-
-@pragma(
-    'vm:entry-point') // Mandatory if the App is obfuscated or using Flutter 3.1+
-void callbackDispatcher() {
-  if (testWithWorkManager) {
-    // This is a dummy work manager to test usecases with background isolates
-    Workmanager().executeTask((task, inputData) {
-      print("Native started background task: $task");
-      sleep(Duration(seconds: 30));
-      print(
-          "Native called background task: $task"); //simpleTask will be emitted here.
-      return Future.value(true);
-    });
-  }
 }
 
 Future<void> _firebaseBackgroundMessageHandler(RemoteMessage message) async {
@@ -58,12 +42,6 @@ void main() async {
   print("CleverTapPlugin main pre ensure");
   WidgetsFlutterBinding.ensureInitialized();
   if (!kIsWeb && !Platform.isIOS  && testWithWorkManager) {
-    Workmanager().initialize(
-        callbackDispatcher, // The top level function, aka callbackDispatcher
-        isInDebugMode:
-            true // If enabled it will post a notification whenever the task is running. Handy for debugging tasks
-        );
-    Workmanager().registerOneOffTask("periodic-task-identifier", "simplePeriodicTask");
 
     await Firebase.initializeApp();
     FirebaseMessaging.onMessage.listen(_firebaseForegroundMessageHandler);
@@ -914,7 +892,12 @@ class _MyAppState extends State<MyApp> {
   }
 
   void setPushTokenHMS() {
-    CleverTapPlugin.setHuaweiPushToken("token_fcm");
+    CleverTapPlugin.pushRegistrationToken("token_hms", {
+      'type':'hps',
+      'prefKey':'hps_token',
+      'className':'com.clevertap.android.hms.HmsPushProvider',
+      'messagingSDKClassName': 'com.huawei.hms.push.HmsMessageService'
+    });
   }
 
   void recordCustomEvent(String eventName) {

@@ -498,9 +498,21 @@ CleverTapPlugin.deleteNotificationChannelGroup(“channelId”);
 #### Registering Fcm, Baidu, Huawei Token
 
 ```Dart
-CleverTapPlugin.setPushToken(“value”);
-CleverTapPlugin.setBaiduPushToken(“value”);
-CleverTapPlugin.setHuaweiPushToken(“value”);
+CleverTapPlugin.setPushToken("your_token_fcm");
+
+CleverTapPlugin.pushRegistrationToken("<your_token_hms>", {
+   'type': 'hps',
+   'prefKey': 'hps_token',
+   'className': 'com.clevertap.android.hms.HmsPushProvider',
+   'messagingSDKClassName': 'com.huawei.hms.push.HmsMessageService'
+});
+
+CleverTapPlugin.pushRegistrationToken("<your_token_bps>", {
+   'type': 'bps',
+   'prefKey': 'bps_token',
+   'className': 'com.clevertap.android.bps.BaiduPushProvider',
+   'messagingSDKClassName': 'com.baidu.android.pushservice.PushMessageReceiver'
+});
 ```
 
  #### Create Notification

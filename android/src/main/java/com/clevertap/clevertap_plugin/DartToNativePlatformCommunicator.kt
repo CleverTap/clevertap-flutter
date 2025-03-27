@@ -11,7 +11,7 @@ import com.clevertap.android.sdk.events.EventDetail
 import com.clevertap.android.sdk.inapp.callbacks.FetchInAppsCallback
 import com.clevertap.android.sdk.inapp.customtemplates.CustomTemplateContext
 import com.clevertap.android.sdk.inbox.CTInboxMessage
-import com.clevertap.android.sdk.pushnotification.PushConstants.PushType
+import com.clevertap.android.sdk.pushnotification.PushConstants
 import com.clevertap.android.sdk.pushnotification.PushNotificationHandler
 import com.clevertap.android.sdk.usereventlogs.UserEventLog
 import com.clevertap.android.sdk.variables.Var
@@ -110,7 +110,7 @@ class DartToNativePlatformCommunicator(
             }
 
             "setPushToken" -> {
-                setPushToken(call, result, PushType.FCM)
+                setFCMPushToken(call, result)
             }
 
             "createNotification" -> {
@@ -121,12 +121,8 @@ class DartToNativePlatformCommunicator(
                 processPushNotification(call, result)
             }
 
-            "setBaiduPushToken" -> {
-                setPushToken(call, result, PushType.BPS)
-            }
-
-            "setHuaweiPushToken" -> {
-                setPushToken(call, result, PushType.HPS)
+            "pushRegistrationToken" -> {
+                pushRegistrationToken(call, result)
             }
 
             "createNotificationChannel" -> {
@@ -999,7 +995,7 @@ class DartToNativePlatformCommunicator(
                 Log.d(TAG, "renderNotification Android")
                 val messageBundle = Utils.stringToBundle(extras)
                 isSuccess = PushNotificationHandler.getPushNotificationHandler()
-                    .onMessageReceived(context, messageBundle, PushType.FCM.toString())
+                    .onMessageReceived(context, messageBundle, PushConstants.FCM.type)
                 if (isSuccess) {
                     result.success(null)
                 } else {
@@ -1891,14 +1887,21 @@ class DartToNativePlatformCommunicator(
         }
     }
 
-    private fun setPushToken(call: MethodCall, result: MethodChannel.Result, type: PushType) {
+    private fun setFCMPushToken(call: MethodCall, result: MethodChannel.Result) {
         val token = call.argument<String>("token")
         if (cleverTapAPI != null) {
-            when (type.type) {
-                "fcm" -> cleverTapAPI.pushFcmRegistrationId(token, true)
-                "hps" -> cleverTapAPI.pushHuaweiRegistrationId(token, true)
-                "bps" -> cleverTapAPI.pushBaiduRegistrationId(token, true)
-            }
+            cleverTapAPI.pushFcmRegistrationId(token, true)
+            result.success(null)
+        } else {
+            result.error(TAG, ERROR_MSG, null)
+        }
+    }
+
+    private fun pushRegistrationToken(call: MethodCall, result: MethodChannel.Result) {
+        val token = call.argument<String>("token")
+        val pushType = Utils.mapToPushType(call.argument("pushType"))
+        if (cleverTapAPI != null) {
+            cleverTapAPI.pushRegistrationToken(token, pushType, true)
             result.success(null)
         } else {
             result.error(TAG, ERROR_MSG, null)
