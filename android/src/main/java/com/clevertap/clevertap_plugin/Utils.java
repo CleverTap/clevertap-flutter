@@ -9,6 +9,7 @@ import com.clevertap.android.sdk.displayunits.model.CleverTapDisplayUnit;
 import com.clevertap.android.sdk.events.EventDetail;
 import com.clevertap.android.sdk.inapp.CTLocalInApp;
 import com.clevertap.android.sdk.inbox.CTInboxMessage;
+import com.clevertap.android.sdk.pushnotification.PushType;
 import com.clevertap.android.sdk.usereventlogs.UserEventLog;
 
 
@@ -42,6 +43,22 @@ public class Utils {
             map.put(key, extras.get(key));
         }
         return map;
+    }
+
+    static PushType mapToPushType(Map<String, String> pushTypeMap) {
+        String type = pushTypeMap.get("type");
+        String prefKey = pushTypeMap.get("prefKey");
+        String className = pushTypeMap.get("className");
+        String messagingSDKClassName = pushTypeMap.get("messagingSDKClassName");
+
+        if (type == null || prefKey == null)
+            return null;
+
+        return new PushType(
+                type,
+                prefKey,
+                className,
+                messagingSDKClassName);
     }
 
     @SuppressWarnings("ConstantConditions")
