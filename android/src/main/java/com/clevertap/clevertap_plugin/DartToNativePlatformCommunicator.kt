@@ -41,6 +41,7 @@ class DartToNativePlatformCommunicator(
 
         private const val ERROR_MSG: String = "CleverTap Instance is not initialized"
 
+        private const val ERROR_MSG_PUSH_TYPE: String = "Couldn't parse PushType. Please provide a non-null type and prefKey"
 
         private const val ANDROID_O_CREATE_CHANNEL_ERROR_MSG: String =
             "Unable to create notification channels" +
@@ -1900,6 +1901,10 @@ class DartToNativePlatformCommunicator(
     private fun pushRegistrationToken(call: MethodCall, result: MethodChannel.Result) {
         val token = call.argument<String>("token")
         val pushType = Utils.mapToPushType(call.argument("pushType"))
+        if (pushType == null) {
+            result.error(TAG, ERROR_MSG_PUSH_TYPE, null)
+            return
+        }
         if (cleverTapAPI != null) {
             cleverTapAPI.pushRegistrationToken(token, pushType, true)
             result.success(null)

@@ -897,6 +897,10 @@ class _MyAppState extends State<MyApp> {
       'prefKey':'hps_token',
       'className':'com.clevertap.android.hms.HmsPushProvider',
       'messagingSDKClassName': 'com.huawei.hms.push.HmsMessageService'
+    }).catchError((error) {
+      setState(() {
+        print("$error");
+      });
     });
   }
 

@@ -46,11 +46,19 @@ public class Utils {
     }
 
     static PushType mapToPushType(Map<String, String> pushTypeMap) {
+        String type = pushTypeMap.get("type");
+        String prefKey = pushTypeMap.get("prefKey");
+        String className = pushTypeMap.get("className");
+        String messagingSDKClassName = pushTypeMap.get("messagingSDKClassName");
+
+        if (type == null || prefKey == null)
+            return null;
+
         return new PushType(
-                pushTypeMap.get("type"),
-                pushTypeMap.get("prefKey"),
-                pushTypeMap.get("className"),
-                pushTypeMap.get("messagingSDKClassName"));
+                type,
+                prefKey,
+                className,
+                messagingSDKClassName);
     }
 
     @SuppressWarnings("ConstantConditions")
