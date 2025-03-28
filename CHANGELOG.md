@@ -12,6 +12,7 @@ Version 3.3.0 *(28 March 2025)*
     * `pushRegistrationToken(String value, Map<String, String> pushType)`: Register the token for the specified PushType. Refer [here](doc/Usage.md#registering-fcm-baidu-huawei-token) for example usage.
 
 **Breaking API Changes**
+* **[Android Platform]**
   - **Removes:** The legacy token registration APIs have been removed to make push providers injectable. The removed APIs include:
     - `setBaiduPushToken(String value)`
     - `setHuaweiPushToken(String value)`
