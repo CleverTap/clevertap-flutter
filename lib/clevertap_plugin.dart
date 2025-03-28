@@ -74,7 +74,7 @@ class CleverTapPlugin {
   static const libName = 'Flutter';
 
   static const libVersion =
-      30200; // If the current version is X.X.X then pass as X0X0X
+      30300; // If the current version is X.X.X then pass as X0X0X
 
   CleverTapPlugin._internal() {
     /// Set the CleverTap Flutter library name and the current version for version tracking
@@ -492,16 +492,10 @@ class CleverTapPlugin {
         .invokeMethod('setPushToken', {'token': value});
   }
 
-  /// Set the Baidu Token for Push Notifications
-  static Future<void> setBaiduPushToken(String value) async {
+  /// Set the Token for Push Notifications for push providers other than FCM
+  static Future<void> pushRegistrationToken(String value, Map<String, String> pushType) async {
     return await _dartToNativeMethodChannel
-        .invokeMethod('setBaiduPushToken', {'token': value});
-  }
-
-  /// Set the Huawei Token for Push Notifications
-  static Future<void> setHuaweiPushToken(String value) async {
-    return await _dartToNativeMethodChannel
-        .invokeMethod('setHuaweiPushToken', {'token': value});
+        .invokeMethod('pushRegistrationToken', {'token': value, 'pushType': pushType});
   }
 
   /// Method to create Notification Channel
