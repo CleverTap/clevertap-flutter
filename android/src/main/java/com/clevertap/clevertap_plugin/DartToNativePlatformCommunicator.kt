@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.location.Location
 import android.os.Build
+import android.os.Looper
 import android.util.Log
 import com.clevertap.android.sdk.CleverTapAPI
 import com.clevertap.android.sdk.UTMDetail
@@ -24,6 +25,7 @@ import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import org.json.JSONException
 import org.json.JSONObject
+import java.util.concurrent.Executors
 
 @Suppress("DEPRECATION")
 class DartToNativePlatformCommunicator(
@@ -990,29 +992,39 @@ class DartToNativePlatformCommunicator(
      */
     private fun renderNotification(call: MethodCall, result: MethodChannel.Result) {
         val extras = call.argument<String>("extras")
-        if (cleverTapAPI != null) {
-            val isSuccess: Boolean
-            try {
-                Log.d(TAG, "renderNotification Android")
-                val messageBundle = Utils.stringToBundle(extras)
-                isSuccess = PushNotificationHandler.getPushNotificationHandler()
+        if (cleverTapAPI == null) {
+            result.error(TAG, ERROR_MSG, null)
+        }
+        try {
+            Log.d(TAG, "renderNotification Android")
+            val messageBundle = Utils.stringToBundle(extras)
+
+            val notificationTask = Runnable {
+                val isSuccess = PushNotificationHandler.getPushNotificationHandler()
                     .onMessageReceived(context, messageBundle, PushConstants.FCM.type)
+
                 if (isSuccess) {
                     result.success(null)
                 } else {
-                    throw java.lang.Exception("Unable to process notification rendering")
+                    result.error(TAG, "Unable to process notification rendering", null)
                 }
-            } catch (e: JSONException) {
-                result.error(
-                    TAG,
-                    "Unable to render notification due to JSONException - " + e.localizedMessage,
-                    null
-                )
-            } catch (e: java.lang.Exception) {
-                result.error(TAG, e.localizedMessage, null)
             }
-        } else {
-            result.error(TAG, ERROR_MSG, null)
+
+            // Check if we're on the main thread. Needed since plugins like FCM provide on message received on the main thread
+            if (Looper.myLooper() == Looper.getMainLooper()) {
+                // We're on the main thread, execute on a background thread
+                Executors.newSingleThreadExecutor().execute(notificationTask)
+            } else {
+                notificationTask.run()
+            }
+        } catch (e: JSONException) {
+            result.error(
+                TAG,
+                "Unable to render notification due to JSONException - " + e.localizedMessage,
+                null
+            )
+        } catch (e: Exception) {
+            result.error(TAG, e.localizedMessage, null)
         }
     }
 
