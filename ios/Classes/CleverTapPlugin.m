@@ -35,6 +35,7 @@ static NSDateFormatter *dateFormatter;
     [registrar addMethodCallDelegate:CleverTapPlugin.sharedInstance channel:CleverTapPlugin.sharedInstance.dartToNativeMethodChannel];
     
     CleverTapPlugin.sharedInstance.nativeToDartMethodChannel = [FlutterMethodChannel methodChannelWithName:@"clevertap_plugin/native_to_dart" binaryMessenger:[registrar messenger]];
+    [CleverTapPlugin.sharedInstance setupEventObservers];
 }
 
 + (instancetype)sharedInstance {
@@ -319,6 +320,10 @@ static NSDateFormatter *dateFormatter;
         [self getUserAppLaunchCount:call withResult:result];
     else if ([@"getUserLastVisitTs" isEqualToString:call.method])
         [self getUserLastVisitTs:call withResult:result];
+    else if ([@"startEmission" isEqualToString:call.method]){
+        NSString *eventName = call.arguments;
+        [self invokeStartEmission:eventName];
+        result(nil);
     else
         result(FlutterMethodNotImplemented);
 }
@@ -1706,6 +1711,136 @@ static NSDateFormatter *dateFormatter;
     }
     
     result([context debugDescription]);
+}
+
+#pragma mark - Event emitter
+
+// Declaration of static variables
+static NSMutableDictionary *pendingEvents = nil;
+static BOOL isObserving = NO;
+static NSMutableSet *observedEvents = nil;
+static NSMutableSet *observableEvents = nil;
+
+/// Time out in seconds, after which pending events are cleared.
+const int PENDING_EVENTS_TIME_OUT = 5;
+
++ (void)initialize {
+    if (self == [CleverTapPlugin class]) {
+        // Initialize static variables
+        pendingEvents = [NSMutableDictionary dictionary];
+        observedEvents = [NSMutableSet set];
+        observableEvents = [NSMutableSet setWithObjects:
+                            kCleverTapPushNotificationClicked,
+                            kCleverTapProfileDidInitialize,
+                            kCleverTapDisplayUnitsLoaded,
+                            kCleverTapInAppNotificationDismissed,
+                            kCleverTapInAppNotificationButtonTapped,
+                            kCleverTapCustomTemplatePresent,
+                            kCleverTapCustomFunctionPresent,
+                            kCleverTapCustomTemplateClose, nil];
+    }
+}
+
+/// Called when a observer/listener is added for the event.
+/// Post the pending events for the event name.
+///
+/// @param name The name of the observed event.
+- (void)invokeStartEmission:(NSString*)name {
+    [observedEvents addObject:name];
+    NSArray *pendingEventsForName = pendingEvents[name];
+    if (pendingEventsForName) {
+        NSLog(@"[CleverTap: Posting pending events for event: %@]", name);
+        for (CleverTapPluginPendingEvent *event in pendingEventsForName) {
+            NSLog(@"[CleverTap: posting pending event: %@ with body: %@]", event.name, event.body);
+            [[NSNotificationCenter defaultCenter] postNotificationName:event.name object:nil userInfo:event.body];
+        }
+    }
+}
+
+/// Send event when Flutter has started observing events.
+/// This happens when the first observer/listener is added in Flutter.
+/// If events are sent before that, the events are queued.
+/// Events expected to be queued are specified in ``observableEvents``.
+/// If Flutter has started observing and the event is observed, see ``observedEvents``, the events are emitted directly.
+///
+/// @param name The event name.
+/// @param body The event body parameters.
++ (void)sendEventOnObserving:(NSString *)name body:(id)body {
+    if (!isObserving && ![observableEvents containsObject:name]) {
+        NSLog(@"[CleverTap: %@ is sent before observing and is not part of the observable events]", name);
+        [observableEvents addObject:name];
+    }
+    
+    if ([observableEvents containsObject:name] && ![observedEvents containsObject:name]) {
+        if (!pendingEvents[name]) {
+            pendingEvents[name] = [NSMutableArray array];
+        }
+        
+        CleverTapPluginPendingEvent *event = [[CleverTapPluginPendingEvent alloc] initWithName:name body:body];
+        [pendingEvents[name] addObject:event];
+        return;
+    }
+    
+    [[NSNotificationCenter defaultCenter] postNotificationName:name object:nil userInfo:body];
+}
+
+- (NSArray<NSString *> *)supportedEvents {
+    return @[kCleverTapProfileDidInitialize,
+             kCleverTapProfileSync,
+             kCleverTapInAppNotificationDismissed,
+             kCleverTapInAppNotificationButtonTapped,
+             kCleverTapInboxDidInitialize,
+             kCleverTapInboxMessagesDidUpdate,
+             kCleverTapInboxMessageButtonTapped,
+             kCleverTapInboxMessageTapped,
+             kCleverTapDisplayUnitsLoaded,
+             kCleverTapPushNotificationClicked,
+             kCleverTapPushPermissionResponseReceived,
+             kCleverTapOnVariablesChanged,
+             kCleverTapOnOneTimeVariablesChanged,
+             kCleverTapOnValueChanged,
+             kCleverTapOnVariablesChangedAndNoDownloadsPending,
+             kCleverTapOnceVariablesChangedAndNoDownloadsPending,
+             kCleverTapOnFileValueChanged,
+             kCleverTapCustomTemplatePresent,
+             kCleverTapCustomFunctionPresent,
+             kCleverTapCustomTemplateClose];
+}
+
+- (void)startObserving {
+    NSLog(@"[CleverTap startObserving]");
+    NSArray *eventNames = [self supportedEvents];
+    for (NSString *eventName in eventNames) {
+        [[NSNotificationCenter defaultCenter] addObserver:self
+                                                 selector:@selector(emitEventInternal:)
+                                                     name:eventName
+                                                   object:nil];
+    }
+    
+    isObserving = YES;
+    
+    // Clear the pending events that no listeners were added for.
+    // Clear the events after PENDING_EVENTS_TIME_OUT of when the first observer is added.
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(PENDING_EVENTS_TIME_OUT * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        NSLog(@"[CleverTap: Removing pending events which were not observed]");
+        [CleverTapPlugin clearPendingEvents];
+    });
+}
+
++ (void)clearPendingEvents {
+    pendingEvents = [NSMutableDictionary dictionary];
+    observableEvents = [NSMutableSet set];
+    observedEvents = [NSMutableSet set];
+}
+
+- (void)stopObserving {
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
+    isObserving = NO;
+}
+
+#pragma mark - Method to begin observing
+- (void)setupEventObservers {
+    [self startObserving];
 }
 
 @end
