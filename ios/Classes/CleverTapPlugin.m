@@ -16,6 +16,7 @@
 #import "CleverTap+CTVar.h"
 #import "CTVar.h"
 #import "CTTemplateContext.h"
+#import "CleverTapPluginPendingEvent.h"
 
 @interface CleverTapPlugin () <CleverTapSyncDelegate, CleverTapInAppNotificationDelegate, CleverTapDisplayUnitDelegate, CleverTapInboxViewControllerDelegate, CleverTapProductConfigDelegate, CleverTapFeatureFlagsDelegate, CleverTapPushNotificationDelegate, CleverTapPushPermissionDelegate>
 
@@ -324,6 +325,7 @@ static NSDateFormatter *dateFormatter;
         NSString *eventName = call.arguments;
         [self invokeStartEmission:eventName];
         result(nil);
+    }
     else
         result(FlutterMethodNotImplemented);
 }
