@@ -33,6 +33,8 @@ class DartToNativePlatformCommunicator(
     private val cleverTapAPI: CleverTapAPI?
 ) : MethodCallHandler {
 
+    private val notificationExecutor = Executors.newSingleThreadExecutor()
+
     companion object {
         const val TAG = "DartToNative"
 
@@ -997,25 +999,14 @@ class DartToNativePlatformCommunicator(
         }
         try {
             Log.d(TAG, "renderNotification Android")
-            val messageBundle = Utils.stringToBundle(extras)
-
-            val notificationTask = Runnable {
-                val isSuccess = PushNotificationHandler.getPushNotificationHandler()
-                    .onMessageReceived(context, messageBundle, PushConstants.FCM.type)
-
-                if (isSuccess) {
-                    result.success(null)
-                } else {
-                    result.error(TAG, "Unable to process notification rendering", null)
-                }
-            }
-
             // Check if we're on the main thread. Needed since plugins like FCM provide on message received on the main thread
             if (Looper.myLooper() == Looper.getMainLooper()) {
                 // We're on the main thread, execute on a background thread
-                Executors.newSingleThreadExecutor().execute(notificationTask)
+                notificationExecutor.execute {
+                    processNotification(extras, result)
+                }
             } else {
-                notificationTask.run()
+                processNotification(extras, result)
             }
         } catch (e: JSONException) {
             result.error(
@@ -1025,6 +1016,18 @@ class DartToNativePlatformCommunicator(
             )
         } catch (e: Exception) {
             result.error(TAG, e.localizedMessage, null)
+        }
+    }
+
+    private fun processNotification(extras: String?, result: MethodChannel.Result) {
+        val messageBundle = Utils.stringToBundle(extras)
+        val isSuccess = PushNotificationHandler.getPushNotificationHandler()
+            .onMessageReceived(context, messageBundle, PushConstants.FCM.type)
+
+        if (isSuccess) {
+            result.success(null)
+        } else {
+            result.error(TAG, "Unable to process notification rendering", null)
         }
     }
 
