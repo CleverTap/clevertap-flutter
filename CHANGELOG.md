@@ -8,6 +8,9 @@ Version 3.3.1 *(18 April 2025)*
   * Adds `dismissInAppNotification` action to dismiss custom HTML in-Apps
 
 **Bug Fixes**
+* **[Android Platform]**
+* Fixes an issue where images failed to render in push templates when using a custom FCM integration.
+
 * **[iOS Platform]**
   * Fixes app freezing issue when using await with `defineVariables()`.
   * Fixes custom in-app device orientation check.
