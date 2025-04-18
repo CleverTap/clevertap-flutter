@@ -1,5 +1,5 @@
 group = 'com.clevertap.clevertap_plugin'
-version = '3.3.0'
+version = '3.3.1'
 
 buildscript {
     ext.kotlin_version = "1.8.22"
