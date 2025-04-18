@@ -1472,7 +1472,10 @@ static NSDateFormatter *dateFormatter;
 - (void)defineVariables:(FlutterMethodCall *)call withResult:(FlutterResult)result {
 
     NSDictionary *variables = call.arguments[@"variables"];
-    if (!variables) return;
+    if (!variables || [variables count] == 0) {
+        result(nil);
+        return;
+    }
 
     [variables enumerateKeysAndObjectsUsingBlock:^(NSString*  _Nonnull key, id  _Nonnull value, BOOL * _Nonnull stop) {
         CTVar *var = [self createVarForName:key andValue:value];
@@ -1481,15 +1484,18 @@ static NSDateFormatter *dateFormatter;
             self.allVariables[key] = var;
         }
     }];
+    result(nil);
 }
 
 - (void)defineFileVariable:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     NSString *fileVariable = call.arguments[@"fileVariable"];
     if (!fileVariable) return;
-        CTVar *fileVar = [[CleverTap sharedInstance]defineFileVar:fileVariable];
-        if (fileVar) {
+
+    CTVar *fileVar = [[CleverTap sharedInstance] defineFileVar:fileVariable];
+    if (fileVar) {
         self.allVariables[fileVariable] = fileVar;
     }
+    result(nil);
 }
 
 - (void)getVariables:(FlutterMethodCall *)call withResult:(FlutterResult)result {
