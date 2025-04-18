@@ -1,5 +1,20 @@
 ## CHANGE LOG
 
+Version 3.3.1 *(18 April 2025)*
+-------------------------------------------
+**What's new**
+* **[iOS Platform]**
+  * Supports [CleverTap iOS SDK v7.1.1](https://github.com/CleverTap/clevertap-ios-sdk/releases/tag/7.1.1).
+  * Adds `dismissInAppNotification` action to dismiss custom HTML in-Apps
+
+**Bug Fixes**
+* **[Android Platform]**
+  * Fixes an issue where images failed to render in push templates when using a custom FCM integration.
+
+* **[iOS Platform]**
+  * Fixes app freezing issue when using await with `defineVariables()`.
+  * Fixes custom in-app device orientation check.
+
 Version 3.3.0 *(28 March 2025)*
 -------------------------------------------
 > ⚠️ **NOTE**  
