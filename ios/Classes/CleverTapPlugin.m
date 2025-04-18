@@ -1483,8 +1483,8 @@ static NSDateFormatter *dateFormatter;
         if (var) {
             self.allVariables[key] = var;
         }
-        result(nil);
     }];
+    result(nil);
 }
 
 - (void)defineFileVariable:(FlutterMethodCall *)call withResult:(FlutterResult)result {
