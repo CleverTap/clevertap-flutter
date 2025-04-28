@@ -16,6 +16,7 @@
 #import "CleverTap+CTVar.h"
 #import "CTVar.h"
 #import "CTTemplateContext.h"
+#import "CleverTapPluginPendingEvent.h"
 
 @interface CleverTapPlugin () <CleverTapSyncDelegate, CleverTapInAppNotificationDelegate, CleverTapDisplayUnitDelegate, CleverTapInboxViewControllerDelegate, CleverTapProductConfigDelegate, CleverTapFeatureFlagsDelegate, CleverTapPushNotificationDelegate, CleverTapPushPermissionDelegate>
 
@@ -26,6 +27,16 @@
 @end
 
 static NSDateFormatter *dateFormatter;
+//static NSMutableSet<NSString *> *observableEvents;
+//static NSMutableSet<NSString *> *observedEvents;
+static NSMutableDictionary<NSString *, NSMutableArray<CleverTapPluginPendingEvent *> *> *pendingEvents;
+static NSMutableSet<NSString *> *bufferableEvents;
+static NSMutableSet<NSString *> *observedEvents;
+static BOOL isBufferingEnabled = YES;
+static const NSTimeInterval kEventBufferTimeoutSeconds = 5.0; // 5 seconds timeout
+static dispatch_block_t resetBufferBlock;
+//static BOOL isObserving;
+
 
 @implementation CleverTapPlugin
 
@@ -57,6 +68,31 @@ static NSDateFormatter *dateFormatter;
     self = [super init];
     if (self) {
         self.allVariables = [NSMutableDictionary dictionary];
+        
+        // Initialize static collections if needed
+        if (!pendingEvents) {
+            pendingEvents = [NSMutableDictionary dictionary];
+        }
+        
+        // Specify only events that should be buffered
+        if (!bufferableEvents) {
+            bufferableEvents = [NSMutableSet setWithObjects:
+                              kCleverTapInAppNotificationDismissed,
+                              kCleverTapProfileDidInitialize,
+                              kCleverTapDisplayUnitsLoaded,
+                              kCleverTapInboxDidInitialize,
+                              kCleverTapInAppNotificationButtonTapped,
+                              kCleverTapCustomTemplatePresent,
+                              kCleverTapCustomFunctionPresent,
+                              kCleverTapCustomTemplateClose,
+                              kCleverTapFeatureFlagsUpdated,
+                              nil];
+        }
+        
+        if (!observedEvents) {
+            observedEvents = [NSMutableSet set];
+        }
+        
         CleverTap *clevertap = [CleverTap sharedInstance];
         [clevertap setSyncDelegate:self];
         [clevertap setInAppNotificationDelegate:self];
@@ -66,6 +102,18 @@ static NSDateFormatter *dateFormatter;
         [clevertap setPushNotificationDelegate:self];
         [clevertap setPushPermissionDelegate:self];
         [self addObservers];
+        
+        // Create the reset buffer block
+        resetBufferBlock = dispatch_block_create(0, ^{
+            NSLog(@"CleverTapFlutter: Timeout reached - clearing and disabling event buffering");
+            [pendingEvents removeAllObjects];
+            isBufferingEnabled = NO;
+        });
+        
+        // Schedule buffer cleanup after app finishes launching
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(kEventBufferTimeoutSeconds * NSEC_PER_SEC)),
+                      dispatch_get_main_queue(),
+                      resetBufferBlock);
     }
     return self;
 }
@@ -81,7 +129,12 @@ static NSDateFormatter *dateFormatter;
 
 - (void)handleMethodCall:(FlutterMethodCall*)call result:(FlutterResult)result {
     
-    if ([@"getPlatformVersion" isEqualToString:call.method])
+    if ([@"startEmission" isEqualToString:call.method]){
+        NSString *eventName = call.arguments;
+        [self startObservingEvent:eventName];
+        result(nil);
+    }
+    else if ([@"getPlatformVersion" isEqualToString:call.method])
         result([@"iOS " stringByAppendingString:[[UIDevice currentDevice] systemVersion]]);
     else if ([@"recordEvent" isEqualToString:call.method])
         [self recordEvent:call withResult:result];
@@ -941,15 +994,15 @@ static NSDateFormatter *dateFormatter;
 
 - (void)ctProductConfigFetched {
     
-    [self postNotificationWithName:kCleverTapProductConfigFetched andBody:nil];
+    [self sendEventOnObserving:kCleverTapProductConfigFetched andBody:nil];
 }
 
 - (void)ctProductConfigActivated {
-    [self postNotificationWithName:kCleverTapProductConfigActivated andBody:nil];
+    [self sendEventOnObserving:kCleverTapProductConfigActivated andBody:nil];
 }
 
 - (void)ctProductConfigInitialized {
-    [self postNotificationWithName:kCleverTapProductConfigInitialized andBody:nil];
+    [self sendEventOnObserving:kCleverTapProductConfigInitialized andBody:nil];
 }
 
 
@@ -963,7 +1016,7 @@ static NSDateFormatter *dateFormatter;
 }
 
 - (void)ctFeatureFlagsUpdated {
-    [self postNotificationWithName:kCleverTapFeatureFlagsUpdated andBody:nil];
+    [self sendEventOnObserving:kCleverTapFeatureFlagsUpdated andBody:nil];
 }
 
 
@@ -1268,7 +1321,7 @@ static NSDateFormatter *dateFormatter;
     if(!cleverTapID) {
         return;
     }
-    [self postNotificationWithName:kCleverTapProfileDidInitialize andBody:@{@"CleverTapID":cleverTapID}];
+    [self sendEventOnObserving:kCleverTapProfileDidInitialize andBody:@{@"CleverTapID":cleverTapID}];
 }
 
 - (void)profileDataUpdated:(NSDictionary *)updates {
@@ -1276,7 +1329,7 @@ static NSDateFormatter *dateFormatter;
     if(!updates) {
         return ;
     }
-    [self postNotificationWithName:kCleverTapProfileSync andBody:@{@"updates":updates}];
+    [self sendEventOnObserving:kCleverTapProfileSync andBody:@{@"updates":updates}];
 }
 
 
@@ -1287,7 +1340,8 @@ static NSDateFormatter *dateFormatter;
     NSMutableDictionary *body = [NSMutableDictionary new];
     body[@"extras"] = (extras != nil) ? extras : [NSMutableDictionary new];
     body[@"actionExtras"] = (actionExtras != nil) ? actionExtras : [NSMutableDictionary new];
-    [self postNotificationWithName:kCleverTapInAppNotificationDismissed andBody:body];
+    [self sendEventOnObserving:kCleverTapInAppNotificationDismissed andBody:body];
+//    [self postNotificationWithName:kCleverTapInAppNotificationDismissed andBody:body];
 }
 
 - (void)inAppNotificationButtonTappedWithCustomExtras:(NSDictionary *)customExtras {
@@ -1296,7 +1350,7 @@ static NSDateFormatter *dateFormatter;
     if (customExtras != nil) {
         body[@"customExtras"] = customExtras;
     }
-    [self postNotificationWithName:kCleverTapInAppNotificationButtonTapped andBody:customExtras];
+    [self sendEventOnObserving:kCleverTapInAppNotificationButtonTapped andBody:customExtras];
 }
 
 
@@ -1307,7 +1361,7 @@ static NSDateFormatter *dateFormatter;
     if (customExtras != nil) {
         body = [NSMutableDictionary dictionaryWithDictionary:customExtras];
     }
-    [self postNotificationWithName:kCleverTapInboxMessageButtonTapped andBody:body];
+    [self sendEventOnObserving:kCleverTapInboxMessageButtonTapped andBody:body];
 }
 
 - (void)messageDidSelect:(CleverTapInboxMessage *_Nonnull)message atIndex:(int)index withButtonIndex:(int)buttonIndex {
@@ -1319,7 +1373,7 @@ static NSDateFormatter *dateFormatter;
     }
     body[@"contentPageIndex"] = @(index);
     body[@"buttonIndex"] = @(buttonIndex);
-    [self postNotificationWithName:kCleverTapInboxMessageTapped andBody:body];
+    [self sendEventOnObserving:kCleverTapInboxMessageTapped andBody:body];
 }
 
 #pragma mark CleverTapPushNotificationDelegate
@@ -1329,7 +1383,7 @@ static NSDateFormatter *dateFormatter;
     if (customExtras != nil) {
         pushNotificationExtras = [NSMutableDictionary dictionaryWithDictionary:customExtras];
     }
-    [self postNotificationWithName:kCleverTapPushNotificationClicked andBody:pushNotificationExtras];
+    [self sendEventOnObserving:kCleverTapPushNotificationClicked andBody:pushNotificationExtras];
 }
 
 #pragma mark - Push Notifications
@@ -1379,7 +1433,7 @@ static NSDateFormatter *dateFormatter;
 - (void)onPushPermissionResponse:(BOOL)accepted {
     NSMutableDictionary *body = [NSMutableDictionary new];
     body[@"accepted"] = [NSNumber numberWithBool:accepted];
-    [self postNotificationWithName:kCleverTapPushPermissionResponseReceived andBody:body];
+    [self sendEventOnObserving:kCleverTapPushPermissionResponseReceived andBody:body];
 }
 
 - (BOOL)validatePushPrimerRequiredSettings:(NSDictionary *)json {
@@ -1712,6 +1766,48 @@ static NSDateFormatter *dateFormatter;
     }
     
     result([context debugDescription]);
+}
+
+# pragma mark - Event emitter
+
+// Time out in seconds, after which pending events are cleared.
+// See ``startEmission`` for details.
+
+- (void)sendEventOnObserving:(NSString *)name andBody:(NSDictionary *)body {
+    // Only buffer events that are explicitly marked as bufferable
+        if ([bufferableEvents containsObject:name] &&
+            ![observedEvents containsObject:name] &&
+            isBufferingEnabled) {
+            
+            if (!pendingEvents[name]) {
+                pendingEvents[name] = [NSMutableArray array];
+            }
+            
+            // Create and add the event to the buffer without limit
+            CleverTapPluginPendingEvent *event = [[CleverTapPluginPendingEvent alloc] initWithName:name body:body];
+            [pendingEvents[name] addObject:event];
+            NSLog(@"CleverTapFlutter: Buffering event %@ for later emission", name);
+            return;
+        }
+        
+        // Otherwise post the notification normally
+        [[NSNotificationCenter defaultCenter] postNotificationName:name object:nil userInfo:body];
+
+}
+
+- (void)startObservingEvent:(NSString *)eventName {
+    // Add to observed events set
+    [observedEvents addObject:eventName];
+    
+    // Flush any pending events for this specific event
+    NSMutableArray *events = pendingEvents[eventName];
+    if (events && events.count > 0) {
+        NSLog(@"CleverTapFlutter: Flushing %lu pending events for %@", (unsigned long)events.count, eventName);
+        for (CleverTapPluginPendingEvent *event in events) {
+            [self.nativeToDartMethodChannel invokeMethod:event.name arguments:event.body];
+        }
+        [pendingEvents removeObjectForKey:eventName];
+    }
 }
 
 @end
