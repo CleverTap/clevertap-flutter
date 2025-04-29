@@ -1,10 +1,3 @@
-//
-//  CleverTapPluginPendingEvent.m
-//  Pods
-//
-//  Created by Kushagra Mishra on 28/04/25.
-//
-
 #import "CleverTapPluginPendingEvent.h"
 
 @implementation CleverTapPluginPendingEvent

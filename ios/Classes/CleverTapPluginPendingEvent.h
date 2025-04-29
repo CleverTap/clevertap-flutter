@@ -1,10 +1,3 @@
-//
-//  CleverTapPluginPendingEvent.h
-//  Pods
-//
-//  Created by Kushagra Mishra on 28/04/25.
-//
-
 #import <Foundation/Foundation.h>
 
 NS_ASSUME_NONNULL_BEGIN
