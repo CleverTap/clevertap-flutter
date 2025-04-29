@@ -27,16 +27,12 @@
 @end
 
 static NSDateFormatter *dateFormatter;
-//static NSMutableSet<NSString *> *observableEvents;
-//static NSMutableSet<NSString *> *observedEvents;
 static NSMutableDictionary<NSString *, NSMutableArray<CleverTapPluginPendingEvent *> *> *pendingEvents;
 static NSMutableSet<NSString *> *bufferableEvents;
 static NSMutableSet<NSString *> *observedEvents;
 static BOOL isBufferingEnabled = YES;
-static const NSTimeInterval kEventBufferTimeoutSeconds = 5.0; // 5 seconds timeout
+static const NSTimeInterval kEventBufferTimeoutSeconds = 5.0; // 5 seconds timeout for pending event to get removed
 static dispatch_block_t resetBufferBlock;
-//static BOOL isObserving;
-
 
 @implementation CleverTapPlugin
 
@@ -77,16 +73,16 @@ static dispatch_block_t resetBufferBlock;
         // Specify only events that should be buffered
         if (!bufferableEvents) {
             bufferableEvents = [NSMutableSet setWithObjects:
-                              kCleverTapInAppNotificationDismissed,
+                              kCleverTapPushNotificationClicked,
                               kCleverTapProfileDidInitialize,
                               kCleverTapDisplayUnitsLoaded,
-                              kCleverTapInboxDidInitialize,
+                              kCleverTapInAppNotificationDismissed,
                               kCleverTapInAppNotificationButtonTapped,
+                              kCleverTapProductConfigInitialized,
                               kCleverTapCustomTemplatePresent,
                               kCleverTapCustomFunctionPresent,
                               kCleverTapCustomTemplateClose,
-                              kCleverTapFeatureFlagsUpdated,
-                              nil];
+                              kCleverTapFeatureFlagsUpdated, nil];
         }
         
         if (!observedEvents) {
@@ -105,11 +101,10 @@ static dispatch_block_t resetBufferBlock;
         
         // Create the reset buffer block
         resetBufferBlock = dispatch_block_create(0, ^{
-            NSLog(@"CleverTapFlutter: Timeout reached - clearing and disabling event buffering");
             [pendingEvents removeAllObjects];
             isBufferingEnabled = NO;
         });
-        
+ 
         // Schedule buffer cleanup after app finishes launching
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(kEventBufferTimeoutSeconds * NSEC_PER_SEC)),
                       dispatch_get_main_queue(),
@@ -888,6 +883,28 @@ static dispatch_block_t resetBufferBlock;
     return color;
 }
 
+#pragma mark CleverTapInboxViewControllerDelegate
+
+- (void)messageButtonTappedWithCustomExtras:(NSDictionary *_Nullable)customExtras {
+    NSMutableDictionary *body = [NSMutableDictionary new];
+    if (customExtras != nil) {
+        body = [NSMutableDictionary dictionaryWithDictionary:customExtras];
+    }
+    
+    [self postNotificationWithName:kCleverTapInboxMessageButtonTapped andBody:body];
+}
+
+- (void)messageDidSelect:(CleverTapInboxMessage *_Nonnull)message atIndex:(int)index withButtonIndex:(int)buttonIndex {
+    NSMutableDictionary *body = [NSMutableDictionary new];
+    if ([message json] != nil) {
+        body[@"data"] = [NSMutableDictionary dictionaryWithDictionary:[message json]];
+    } else {
+        body[@"data"] = [NSMutableDictionary new];
+    }
+    body[@"contentPageIndex"] = @(index);
+    body[@"buttonIndex"] = @(buttonIndex);
+    [self postNotificationWithName:kCleverTapInboxMessageTapped andBody:body];
+}
 
 #pragma mark - Native Display
 
@@ -915,13 +932,6 @@ static dispatch_block_t resetBufferBlock;
     
     [[CleverTap sharedInstance] recordDisplayUnitClickedEventForID:call.arguments[@"unitId"]];
     result(nil);
-}
-
-- (void)displayUnitsUpdated:(NSArray<CleverTapDisplayUnit *> *)displayUnits {
-    
-    NSMutableDictionary *_dict = [NSMutableDictionary new];
-    [_dict setValue:[self _cleverTapDisplayUnitToArray:displayUnits] forKey:@"adUnits"];
-    [self postNotificationWithName:kCleverTapDisplayUnitsLoaded andBody:_dict];
 }
 
 
@@ -990,22 +1000,6 @@ static dispatch_block_t resetBufferBlock;
 }
 
 
-#pragma mark - Product Config Delegates
-
-- (void)ctProductConfigFetched {
-    
-    [self sendEventOnObserving:kCleverTapProductConfigFetched andBody:nil];
-}
-
-- (void)ctProductConfigActivated {
-    [self sendEventOnObserving:kCleverTapProductConfigActivated andBody:nil];
-}
-
-- (void)ctProductConfigInitialized {
-    [self sendEventOnObserving:kCleverTapProductConfigInitialized andBody:nil];
-}
-
-
 #pragma mark - Feature Flag
 
 - (void)getFeatureFlag:(FlutterMethodCall *)call withResult:(FlutterResult)result {
@@ -1013,10 +1007,6 @@ static dispatch_block_t resetBufferBlock;
     BOOL defaultValue = [call.arguments[@"defaultValue"] boolValue];
     BOOL value = [[[CleverTap sharedInstance] featureFlags] get:key withDefaultValue:defaultValue];
     result(@(value));
-}
-
-- (void)ctFeatureFlagsUpdated {
-    [self sendEventOnObserving:kCleverTapFeatureFlagsUpdated andBody:nil];
 }
 
 
@@ -1313,79 +1303,6 @@ static dispatch_block_t resetBufferBlock;
     [[NSNotificationCenter defaultCenter] postNotificationName:name object:nil userInfo:body];
 }
 
-#pragma mark - Delegates
-#pragma mark CleverTapSyncDelegate
-
-- (void)profileDidInitialize:(NSString*)cleverTapID {
-    
-    if(!cleverTapID) {
-        return;
-    }
-    [self sendEventOnObserving:kCleverTapProfileDidInitialize andBody:@{@"CleverTapID":cleverTapID}];
-}
-
-- (void)profileDataUpdated:(NSDictionary *)updates {
-    
-    if(!updates) {
-        return ;
-    }
-    [self sendEventOnObserving:kCleverTapProfileSync andBody:@{@"updates":updates}];
-}
-
-
-#pragma mark CleverTapInAppNotificationDelegate
-
-- (void)inAppNotificationDismissedWithExtras:(NSDictionary *)extras andActionExtras:(NSDictionary *)actionExtras {
-    
-    NSMutableDictionary *body = [NSMutableDictionary new];
-    body[@"extras"] = (extras != nil) ? extras : [NSMutableDictionary new];
-    body[@"actionExtras"] = (actionExtras != nil) ? actionExtras : [NSMutableDictionary new];
-    [self sendEventOnObserving:kCleverTapInAppNotificationDismissed andBody:body];
-//    [self postNotificationWithName:kCleverTapInAppNotificationDismissed andBody:body];
-}
-
-- (void)inAppNotificationButtonTappedWithCustomExtras:(NSDictionary *)customExtras {
-    
-    NSMutableDictionary *body = [NSMutableDictionary new];
-    if (customExtras != nil) {
-        body[@"customExtras"] = customExtras;
-    }
-    [self sendEventOnObserving:kCleverTapInAppNotificationButtonTapped andBody:customExtras];
-}
-
-
-#pragma mark CleverTapInboxViewControllerDelegate
-
-- (void)messageButtonTappedWithCustomExtras:(NSDictionary *_Nullable)customExtras {
-    NSMutableDictionary *body = [NSMutableDictionary new];
-    if (customExtras != nil) {
-        body = [NSMutableDictionary dictionaryWithDictionary:customExtras];
-    }
-    [self sendEventOnObserving:kCleverTapInboxMessageButtonTapped andBody:body];
-}
-
-- (void)messageDidSelect:(CleverTapInboxMessage *_Nonnull)message atIndex:(int)index withButtonIndex:(int)buttonIndex {
-    NSMutableDictionary *body = [NSMutableDictionary new];
-    if ([message json] != nil) {
-        body[@"data"] = [NSMutableDictionary dictionaryWithDictionary:[message json]];
-    } else {
-        body[@"data"] = [NSMutableDictionary new];
-    }
-    body[@"contentPageIndex"] = @(index);
-    body[@"buttonIndex"] = @(buttonIndex);
-    [self sendEventOnObserving:kCleverTapInboxMessageTapped andBody:body];
-}
-
-#pragma mark CleverTapPushNotificationDelegate
-
-- (void)pushNotificationTappedWithCustomExtras:(NSDictionary *)customExtras {
-    NSMutableDictionary *pushNotificationExtras = [NSMutableDictionary new];
-    if (customExtras != nil) {
-        pushNotificationExtras = [NSMutableDictionary dictionaryWithDictionary:customExtras];
-    }
-    [self sendEventOnObserving:kCleverTapPushNotificationClicked andBody:pushNotificationExtras];
-}
-
 #pragma mark - Push Notifications
 
 - (void)pushNotificationViewedEvent:(FlutterMethodCall *)call withResult:(FlutterResult)result {
@@ -1428,13 +1345,7 @@ static dispatch_block_t resetBufferBlock;
     }];
 }
 
-#pragma mark - CleverTapPushPermissionDelegate
-
-- (void)onPushPermissionResponse:(BOOL)accepted {
-    NSMutableDictionary *body = [NSMutableDictionary new];
-    body[@"accepted"] = [NSNumber numberWithBool:accepted];
-    [self sendEventOnObserving:kCleverTapPushPermissionResponseReceived andBody:body];
-}
+#pragma mark - CleverTapPushPrimer
 
 - (BOOL)validatePushPrimerRequiredSettings:(NSDictionary *)json {
     // Returns YES if any required key is not present or not of required type.
@@ -1766,6 +1677,90 @@ static dispatch_block_t resetBufferBlock;
     }
     
     result([context debugDescription]);
+}
+
+#pragma mark - Delegates
+#pragma mark CleverTapSyncDelegate
+
+- (void)profileDidInitialize:(NSString*)cleverTapID {
+    
+    if(!cleverTapID) {
+        return;
+    }
+    [self sendEventOnObserving:kCleverTapProfileDidInitialize andBody:@{@"CleverTapID":cleverTapID}];
+}
+
+- (void)profileDataUpdated:(NSDictionary *)updates {
+    
+    if(!updates) {
+        return ;
+    }
+    [self sendEventOnObserving:kCleverTapProfileSync andBody:@{@"updates":updates}];
+}
+
+#pragma mark CleverTapPushNotificationDelegate
+
+- (void)pushNotificationTappedWithCustomExtras:(NSDictionary *)customExtras {
+    NSMutableDictionary *pushNotificationExtras = [NSMutableDictionary new];
+    if (customExtras != nil) {
+        pushNotificationExtras = [NSMutableDictionary dictionaryWithDictionary:customExtras];
+    }
+    [self sendEventOnObserving:kCleverTapPushNotificationClicked andBody:pushNotificationExtras];
+}
+
+#pragma mark CleverTapInAppNotificationDelegate
+
+- (void)inAppNotificationDismissedWithExtras:(NSDictionary *)extras andActionExtras:(NSDictionary *)actionExtras {
+    
+    NSMutableDictionary *body = [NSMutableDictionary new];
+    body[@"extras"] = (extras != nil) ? extras : [NSMutableDictionary new];
+    body[@"actionExtras"] = (actionExtras != nil) ? actionExtras : [NSMutableDictionary new];
+    [self sendEventOnObserving:kCleverTapInAppNotificationDismissed andBody:body];
+}
+
+- (void)inAppNotificationButtonTappedWithCustomExtras:(NSDictionary *)customExtras {
+    
+    NSMutableDictionary *body = [NSMutableDictionary new];
+    if (customExtras != nil) {
+        body[@"customExtras"] = customExtras;
+    }
+    [self sendEventOnObserving:kCleverTapInAppNotificationButtonTapped andBody:customExtras];
+}
+
+- (void)displayUnitsUpdated:(NSArray<CleverTapDisplayUnit *> *)displayUnits {
+    
+    NSMutableDictionary *_dict = [NSMutableDictionary new];
+    [_dict setValue:[self _cleverTapDisplayUnitToArray:displayUnits] forKey:@"adUnits"];
+    [self sendEventOnObserving:kCleverTapDisplayUnitsLoaded andBody:_dict];
+}
+
+#pragma mark - CleverTapFeatureFlagsDelegate
+
+- (void)ctFeatureFlagsUpdated {
+    [self sendEventOnObserving:kCleverTapFeatureFlagsUpdated andBody:nil];
+}
+
+#pragma mark - Product Config Delegates
+
+- (void)ctProductConfigFetched {
+    
+    [self sendEventOnObserving:kCleverTapProductConfigFetched andBody:nil];
+}
+
+- (void)ctProductConfigActivated {
+    [self sendEventOnObserving:kCleverTapProductConfigActivated andBody:nil];
+}
+
+- (void)ctProductConfigInitialized {
+    [self sendEventOnObserving:kCleverTapProductConfigInitialized andBody:nil];
+}
+
+#pragma mark - CleverTapPushPermissionDelegate
+
+- (void)onPushPermissionResponse:(BOOL)accepted {
+    NSMutableDictionary *body = [NSMutableDictionary new];
+    body[@"accepted"] = [NSNumber numberWithBool:accepted];
+    [self sendEventOnObserving:kCleverTapPushPermissionResponseReceived andBody:body];
 }
 
 # pragma mark - Event emitter
