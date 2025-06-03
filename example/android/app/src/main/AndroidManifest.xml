@@ -1,6 +1,51 @@
-<manifest
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.READ_CONTACTS"/>
+    <uses-permission android:name="android.permission.SEND_SMS" tools:node="remove" />
+    <uses-permission android:name="android.permission.RECEIVE_SMS" tools:node="remove" />
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" tools:node="remove" />
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" tools:node="remove" />
+    <uses-feature android:name="android.hardware.camera" />
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID"/>
+
+
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="tel" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.SEND" />
+            <data android:mimeType="*/*" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+        </intent>
+        <!-- Common social and utility apps -->
+        <package android:name="com.example.targetapp" />
+        <package android:name="com.instagram.android" />
+        <package android:name="com.facebook.katana" />
+        <package android:name="com.facebook.orca" />
+        <package android:name="com.whatsapp" />
+        <package android:name="com.twitter.android" />
+
+        <provider android:authorities="com.facebook.katana.provider.PlatformProvider" />
+        <provider android:authorities="com.facebook.orca.provider.PlatformProvider" />
+    </queries>
+
+
     <application
         android:name=".MyApplication"
         android:label="example"
@@ -33,13 +78,13 @@
             android:value="2" />
         <meta-data
             android:name="CLEVERTAP_ACCOUNT_ID"
-            android:value="CLEVERTAP_ACCOUNT_ID"/>
+            android:value="67Z-RRK-696Z" />
         <meta-data
             android:name="CLEVERTAP_TOKEN"
-            android:value="CLEVERTAP_TOKEN"/>
+            android:value="322-1a6" />
         <meta-data
             android:name="CLEVERTAP_REGION"
-            android:value="CLEVERTAP_REGION"/>
+            android:value="sk1-staging-30" />
 
         <meta-data
             android:name="CLEVERTAP_HANDSHAKE_DOMAIN"
