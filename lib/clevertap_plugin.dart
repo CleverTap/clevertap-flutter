@@ -220,27 +220,25 @@ class CleverTapPlugin {
    * failed
    */
   void invokeStartEmission(String name) {
-    if (Platform.isAndroid) {
     _dartToNativeMethodChannel.invokeMethod('startEmission', name);
-    }
   }
   
   void setCleverTapCustomTemplatePresentHandler(CleverTapCustomTemplatePresentHandler handler) {
-    invokeStartEmission('CleverTapCustomTemplatePresent');
+    invokeStartEmission('customTemplatePresent');
     cleverTapCustomTemplatePresentHandler = handler;
   }
   void setCleverTapCustomFunctionPresentHandler(CleverTapCustomTemplateCloseHandler handler) {
-    invokeStartEmission('CleverTapCustomFunctionPresent');
+    invokeStartEmission('customFunctionPresent');
     cleverTapCustomFunctionPresentHandler = handler;
   }
   void setCleverTapCustomTemplateCloseHandler(CleverTapCustomFunctionPresentHandler handler) {
-    invokeStartEmission('CleverTapCustomTemplateClose');
+    invokeStartEmission('customTemplateClose');
     cleverTapCustomTemplateCloseHandler = handler;
   }
 
   /// Define a method to handle inApp notification dismissed
   void setCleverTapInAppNotificationDismissedHandler(CleverTapInAppNotificationDismissedHandler handler) {
-    invokeStartEmission('CleverTapInAppNotificationDismissed');
+    invokeStartEmission('inAppNotificationDismissed');
     cleverTapInAppNotificationDismissedHandler = handler;
   }
 
@@ -252,73 +250,73 @@ class CleverTapPlugin {
 
   /// Define a method to handle inApp notification button clicked
   void setCleverTapInAppNotificationButtonClickedHandler(CleverTapInAppNotificationButtonClickedHandler handler) {
-    invokeStartEmission('CleverTapInAppNotificationButtonTapped');
+    invokeStartEmission('onInAppButtonClick');
     cleverTapInAppNotificationButtonClickedHandler = handler;
   }
 
   /// Define a method to handle profile initialization
   void setCleverTapProfileDidInitializeHandler(CleverTapProfileDidInitializeHandler handler) {
-    invokeStartEmission('CleverTapProfileDidInitialize');
+    invokeStartEmission('profileDidInitialize');
     cleverTapProfileDidInitializeHandler = handler;
   }
 
   /// Define a method to handle profile sync
   void setCleverTapProfileSyncHandler(CleverTapProfileSyncHandler handler) {
-    invokeStartEmission('CleverTapProfileSync');
+    invokeStartEmission('profileDataUpdated');
     cleverTapProfileSyncHandler = handler;
   }
 
   /// Define a method to handle inbox initialization
   void setCleverTapInboxDidInitializeHandler(CleverTapInboxDidInitializeHandler handler) {
-    invokeStartEmission('CleverTapInboxDidInitialize');
+    invokeStartEmission('inboxDidInitialize');
     cleverTapInboxDidInitializeHandler = handler;
   }
 
   /// Define a method to handle inbox update
   void setCleverTapInboxMessagesDidUpdateHandler(CleverTapInboxMessagesDidUpdateHandler handler) {
-    invokeStartEmission('CleverTapInboxMessagesDidUpdate');
+    invokeStartEmission('inboxMessagesDidUpdate');
     cleverTapInboxMessagesDidUpdateHandler = handler;
   }
 
   /// Define a method to handle inbox notification button clicked
   void setCleverTapInboxNotificationButtonClickedHandler(CleverTapInboxNotificationButtonClickedHandler handler) {
-    invokeStartEmission('CleverTapInboxMessageButtonTapped');
+    invokeStartEmission('onInboxButtonClick');
     cleverTapInboxNotificationButtonClickedHandler = handler;
   }
 
   /// Define a method to handle inbox notification message clicked
   void setCleverTapInboxNotificationMessageClickedHandler(CleverTapInboxNotificationMessageClickedHandler handler) {
-    invokeStartEmission('CleverTapInboxMessageTapped');
+    invokeStartEmission('onInboxMessageClick');
     cleverTapInboxNotificationMessageClickedHandler = handler;
   }
 
   /// Define a method to handle Native Display Unit updates
   void setCleverTapDisplayUnitsLoadedHandler(CleverTapDisplayUnitsLoadedHandler handler) {
-    invokeStartEmission('CleverTapDisplayUnitsLoaded');
+    invokeStartEmission('onDisplayUnitsLoaded');
     cleverTapDisplayUnitsLoadedHandler = handler;
   }
 
   /// Define a method to handle Feature Flag updates
   void setCleverTapFeatureFlagUpdatedHandler(CleverTapFeatureFlagUpdatedHandler handler) {
-    invokeStartEmission('CleverTapFeatureFlagsDidUpdate');
+    invokeStartEmission('featureFlagsUpdated');
     cleverTapFeatureFlagUpdatedHandler = handler;
   }
 
   /// Define a method to handle Product config initialization
   void setCleverTapProductConfigInitializedHandler(CleverTapProductConfigInitializedHandler handler) {
-    invokeStartEmission('CleverTapProductConfigDidInitialize');
+    invokeStartEmission('productConfigInitialized');
     cleverTapProductConfigInitializedHandler = handler;
   }
 
   /// Define a method to handle Product config fetch updates
   void setCleverTapProductConfigFetchedHandler(CleverTapProductConfigFetchedHandler handler) {
-    invokeStartEmission('CleverTapProductConfigDidFetch');
+    invokeStartEmission('productConfigFetched');
     cleverTapProductConfigFetchedHandler = handler;
   }
 
   /// Define a method to handle Product config activation updates
   void setCleverTapProductConfigActivatedHandler(CleverTapProductConfigActivatedHandler handler) {
-    invokeStartEmission('CleverTapProductConfigDidActivate');
+    invokeStartEmission('productConfigActivated');
     cleverTapProductConfigActivatedHandler = handler;
   }
 
@@ -330,13 +328,13 @@ class CleverTapPlugin {
 
   /// Define a method to handle Push Clicked payload
   void setCleverTapPushClickedPayloadReceivedHandler(CleverTapPushClickedPayloadReceivedHandler handler) {
-    invokeStartEmission('CleverTapPushNotificationClicked');
+    invokeStartEmission('pushClickedPayloadReceived');
     cleverTapPushClickedPayloadReceivedHandler = handler;
   }
 
   /// Define a method to handle Push permission response
   void setCleverTapPushPermissionResponseReceivedHandler(CleverTapPushPermissionResponseReceivedHandler handler) {
-    invokeStartEmission('CleverTapPushPermissionResponseReceived');
+    invokeStartEmission('pushPermissionResponseReceived');
     cleverTapPushPermissionResponseReceivedHandler = handler;
   }
 
