@@ -130,9 +130,6 @@ external void getVariables(Function function);
 @JS('getVariable')
 external void getVariable(String name, Function function);
 
-@JS('getVariableValue')
-external Object getVariableValue(String name);
-
 @JS('addDocumentEventListener')
 external void addDocumentEventListenerImpl(String name, Function callback);
 
