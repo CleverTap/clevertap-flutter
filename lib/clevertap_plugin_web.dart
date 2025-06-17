@@ -112,8 +112,6 @@ class CleverTapPluginWeb {
         return _getVariables(call);
       case 'getVariable':
         return _getVariable(call);
-      case 'getVariableValue':
-        return _getVariableValue(call);
       case 'getSDKVersion':
         return _getSDKVersion(call);
       case 'enableLocalStorageEncryption':
@@ -344,13 +342,6 @@ class CleverTapPluginWeb {
     Map<Object?, Object?> args = call.arguments as Map<Object?, Object?>;
     String messageId = args['messageId'] as String;
     return (js_util.dartify(getInboxMessageForId(messageId)) as Map);
-  }
-
-  /// Get value for the passed variable
-  Object _getVariableValue(MethodCall call) {
-    Map<Object?, Object?> args = call.arguments as Map<Object?, Object?>;
-    String messageId = args['name'] as String;
-    return (js_util.dartify(getVariableValue(messageId)) as Map);
   }
 
   /// Delete Message for the given message-id
