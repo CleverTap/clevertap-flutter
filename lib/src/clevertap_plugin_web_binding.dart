@@ -109,6 +109,9 @@ external void markReadInboxMessagesForIds(List messageIds);
 @JS('defineVariables')
 external void defineVariables(Object object);
 
+@JS('defineFileVariable')
+external void defineFileVariable(Object object);
+
 @JS('syncVariables')
 external void syncVariables();
 
@@ -127,5 +130,20 @@ external void getVariables(Function function);
 @JS('getVariable')
 external void getVariable(String name, Function function);
 
+@JS('getVariableValue')
+external Object getVariableValue(String name);
+
 @JS('addDocumentEventListener')
 external void addDocumentEventListenerImpl(String name, Function callback);
+
+@JS('getSDKVersion')
+external String? getSDKVersion();
+
+@JS('enableLocalStorageEncryption')
+external void enableLocalStorageEncryption(bool value);
+
+@JS('isLocalStorageEncryptionEnabled')
+external bool? isLocalStorageEncryptionEnabled();
+
+@JS('getAllQualifiedCampaignDetails')
+external Map getAllQualifiedCampaignDetails();
