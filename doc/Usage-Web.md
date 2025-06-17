@@ -268,6 +268,27 @@ CleverTapPlugin.setOffline(false);
 CleverTapPlugin.setOffline(true);
 ```
 
+#### Get CleverTap Web SDK version
+
+```Dart
+CleverTapPlugin.getSDKVersion()
+```
+
+## Local Storage Encryption
+
+#### Enable/Disable local storage encryption
+
+```Dart
+// Enable/Disable local storage encryption
+CleverTapPlugin.enableLocalStorageEncryption(false);
+```
+
+#### Enable/Disable local storage encryption
+
+```Dart
+// Check if the local storage encryption is enabled
+CleverTapPlugin.isLocalStorageEncryptionEnabled();
+```
 ### For more information,
 
  - [See Example Application Dart interface](/example/lib/main.dart) 

@@ -102,6 +102,8 @@ class CleverTapPluginWeb {
         return _markReadInboxMessagesForIds(call);
       case 'defineVariables':
         return _defineVariables(call);
+      case 'defineFileVariable':
+        return _defineFileVariable(call);
       case 'syncVariables':
         return _syncVariables(call);
       case 'fetchVariables':
@@ -110,6 +112,16 @@ class CleverTapPluginWeb {
         return _getVariables(call);
       case 'getVariable':
         return _getVariable(call);
+      case 'getVariableValue':
+        return _getVariableValue(call);
+      case 'getSDKVersion':
+        return _getSDKVersion(call);
+      case 'enableLocalStorageEncryption':
+        return _enableLocalStorageEncryption(call);
+      case 'isLocalStorageEncryptionEnabled':
+        return _isLocalStorageEncryptionEnabled(call);
+      case 'getAllQualifiedCampaignDetails':
+        return _getAllQualifiedCampaignDetails(call);
       default:
         throw PlatformException(
           code: 'Unimplemented',
@@ -334,6 +346,13 @@ class CleverTapPluginWeb {
     return (js_util.dartify(getInboxMessageForId(messageId)) as Map);
   }
 
+  /// Get value for the passed variable
+  Object _getVariableValue(MethodCall call) {
+    Map<Object?, Object?> args = call.arguments as Map<Object?, Object?>;
+    String messageId = args['name'] as String;
+    return (js_util.dartify(getVariableValue(messageId)) as Map);
+  }
+
   /// Delete Message for the given message-id
   void _deleteInboxMessageForId(MethodCall call) {
     Map<Object?, Object?> args = call.arguments as Map<Object?, Object?>;
@@ -363,6 +382,12 @@ class CleverTapPluginWeb {
     Map<Object?, Object?> args = call.arguments as Map<Object?, Object?>;
     Object variables = args['variables'] as Object;
     defineVariables(js_util.jsify(variables));
+  }
+
+  void _defineFileVariable(MethodCall call) {
+    Map<Object?, Object?> args = call.arguments as Map<Object?, Object?>;
+    Object variables = args['fileVariable'] as Object;
+    defineFileVariable(js_util.jsify(variables));
   }
 
   /// Sync Variables
@@ -421,5 +446,28 @@ class CleverTapPluginWeb {
           .map((entry) => MapEntry(entry.key.toString(), entry.value)));
       handler(data);
     }));
+  }
+
+  /// Get Web SDK version
+  String? _getSDKVersion(MethodCall call) {
+    return getSDKVersion();
+  }
+
+  /// Enable/Disable local storage encryption
+  void _enableLocalStorageEncryption(MethodCall call) {
+    Map<Object?, Object?> args = call.arguments as Map<Object?, Object?>;
+    bool value = args['value'] as bool;
+    enableLocalStorageEncryption(value);
+  }
+
+  /// Check if the local storage encryption is enabled
+  bool? _isLocalStorageEncryptionEnabled(MethodCall call) {
+    return isLocalStorageEncryptionEnabled();
+  }
+
+  /// Get All Qualified campaigns
+  List _getAllQualifiedCampaignDetails(MethodCall call) {
+    return List.from(
+        (js_util.dartify(getAllQualifiedCampaignDetails()) as Map).values);
   }
 }
