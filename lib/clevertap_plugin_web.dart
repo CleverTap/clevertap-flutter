@@ -377,8 +377,8 @@ class CleverTapPluginWeb {
 
   void _defineFileVariable(MethodCall call) {
     Map<Object?, Object?> args = call.arguments as Map<Object?, Object?>;
-    Object variables = args['fileVariable'] as Object;
-    defineFileVariable(js_util.jsify(variables));
+    String fileVariable = args['fileVariable'] as String;
+    defineFileVariable(fileVariable);
   }
 
   /// Sync Variables
