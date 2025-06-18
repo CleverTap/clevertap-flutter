@@ -289,6 +289,12 @@ CleverTapPlugin.enableLocalStorageEncryption(false);
 // Check if the local storage encryption is enabled
 CleverTapPlugin.isLocalStorageEncryptionEnabled();
 ```
+
+## Get the details of all qualified campaigns
+
+```Dart
+CleverTapPlugin.getAllQualifiedCampaignDetails();
+```
 ### For more information,
 
  - [See Example Application Dart interface](/example/lib/main.dart) 

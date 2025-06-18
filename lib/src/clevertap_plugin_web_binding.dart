@@ -110,7 +110,7 @@ external void markReadInboxMessagesForIds(List messageIds);
 external void defineVariables(Object object);
 
 @JS('defineFileVariable')
-external void defineFileVariable(Object object);
+external void defineFileVariable(String fileVariable);
 
 @JS('syncVariables')
 external void syncVariables();
