@@ -53,7 +53,7 @@ flutter {
 dependencies {
     testImplementation 'junit:junit:4.13'
     //implementation fileTree('libs')
-    implementation "com.clevertap.android:push-templates:1.4.0"
+    implementation "com.clevertap.android:push-templates:2.1.0"
     implementation 'com.google.firebase:firebase-messaging:23.4.1'
     implementation 'androidx.core:core:1.13.1'
     implementation 'androidx.fragment:fragment:1.7.0'

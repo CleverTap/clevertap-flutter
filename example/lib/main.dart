@@ -1606,7 +1606,8 @@ class _MyAppState extends State<MyApp> {
       'btnBackgroundColor': '#FFFFFF',
       'btnBorderRadius': '4',
       'imageUrl':
-          'https://icons.iconarchive.com/icons/treetog/junior/64/camera-icon.png'
+          'https://icons.iconarchive.com/icons/treetog/junior/64/camera-icon.png',
+      'altText': 'Alternate Image'
     };
     if (kIsWeb) {
       CleverTapPlugin.enableWebPushNotifications(

@@ -23,7 +23,8 @@ var pushPrimerJSON = {
   'btnTextColor': '#000000',
   'btnBackgroundColor': '#FFFFFF',
   'btnBorderRadius': '4',
-  'imageUrl': 'https://icons.iconarchive.com/icons/treetog/junior/64/camera-icon.png'
+  'imageUrl': 'https://icons.iconarchive.com/icons/treetog/junior/64/camera-icon.png',
+  'altText': 'Alternate Image'
 };
 CleverTapPlugin.promptPushPrimer(pushPrimerJSON);
 ```
@@ -83,6 +84,7 @@ Key Name| Parameters | Description | Required
 `btnBackgroundColor` | Accepts Hex color as String | Sets the background color for both positive/negative buttons | Optional
 `btnBorderRadius` | String | Sets the radius for both positive/negative buttons. Default radius is “2” if not set | Optional
 `imageUrl` | String | Sets the background image url | Optional
+`altText` | String | Alt text for background image | Optional
 
 
 ###  Available Callback for Push Primer
