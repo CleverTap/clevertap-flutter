@@ -294,7 +294,7 @@ public class Utils {
         String titleText = null, messageText = null, positiveBtnText = null,
             negativeBtnText = null, backgroundColor = null, btnBorderColor = null,
             titleTextColor = null, messageTextColor = null,
-            btnTextColor = null, imageUrl = null, btnBackgroundColor = null, btnBorderRadius = null;
+            btnTextColor = null, imageUrl = null, btnBackgroundColor = null, btnBorderRadius = null, altText = null;
         boolean fallbackToSettings = false, followDeviceOrientation = false;
 
         for (Map.Entry<String, Object> entry : objectMap.entrySet()) {
@@ -339,6 +339,9 @@ public class Utils {
                 if ("imageUrl".equals(configKey)) {
                     imageUrl = (String) entry.getValue();
                 }
+                if ("altText".equals(configKey)) {
+                    altText = (String) entry.getValue();
+                }
                 if ("btnBackgroundColor".equals(configKey)) {
                     btnBackgroundColor = (String) entry.getValue();
                 }
@@ -376,7 +379,7 @@ public class Utils {
             builderWithRequiredParams.setBtnTextColor(btnTextColor);
         }
         if (imageUrl != null) {
-            builderWithRequiredParams.setImageUrl(imageUrl);
+            builderWithRequiredParams.setImageUrl(imageUrl, altText);
         }
         if (btnBackgroundColor != null) {
             builderWithRequiredParams.setBtnBackgroundColor(btnBackgroundColor);
