@@ -1447,8 +1447,12 @@ static NSDateFormatter *dateFormatter;
     if (json[@"btnBorderRadius"] != nil && [json[@"btnBorderRadius"] isKindOfClass:[NSString class]]) {
         [localInAppBuilder setBtnBorderRadius:json[@"btnBorderRadius"]];
     }
+    NSString *altText = nil;
+    if (json[@"altText"] != nil && [json[@"altText"] isKindOfClass:[NSString class]]) {
+        altText = json[@"altText"];
+    }
     if (json[@"imageUrl"] != nil && [json[@"imageUrl"] isKindOfClass:[NSString class]]) {
-        [localInAppBuilder setImageUrl:json[@"imageUrl"]];
+        [localInAppBuilder setImageUrl:json[@"imageUrl"] contentDescription:altText];
     }
     return localInAppBuilder;
 }
