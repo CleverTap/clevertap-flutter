@@ -1,8 +1,8 @@
 PODS:
-  - CleverTap-iOS-SDK (7.1.0):
+  - CleverTap-iOS-SDK (7.2.1):
     - SDWebImage (~> 5.11)
-  - clevertap_plugin (3.1.0):
-    - CleverTap-iOS-SDK (= 7.1.0)
+  - clevertap_plugin (3.4.0):
+    - CleverTap-iOS-SDK (= 7.2.1)
     - Flutter
   - Firebase/CoreOnly (10.25.0):
     - FirebaseCore (= 10.25.0)
@@ -71,22 +71,16 @@ PODS:
     - nanopb/encode (= 2.30910.0)
   - nanopb/decode (2.30910.0)
   - nanopb/encode (2.30910.0)
-  - open_file_ios (0.0.1):
-    - Flutter
   - PromisesObjC (2.4.0)
-  - SDWebImage (5.20.0):
-    - SDWebImage/Core (= 5.20.0)
-  - SDWebImage/Core (5.20.0)
-  - workmanager (0.0.1):
-    - Flutter
+  - SDWebImage (5.21.1):
+    - SDWebImage/Core (= 5.21.1)
+  - SDWebImage/Core (5.21.1)
 
 DEPENDENCIES:
   - clevertap_plugin (from `.symlinks/plugins/clevertap_plugin/ios`)
   - firebase_core (from `.symlinks/plugins/firebase_core/ios`)
   - firebase_messaging (from `.symlinks/plugins/firebase_messaging/ios`)
   - Flutter (from `Flutter`)
-  - open_file_ios (from `.symlinks/plugins/open_file_ios/ios`)
-  - workmanager (from `.symlinks/plugins/workmanager/ios`)
 
 SPEC REPOS:
   trunk:
@@ -111,17 +105,13 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/firebase_messaging/ios"
   Flutter:
     :path: Flutter
-  open_file_ios:
-    :path: ".symlinks/plugins/open_file_ios/ios"
-  workmanager:
-    :path: ".symlinks/plugins/workmanager/ios"
 
 SPEC CHECKSUMS:
-  CleverTap-iOS-SDK: 571ced90fc6378635db504f9767c62858e2c5286
-  clevertap_plugin: 86660b6f112d185208a7b6b1104e13f85fba45df
+  CleverTap-iOS-SDK: 0f7fc2e01a7623b14307641d1176a879af9bc568
+  clevertap_plugin: 32e61e4b37a6d89caf9f04d378cd6fb6be37d27f
   Firebase: 0312a2352584f782ea56f66d91606891d4607f06
-  firebase_core: a626d00494efa398e7c54f25f1454a64c8abf197
-  firebase_messaging: 06391e8f35dc65a00c56580266285263d2861f10
+  firebase_core: 3b49a055ff54114cae400581c13671fe53936c36
+  firebase_messaging: 30fa3ec8cd0dc8a860b7817548911b97345a0875
   FirebaseCore: 7ec4d0484817f12c3373955bc87762d96842d483
   FirebaseCoreInternal: df84dd300b561c27d5571684f389bf60b0a5c934
   FirebaseInstallations: 913cf60d0400ebd5d6b63a28b290372ab44590dd
@@ -130,10 +120,8 @@ SPEC CHECKSUMS:
   GoogleDataTransport: 6c09b596d841063d76d4288cc2d2f42cc36e1e2a
   GoogleUtilities: ea963c370a38a8069cc5f7ba4ca849a60b6d7d15
   nanopb: 438bc412db1928dac798aa6fd75726007be04262
-  open_file_ios: 461db5853723763573e140de3193656f91990d9e
   PromisesObjC: f5707f49cb48b9636751c5b2e7d227e43fba9f47
-  SDWebImage: 73c6079366fea25fa4bb9640d5fb58f0893facd8
-  workmanager: 0afdcf5628bbde6924c21af7836fed07b42e30e6
+  SDWebImage: f29024626962457f3470184232766516dee8dfea
 
 PODFILE CHECKSUM: 0f6bc49bdce139b03138f6131a854cc8a065453f
 
