@@ -71,7 +71,6 @@ class _MyAppState extends State<MyApp> {
   late CleverTapPlugin _clevertapPlugin;
 
   var inboxInitialized = false;
-  var optOut = false;
   var offLine = false;
   var firstMsgId = "";
 
@@ -784,8 +783,9 @@ class _MyAppState extends State<MyApp> {
                         "Returns all Display Units set"),
                   ]),
                 _buildExpansionTile("GDPR", [
-                  _buildListTile("Set Opt Out", setOptOut,
-                      "Used to opt out of sending data to CleverTap"),
+                  _buildListTile("Opt Out User", () => setOptOut(true), "Opt Out User fully"),
+                  _buildListTile("Opt In User", () => setOptOut(false), "Opt In User fully"),
+                  _buildListTile("Partially Opt Out User", () => setOptOut(true, true), "Partially Opt Out User"),
                   if (!kIsWeb)
                     _buildListTile(
                         "Device Networking Info",
@@ -1390,16 +1390,8 @@ class _MyAppState extends State<MyApp> {
     return "";
   }
 
-  void setOptOut() {
-    if (optOut) {
-      CleverTapPlugin.setOptOut(false);
-      optOut = false;
-      showToast("You have opted in");
-    } else {
-      CleverTapPlugin.setOptOut(true);
-      optOut = true;
-      showToast("You have opted out");
-    }
+  void setOptOut(bool optOut, [bool? allowSystemEvents]) {
+    CleverTapPlugin.setOptOut(optOut, allowSystemEvents);
   }
 
   void setOffline() {

@@ -80,7 +80,7 @@ class CleverTapPlugin {
   static const libName = 'Flutter';
 
   static const libVersion =
-      30400; // If the current version is X.X.X then pass as X0X0X
+      30500; // If the current version is X.X.X then pass as X0X0X
 
   CleverTapPlugin._internal() {
     /// Set the CleverTap Flutter library name and the current version for version tracking
@@ -637,10 +637,12 @@ class CleverTapPlugin {
         .invokeMethod('processPushNotification', {'extras': data});
   }
 
-  /// Method to allow user to Opt out of sending data to CleverTap as per GDPR rules
-  static Future<void> setOptOut(bool value) async {
+  /// Method to allow user to Opt out of sending data to CleverTap as per GDPR rules, adds second flag to allow passing system events.
+  static Future<void> setOptOut(bool value, [bool? allowSystemEvents]) async {
+    // If allowSystemEvents is not provided, use the inverse of value
+    bool systemEventsAllowed = allowSystemEvents ?? !value;
     return await _dartToNativeMethodChannel
-        .invokeMethod('setOptOut', {'value': value});
+        .invokeMethod('setOptOut', {'value': value, 'allowSystemEvents': systemEventsAllowed});
   }
 
   /// Sets the CleverTap SDK to offline
