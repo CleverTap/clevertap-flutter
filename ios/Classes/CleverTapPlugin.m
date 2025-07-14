@@ -1086,7 +1086,7 @@ static NSDateFormatter *dateFormatter;
     }
     if ([value isKindOfClass:[NSNumber class]]) {
         if ([self isBoolNumber:value]) {
-            return [[CleverTap sharedInstance]defineVar:name withBool:value];
+            return [[CleverTap sharedInstance]defineVar:name withBool:[value boolValue]];
         }
         return [[CleverTap sharedInstance]defineVar:name withNumber:value];
     }
