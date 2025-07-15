@@ -637,7 +637,24 @@ class CleverTapPlugin {
         .invokeMethod('processPushNotification', {'extras': data});
   }
 
-  /// Method to allow user to Opt out of sending data to CleverTap as per GDPR rules, adds second flag to allow passing system events.
+  /// Use this method to manage the user's consent for event and profile tracking.
+  /// You must call this method separately for each active user profile.
+  ///
+  /// This method supports the following consent management scenarios:
+  ///
+  /// 1. **Complete Opt-Out (value = true, allowSystemEvents = false):**
+  ///    No events will be saved remotely or locally for the current user.
+  /// 2. **Full Opt-In (value = false):**
+  ///    All events (custom and system) will be tracked and saved. This is the default behavior.
+  /// 3. **Partial Opt-In (value = true, allowSystemEvents = true):**
+  ///    Only system-level CleverTap events will be tracked. Custom events will be filtered out.
+  ///
+  /// [value] Set to `true` to opt the user out of custom event tracking.
+  /// Set to `false` to opt the user into custom event tracking.
+  ///
+  /// [allowSystemEvents] Set to `true` to allow system-level CleverTap events.
+  /// Set to `false` to disallow system-level events. This value is only respected when `value` is `true`.
+
   static Future<void> setOptOut(bool value, [bool? allowSystemEvents]) async {
     final Map<String, dynamic> args = {'value': value};
 
