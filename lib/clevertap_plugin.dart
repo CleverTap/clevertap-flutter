@@ -230,7 +230,7 @@ class CleverTapPlugin {
    * failed
    */
   void invokeStartEmission(String name) {
-    if (Platform.isAndroid) {
+    if (!kIsWeb && Platform.isAndroid) {
       _dartToNativeMethodChannel.invokeMethod('startEmission', name);
     }
   }
@@ -1113,8 +1113,11 @@ class CleverTapPlugin {
   ///Display units
   ///Returns a List of Display units as a Map
   static Future<List?> getAllDisplayUnits() async {
-    return await _dartToNativeMethodChannel
-        .invokeMethod('getAllDisplayUnits', {});
+    if (Platform.isAndroid || Platform.isIOS) {
+      return await _dartToNativeMethodChannel
+          .invokeMethod('getAllDisplayUnits', {});
+    }
+    return null;
   }
 
   ///Returns Display unit info as a Map

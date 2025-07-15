@@ -46,8 +46,6 @@ class CleverTapPluginWeb {
         return _profileSet(call);
       case 'enableWebPush':
         return _enableWebPush(call);
-      case 'enableWebPushNotifications':
-        return _enableWebPushNotifications(call);
       case 'setOptOut':
         return _setOptOut(call);
       case 'setUseIP':
@@ -188,15 +186,6 @@ class CleverTapPluginWeb {
     final jsArgs = _jsify(args);
     if (jsArgs != null) {
       notifications_push(jsArgs);
-    }
-  }
-
-  /// enable web push for enabling new prompt
-  void _enableWebPushNotifications(MethodCall call) {
-    Map<Object?, Object?> args = call.arguments as Map<Object?, Object?>;
-    final jsArgs = _jsify(args);
-    if (jsArgs != null) {
-      notifications_enable(jsArgs);
     }
   }
 
@@ -493,8 +482,8 @@ class CleverTapPluginWeb {
 
   /// Get All Qualified campaigns
   List _getAllQualifiedCampaignDetails(MethodCall call) {
-    return List.from(
-        (_dartify(getAllQualifiedCampaignDetails()) as Map).values);
+    final jsArray = getAllQualifiedCampaignDetails();
+    return _dartify(jsArray) as List;
   }
 
   // Helper methods for conversion between Dart and JS
