@@ -639,10 +639,13 @@ class CleverTapPlugin {
 
   /// Method to allow user to Opt out of sending data to CleverTap as per GDPR rules, adds second flag to allow passing system events.
   static Future<void> setOptOut(bool value, [bool? allowSystemEvents]) async {
-    // If allowSystemEvents is not provided, use the inverse of value
-    bool systemEventsAllowed = allowSystemEvents ?? !value;
-    return await _dartToNativeMethodChannel
-        .invokeMethod('setOptOut', {'value': value, 'allowSystemEvents': systemEventsAllowed});
+    final Map<String, dynamic> args = {'value': value};
+
+    if (allowSystemEvents != null) {
+      args['allowSystemEvents'] = allowSystemEvents;
+    }
+
+    return await _dartToNativeMethodChannel.invokeMethod('setOptOut', args);
   }
 
   /// Sets the CleverTap SDK to offline
