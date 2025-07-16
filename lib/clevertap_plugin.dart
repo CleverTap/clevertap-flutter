@@ -495,16 +495,6 @@ class CleverTapPlugin {
         'enableWebPush', pushData);
   }
 
-  /// Only for Web - enable web push for customized prompt
-  static Future<void> enableWebPushNotifications(
-      Map<String, dynamic> pushData) async {
-    if (!kIsWeb) {
-      return;
-    }
-    await _dartToNativeMethodChannel.invokeMethod<void>(
-        'enableWebPushNotifications', pushData);
-  }
-
   /// Only for Web - Mark all messages as read
   static Future<void> markReadAllInboxMessage() async {
     if (!kIsWeb) {
@@ -1315,6 +1305,7 @@ class CleverTapPlugin {
   ///Create File variable.
   /// * @param {object} variables The JSON Object specifying the varibles to be created.
   static Future<void> defineFileVariable(String fileVariable) async {
+    print("object");
     return await _dartToNativeMethodChannel
         .invokeMethod('defineFileVariable', {'fileVariable': fileVariable});
   }

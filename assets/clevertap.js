@@ -8554,7 +8554,7 @@
   };
 
   var _fireRequest2 = function _fireRequest2(url, tries, skipARP, sendOULFlag, evtName) {
-    var _window$clevertap, _window$wizrocket;
+    var _window$location$orig, _window, _window$location, _window2, _window2$location, _window$clevertap, _window$wizrocket;
 
     if (_classPrivateFieldLooseBase(this, _dropRequestDueToOptOut)[_dropRequestDueToOptOut]()) {
       this.logger.debug('req dropped due to optout cookie: ' + this.device.gcookie);
@@ -8609,6 +8609,8 @@
     }
 
     url = addToURL(url, 'tries', tries); // Add tries to URL
+
+    url = addToURL(url, 'origin', (_window$location$orig = (_window = window) === null || _window === void 0 ? void 0 : (_window$location = _window.location) === null || _window$location === void 0 ? void 0 : _window$location.origin) !== null && _window$location$orig !== void 0 ? _window$location$orig : (_window2 = window) === null || _window2 === void 0 ? void 0 : (_window2$location = _window2.location) === null || _window2$location === void 0 ? void 0 : _window2$location.href); // Add origin to URL
 
     url = _classPrivateFieldLooseBase(this, _addUseIPToRequest)[_addUseIPToRequest](url);
     url = addToURL(url, 'r', new Date().getTime()); // add epoch to beat caching of the URL
@@ -11657,7 +11659,7 @@
         case WVE_QUERY_PARAMS.SDK_CHECK:
           if (parentWindow) {
             logger$1.debug('SDK version check');
-            const sdkVersion = '1.16.2';
+            const sdkVersion = '1.17.0';
             parentWindow.postMessage({
               message: 'SDKVersion',
               accountId,
@@ -12579,7 +12581,14 @@
     $ct.campaignDivMap[campaignId] = divId; // Create DOM elements
 
     const msgDiv = createWrapperDiv(divId);
-    const iframe = createIframe(targetingMsgJson); // Setup event handling
+    const iframe = createIframe(targetingMsgJson, _logger);
+
+    if (!iframe) {
+      _logger.error('Failed to create iframe for Advanced Builder');
+
+      return;
+    } // Setup event handling
+
 
     setupIframeEventListeners(iframe, targetingMsgJson, divId, _session, _logger); // Append to DOM
 
@@ -12682,14 +12691,22 @@
   }; // Utility: Create iframe with attributes and content
 
 
-  const createIframe = targetingMsgJson => {
-    const iframe = document.createElement('iframe');
-    iframe.id = 'wiz-iframe';
-    const isDesktop = window.matchMedia('(min-width: 480px)').matches;
-    const html = isDesktop ? targetingMsgJson.display.desktopHTML : targetingMsgJson.display.mobileHTML;
-    iframe.srcdoc = html;
-    iframe.setAttribute('style', IFRAME_STYLE);
-    return iframe;
+  const createIframe = (targetingMsgJson, _logger) => {
+    try {
+      const staticHTML = targetingMsgJson.msgContent.html;
+      const isDesktop = window.matchMedia('(min-width: 480px)').matches;
+      const config = isDesktop ? targetingMsgJson.display.desktopConfig : targetingMsgJson.display.mobileConfig;
+      const html = staticHTML.replace('"##Vars##"', JSON.stringify(config));
+      const iframe = document.createElement('iframe');
+      iframe.id = 'wiz-iframe';
+      iframe.srcdoc = html;
+      iframe.setAttribute('style', IFRAME_STYLE);
+      return iframe;
+    } catch (error) {
+      _logger.error('Error creating iframe:', error);
+
+      return null;
+    }
   }; // Utility: Setup iframe event listeners
 
 
@@ -15517,7 +15534,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.16.2',
+        lib: 'web-sdk-v1.17.0',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -17366,7 +17383,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.16.2';
+      return 'web-sdk-v1.17.0';
     }
 
     defineVariable(name, defaultValue) {
@@ -17588,7 +17605,7 @@ clevertap.defineVariables = (vars) => {
   }
 }
 
-clevertap.defineFileVariable = (vars) => {
+clevertap.defineFileVariable_ = (vars) => {
   variables[vars] = clevertap.defineFileVariable(vars);
   return;
 }

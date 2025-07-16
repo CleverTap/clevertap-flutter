@@ -233,10 +233,6 @@ var pushData = {
   };
   CleverTapPlugin.enableWebPush(pushData);
 ```
-- For new Web Push prompt which can be customised from dashboard.
-```Dart
-CleverTapPlugin.enableWebPushNotifications({'swPath': '/firebase-messaging-sw.js'});
-```
 
 ## GDPR 
 
