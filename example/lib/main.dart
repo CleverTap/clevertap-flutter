@@ -785,8 +785,8 @@ class _MyAppState extends State<MyApp> {
                 _buildExpansionTile("GDPR", [ 
                   _buildListTile("Opt Out User", () => setOptOut(true), "Opt Out User fully"),
                   _buildListTile("Opt In User", () => setOptOut(false), "Opt In User fully"),
-                  _buildListTile("Partially Opt Out User", () => setOptOut(true, true), "Partially Opt Out User"),
                  if (!kIsWeb)
+                  _buildListTile("Partially Opt Out User", () => setOptOut(true, true), "Partially Opt Out User"),
                   _buildListTile("Device Networking Info", setEnableDeviceNetworkingInfo, "Enables/Disable device networking info as per GDPR"),
                 ]),
                 if (!kIsWeb)
