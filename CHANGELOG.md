@@ -7,7 +7,7 @@ Version 3.5.0 *(July 21 2025)*
   * Supports [CleverTap Android SDK v7.5.0](https://github.com/CleverTap/clevertap-android-sdk/blob/master/docs/CTCORECHANGELOG.md#version-750-july-11-2025).
 
 * **[iOS Platform]**
-  * Supports [CleverTap iOS SDK v7.3.0](https://github.com/CleverTap/clevertap-ios-sdk/blob/master/CHANGELOG.md#version-730-july-11-2025).
+  * Supports [CleverTap iOS SDK v7.3.1](https://github.com/CleverTap/clevertap-ios-sdk/blob/master/CHANGELOG.md#version-731-july-15-2025).
 
 * **[Web Platform]**
     * Supports [CleverTap Web SDK v1.17.0](https://github.com/CleverTap/clevertap-web-sdk/releases/tag/v1.17.0)
@@ -19,6 +19,11 @@ Version 3.5.0 *(July 21 2025)*
 * **[Android and iOS Platform]**
   * Updates the `setOptOut(userOptOut)` API. This upgraded API improves GDPR opt-out functionality by allowing you to control whether critical system events (such as app installs, uninstalls, and push notification registration) are still sent to CleverTap, even when a user has opted out of tracking. This helps you respect user privacy choices while still maintaining essential app functionality and compliance with regulations. This is non-breaking change.
     * `setOptOut(userOptOut, allowSystemEvents)`
+
+**Bug Fixes**
+* **[iOS Platform]**
+  * Fixes a `No new templates are synced` error while syncing new custom templates.
+  * Fixes a Local Push Primer crash when asking for push permission using promptForPushPermission.
 
 Version 3.4.0 *(27 June 2025)*
 -------------------------------------------
