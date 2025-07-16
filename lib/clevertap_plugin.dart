@@ -1476,8 +1476,11 @@ class CleverTapPlugin {
         .invokeMethod('isLocalStorageEncryptionEnabled', {});
   }
 
-  /// Returns a list of all qualified campaigns
+  /// Only for Web - Returns a list of all qualified campaigns
   static Future<List?> getAllQualifiedCampaignDetails() async {
+    if (!kIsWeb) {
+      return null;
+    }
     return await _dartToNativeMethodChannel
         .invokeMethod('getAllQualifiedCampaignDetails', {});
   }
