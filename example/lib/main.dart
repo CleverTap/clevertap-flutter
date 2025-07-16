@@ -41,8 +41,7 @@ void _firebaseForegroundMessageHandler(RemoteMessage remoteMessage) {
 void main() async {
   print("CleverTapPlugin main pre ensure");
   WidgetsFlutterBinding.ensureInitialized();
-  if (!kIsWeb && !Platform.isIOS  && testWithWorkManager) {
-
+  if (!kIsWeb && !Platform.isIOS && testWithWorkManager) {
     await Firebase.initializeApp();
     FirebaseMessaging.onMessage.listen(_firebaseForegroundMessageHandler);
     FirebaseMessaging.onBackgroundMessage(_firebaseBackgroundMessageHandler);
@@ -99,7 +98,8 @@ class _MyAppState extends State<MyApp> {
     });
     CleverTapPlugin.setDebugLevel(3);
     if (kIsWeb) {
-      CleverTapPlugin.init("CLEVERTAP_ACCOUNT_ID", "CLEVERTAP_REGION", "CLEVERTAP_TARGET_DOMAIN");
+      CleverTapPlugin.init("CLEVERTAP_ACCOUNT_ID", "CLEVERTAP_REGION",
+          "CLEVERTAP_TARGET_DOMAIN");
       CleverTapPlugin.setDebugLevel(3);
       CleverTapPlugin.addKVDataChangeListener((obj) {
         var kv = obj["kv"];
@@ -110,7 +110,8 @@ class _MyAppState extends State<MyApp> {
     if (Platform.isAndroid) {
       _handleKilledStateNotificationInteraction();
     }
-    CleverTapPlugin.createNotificationChannel("fluttertest", "Flutter Test", "Flutter Test", 3, true);
+    CleverTapPlugin.createNotificationChannel(
+        "fluttertest", "Flutter Test", "Flutter Test", 3, true);
     CleverTapPlugin.initializeInbox();
     CleverTapPlugin.registerForPush(); //only for iOS
     //var initialUrl = CleverTapPlugin.getInitialUrl();
@@ -130,50 +131,64 @@ class _MyAppState extends State<MyApp> {
   void activateCleverTapFlutterPluginHandlers() {
     print("activateCleverTapFlutterPluginHandlers()");
     _clevertapPlugin = new CleverTapPlugin();
-    _clevertapPlugin.setCleverTapProfileDidInitializeHandler(profileDidInitialize);
+    _clevertapPlugin
+        .setCleverTapProfileDidInitializeHandler(profileDidInitialize);
     _clevertapPlugin.setCleverTapProfileSyncHandler(profileDidUpdate);
-    _clevertapPlugin.setCleverTapInAppNotificationDismissedHandler(inAppNotificationDismissed);
+    _clevertapPlugin.setCleverTapInAppNotificationDismissedHandler(
+        inAppNotificationDismissed);
     //before-show
-    _clevertapPlugin.setCleverTapInAppNotificationShowHandler(inAppNotificationShow);
+    _clevertapPlugin
+        .setCleverTapInAppNotificationShowHandler(inAppNotificationShow);
     _clevertapPlugin.setCleverTapInboxDidInitializeHandler(inboxDidInitialize);
-    _clevertapPlugin.setCleverTapInboxMessagesDidUpdateHandler(inboxMessagesDidUpdate);
-    _clevertapPlugin.setCleverTapInboxNotificationButtonClickedHandler(inboxNotificationButtonClicked);
-    _clevertapPlugin.setCleverTapInboxNotificationMessageClickedHandler(inboxNotificationMessageClicked);
-    _clevertapPlugin.setCleverTapDisplayUnitsLoadedHandler(onDisplayUnitsLoaded);
+    _clevertapPlugin
+        .setCleverTapInboxMessagesDidUpdateHandler(inboxMessagesDidUpdate);
+    _clevertapPlugin.setCleverTapInboxNotificationButtonClickedHandler(
+        inboxNotificationButtonClicked);
+    _clevertapPlugin.setCleverTapInboxNotificationMessageClickedHandler(
+        inboxNotificationMessageClicked);
+    _clevertapPlugin
+        .setCleverTapDisplayUnitsLoadedHandler(onDisplayUnitsLoaded);
 
-    _clevertapPlugin.setCleverTapPushPermissionResponseReceivedHandler(pushPermissionResponseReceived);
-    _clevertapPlugin.setCleverTapPushAmpPayloadReceivedHandler(pushAmpPayloadReceived);
+    _clevertapPlugin.setCleverTapPushPermissionResponseReceivedHandler(
+        pushPermissionResponseReceived);
+    _clevertapPlugin
+        .setCleverTapPushAmpPayloadReceivedHandler(pushAmpPayloadReceived);
     //CLEVERTAP_ON_VARIABLES_CHA
     //CLEVERTAP_ON_ONE_TIME_VARI
     //CLEVERTAP_ON_VALUE_CHANGED
-    _clevertapPlugin.setCleverTapCustomTemplatePresentHandler(presentCustomTemplate);
-    _clevertapPlugin.setCleverTapCustomTemplateCloseHandler(closeCustomTemplate);
-    _clevertapPlugin.setCleverTapCustomFunctionPresentHandler(presentCustomFunction);
+    _clevertapPlugin
+        .setCleverTapCustomTemplatePresentHandler(presentCustomTemplate);
+    _clevertapPlugin
+        .setCleverTapCustomTemplateCloseHandler(closeCustomTemplate);
+    _clevertapPlugin
+        .setCleverTapCustomFunctionPresentHandler(presentCustomFunction);
 
-    _clevertapPlugin.setCleverTapPushClickedPayloadReceivedHandler(pushClickedPayloadReceived);
-    _clevertapPlugin.setCleverTapInAppNotificationButtonClickedHandler(inAppNotificationButtonClicked);
+    _clevertapPlugin.setCleverTapPushClickedPayloadReceivedHandler(
+        pushClickedPayloadReceived);
+    _clevertapPlugin.setCleverTapInAppNotificationButtonClickedHandler(
+        inAppNotificationButtonClicked);
   }
 
- void presentCustomTemplate(String templateName) async {
-  print("presentCustomTemplate dart called for + $templateName");
+  void presentCustomTemplate(String templateName) async {
+    print("presentCustomTemplate dart called for + $templateName");
 
-  var data = await printArgsAsString(templateName);
+    var data = await printArgsAsString(templateName);
 
-  showDialog(
-    context: navigatorKey.currentContext!,
-    builder: (BuildContext context) {
-      return CustomTemplateDialog(
-        templateName: templateName,
-        data: data,
-        handleClose: closeCustomTemplate,
-        handlePresented: handlePresented,
-        handleAction: handleAction,
-        handleFile: handleFile,
-        printArgument: printArgument,
-      );
-    },
-  );
-}
+    showDialog(
+      context: navigatorKey.currentContext!,
+      builder: (BuildContext context) {
+        return CustomTemplateDialog(
+          templateName: templateName,
+          data: data,
+          handleClose: closeCustomTemplate,
+          handlePresented: handlePresented,
+          handleAction: handleAction,
+          handleFile: handleFile,
+          printArgument: printArgument,
+        );
+      },
+    );
+  }
 
   void closeCustomTemplate(String templateName) {
     print("closeCustomTemplate dart called for $templateName");
@@ -192,19 +207,24 @@ class _MyAppState extends State<MyApp> {
   Future<String> printArgsAsString(String templateName) async {
     StringBuffer buffer = StringBuffer();
     buffer.write('string = ');
-    buffer.write(await CleverTapPlugin.customTemplateGetStringArg(templateName, "string"));
+    buffer.write(await CleverTapPlugin.customTemplateGetStringArg(
+        templateName, "string"));
     buffer.write('\n');
     buffer.write('bool  =');
-    buffer.write(await CleverTapPlugin.customTemplateGetBooleanArg(templateName, "bool"));
+    buffer.write(await CleverTapPlugin.customTemplateGetBooleanArg(
+        templateName, "bool"));
     buffer.write('\n');
     buffer.write('map.int  =');
-    buffer.write(await CleverTapPlugin.customTemplateGetNumberArg(templateName, "map.int"));
+    buffer.write(await CleverTapPlugin.customTemplateGetNumberArg(
+        templateName, "map.int"));
     buffer.write('\n');
     buffer.write('map.string  =');
-    buffer.write(await CleverTapPlugin.customTemplateGetStringArg(templateName, "map.string"));
+    buffer.write(await CleverTapPlugin.customTemplateGetStringArg(
+        templateName, "map.string"));
     buffer.write('\n');
     buffer.write('file  =');
-    buffer.write(await CleverTapPlugin.customTemplateGetFileArg(templateName, "file"));
+    buffer.write(
+        await CleverTapPlugin.customTemplateGetFileArg(templateName, "file"));
     buffer.write('\n');
     return buffer.toString();
   }
@@ -212,19 +232,23 @@ class _MyAppState extends State<MyApp> {
   void handlePresented(String templateName) {
     CleverTapPlugin.customTemplateSetPresented(templateName);
   }
+
   void handleAction(String templateName, String argumentName) {
     CleverTapPlugin.customTemplateRunAction(templateName, "action");
   }
+
   void handleFile(String templateName, String argumentName) async {
-    var filePath = await CleverTapPlugin.customTemplateGetFileArg(templateName, "file");
+    var filePath =
+        await CleverTapPlugin.customTemplateGetFileArg(templateName, "file");
     showToast(filePath);
   }
+
   void printArgument(String templateName, String argumentName) {
     printArgsAsString(templateName);
   }
 
   // End utility for custom code templates
-  
+
   void inAppNotificationDismissed(Map<String, dynamic> map) {
     this.setState(() {
       print("inAppNotificationDismissed called");
@@ -423,7 +447,6 @@ class _MyAppState extends State<MyApp> {
         (accepted ? "true" : "false"));
   }
 
-
   Widget _buildExpansionTile(String title, List<Widget> children) {
     return Card(
       color: Colors.lightBlueAccent.shade100,
@@ -434,7 +457,8 @@ class _MyAppState extends State<MyApp> {
     );
   }
 
-  Widget _buildListTile(String title, VoidCallback onTap, [String subtitle = ""]) {
+  Widget _buildListTile(String title, VoidCallback onTap,
+      [String subtitle = ""]) {
     return Card(
       color: Colors.grey.shade300,
       child: Padding(
@@ -448,7 +472,8 @@ class _MyAppState extends State<MyApp> {
     );
   }
 
-  void _buildDialogSingleInput(BuildContext context, Function(String) onTap, String textFieldValue) {
+  void _buildDialogSingleInput(
+      BuildContext context, Function(String) onTap, String textFieldValue) {
     TextEditingController eventController = TextEditingController();
 
     showDialog(
@@ -483,7 +508,8 @@ class _MyAppState extends State<MyApp> {
     );
   }
 
-  void _buildDialogMultipleInput(BuildContext context, Function(String, String) onTap, List<String> hintTexts) {
+  void _buildDialogMultipleInput(BuildContext context,
+      Function(String, String) onTap, List<String> hintTexts) {
     TextEditingController firstController = TextEditingController();
     TextEditingController secondController = TextEditingController();
 
@@ -497,12 +523,15 @@ class _MyAppState extends State<MyApp> {
             children: [
               TextField(
                 controller: firstController,
-                decoration: InputDecoration(hintText: hintTexts[0]), // Custom hint text for first input
+                decoration: InputDecoration(
+                    hintText: hintTexts[0]), // Custom hint text for first input
               ),
               SizedBox(height: 10), // Space between fields
               TextField(
                 controller: secondController,
-                decoration: InputDecoration(hintText: hintTexts[1]), // Custom hint text for second input
+                decoration: InputDecoration(
+                    hintText:
+                        hintTexts[1]), // Custom hint text for second input
               ),
             ],
           ),
@@ -530,9 +559,6 @@ class _MyAppState extends State<MyApp> {
       },
     );
   }
-
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -579,150 +605,269 @@ class _MyAppState extends State<MyApp> {
                   _buildListTile("Define Variables", defineVariables),
                   _buildListTile("Define File Variable", defineFileVariable),
                   _buildListTile("Get Variables", getVariables),
-                  _buildListTile('Get Variable Value for name \'flutter_var_string\'', getVariable),
-                  _buildListTile('Get Variable Value for name \'folder1.fileVariable\'', getFileVariable),
-                  _buildListTile('Add \'OnVariablesChanged\' listener', onVariablesChanged),
-                  _buildListTile('Add \'OnOneTimeVariablesChanged\' listener', onOneTimeVariablesChanged),
-                  _buildListTile('Add \'OnValueChanged\' listener for name \'flutter_var_string\'', onValueChanged),
-                  _buildListTile('Add \'OnFileVariablesChangedAndNoDownloadsPending\' listener', onVariablesChangedAndNoDownloadsPending),
-                  _buildListTile('Add \'OnceFileVariablesChangedAndNoDownloadsPending\' listener', onceVariablesChangedAndNoDownloadsPending),
-                  _buildListTile('Add \'OnFileChanged\' listener for name \'folder1.fileVariable\'', onFileChanged),
+                  _buildListTile(
+                      'Get Variable Value for name \'flutter_var_string\'',
+                      getVariable),
+                  _buildListTile(
+                      'Get Variable Value for name \'folder1.fileVariable\'',
+                      getFileVariable),
+                  _buildListTile('Add \'OnVariablesChanged\' listener',
+                      onVariablesChanged),
+                  _buildListTile('Add \'OnOneTimeVariablesChanged\' listener',
+                      onOneTimeVariablesChanged),
+                  _buildListTile(
+                      'Add \'OnValueChanged\' listener for name \'flutter_var_string\'',
+                      onValueChanged),
+                  _buildListTile(
+                      'Add \'OnFileVariablesChangedAndNoDownloadsPending\' listener',
+                      onVariablesChangedAndNoDownloadsPending),
+                  _buildListTile(
+                      'Add \'OnceFileVariablesChangedAndNoDownloadsPending\' listener',
+                      onceVariablesChangedAndNoDownloadsPending),
+                  _buildListTile(
+                      'Add \'OnFileChanged\' listener for name \'folder1.fileVariable\'',
+                      onFileChanged),
                 ]),
-              _buildExpansionTile("User Profiles", [
-                  _buildListTile("Push User", recordUser, "Pushes/Records a user"),
-                  _buildListTile("Push User with custom attributes", () => _buildDialogMultipleInput(context, recordCustomUser, ["Enter Attribute Name", "Enter Attribute Value"]), "Pushes/Records a user"),
-                  _buildListTile("Set Profile Multi Values", setProfileMultiValue, "Sets a multi valued user property"),
-                  _buildListTile("Remove Profile Value For Key", removeProfileValue, "Removes user property of given key"),
-                  _buildListTile("Add Profile Multi Value", addMultiValue, "Add user property"),
-                  _buildListTile("Profile increment value", incrementValue, "Increment value by 15"),
-                  _buildListTile("Profile decrement value", decrementValue, "Decrement value by 10"),
-                  _buildListTile("Add Profile Multi values", addMultiValues, "Add a multi valued user property"),
-                  _buildListTile("Remove Multi Value", removeMultiValue, "Remove user property"),
-                  _buildListTile("Remove Multi Values", removeMultiValues, "Remove a multi valued user property"),
+                _buildExpansionTile("User Profiles", [
+                  _buildListTile(
+                      "Push User", recordUser, "Pushes/Records a user"),
+                  _buildListTile(
+                      "Push User with custom attributes",
+                      () => _buildDialogMultipleInput(context, recordCustomUser,
+                          ["Enter Attribute Name", "Enter Attribute Value"]),
+                      "Pushes/Records a user"),
+                  _buildListTile(
+                      "Set Profile Multi Values",
+                      setProfileMultiValue,
+                      "Sets a multi valued user property"),
+                  _buildListTile("Remove Profile Value For Key",
+                      removeProfileValue, "Removes user property of given key"),
+                  _buildListTile("Add Profile Multi Value", addMultiValue,
+                      "Add user property"),
+                  _buildListTile("Profile increment value", incrementValue,
+                      "Increment value by 15"),
+                  _buildListTile("Profile decrement value", decrementValue,
+                      "Decrement value by 10"),
+                  _buildListTile("Add Profile Multi values", addMultiValues,
+                      "Add a multi valued user property"),
+                  _buildListTile("Remove Multi Value", removeMultiValue,
+                      "Remove user property"),
+                  _buildListTile("Remove Multi Values", removeMultiValues,
+                      "Remove a multi valued user property"),
                 ]),
-
                 _buildExpansionTile("Identity Management", [
-                  _buildListTile("Performs onUserLogin", onUserLogin, "Used to identify multiple profiles"),
-                  _buildListTile("Performs random onUserLogin ", onRandomUserLogin, "Perform Login with Random Identity"),
-                  _buildListTile("Get Profile Property", getProfileProperty, "Returns the specified Profile Property"),
-                  _buildListTile("Get CleverTap ID", getCleverTapId, "Returns Clevertap ID"),
+                  _buildListTile("Performs onUserLogin", onUserLogin,
+                      "Used to identify multiple profiles"),
+                  _buildListTile("Performs random onUserLogin ",
+                      onRandomUserLogin, "Perform Login with Random Identity"),
+                  _buildListTile("Get Profile Property", getProfileProperty,
+                      "Returns the specified Profile Property"),
+                  _buildListTile("Get CleverTap ID", getCleverTapId,
+                      "Returns Clevertap ID"),
                 ]),
-
                 _buildExpansionTile("Location", [
-                  _buildListTile("Set Location", setLocation, "Use to set Location of a user"),
+                  _buildListTile("Set Location", setLocation,
+                      "Use to set Location of a user"),
                 ]),
-
                 _buildExpansionTile("User Events", [
-                  _buildListTile("Push Event", recordEvent, "Pushes/Records an event called Flutter Event"),
-                  _buildListTile("Push Custom Event", () => _buildDialogSingleInput(context, recordCustomEvent, "Event Name"), "Pushes/Records a custom event"),
-                  _buildListTile("Push Charged Event", recordChargedEvent, "Pushes/Records a Charged event"),
+                  _buildListTile("Push Event", recordEvent,
+                      "Pushes/Records an event called Flutter Event"),
+                  _buildListTile(
+                      "Push Custom Event",
+                      () => _buildDialogSingleInput(
+                          context, recordCustomEvent, "Event Name"),
+                      "Pushes/Records a custom event"),
+                  _buildListTile("Push Charged Event", recordChargedEvent,
+                      "Pushes/Records a Charged event"),
                 ]),
-
                 _buildExpansionTile("App Inbox", [
-                  if (!kIsWeb) _buildListTile("Show Inbox", showInbox, "Opens sample App Inbox"),
-                  if (!kIsWeb) _buildListTile("Show Inbox with sections", showInboxWithTabs, "Opens sample App Inbox"),
-                  _buildListTile("Get All Inbox Messages", getAllInboxMessages, "Returns all inbox messages"),
-                  _buildListTile("Get Unread Inbox Messages", getUnreadInboxMessages, "Returns unread inbox messages"),
-                  _buildListTile("Get Inbox Message for given ID", getInboxMessageForId, "Returns inbox message for given ID"),
-                  _buildListTile("Delete Inbox Message for given ID", deleteInboxMessageForId, "Deletes inbox message for given ID"),
-                  if (!kIsWeb) _buildListTile("Delete Inbox Messages for list of IDs", deleteInboxMessagesForIds, "Deletes inbox messages for list of IDs"),
-                  _buildListTile("Mark Read Inbox Message for given ID", markReadInboxMessageForId, "Mark read inbox message for given ID"),
-                  _buildListTile("Mark Read Inbox Messages for list of IDs", markReadInboxMessagesForIds, "Mark read inbox messages for list of IDs"),
-                  if (!kIsWeb) _buildListTile("Push Inbox Message Clicked", pushInboxNotificationClickedEventForId, "Pushes/Records inbox message clicked event"),
-                  if (!kIsWeb) _buildListTile("Push Inbox Message Viewed", pushInboxNotificationViewedEventForId, "Pushes/Records inbox message viewed event"),
+                  if (!kIsWeb)
+                    _buildListTile(
+                        "Show Inbox", showInbox, "Opens sample App Inbox"),
+                  if (!kIsWeb)
+                    _buildListTile("Show Inbox with sections",
+                        showInboxWithTabs, "Opens sample App Inbox"),
+                  _buildListTile("Get All Inbox Messages", getAllInboxMessages,
+                      "Returns all inbox messages"),
+                  _buildListTile("Get Unread Inbox Messages",
+                      getUnreadInboxMessages, "Returns unread inbox messages"),
+                  _buildListTile(
+                      "Get Inbox Message for given ID",
+                      getInboxMessageForId,
+                      "Returns inbox message for given ID"),
+                  _buildListTile(
+                      "Delete Inbox Message for given ID",
+                      deleteInboxMessageForId,
+                      "Deletes inbox message for given ID"),
+                  if (!kIsWeb)
+                    _buildListTile(
+                        "Delete Inbox Messages for list of IDs",
+                        deleteInboxMessagesForIds,
+                        "Deletes inbox messages for list of IDs"),
+                  _buildListTile(
+                      "Mark Read Inbox Message for given ID",
+                      markReadInboxMessageForId,
+                      "Mark read inbox message for given ID"),
+                  _buildListTile(
+                      "Mark Read Inbox Messages for list of IDs",
+                      markReadInboxMessagesForIds,
+                      "Mark read inbox messages for list of IDs"),
+                  if (!kIsWeb)
+                    _buildListTile(
+                        "Push Inbox Message Clicked",
+                        pushInboxNotificationClickedEventForId,
+                        "Pushes/Records inbox message clicked event"),
+                  if (!kIsWeb)
+                    _buildListTile(
+                        "Push Inbox Message Viewed",
+                        pushInboxNotificationViewedEventForId,
+                        "Pushes/Records inbox message viewed event"),
                 ]),
-
                 _buildExpansionTile("Enable Debugging", [
                   _buildListTile("Set Debug Level", () {
                     CleverTapPlugin.setDebugLevel(3);
                   }, "Sets the debug level to show console logs"),
                 ]),
-
                 if (!kIsWeb)
                   _buildExpansionTile("In-App Messaging Controls", [
-                    _buildListTile("Suspend InApp notifications", suspendInAppNotifications, "Suspends display of InApp Notifications."),
-                    _buildListTile("Discard InApp notifications", discardInAppNotifications,
+                    _buildListTile(
+                        "Suspend InApp notifications",
+                        suspendInAppNotifications,
+                        "Suspends display of InApp Notifications."),
+                    _buildListTile(
+                        "Discard InApp notifications",
+                        discardInAppNotifications,
                         "Suspends the display of InApp Notifications and discards any new InApp Notifications to be shown after this method is called."),
-                    _buildListTile("Resume InApp notifications", resumeInAppNotifications, "Resumes display of InApp Notifications."),
+                    _buildListTile(
+                        "Resume InApp notifications",
+                        resumeInAppNotifications,
+                        "Resumes display of InApp Notifications."),
                   ]),
-
                 if (!kIsWeb)
                   _buildExpansionTile("Event History", [
-                    if (!kIsWeb) _buildListTile("Get User Event Log", () => _buildDialogSingleInput(context, getEventLog, "Event Name"), "Get User Event Log for Flutter Event"),
-                    if (!kIsWeb) _buildListTile("Get Event History", getEventHistory, "Get history of all Events"),
-                    _buildListTile("Get Event First Time", () => _buildDialogSingleInput(context, getEventFirstTime, "Event Name"), "Gets first epoch of the event Flutter Event"),
-                    _buildListTile("Get Event Count", () => _buildDialogSingleInput(context, getEventLogCount, "Event Name"), "Get count of the event Flutter Event"),
-                    _buildListTile("Get Event Last Time", () => _buildDialogSingleInput(context, getEventLastTime, "Event Name"), "Returns last epoch value for the event Flutter Event"),
-                    _buildListTile("App Launch Count", getUserAppLaunchCount, "Returns App Launch Count for current User"),
-                    _buildListTile("User Last Visit Time", getUserLastVisitTs, "Returns user last visit time"),
-                    _buildListTile("Session Time Elapsed", getTimeElapsed, "Returns session time elapsed"),
-                    _buildListTile("Session Screen Count", getScreenCount, "Returns session screen count"),
-                    _buildListTile("Session UTM Details", getUTMDetails, "Returns session UTM details"),
-                    _buildListTile("Get Ad Units", getAdUnits, "Returns all Display Units set"),
+                    if (!kIsWeb)
+                      _buildListTile(
+                          "Get User Event Log",
+                          () => _buildDialogSingleInput(
+                              context, getEventLog, "Event Name"),
+                          "Get User Event Log for Flutter Event"),
+                    if (!kIsWeb)
+                      _buildListTile("Get Event History", getEventHistory,
+                          "Get history of all Events"),
+                    _buildListTile(
+                        "Get Event First Time",
+                        () => _buildDialogSingleInput(
+                            context, getEventFirstTime, "Event Name"),
+                        "Gets first epoch of the event Flutter Event"),
+                    _buildListTile(
+                        "Get Event Count",
+                        () => _buildDialogSingleInput(
+                            context, getEventLogCount, "Event Name"),
+                        "Get count of the event Flutter Event"),
+                    _buildListTile(
+                        "Get Event Last Time",
+                        () => _buildDialogSingleInput(
+                            context, getEventLastTime, "Event Name"),
+                        "Returns last epoch value for the event Flutter Event"),
+                    _buildListTile("App Launch Count", getUserAppLaunchCount,
+                        "Returns App Launch Count for current User"),
+                    _buildListTile("User Last Visit Time", getUserLastVisitTs,
+                        "Returns user last visit time"),
+                    _buildListTile("Session Time Elapsed", getTimeElapsed,
+                        "Returns session time elapsed"),
+                    _buildListTile("Session Screen Count", getScreenCount,
+                        "Returns session screen count"),
+                    _buildListTile("Session UTM Details", getUTMDetails,
+                        "Returns session UTM details"),
+                    _buildListTile("Get Ad Units", getAdUnits,
+                        "Returns all Display Units set"),
                   ]),
-
-                _buildExpansionTile("GDPR", [
+                _buildExpansionTile("GDPR", [ 
                   _buildListTile("Opt Out User", () => setOptOut(true), "Opt Out User fully"),
                   _buildListTile("Opt In User", () => setOptOut(false), "Opt In User fully"),
                   _buildListTile("Partially Opt Out User", () => setOptOut(true, true), "Partially Opt Out User"),
+                 if (!kIsWeb)
                   _buildListTile("Device Networking Info", setEnableDeviceNetworkingInfo, "Enables/Disable device networking info as per GDPR"),
                 ]),
-
                 if (!kIsWeb)
                   _buildExpansionTile("Multi-Instance", [
-                    _buildListTile("Enable Personalization", enablePersonalization, "Enables Personalization"),
-                    _buildListTile("Disable Personalization", disablePersonalization, "Disables Personalization"),
+                    _buildListTile("Enable Personalization",
+                        enablePersonalization, "Enables Personalization"),
+                    _buildListTile("Disable Personalization",
+                        disablePersonalization, "Disables Personalization"),
                   ]),
-
                 _buildExpansionTile("Offline Mode", [
-                  _buildListTile("Set Offline", setOffline, "Switches CleverTap to offline mode"),
+                  _buildListTile("Set Offline", setOffline,
+                      "Switches CleverTap to offline mode"),
                 ]),
-
                 _buildExpansionTile("Push Templates", [
                   _buildListTile("Basic Push", sendBasicPush),
-                  if (!kIsWeb) _buildListTile("Carousel Push", sendAutoCarouselPush),
-                  if (!kIsWeb) _buildListTile("Manual Carousel Push", sendManualCarouselPush),
-                  if (!kIsWeb) _buildListTile("FilmStrip Carousel Push", sendFilmStripCarouselPush),
-                  if (!kIsWeb) _buildListTile("Rating Push", sendRatingCarouselPush),
-                  if (!kIsWeb) _buildListTile("Product Display", sendProductDisplayPush),
-                  if (!kIsWeb) _buildListTile("Linear Product Display", sendLinearProductDisplayPush),
+                  if (!kIsWeb)
+                    _buildListTile("Carousel Push", sendAutoCarouselPush),
+                  if (!kIsWeb)
+                    _buildListTile(
+                        "Manual Carousel Push", sendManualCarouselPush),
+                  if (!kIsWeb)
+                    _buildListTile(
+                        "FilmStrip Carousel Push", sendFilmStripCarouselPush),
+                  if (!kIsWeb)
+                    _buildListTile("Rating Push", sendRatingCarouselPush),
+                  if (!kIsWeb)
+                    _buildListTile("Product Display", sendProductDisplayPush),
+                  if (!kIsWeb)
+                    _buildListTile(
+                        "Linear Product Display", sendLinearProductDisplayPush),
                   if (!kIsWeb) _buildListTile("Five CTA", sendCTAPush),
                   if (!kIsWeb) _buildListTile("Zero Bezel", sendZeroBezelPush),
-                  if (!kIsWeb) _buildListTile("Zero Bezel Text Only", sendZeroBezelTextOnlyPush),
+                  if (!kIsWeb)
+                    _buildListTile(
+                        "Zero Bezel Text Only", sendZeroBezelTextOnlyPush),
                   if (!kIsWeb) _buildListTile("Timer Push", sendTimerPush),
                 ]),
-
                 if (!kIsWeb)
                   _buildExpansionTile("Input Box Push Notifications", [
-                    _buildListTile("CTA + reminder Push Campaign - DOC true", sendInputBoxPush),
-                    _buildListTile("Reply with Event", sendInputBoxReplyEventPush),
-                    _buildListTile("Reply with Intent", sendInputBoxReplyAutoOpenPush),
-                    _buildListTile("CTA + reminder Push Campaign - DOC false", sendInputBoxRemindDOCFalsePush),
-                    _buildListTile("CTA - DOC true", sendInputBoxCTADOCTruePush),
-                    _buildListTile("CTA - DOC false", sendInputBoxCTADOCFalsePush),
-                    _buildListTile("Reminder - DOC true", sendInputBoxReminderDOCTruePush),
-                    _buildListTile("Reminder - DOC false", sendInputBoxReminderDOCFalsePush),
+                    _buildListTile("CTA + reminder Push Campaign - DOC true",
+                        sendInputBoxPush),
+                    _buildListTile(
+                        "Reply with Event", sendInputBoxReplyEventPush),
+                    _buildListTile(
+                        "Reply with Intent", sendInputBoxReplyAutoOpenPush),
+                    _buildListTile("CTA + reminder Push Campaign - DOC false",
+                        sendInputBoxRemindDOCFalsePush),
+                    _buildListTile(
+                        "CTA - DOC true", sendInputBoxCTADOCTruePush),
+                    _buildListTile(
+                        "CTA - DOC false", sendInputBoxCTADOCFalsePush),
+                    _buildListTile(
+                        "Reminder - DOC true", sendInputBoxReminderDOCTruePush),
+                    _buildListTile("Reminder - DOC false",
+                        sendInputBoxReminderDOCFalsePush),
                   ]),
-
                 if (!kIsWeb)
                   _buildExpansionTile("Push Tokens", [
                     _buildListTile("Set Push Token: FCM", setPushTokenFCM),
                     _buildListTile("Set Push Token: HMS", setPushTokenHMS),
                   ]),
-
                 if (!kIsWeb)
                   _buildExpansionTile("Client Side InApps", [
-                    _buildListTile("Fetch Client Side InApps", fetchInApps, "Fetches In-App notifications"),
-                    _buildListTile("Clear All InApp Resources", clearInAppResources, "Removes all In-App data"),
-                    _buildListTile("Clear Expired Only InApp Resources", clearExpiredInAppResources, "Removes only expired In-App data"),
+                    _buildListTile("Fetch Client Side InApps", fetchInApps,
+                        "Fetches In-App notifications"),
+                    _buildListTile("Clear All InApp Resources",
+                        clearInAppResources, "Removes all In-App data"),
+                    _buildListTile(
+                        "Clear Expired Only InApp Resources",
+                        clearExpiredInAppResources,
+                        "Removes only expired In-App data"),
                   ]),
-
                 _buildExpansionTile("Push Primer", [
-                  _buildListTile("Prompt for Push Notification", promptForPushNotification),
-                  _buildListTile("Local Half Interstitial Push Primer", localHalfInterstitialPushPrimer),
-                  if (!kIsWeb) _buildListTile("Local Alert Push Primer", localAlertPushPrimer),
+                  _buildListTile("Prompt for Push Notification",
+                      promptForPushNotification),
+                  _buildListTile("Local Half Interstitial Push Primer",
+                      localHalfInterstitialPushPrimer),
+                  if (!kIsWeb)
+                    _buildListTile(
+                        "Local Alert Push Primer", localAlertPushPrimer),
                 ]),
-
               ],
             )),
       ),
@@ -892,9 +1037,9 @@ class _MyAppState extends State<MyApp> {
 
   void setPushTokenHMS() {
     CleverTapPlugin.pushRegistrationToken("token_hms", {
-      'type':'hps',
-      'prefKey':'hps_token',
-      'className':'com.clevertap.android.hms.HmsPushProvider',
+      'type': 'hps',
+      'prefKey': 'hps_token',
+      'className': 'com.clevertap.android.hms.HmsPushProvider',
       'messagingSDKClassName': 'com.huawei.hms.push.HmsMessageService'
     }).catchError((error) {
       setState(() {
@@ -1278,8 +1423,10 @@ class _MyAppState extends State<MyApp> {
   void getEventFirstTime(String eventName) {
     CleverTapPlugin.getUserEventLog(eventName).then((userEventLog) {
       setState((() {
-        showToast("Event First time for $eventName =  ${userEventLog["firstTime"]}");
-        print("Event First time for $eventName =  ${userEventLog["firstTime"]}");
+        showToast(
+            "Event First time for $eventName =  ${userEventLog["firstTime"]}");
+        print(
+            "Event First time for $eventName =  ${userEventLog["firstTime"]}");
       }));
     }).catchError((error) {
       setState(() {
@@ -1291,7 +1438,8 @@ class _MyAppState extends State<MyApp> {
   void getEventLastTime(String eventName) {
     CleverTapPlugin.getUserEventLog(eventName).then((userEventLog) {
       setState((() {
-        showToast("Event Last time for $eventName =  ${userEventLog["lastTime"]}");
+        showToast(
+            "Event Last time for $eventName =  ${userEventLog["lastTime"]}");
         print("Event Last time for $eventName =  ${userEventLog["lastTime"]}");
       }));
     }).catchError((error) {
@@ -1353,7 +1501,6 @@ class _MyAppState extends State<MyApp> {
     CleverTapPlugin.setLocale(locale);
     showToast("Locale is set");
   }
-
 
   void getCleverTapId() {
     CleverTapPlugin.getCleverTapID().then((clevertapId) {
@@ -1601,8 +1748,7 @@ class _MyAppState extends State<MyApp> {
       'altText': 'Alternate Image'
     };
     if (kIsWeb) {
-      CleverTapPlugin.enableWebPushNotifications(
-          {'swPath': '/firebase-messaging-sw.js'});
+      return;
     } else {
       CleverTapPlugin.promptPushPrimer(pushPrimerJSON);
       showToast("Half-Interstitial Push Primer");
@@ -1709,14 +1855,16 @@ class _MyAppState extends State<MyApp> {
   void onVariablesChangedAndNoDownloadsPending() {
     showToast("onVariablesChangedAndNoDownloadsPending");
     CleverTapPlugin.onVariablesChangedAndNoDownloadsPending((variable) {
-      print("PE -> onVariablesChangedAndNoDownloadsPending: " + variable.toString());
+      print("PE -> onVariablesChangedAndNoDownloadsPending: " +
+          variable.toString());
     });
   }
 
   void onceVariablesChangedAndNoDownloadsPending() {
     showToast("onceVariablesChangedAndNoDownloadsPending");
     CleverTapPlugin.onceVariablesChangedAndNoDownloadsPending((variable) {
-      print("PE -> onceVariablesChangedAndNoDownloadsPending: " + variable.toString());
+      print("PE -> onceVariablesChangedAndNoDownloadsPending: " +
+          variable.toString());
     });
   }
 

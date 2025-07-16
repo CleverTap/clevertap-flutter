@@ -49,13 +49,19 @@ class CleverTapPlugin {
       cleverTapOnVariablesChangedHandlers = [];
   static List<CleverTapOnOneTimeVariablesChangedHandler>
       cleverTapOnOneTimeVariablesChangedHandlers = [];
-  static List<CleverTapOnValueChangedHandler> cleverTapOnValueChangedHandlers = [];
-  static List<CleverTapOnVariablesChangedAndNoDownloadsPendingHandler> cleverTapOnVariablesChangedAndNoDownloadsPendingHandlers = [];
-  static List<CleverTapOnceVariablesChangedAndNoDownloadsPendingHandler> cleverTapOnceVariablesChangedAndNoDownloadsPendingHandlers = [];
-  static List<CleverTapOnFileValueChangedHandler> cleverTapOnFileValueChangedHandlers = [];
+  static List<CleverTapOnValueChangedHandler> cleverTapOnValueChangedHandlers =
+      [];
+  static List<CleverTapOnVariablesChangedAndNoDownloadsPendingHandler>
+      cleverTapOnVariablesChangedAndNoDownloadsPendingHandlers = [];
+  static List<CleverTapOnceVariablesChangedAndNoDownloadsPendingHandler>
+      cleverTapOnceVariablesChangedAndNoDownloadsPendingHandlers = [];
+  static List<CleverTapOnFileValueChangedHandler>
+      cleverTapOnFileValueChangedHandlers = [];
 
-  late CleverTapCustomTemplatePresentHandler cleverTapCustomTemplatePresentHandler;
-  late CleverTapCustomFunctionPresentHandler cleverTapCustomFunctionPresentHandler;
+  late CleverTapCustomTemplatePresentHandler
+      cleverTapCustomTemplatePresentHandler;
+  late CleverTapCustomFunctionPresentHandler
+      cleverTapCustomFunctionPresentHandler;
   late CleverTapCustomTemplateCloseHandler cleverTapCustomTemplateCloseHandler;
 
   static const MethodChannel _dartToNativeMethodChannel =
@@ -78,7 +84,8 @@ class CleverTapPlugin {
 
   CleverTapPlugin._internal() {
     /// Set the CleverTap Flutter library name and the current version for version tracking
-    _dartToNativeMethodChannel.invokeMethod('setLibrary', {'libName': libName, 'libVersion': libVersion});
+    _dartToNativeMethodChannel.invokeMethod(
+        'setLibrary', {'libName': libName, 'libVersion': libVersion});
     _nativeToDartMethodChannel.setMethodCallHandler(_platformCallHandler);
   }
 
@@ -165,7 +172,8 @@ class CleverTapPlugin {
         Map<dynamic, dynamic> args = call.arguments;
         cleverTapOnOneTimeVariablesChangedHandlers
             .forEach((cleverTapOnOneTimeVariablesChangedHandler) {
-          cleverTapOnOneTimeVariablesChangedHandler(args.cast<String, dynamic>());
+          cleverTapOnOneTimeVariablesChangedHandler(
+              args.cast<String, dynamic>());
         });
         break;
       case "onValueChanged":
@@ -179,16 +187,18 @@ class CleverTapPlugin {
         Map<dynamic, dynamic> args = call.arguments;
         cleverTapOnVariablesChangedAndNoDownloadsPendingHandlers
             .forEach((cleverTapOnVariablesChangedAndNoDownloadsPendingHandler) {
-          cleverTapOnVariablesChangedAndNoDownloadsPendingHandler(args.cast<String, dynamic>());
+          cleverTapOnVariablesChangedAndNoDownloadsPendingHandler(
+              args.cast<String, dynamic>());
         });
-        break;      
+        break;
       case "onceVariablesChangedAndNoDownloadsPending":
         Map<dynamic, dynamic> args = call.arguments;
-        cleverTapOnceVariablesChangedAndNoDownloadsPendingHandlers
-            .forEach((cleverTapOnceVariablesChangedAndNoDownloadsPendingHandler) {
-          cleverTapOnceVariablesChangedAndNoDownloadsPendingHandler(args.cast<String, dynamic>());
+        cleverTapOnceVariablesChangedAndNoDownloadsPendingHandlers.forEach(
+            (cleverTapOnceVariablesChangedAndNoDownloadsPendingHandler) {
+          cleverTapOnceVariablesChangedAndNoDownloadsPendingHandler(
+              args.cast<String, dynamic>());
         });
-        break;      
+        break;
       case "onFileValueChanged":
         Map<dynamic, dynamic> args = call.arguments;
         cleverTapOnFileValueChangedHandlers
@@ -220,44 +230,53 @@ class CleverTapPlugin {
    * failed
    */
   void invokeStartEmission(String name) {
-    if (Platform.isAndroid) {
-    _dartToNativeMethodChannel.invokeMethod('startEmission', name);
+    if (!kIsWeb && Platform.isAndroid) {
+      _dartToNativeMethodChannel.invokeMethod('startEmission', name);
     }
   }
-  
-  void setCleverTapCustomTemplatePresentHandler(CleverTapCustomTemplatePresentHandler handler) {
+
+  void setCleverTapCustomTemplatePresentHandler(
+      CleverTapCustomTemplatePresentHandler handler) {
     invokeStartEmission('CleverTapCustomTemplatePresent');
     cleverTapCustomTemplatePresentHandler = handler;
   }
-  void setCleverTapCustomFunctionPresentHandler(CleverTapCustomTemplateCloseHandler handler) {
+
+  void setCleverTapCustomFunctionPresentHandler(
+      CleverTapCustomTemplateCloseHandler handler) {
     invokeStartEmission('CleverTapCustomFunctionPresent');
     cleverTapCustomFunctionPresentHandler = handler;
   }
-  void setCleverTapCustomTemplateCloseHandler(CleverTapCustomFunctionPresentHandler handler) {
+
+  void setCleverTapCustomTemplateCloseHandler(
+      CleverTapCustomFunctionPresentHandler handler) {
     invokeStartEmission('CleverTapCustomTemplateClose');
     cleverTapCustomTemplateCloseHandler = handler;
   }
 
   /// Define a method to handle inApp notification dismissed
-  void setCleverTapInAppNotificationDismissedHandler(CleverTapInAppNotificationDismissedHandler handler) {
+  void setCleverTapInAppNotificationDismissedHandler(
+      CleverTapInAppNotificationDismissedHandler handler) {
     invokeStartEmission('CleverTapInAppNotificationDismissed');
     cleverTapInAppNotificationDismissedHandler = handler;
   }
 
   /// Only for Android - Define a method to handle inApp notification shown
-  void setCleverTapInAppNotificationShowHandler(CleverTapInAppNotificationShowHandler handler) {
+  void setCleverTapInAppNotificationShowHandler(
+      CleverTapInAppNotificationShowHandler handler) {
     invokeStartEmission('CleverTapInAppNotificationShowed');
     cleverTapInAppNotificationShowHandler = handler;
   }
 
   /// Define a method to handle inApp notification button clicked
-  void setCleverTapInAppNotificationButtonClickedHandler(CleverTapInAppNotificationButtonClickedHandler handler) {
+  void setCleverTapInAppNotificationButtonClickedHandler(
+      CleverTapInAppNotificationButtonClickedHandler handler) {
     invokeStartEmission('CleverTapInAppNotificationButtonTapped');
     cleverTapInAppNotificationButtonClickedHandler = handler;
   }
 
   /// Define a method to handle profile initialization
-  void setCleverTapProfileDidInitializeHandler(CleverTapProfileDidInitializeHandler handler) {
+  void setCleverTapProfileDidInitializeHandler(
+      CleverTapProfileDidInitializeHandler handler) {
     invokeStartEmission('CleverTapProfileDidInitialize');
     cleverTapProfileDidInitializeHandler = handler;
   }
@@ -269,73 +288,85 @@ class CleverTapPlugin {
   }
 
   /// Define a method to handle inbox initialization
-  void setCleverTapInboxDidInitializeHandler(CleverTapInboxDidInitializeHandler handler) {
+  void setCleverTapInboxDidInitializeHandler(
+      CleverTapInboxDidInitializeHandler handler) {
     invokeStartEmission('CleverTapInboxDidInitialize');
     cleverTapInboxDidInitializeHandler = handler;
   }
 
   /// Define a method to handle inbox update
-  void setCleverTapInboxMessagesDidUpdateHandler(CleverTapInboxMessagesDidUpdateHandler handler) {
+  void setCleverTapInboxMessagesDidUpdateHandler(
+      CleverTapInboxMessagesDidUpdateHandler handler) {
     invokeStartEmission('CleverTapInboxMessagesDidUpdate');
     cleverTapInboxMessagesDidUpdateHandler = handler;
   }
 
   /// Define a method to handle inbox notification button clicked
-  void setCleverTapInboxNotificationButtonClickedHandler(CleverTapInboxNotificationButtonClickedHandler handler) {
+  void setCleverTapInboxNotificationButtonClickedHandler(
+      CleverTapInboxNotificationButtonClickedHandler handler) {
     invokeStartEmission('CleverTapInboxMessageButtonTapped');
     cleverTapInboxNotificationButtonClickedHandler = handler;
   }
 
   /// Define a method to handle inbox notification message clicked
-  void setCleverTapInboxNotificationMessageClickedHandler(CleverTapInboxNotificationMessageClickedHandler handler) {
+  void setCleverTapInboxNotificationMessageClickedHandler(
+      CleverTapInboxNotificationMessageClickedHandler handler) {
     invokeStartEmission('CleverTapInboxMessageTapped');
     cleverTapInboxNotificationMessageClickedHandler = handler;
   }
 
   /// Define a method to handle Native Display Unit updates
-  void setCleverTapDisplayUnitsLoadedHandler(CleverTapDisplayUnitsLoadedHandler handler) {
+  void setCleverTapDisplayUnitsLoadedHandler(
+      CleverTapDisplayUnitsLoadedHandler handler) {
     invokeStartEmission('CleverTapDisplayUnitsLoaded');
     cleverTapDisplayUnitsLoadedHandler = handler;
   }
 
   /// Define a method to handle Feature Flag updates
-  void setCleverTapFeatureFlagUpdatedHandler(CleverTapFeatureFlagUpdatedHandler handler) {
+  void setCleverTapFeatureFlagUpdatedHandler(
+      CleverTapFeatureFlagUpdatedHandler handler) {
     invokeStartEmission('CleverTapFeatureFlagsDidUpdate');
     cleverTapFeatureFlagUpdatedHandler = handler;
   }
 
   /// Define a method to handle Product config initialization
-  void setCleverTapProductConfigInitializedHandler(CleverTapProductConfigInitializedHandler handler) {
+  void setCleverTapProductConfigInitializedHandler(
+      CleverTapProductConfigInitializedHandler handler) {
     invokeStartEmission('CleverTapProductConfigDidInitialize');
     cleverTapProductConfigInitializedHandler = handler;
   }
 
   /// Define a method to handle Product config fetch updates
-  void setCleverTapProductConfigFetchedHandler(CleverTapProductConfigFetchedHandler handler) {
+  void setCleverTapProductConfigFetchedHandler(
+      CleverTapProductConfigFetchedHandler handler) {
     invokeStartEmission('CleverTapProductConfigDidFetch');
     cleverTapProductConfigFetchedHandler = handler;
   }
 
   /// Define a method to handle Product config activation updates
-  void setCleverTapProductConfigActivatedHandler(CleverTapProductConfigActivatedHandler handler) {
+  void setCleverTapProductConfigActivatedHandler(
+      CleverTapProductConfigActivatedHandler handler) {
     invokeStartEmission('CleverTapProductConfigDidActivate');
     cleverTapProductConfigActivatedHandler = handler;
   }
 
   /// Define a method to handle Push Amplification payload
-  void setCleverTapPushAmpPayloadReceivedHandler(CleverTapPushAmpPayloadReceivedHandler handler) {
+  void setCleverTapPushAmpPayloadReceivedHandler(
+      CleverTapPushAmpPayloadReceivedHandler handler) {
     invokeStartEmission('CleverTapPushAmpPayloadReceived');
     cleverTapPushAmpPayloadReceivedHandler = handler;
   }
 
   /// Define a method to handle Push Clicked payload
-  void setCleverTapPushClickedPayloadReceivedHandler(CleverTapPushClickedPayloadReceivedHandler handler) {
+  void setCleverTapPushClickedPayloadReceivedHandler(
+      CleverTapPushClickedPayloadReceivedHandler handler) {
     invokeStartEmission('CleverTapPushNotificationClicked');
     cleverTapPushClickedPayloadReceivedHandler = handler;
   }
 
   /// Define a method to handle Push permission response
-  void setCleverTapPushPermissionResponseReceivedHandler(CleverTapPushPermissionResponseReceivedHandler handler) {
+  void setCleverTapPushPermissionResponseReceivedHandler(
+      CleverTapPushPermissionResponseReceivedHandler handler) {
     invokeStartEmission('CleverTapPushPermissionResponseReceived');
     cleverTapPushPermissionResponseReceivedHandler = handler;
   }
@@ -410,6 +441,14 @@ class CleverTapPlugin {
     return await _dartToNativeMethodChannel.invokeMethod('getAccountID', {});
   }
 
+  /// Only for Web - Return the web sdk version
+  static Future<String?> getSDKVersion() async {
+    if (!kIsWeb) {
+      return null;
+    }
+    return await _dartToNativeMethodChannel.invokeMethod('getSDKVersion', {});
+  }
+
   /// Only for Web - Return the Web Native Display KV pair data
   static void addKVDataChangeListener(CleverTapOnKVDataChangedHandler handler) {
     if (!kIsWeb) {
@@ -456,16 +495,6 @@ class CleverTapPlugin {
         'enableWebPush', pushData);
   }
 
-  /// Only for Web - enable web push for customized prompt
-  static Future<void> enableWebPushNotifications(
-      Map<String, dynamic> pushData) async {
-    if (!kIsWeb) {
-      return;
-    }
-    await _dartToNativeMethodChannel.invokeMethod<void>(
-        'enableWebPushNotifications', pushData);
-  }
-
   /// Only for Web - Mark all messages as read
   static Future<void> markReadAllInboxMessage() async {
     if (!kIsWeb) {
@@ -493,9 +522,10 @@ class CleverTapPlugin {
   }
 
   /// Set the Token for Push Notifications for push providers other than FCM
-  static Future<void> pushRegistrationToken(String value, Map<String, String> pushType) async {
-    return await _dartToNativeMethodChannel
-        .invokeMethod('pushRegistrationToken', {'token': value, 'pushType': pushType});
+  static Future<void> pushRegistrationToken(
+      String value, Map<String, String> pushType) async {
+    return await _dartToNativeMethodChannel.invokeMethod(
+        'pushRegistrationToken', {'token': value, 'pushType': pushType});
   }
 
   /// Method to create Notification Channel
@@ -701,28 +731,36 @@ class CleverTapPlugin {
         'recordChargedEvent', {'chargeDetails': chargeDetails, 'items': items});
   }
 
-  @Deprecated("This method is deprecated since 3.1.0. User getUserEventLog() instead")
+  @Deprecated(
+      "This method is deprecated since 3.1.0. User getUserEventLog() instead")
+
   /// Returns the timestamp of the first time the given event was raised
   static Future<dynamic> eventGetFirstTime(String eventName) async {
     return await _dartToNativeMethodChannel
         .invokeMethod('eventGetFirstTime', {'eventName': eventName});
   }
 
-  @Deprecated("This method is deprecated since 3.1.0. User getUserEventLog() instead")
+  @Deprecated(
+      "This method is deprecated since 3.1.0. User getUserEventLog() instead")
+
   /// Returns the timestamp of the last time the given event was raised
   static Future<dynamic> eventGetLastTime(String eventName) async {
     return await _dartToNativeMethodChannel
         .invokeMethod('eventGetLastTime', {'eventName': eventName});
   }
 
-  @Deprecated("This method is deprecated since 3.1.0. User getUserEventLogCount() instead")
+  @Deprecated(
+      "This method is deprecated since 3.1.0. User getUserEventLogCount() instead")
+
   /// Returns the total count of the specified event
   static Future<int?> eventGetOccurrences(String eventName) async {
     return await _dartToNativeMethodChannel
         .invokeMethod('eventGetOccurrences', {'eventName': eventName});
   }
 
-  @Deprecated("This method is deprecated since 3.1.0. User getUserEventLog() instead")
+  @Deprecated(
+      "This method is deprecated since 3.1.0. User getUserEventLog() instead")
+
   /// Returns a Map object for the particular event passed. EventDetail consists of event name, count, first time
   //  and last time timestamp of the event.
   static Future<Map<String, dynamic>> eventGetDetail(String eventName) async {
@@ -731,7 +769,9 @@ class CleverTapPlugin {
     return response.cast<String, dynamic>();
   }
 
-  @Deprecated("This method is deprecated since 3.1.0. User getUserEventLogHistory() instead")
+  @Deprecated(
+      "This method is deprecated since 3.1.0. User getUserEventLogHistory() instead")
+
   /// Returns a Map of event names and corresponding event details of all the events raised
   static Future<Map<String, dynamic>> getEventHistory(String eventName) async {
     Map<dynamic, dynamic> response = await _dartToNativeMethodChannel
@@ -770,7 +810,6 @@ class CleverTapPlugin {
     return await _dartToNativeMethodChannel
         .invokeMethod('getUserLastVisitTs', {});
   }
-
 
   /// Set the user profile location in CleverTap
   static Future<void> setLocation(double latitude, double longitude) async {
@@ -931,7 +970,9 @@ class CleverTapPlugin {
         .invokeMethod('sessionGetTimeElapsed', {});
   }
 
-  @Deprecated("This method is deprecated since 3.1.0. User getUserAppLaunchCount() instead")
+  @Deprecated(
+      "This method is deprecated since 3.1.0. User getUserAppLaunchCount() instead")
+
   /// Returns the total number of times the app has been launched
   static Future<int?> sessionGetTotalVisits() async {
     return await _dartToNativeMethodChannel
@@ -944,7 +985,9 @@ class CleverTapPlugin {
         .invokeMethod('sessionGetScreenCount', {});
   }
 
-  @Deprecated("This method is deprecated since 3.1.0. User getUserLastVisitTs() instead")
+  @Deprecated(
+      "This method is deprecated since 3.1.0. User getUserLastVisitTs() instead")
+
   /// Returns the timestamp of the previous visit
   static Future<dynamic> sessionGetPreviousVisitTime() async {
     return await _dartToNativeMethodChannel
@@ -1016,7 +1059,6 @@ class CleverTapPlugin {
   }
 
   /// Returns a list of json string representation of all CTInboxMessage
-
   static Future<List?> getAllInboxMessages() async {
     return await _dartToNativeMethodChannel
         .invokeMethod('getAllInboxMessages', {});
@@ -1083,8 +1125,11 @@ class CleverTapPlugin {
   ///Display units
   ///Returns a List of Display units as a Map
   static Future<List?> getAllDisplayUnits() async {
-    return await _dartToNativeMethodChannel
-        .invokeMethod('getAllDisplayUnits', {});
+    if (Platform.isAndroid || Platform.isIOS) {
+      return await _dartToNativeMethodChannel
+          .invokeMethod('getAllDisplayUnits', {});
+    }
+    return null;
   }
 
   ///Returns Display unit info as a Map
@@ -1282,6 +1327,7 @@ class CleverTapPlugin {
   ///Create File variable.
   /// * @param {object} variables The JSON Object specifying the varibles to be created.
   static Future<void> defineFileVariable(String fileVariable) async {
+    print("object");
     return await _dartToNativeMethodChannel
         .invokeMethod('defineFileVariable', {'fileVariable': fileVariable});
   }
@@ -1307,9 +1353,10 @@ class CleverTapPlugin {
     }
   }
 
-  static void onOneTimeVariablesChanged(CleverTapOnOneTimeVariablesChangedHandler handler) {
-      cleverTapOnOneTimeVariablesChangedHandlers.add(handler);
-      _dartToNativeMethodChannel.invokeMethod('onOneTimeVariablesChanged', {});
+  static void onOneTimeVariablesChanged(
+      CleverTapOnOneTimeVariablesChangedHandler handler) {
+    cleverTapOnOneTimeVariablesChangedHandlers.add(handler);
+    _dartToNativeMethodChannel.invokeMethod('onOneTimeVariablesChanged', {});
   }
 
   static void onValueChanged(
@@ -1322,19 +1369,25 @@ class CleverTapPlugin {
     }
   }
 
-  static void onVariablesChangedAndNoDownloadsPending(CleverTapOnVariablesChangedAndNoDownloadsPendingHandler handler) {
-      cleverTapOnVariablesChangedAndNoDownloadsPendingHandlers.add(handler);
-      _dartToNativeMethodChannel.invokeMethod('onVariablesChangedAndNoDownloadsPending', {});
+  static void onVariablesChangedAndNoDownloadsPending(
+      CleverTapOnVariablesChangedAndNoDownloadsPendingHandler handler) {
+    cleverTapOnVariablesChangedAndNoDownloadsPendingHandlers.add(handler);
+    _dartToNativeMethodChannel
+        .invokeMethod('onVariablesChangedAndNoDownloadsPending', {});
   }
 
-  static void onceVariablesChangedAndNoDownloadsPending(CleverTapOnceVariablesChangedAndNoDownloadsPendingHandler handler) {
-      cleverTapOnceVariablesChangedAndNoDownloadsPendingHandlers.add(handler);
-      _dartToNativeMethodChannel.invokeMethod('onceVariablesChangedAndNoDownloadsPending', {});
+  static void onceVariablesChangedAndNoDownloadsPending(
+      CleverTapOnceVariablesChangedAndNoDownloadsPendingHandler handler) {
+    cleverTapOnceVariablesChangedAndNoDownloadsPendingHandlers.add(handler);
+    _dartToNativeMethodChannel
+        .invokeMethod('onceVariablesChangedAndNoDownloadsPending', {});
   }
 
-  static void onFileValueChanged(String name, CleverTapOnFileValueChangedHandler handler) {
-      cleverTapOnFileValueChangedHandlers.add(handler);
-      _dartToNativeMethodChannel.invokeMethod('onFileValueChanged', {'name': name});
+  static void onFileValueChanged(
+      String name, CleverTapOnFileValueChangedHandler handler) {
+    cleverTapOnFileValueChangedHandlers.add(handler);
+    _dartToNativeMethodChannel
+        .invokeMethod('onFileValueChanged', {'name': name});
   }
 
   ///Sets the user locale.
@@ -1354,64 +1407,103 @@ class CleverTapPlugin {
         'clearInAppResources', expiredOnly);
   }
 
-
   /**
      * Uploads Custom in-app templates and app functions to the server.
      * Requires Development/Debug build/configuration.
      */
-  
+
   static Future<void> syncCustomTemplates() async {
     return await _dartToNativeMethodChannel
         .invokeMethod('syncCustomTemplates', {});
   }
 
   static Future<void> syncCustomTemplatesInProd(bool isProduction) async {
-    return await _dartToNativeMethodChannel
-        .invokeMethod('syncCustomTemplatesInProd', {'isProduction': isProduction});
+    return await _dartToNativeMethodChannel.invokeMethod(
+        'syncCustomTemplatesInProd', {'isProduction': isProduction});
   }
 
   static Future<void> customTemplateSetDismissed(String templateName) async {
-    return await _dartToNativeMethodChannel
-        .invokeMethod('customTemplateSetDismissed', templateName);
+    return await _dartToNativeMethodChannel.invokeMethod(
+        'customTemplateSetDismissed', templateName);
   }
 
   static Future<void> customTemplateSetPresented(String templateName) async {
+    return await _dartToNativeMethodChannel.invokeMethod(
+        'customTemplateSetPresented', templateName);
+  }
+
+  static Future<void> customTemplateRunAction(
+      String templateName, String argName) async {
+    return await _dartToNativeMethodChannel.invokeMethod(
+        'customTemplateRunAction',
+        {'templateName': templateName, 'argName': argName});
+  }
+
+  static Future<String?> customTemplateGetStringArg(
+      String templateName, String argName) async {
+    return await _dartToNativeMethodChannel.invokeMethod(
+        'customTemplateGetStringArg',
+        {'templateName': templateName, 'argName': argName});
+  }
+
+  static Future<num?> customTemplateGetNumberArg(
+      String templateName, String argName) async {
+    return await _dartToNativeMethodChannel.invokeMethod(
+        'customTemplateGetNumberArg',
+        {'templateName': templateName, 'argName': argName});
+  }
+
+  static Future<bool?> customTemplateGetBooleanArg(
+      String templateName, String argName) async {
+    return await _dartToNativeMethodChannel.invokeMethod(
+        'customTemplateGetBooleanArg',
+        {'templateName': templateName, 'argName': argName});
+  }
+
+  static Future<String?> customTemplateGetFileArg(
+      String templateName, String argName) async {
+    return await _dartToNativeMethodChannel.invokeMethod(
+        'customTemplateGetFileArg',
+        {'templateName': templateName, 'argName': argName});
+  }
+
+  static Future<Object?> customTemplateGetObjectArg(
+      String templateName, String argName) async {
+    return await _dartToNativeMethodChannel.invokeMethod(
+        'customTemplateGetObjectArg',
+        {'templateName': templateName, 'argName': argName});
+  }
+
+  static Future<String?> customTemplateContextToString(
+      String templateName) async {
+    return await _dartToNativeMethodChannel.invokeMethod(
+        'customTemplateContextToString', {'templateName': templateName});
+  }
+
+  /// Only for Web - Enable/Disable local storage encryption
+  static Future<void> enableLocalStorageEncryption(bool value) async {
+    if (!kIsWeb) {
+      return null;
+    }
     return await _dartToNativeMethodChannel
-        .invokeMethod('customTemplateSetPresented', templateName);
+        .invokeMethod('enableLocalStorageEncryption', {'value': value});
   }
 
-  static Future<void> customTemplateRunAction(String templateName, String argName) async {
-    return await _dartToNativeMethodChannel.invokeMethod('customTemplateRunAction',
-        {'templateName': templateName, 'argName': argName});
+  /// Only for Web - Check if the local storage encryption is enabled
+  static Future<bool?> isLocalStorageEncryptionEnabled() async {
+    if (!kIsWeb) {
+      return null;
+    }
+    return await _dartToNativeMethodChannel
+        .invokeMethod('isLocalStorageEncryptionEnabled', {});
   }
 
-  static Future<String?> customTemplateGetStringArg(String templateName, String argName) async {
-    return await _dartToNativeMethodChannel.invokeMethod('customTemplateGetStringArg',
-        {'templateName': templateName, 'argName': argName});
-  }
-
-  static Future<num?> customTemplateGetNumberArg(String templateName, String argName) async {
-    return await _dartToNativeMethodChannel.invokeMethod('customTemplateGetNumberArg',
-        {'templateName': templateName, 'argName': argName});
-  }
-
-  static Future<bool?> customTemplateGetBooleanArg(String templateName, String argName) async {
-    return await _dartToNativeMethodChannel.invokeMethod('customTemplateGetBooleanArg',
-        {'templateName': templateName, 'argName': argName});
-  }
-
-  static Future<String?> customTemplateGetFileArg(String templateName, String argName) async {
-    return await _dartToNativeMethodChannel.invokeMethod('customTemplateGetFileArg',
-        {'templateName': templateName, 'argName': argName});
-  }
-
-  static Future<Object?> customTemplateGetObjectArg(String templateName, String argName) async {
-    return await _dartToNativeMethodChannel.invokeMethod('customTemplateGetObjectArg',
-        {'templateName': templateName, 'argName': argName});
-  }
-
-  static Future<String?> customTemplateContextToString(String templateName) async {
-    return await _dartToNativeMethodChannel.invokeMethod('customTemplateContextToString',
-        {'templateName': templateName});
+  /// Only for Web - Returns a list of all qualified campaigns
+  static Future<List?> getAllQualifiedCampaignDetails() async {
+    if (!kIsWeb) {
+      return null;
+    }
+    return await _dartToNativeMethodChannel
+        .invokeMethod('getAllQualifiedCampaignDetails', {});
   }
 }
