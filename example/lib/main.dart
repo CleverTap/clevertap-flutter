@@ -1759,8 +1759,7 @@ class _MyAppState extends State<MyApp> {
       'altText': 'Alternate Image'
     };
     if (kIsWeb) {
-      CleverTapPlugin.enableWebPushNotifications(
-          {'swPath': '/firebase-messaging-sw.js'});
+      return;
     } else {
       CleverTapPlugin.promptPushPrimer(pushPrimerJSON);
       showToast("Half-Interstitial Push Primer");

@@ -104,7 +104,7 @@ external void markReadInboxMessagesForIds(JSArray<JSString> messageIds);
 @JS('clevertap.defineVariables')
 external void defineVariables(JSAny object);
 
-@JS('clevertap.defineFileVariable')
+@JS('clevertap.defineFileVariable_')
 external void defineFileVariable(String fileVariable);
 
 @JS('clevertap.syncVariables')
