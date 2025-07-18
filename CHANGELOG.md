@@ -1,12 +1,12 @@
 ## CHANGE LOG
 
-Version 3.5.0 *(16 July 2025)*
+Version 3.5.0 *(18 July 2025)*
 -------------------------------------------
 **What's new**
 * **[Web Platform]**
   * Supports [CleverTap Web SDK v1.17.0](https://github.com/CleverTap/clevertap-web-sdk/releases/tag/v1.17.0)
   * Removes the method 'enableWebPushNotifications()' as 'enableWebPush()' method handles custom web push prompt
-  * Removed [js package](https://pub.dev/packages/js) dependency as it is discontinued. 
+  * Removes [js package](https://pub.dev/packages/js) dependency as it is discontinued. 
   * Supports Web Assembly(WASM) build
   
 * **[Android Platform]**
