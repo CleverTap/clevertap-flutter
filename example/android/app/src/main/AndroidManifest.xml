@@ -50,10 +50,6 @@
             android:name="CLEVERTAP_USE_GOOGLE_AD_ID"
             android:value="0"/>
 
-        <meta-data
-            android:name="CLEVERTAP_ENCRYPTION_IN_TRANSIT"
-            android:value="0" />
-
         <service
             android:name="com.clevertap.android.sdk.pushnotification.fcm.FcmMessageListenerService"
             android:exported="true">
