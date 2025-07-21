@@ -1,131 +1,182 @@
-@JS("clevertap")
-library clevertap;
+import 'dart:js_interop';
 
-import 'package:js/js.dart';
-
-@JS('init')
+// Direct external function declarations for CleverTap JavaScript API
+@JS('clevertap.init')
 external void init(
     String accountId, String? region, String? targetDomain, String? token);
 
-@JS('setLibrary')
-external void setLibrary(
-  String libName,
-  int libVersion,
-);
+@JS('clevertap.setLibrary')
+external void setLibrary(String libName, int libVersion);
 
-@JS('toggleInbox')
-external void toggleInbox(Object object);
+@JS('clevertap.toggleInbox')
+external void toggleInbox(JSAny object);
 
-@JS('event.push')
-external void event_push(String event, Object? object);
+@JS('clevertap.event.push')
+external void event_push(String event, JSAny? object);
 
-@JS('onUserLogin.push')
-external void onUserLogin_push(Object object);
+@JS('clevertap.onUserLogin.push')
+external void onUserLogin_push(JSAny object);
 
-@JS('notifications.push')
-external void notifications_push(Object object);
+@JS('clevertap.notifications.push')
+external void notifications_push(JSAny object);
 
-@JS('notifications.enable')
-external void notifications_enable(Object object);
+@JS('clevertap.notifications.enable')
+external void notifications_enable(JSAny object);
 
-@JS('profile.push')
-external void profile_push(Object object);
+@JS('clevertap.profile.push')
+external void profile_push(JSAny object);
 
-@JS('privacy.push')
-external void privacy_push(Object object);
+@JS('clevertap.privacy.push')
+external void privacy_push(JSAny object);
 
-@JS('setLogLevel')
+@JS('clevertap.setLogLevel')
 external void setLogLevel(int value);
 
-@JS('getCleverTapID')
+@JS('clevertap.getCleverTapID')
 external String? getCleverTapID();
 
-@JS('getAccountID')
+@JS('clevertap.getAccountID')
 external String? getAccountID();
 
-@JS('setOffline')
+@JS('clevertap.setOffline')
 external void setOffline(bool value);
 
-@JS('setMultiValuesForKey')
-external void setMultiValuesForKey(String key, List? values);
+@JS('clevertap.setMultiValuesForKey')
+external void setMultiValuesForKey(String key, JSArray<JSString>? values);
 
-@JS('addMultiValueForKey')
+@JS('clevertap.addMultiValueForKey')
 external void addMultiValueForKey(String key, String value);
 
-@JS('addMultiValuesForKey')
-external void addMultiValuesForKey(String key, List? values);
+@JS('clevertap.addMultiValuesForKey')
+external void addMultiValuesForKey(String key, JSArray<JSString>? values);
 
-@JS('removeMultiValueForKey')
+@JS('clevertap.removeMultiValueForKey')
 external void removeMultiValueForKey(String key, String value);
 
-@JS('removeMultiValuesForKey')
-external void removeMultiValuesForKey(String key, List? values);
+@JS('clevertap.removeMultiValuesForKey')
+external void removeMultiValuesForKey(String key, JSArray<JSString>? values);
 
-@JS('removeValueForKey')
+@JS('clevertap.removeValueForKey')
 external void removeValueForKey(String key);
 
-@JS('handleIncrementValue')
-external void handleIncrementValue(String key, num value);
+@JS('clevertap.handleIncrementValue')
+external void handleIncrementValue(String key, JSNumber value);
 
-@JS('handleDecrementValue')
-external void handleDecrementValue(String key, num value);
+@JS('clevertap.handleDecrementValue')
+external void handleDecrementValue(String key, JSNumber value);
 
-@JS('getLocation')
-external void getLocation(double latitude, double longitude);
+@JS('clevertap.getLocation')
+external void getLocation(JSNumber latitude, JSNumber longitude);
 
-@JS('renderNotificationViewed')
-external void renderNotificationViewed(Object object);
+@JS('clevertap.renderNotificationViewed')
+external void renderNotificationViewed(JSAny object);
 
-@JS('renderNotificationViewed')
-external void renderNotificationClicked(Object object);
+@JS('clevertap.renderNotificationClicked')
+external void renderNotificationClicked(JSAny object);
 
-@JS('getInboxMessageCount')
+@JS('clevertap.getInboxMessageCount')
 external int getInboxMessageCount();
 
-@JS('getInboxMessageUnreadCount')
+@JS('clevertap.getInboxMessageUnreadCount')
 external int getInboxMessageUnreadCount();
 
-@JS('getAllInboxMessages')
-external Map getAllInboxMessages();
+@JS('clevertap.getAllInboxMessages')
+external JSObject getAllInboxMessages();
 
-@JS('getUnreadInboxMessages')
-external Map getUnreadInboxMessages();
+@JS('clevertap.getUnreadInboxMessages')
+external JSObject getUnreadInboxMessages();
 
-@JS('getInboxMessageForId')
-external Object getInboxMessageForId(String messageId);
+@JS('clevertap.getInboxMessageForId')
+external JSAny getInboxMessageForId(String messageId);
 
-@JS('deleteInboxMessage')
+@JS('clevertap.deleteInboxMessage')
 external void deleteInboxMessage(String messageId);
 
-@JS('markReadInboxMessage')
+@JS('clevertap.markReadInboxMessage')
 external void markReadInboxMessage(String messageId);
 
-@JS('markReadAllInboxMessage')
+@JS('clevertap.markReadAllInboxMessage')
 external void markReadAllInboxMessage();
 
-@JS('markReadInboxMessagesForIds')
-external void markReadInboxMessagesForIds(List messageIds);
+@JS('clevertap.markReadInboxMessagesForIds')
+external void markReadInboxMessagesForIds(JSArray<JSString> messageIds);
 
-@JS('defineVariables')
-external void defineVariables(Object object);
+@JS('clevertap.defineVariables')
+external void defineVariables(JSAny object);
 
-@JS('syncVariables')
+@JS('clevertap.defineFileVariable_')
+external void defineFileVariable(String fileVariable);
+
+@JS('clevertap.syncVariables')
 external void syncVariables();
 
-@JS('fetchVariables')
-external void fetchVariables(Function callback);
+@JS('clevertap.fetchVariables')
+external void fetchVariables(JSFunction callback);
 
-@JS('onValueChanged')
-external void onValueChangedImpl(String key, Function function);
+@JS('clevertap.onValueChanged')
+external void onValueChangedImpl(String key, JSFunction function);
 
-@JS('onVariablesChanged')
-external void onVariablesChangedImpl(Function function);
+@JS('clevertap.onVariablesChanged')
+external void onVariablesChangedImpl(JSFunction function);
 
-@JS('getVariables')
-external void getVariables(Function function);
+@JS('clevertap.getVariables')
+external void getVariables(JSFunction function);
 
-@JS('getVariable')
-external void getVariable(String name, Function function);
+@JS('clevertap.getVariable')
+external void getVariable(String name, JSFunction function);
 
-@JS('addDocumentEventListener')
-external void addDocumentEventListenerImpl(String name, Function callback);
+@JS('clevertap.getSDKVersion')
+external String? getSDKVersion();
+
+@JS('clevertap.enableLocalStorageEncryption')
+external void enableLocalStorageEncryption(bool value);
+
+@JS('clevertap.isLocalStorageEncryptionEnabled')
+external bool? isLocalStorageEncryptionEnabled();
+
+@JS('clevertap.getAllQualifiedCampaignDetails')
+external JSArray<JSObject> getAllQualifiedCampaignDetails();
+
+@JS('document.addEventListener')
+external void addDocumentEventListenerImpl(String name, JSFunction callback);
+
+// Wrapper functions for List handling
+void setMultiValuesForKeyWrapper(String key, List? values) {
+  if (values == null) {
+    setMultiValuesForKey(key, null);
+  } else {
+    final jsValues = values.map((v) => v.toString().toJS).toList().toJS;
+    setMultiValuesForKey(key, jsValues);
+  }
+}
+
+void addMultiValuesForKeyWrapper(String key, List? values) {
+  if (values != null) {
+    final jsValues = values.map((v) => v.toString().toJS).toList().toJS;
+    addMultiValuesForKey(key, jsValues);
+  }
+}
+
+void removeMultiValuesForKeyWrapper(String key, List? values) {
+  if (values != null) {
+    final jsValues = values.map((v) => v.toString().toJS).toList().toJS;
+    removeMultiValuesForKey(key, jsValues);
+  }
+}
+
+void handleIncrementValueWrapper(String key, num value) {
+  handleIncrementValue(key, value.toJS);
+}
+
+void handleDecrementValueWrapper(String key, num value) {
+  handleDecrementValue(key, value.toJS);
+}
+
+void getLocationWrapper(double latitude, double longitude) {
+  getLocation(latitude.toJS, longitude.toJS);
+}
+
+void markReadInboxMessagesForIdsWrapper(List messageIds) {
+  final jsMessageIds = messageIds.map((id) => id.toString().toJS).toList().toJS;
+  markReadInboxMessagesForIds(jsMessageIds);
+}

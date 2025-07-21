@@ -33,20 +33,21 @@
   <title>clevertap_plugin_example</title>
   <link rel="manifest" href="manifest.json">
 
-  <script>
+  <!-- <script>
     // The value below is injected by flutter build, do not touch.
-    const serviceWorkerVersion = null;
-  </script>
+    const serviceWorkerVersion = "{{flutter_service_worker_version}}";
+  </script> -->
   <!-- This script adds the flutter initialization JS code -->
   <script src="flutter.js" defer></script>
   <script src="./assets/packages/clevertap_plugin/assets/clevertap.js"></script>
 </head>
 
 <body>
-  <script>
+  <script src="flutter_bootstrap.js" async></script>
+  <!-- <script>
     window.addEventListener('load', function (ev) {
       // Download main.dart.js
-      _flutter.loader.loadEntrypoint({
+      _flutter.loader.load({
         serviceWorker: {
           serviceWorkerVersion: serviceWorkerVersion,
         },
@@ -57,7 +58,7 @@
         }
       });
     });
-  </script>
+  </script> -->
   <button id='bell-selector' style="visibility: hidden;">Inbox</button>
 </body>
 
