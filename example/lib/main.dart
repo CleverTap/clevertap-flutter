@@ -782,7 +782,7 @@ class _MyAppState extends State<MyApp> {
                     _buildListTile("Get Ad Units", getAdUnits,
                         "Returns all Display Units set"),
                   ]),
-                _buildExpansionTile("GDPR", [
+                _buildExpansionTile("GDPR", [ 
                   _buildListTile("Opt Out User", () => setOptOut(true), "Opt Out User fully"),
                   _buildListTile("Opt In User", () => setOptOut(false), "Opt In User fully"),
                  if (!kIsWeb)
