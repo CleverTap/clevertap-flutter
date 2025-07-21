@@ -1,6 +1,6 @@
 ## CHANGE LOG
 
-Version 3.5.0 *(18 July 2025)*
+Version 3.5.0 *(21 July 2025)*
 -------------------------------------------
 **What's new**
 * **[Web Platform]**
