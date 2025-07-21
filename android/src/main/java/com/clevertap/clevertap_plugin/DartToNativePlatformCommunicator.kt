@@ -1882,8 +1882,13 @@ class DartToNativePlatformCommunicator(
 
     private fun setOptOut(call: MethodCall, result: MethodChannel.Result) {
         val value = call.argument<Boolean>("value")!!
+        val allowSystemEvents = call.argument<Boolean>("allowSystemEvents")
         if (cleverTapAPI != null) {
-            cleverTapAPI.setOptOut(value)
+            if (allowSystemEvents != null) {
+                cleverTapAPI.setOptOut(value, allowSystemEvents)
+            } else {
+                cleverTapAPI.setOptOut(value)
+            }
             result.success(null)
         } else {
             result.error(TAG, ERROR_MSG, null)

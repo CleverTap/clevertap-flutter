@@ -429,8 +429,13 @@ static NSDateFormatter *dateFormatter;
 }
 
 - (void)setOptOut:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    
-    [[CleverTap sharedInstance] setOptOut:[call.arguments[@"value"] boolValue]];
+    BOOL value = [call.arguments[@"value"] boolValue];
+    if (call.arguments[@"allowSystemEvents"]) {
+        BOOL allowSystemEvents = [call.arguments[@"allowSystemEvents"] boolValue];
+        [[CleverTap sharedInstance] setOptOut:value allowSystemEvents:allowSystemEvents];
+    } else {
+        [[CleverTap sharedInstance] setOptOut:value];
+    }
     result(nil);
 }
 
@@ -1086,7 +1091,7 @@ static NSDateFormatter *dateFormatter;
     }
     if ([value isKindOfClass:[NSNumber class]]) {
         if ([self isBoolNumber:value]) {
-            return [[CleverTap sharedInstance]defineVar:name withBool:value];
+            return [[CleverTap sharedInstance]defineVar:name withBool:[value boolValue]];
         }
         return [[CleverTap sharedInstance]defineVar:name withNumber:value];
     }
