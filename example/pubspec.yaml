@@ -31,8 +31,7 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
     
-  clevertap_plugin:
-    path: ../
+  clevertap_plugin: 3.5.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
