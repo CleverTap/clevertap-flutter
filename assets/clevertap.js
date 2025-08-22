@@ -152,7 +152,6 @@
   const CHARGED_ID = 'Charged ID';
   const CHARGEDID_COOKIE_NAME = 'WZRK_CHARGED_ID';
   const GCOOKIE_NAME = 'WZRK_G';
-  const QUALIFIED_CAMPAIGNS = 'WZRK_QC';
   const KCOOKIE_NAME = 'WZRK_K';
   const CAMP_COOKIE_NAME = 'WZRK_CAMP';
   const CAMP_COOKIE_G = 'WZRK_CAMP_G'; // cookie for storing campaign details against guid
@@ -219,7 +218,10 @@
   const NEW_SOFT_PROMPT_SELCTOR_ID = 'pnWrapper';
   const POPUP_LOADING = 'WZRK_POPUP_LOADING';
   const CUSTOM_HTML_PREVIEW = 'ctCustomHtmlPreview';
+  const WEB_POPUP_PREVIEW = 'ctWebPopupPreview';
+  const QUALIFIED_CAMPAIGNS = 'WZRK_QC';
   const CUSTOM_CT_ID_PREFIX = '_w_';
+  const BLOCK_REQUEST_COOKIE = 'WZRK_BLOCK';
   const WEB_NATIVE_TEMPLATES = {
     KV_PAIR: 1,
     BANNER: 2,
@@ -242,9 +244,15 @@
   };
   const CAMPAIGN_TYPES = {
     EXIT_INTENT: 1,
+
+    /* Deprecated */
     WEB_NATIVE_DISPLAY: 2,
     FOOTER_NOTIFICATION: 0,
+
+    /* Web Popup */
     FOOTER_NOTIFICATION_2: null
+    /* Web Popup */
+
   };
   const SYSTEM_EVENTS = ['Stayed', 'UTM Visited', 'App Launched', 'Notification Sent', NOTIFICATION_VIEWED, NOTIFICATION_CLICKED];
   const KEYS_TO_ENCRYPT = [KCOOKIE_NAME, LRU_CACHE, PR_COOKIE];
@@ -7408,6 +7416,22 @@
       };
       this.saveToLSorCookie(LCOOKIE_NAME, backupArr);
       logger.debug("stored in ".concat(LCOOKIE_NAME, " reqNo : ").concat(reqNo, " -> ").concat(data));
+    } // Add new method for OUL tracking
+
+
+    static markBackupAsOUL(reqNo) {
+      // Store OUL request numbers in a separate meta property
+      const oulRequests = this.getMetaProp('OUL_REQUESTS') || [];
+
+      if (!oulRequests.includes(reqNo)) {
+        oulRequests.push(reqNo);
+        this.setMetaProp('OUL_REQUESTS', oulRequests);
+      }
+    }
+
+    static isBackupOUL(reqNo) {
+      const oulRequests = this.getMetaProp('OUL_REQUESTS') || [];
+      return oulRequests.includes(reqNo);
     }
 
     static removeBackup(respNo, logger) {
@@ -7430,7 +7454,17 @@
     LRU_CACHE: null,
     globalProfileMap: undefined,
     globalEventsMap: undefined,
-    blockRequest: false,
+
+    // Initialize blockRequest from storage
+    get blockRequest() {
+      const value = StorageManager.readFromLSorCookie(BLOCK_REQUEST_COOKIE);
+      return value === true;
+    },
+
+    set blockRequest(value) {
+      StorageManager.saveToLSorCookie(BLOCK_REQUEST_COOKIE, value);
+    },
+
     isOptInRequest: false,
     broadDomain: null,
     webPushEnabled: null,
@@ -7449,11 +7483,13 @@
     privacyArray: [],
     offline: false,
     location: null,
-    dismissSpamControl: false,
+    dismissSpamControl: true,
     globalUnsubscribe: true,
     flutterVersion: null,
     variableStore: {},
-    pushConfig: null // domain: window.location.hostname, url -> getHostName()
+    pushConfig: null,
+    delayEvents: false,
+    intervalArray: [] // domain: window.location.hostname, url -> getHostName()
     // gcookie: -> device
 
   };
@@ -8080,51 +8116,6 @@
     }
   };
 
-  const getURLParams = url => {
-    const urlParams = {};
-    const idx = url.indexOf('?');
-
-    if (idx > 1) {
-      const uri = url.substring(idx + 1);
-      let match;
-      const pl = /\+/g; // Regex for replacing addition symbol with a space
-
-      const search = /([^&=]+)=?([^&]*)/g;
-
-      const decode = function (s) {
-        let replacement = s.replace(pl, ' ');
-
-        try {
-          replacement = decodeURIComponent(replacement);
-        } catch (e) {// eat
-        }
-
-        return replacement;
-      };
-
-      match = search.exec(uri);
-
-      while (match) {
-        urlParams[decode(match[1])] = decode(match[2]);
-        match = search.exec(uri);
-      }
-    }
-
-    return urlParams;
-  };
-  const getDomain = url => {
-    if (url === '') return '';
-    var a = document.createElement('a');
-    a.href = url;
-    return a.hostname;
-  };
-  const addToURL = (url, k, v) => {
-    return url + '&' + k + '=' + encodeURIComponent(v);
-  };
-  const getHostName = () => {
-    return window.location.hostname;
-  };
-
   /* eslint-disable */
   const urlBase64ToUint8Array = base64String => {
     let padding = '='.repeat((4 - base64String.length % 4) % 4);
@@ -8463,6 +8454,51 @@
     return output;
   };
 
+  const getURLParams = url => {
+    const urlParams = {};
+    const idx = url.indexOf('?');
+
+    if (idx > 1) {
+      const uri = url.substring(idx + 1);
+      let match;
+      const pl = /\+/g; // Regex for replacing addition symbol with a space
+
+      const search = /([^&=]+)=?([^&]*)/g;
+
+      const decode = function (s) {
+        let replacement = s.replace(pl, ' ');
+
+        try {
+          replacement = decodeURIComponent(replacement);
+        } catch (e) {// eat
+        }
+
+        return replacement;
+      };
+
+      match = search.exec(uri);
+
+      while (match) {
+        urlParams[decode(match[1])] = decode(match[2]);
+        match = search.exec(uri);
+      }
+    }
+
+    return urlParams;
+  };
+  const getDomain = url => {
+    if (url === '') return '';
+    var a = document.createElement('a');
+    a.href = url;
+    return a.hostname;
+  };
+  const addToURL = (url, k, v) => {
+    return url + '&' + k + '=' + encodeURIComponent(v);
+  };
+  const getHostName = () => {
+    return window.location.hostname;
+  };
+
   var _fireRequest = _classPrivateFieldLooseKey("fireRequest");
 
   var _dropRequestDueToOptOut = _classPrivateFieldLooseKey("dropRequestDueToOptOut");
@@ -8659,6 +8695,666 @@
     value: _addARPToRequest2
   });
 
+  const invokeExternalJs = (jsFunc, targetingMsgJson) => {
+    const func = window.parent[jsFunc];
+
+    if (typeof func === 'function') {
+      if (targetingMsgJson.display.kv != null) {
+        func(targetingMsgJson.display.kv);
+      } else {
+        func();
+      }
+    }
+  };
+  const appendScriptForCustomEvent = (targetingMsgJson, html) => {
+    const script = "<script>\n      const ct__camapignId = '".concat(targetingMsgJson.wzrk_id, "';\n      const ct__formatVal = (v) => {\n          return v && v.trim().substring(0, 20);\n      }\n      const ct__parentOrigin =  window.parent.origin;\n      document.body.addEventListener('click', (event) => {\n        const elem = event.target.closest?.('a[wzrk_c2a], button[wzrk_c2a]');\n        if (elem) {\n            const {innerText, id, name, value, href} = elem;\n            const clickAttr = elem.getAttribute('onclick') || elem.getAttribute('click');\n            const onclickURL = clickAttr?.match(/(window.open)[(](\"|')(.*)(\"|',)/)?.[3] || clickAttr?.match(/(location.href *= *)(\"|')(.*)(\"|')/)?.[3];\n            const props = {innerText, id, name, value};\n            let msgCTkv = Object.keys(props).reduce((acc, c) => {\n                const formattedVal = ct__formatVal(props[c]);\n                formattedVal && (acc['wzrk_click_' + c] = formattedVal);\n                return acc;\n            }, {});\n            if(onclickURL) { msgCTkv['wzrk_click_' + 'url'] = onclickURL; }\n            if(href) { msgCTkv['wzrk_click_' + 'c2a'] = href; }\n            const notifData = { msgId: ct__camapignId, msgCTkv, pivotId: '").concat(targetingMsgJson.wzrk_pivot, "' };\n            window.parent.clevertap.renderNotificationClicked(notifData);\n        }\n      });\n      </script>\n    ");
+    return html.replace(/(<\s*\/\s*body)/, "".concat(script, "\n$1"));
+  };
+  const staleDataUpdate = (staledata, campType) => {
+    const campObj = getCampaignObject();
+    const globalObj = campObj[campType].global;
+
+    if (globalObj != null && campType) {
+      for (const idx in staledata) {
+        if (staledata.hasOwnProperty(idx)) {
+          delete globalObj[staledata[idx]];
+
+          if (StorageManager.read(CAMP_COOKIE_G)) {
+            const guidCampObj = JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)));
+            const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
+
+            if (guidCampObj[guid] && guidCampObj[guid][campType] && guidCampObj[guid][campType][staledata[idx]]) {
+              delete guidCampObj[guid][campType][staledata[idx]];
+              StorageManager.save(CAMP_COOKIE_G, encodeURIComponent(JSON.stringify(guidCampObj)));
+            }
+          }
+        }
+      }
+    }
+
+    saveCampaignObject(campObj);
+  };
+  const mergeEventMap = newEvtMap => {
+    if ($ct.globalEventsMap == null) {
+      $ct.globalEventsMap = StorageManager.readFromLSorCookie(EV_COOKIE);
+
+      if ($ct.globalEventsMap == null) {
+        $ct.globalEventsMap = newEvtMap;
+        return;
+      }
+    }
+
+    for (const key in newEvtMap) {
+      if (newEvtMap.hasOwnProperty(key)) {
+        const oldEvtObj = $ct.globalEventsMap[key];
+        const newEvtObj = newEvtMap[key];
+
+        if ($ct.globalEventsMap[key] != null) {
+          if (newEvtObj[0] != null && newEvtObj[0] > oldEvtObj[0]) {
+            $ct.globalEventsMap[key] = newEvtObj;
+          }
+        } else {
+          $ct.globalEventsMap[key] = newEvtObj;
+        }
+      }
+    }
+  };
+  const incrementImpression = (targetingMsgJson, _request) => {
+    const data = {};
+    data.type = 'event';
+    data.evtName = NOTIFICATION_VIEWED;
+    data.evtData = {
+      [WZRK_ID]: targetingMsgJson.wzrk_id
+    };
+
+    if (targetingMsgJson.wzrk_pivot) {
+      data.evtData = { ...data.evtData,
+        wzrk_pivot: targetingMsgJson.wzrk_pivot
+      };
+    }
+
+    _request.processEvent(data);
+  };
+  const setupClickEvent = (onClick, targetingMsgJson, contentDiv, divId, isLegacy, _device, _session) => {
+    if (onClick !== '' && onClick != null) {
+      let ctaElement;
+      let jsCTAElements;
+
+      if (isLegacy) {
+        ctaElement = contentDiv;
+      } else if (contentDiv !== null) {
+        jsCTAElements = contentDiv.getElementsByClassName('jsCT_CTA');
+
+        if (jsCTAElements != null && jsCTAElements.length === 1) {
+          ctaElement = jsCTAElements[0];
+        }
+      }
+
+      const jsFunc = targetingMsgJson.display.jsFunc;
+      const isPreview = targetingMsgJson.display.preview;
+
+      if (isPreview == null) {
+        onClick += getCookieParams(_device, _session);
+      }
+
+      if (ctaElement != null) {
+        ctaElement.onclick = () => {
+          // invoke js function call
+          if (jsFunc != null) {
+            // track notification clicked event
+            if (isPreview == null) {
+              RequestDispatcher.fireRequest(onClick);
+            }
+
+            invokeExternalJs(jsFunc, targetingMsgJson); // close iframe. using -1 for no campaignId
+
+            closeIframe('-1', divId, _session.sessionId);
+          } else {
+            const rValue = targetingMsgJson.display.preview ? targetingMsgJson.display.onClick : new URL(targetingMsgJson.display.onClick).searchParams.get('r');
+            const campaignId = targetingMsgJson.wzrk_id.split('_')[0];
+
+            if (rValue === 'pushPrompt') {
+              if (!targetingMsgJson.display.preview) {
+                window.parent.clevertap.renderNotificationClicked({
+                  msgId: targetingMsgJson.wzrk_id,
+                  pivotId: targetingMsgJson.wzrk_pivot
+                });
+              } // Open Web Push Soft prompt
+
+
+              window.clevertap.notifications.push({
+                skipDialog: true
+              });
+              closeIframe(campaignId, divId, _session.sessionId);
+            } else if (rValue === 'none') {
+              // Close notification
+              closeIframe(campaignId, divId, _session.sessionId);
+            } else {
+              // Will get the url to open
+              if (targetingMsgJson.display.window === 1) {
+                window.open(onClick, '_blank');
+
+                if (targetingMsgJson.display['close-popup']) {
+                  closeIframe(campaignId, divId, _session.sessionId);
+                }
+
+                if (!targetingMsgJson.display.preview) {
+                  window.parent.clevertap.renderNotificationClicked({
+                    msgId: targetingMsgJson.wzrk_id,
+                    pivotId: targetingMsgJson.wzrk_pivot
+                  });
+                }
+              } else {
+                window.location = onClick;
+              }
+            }
+          }
+        };
+      }
+    }
+  };
+  const getCookieParams = (_device, _session) => {
+    const gcookie = _device.getGuid();
+
+    const scookieObj = _session.getSessionCookieObject();
+
+    return '&t=wc&d=' + encodeURIComponent(compressToBase64(gcookie + '|' + scookieObj.p + '|' + scookieObj.s));
+  };
+  const webNativeDisplayCampaignUtils = {
+    /**
+     * Checks if a campaign triggers a custom event push based on its template type.
+     *
+     * @param {Object} campaign - The campaign object to evaluate.
+     * @returns {boolean} - Returns true if the campaign pushes a custom event, otherwise false.
+     */
+    doesCampaignPushCustomEvent: campaign => {
+      var _campaign$msgContent, _campaign$msgContent2, _campaign$display, _campaign$display$det, _campaign$display$det2, _campaign$display$det3, _campaign$display$det4;
+
+      return [WEB_NATIVE_TEMPLATES.KV_PAIR, WEB_NATIVE_TEMPLATES.JSON].includes(campaign === null || campaign === void 0 ? void 0 : (_campaign$msgContent = campaign.msgContent) === null || _campaign$msgContent === void 0 ? void 0 : _campaign$msgContent.type) || (campaign === null || campaign === void 0 ? void 0 : (_campaign$msgContent2 = campaign.msgContent) === null || _campaign$msgContent2 === void 0 ? void 0 : _campaign$msgContent2.type) === WEB_NATIVE_TEMPLATES.VISUAL_BUILDER && (campaign === null || campaign === void 0 ? void 0 : (_campaign$display = campaign.display) === null || _campaign$display === void 0 ? void 0 : (_campaign$display$det = _campaign$display.details) === null || _campaign$display$det === void 0 ? void 0 : (_campaign$display$det2 = _campaign$display$det[0]) === null || _campaign$display$det2 === void 0 ? void 0 : (_campaign$display$det3 = _campaign$display$det2.selectorData) === null || _campaign$display$det3 === void 0 ? void 0 : (_campaign$display$det4 = _campaign$display$det3.map(s => {
+        var _s$values;
+
+        return s === null || s === void 0 ? void 0 : (_s$values = s.values) === null || _s$values === void 0 ? void 0 : _s$values.editor;
+      })) === null || _campaign$display$det4 === void 0 ? void 0 : _campaign$display$det4.includes(WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES.JSON));
+    },
+
+    /**
+     * Determines if a campaign mutates the DOM node based on its template type.
+     *
+     * @param {Object} campaign - The campaign object to evaluate.
+     * @returns {boolean} - Returns true if the campaign mutates the DOM node, otherwise false.
+     */
+    doesCampaignMutateDOMNode: campaign => {
+      var _campaign$msgContent3, _campaign$msgContent4, _campaign$display2, _campaign$display2$de, _campaign$display2$de2, _campaign$display2$de3;
+
+      return [WEB_NATIVE_TEMPLATES.BANNER, WEB_NATIVE_TEMPLATES.CAROUSEL, WEB_NATIVE_TEMPLATES.CUSTOM_HTML].includes(campaign === null || campaign === void 0 ? void 0 : (_campaign$msgContent3 = campaign.msgContent) === null || _campaign$msgContent3 === void 0 ? void 0 : _campaign$msgContent3.type) || WEB_NATIVE_TEMPLATES.VISUAL_BUILDER === (campaign === null || campaign === void 0 ? void 0 : (_campaign$msgContent4 = campaign.msgContent) === null || _campaign$msgContent4 === void 0 ? void 0 : _campaign$msgContent4.type) && (campaign === null || campaign === void 0 ? void 0 : (_campaign$display2 = campaign.display) === null || _campaign$display2 === void 0 ? void 0 : (_campaign$display2$de = _campaign$display2.details) === null || _campaign$display2$de === void 0 ? void 0 : (_campaign$display2$de2 = _campaign$display2$de[0]) === null || _campaign$display2$de2 === void 0 ? void 0 : (_campaign$display2$de3 = _campaign$display2$de2.selectorData) === null || _campaign$display2$de3 === void 0 ? void 0 : _campaign$display2$de3.some(s => {
+        var _s$values2;
+
+        return [WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES.HTML, WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES.FORM].includes(s === null || s === void 0 ? void 0 : (_s$values2 = s.values) === null || _s$values2 === void 0 ? void 0 : _s$values2.editor);
+      }));
+    },
+
+    /**
+     * Sorts campaigns based on their priority in descending order.
+     *
+     * @param {Array<Object>} campaigns - The list of campaign objects.
+     * @returns {Array<Object>} - A new array of campaigns sorted by priority.
+     */
+    sortCampaignsByPriority: campaigns => {
+      return campaigns.sort((a, b) => b.priority - a.priority);
+    },
+
+    /**
+     * Retrieves the DOM nodes associated with a campaign based on its template type.
+     *
+     * @param {Object} campaign - The campaign object to extract nodes from.
+     * @returns {Array<string>} - An array of DOM node selectors or IDs associated with the campaign.
+     */
+    getCampaignNodes: campaign => {
+      var _display$details, _display$details$, _display$details$$sel, _display$details$$sel2;
+
+      const {
+        msgContent,
+        display
+      } = campaign;
+      const {
+        type
+      } = msgContent;
+
+      switch (type) {
+        case WEB_NATIVE_TEMPLATES.BANNER:
+        case WEB_NATIVE_TEMPLATES.CAROUSEL:
+          return [display === null || display === void 0 ? void 0 : display.divSelector];
+
+        case WEB_NATIVE_TEMPLATES.CUSTOM_HTML:
+          return [display === null || display === void 0 ? void 0 : display.divId];
+
+        case WEB_NATIVE_TEMPLATES.VISUAL_BUILDER:
+          return (display === null || display === void 0 ? void 0 : (_display$details = display.details) === null || _display$details === void 0 ? void 0 : (_display$details$ = _display$details[0]) === null || _display$details$ === void 0 ? void 0 : (_display$details$$sel = _display$details$.selectorData) === null || _display$details$$sel === void 0 ? void 0 : (_display$details$$sel2 = _display$details$$sel.filter(s => {
+            var _s$values3;
+
+            return (s === null || s === void 0 ? void 0 : (_s$values3 = s.values) === null || _s$values3 === void 0 ? void 0 : _s$values3.editor) === WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES.HTML;
+          })) === null || _display$details$$sel2 === void 0 ? void 0 : _display$details$$sel2.map(s => s === null || s === void 0 ? void 0 : s.selector)) || [];
+
+        default:
+          return [];
+      }
+    },
+
+    /**
+     * Determines whether the current custom event campaign should be skipped based on existing executed targets.
+     *
+     * @param {Object} targetNotif - The current notification object containing campaign details.
+     * @param {ExecutedTargets} executedTargets - An object holding already executed custom events.
+     * @returns {boolean} - Returns true if the current custom event campaign should be skipped, false otherwise.
+     */
+    shouldCurrentCustomEventCampaignBeSkipped(targetNotif, executedTargets) {
+      var _targetNotif$msgConte2, _currentSameTypeCampa, _targetNotif$display, _targetNotif$display$;
+
+      const currentSameTypeCampaigns = executedTargets.customEvents.filter(customEvent => {
+        var _targetNotif$msgConte;
+
+        return customEvent.customEventType === (targetNotif === null || targetNotif === void 0 ? void 0 : (_targetNotif$msgConte = targetNotif.msgContent) === null || _targetNotif$msgConte === void 0 ? void 0 : _targetNotif$msgConte.type);
+      });
+      let shouldSkip = false; // If KV Pair, check for topic and type
+      // if visual builder or JSON, just check for the type of event, because we do not have `topic`
+
+      if (currentSameTypeCampaigns === null || currentSameTypeCampaigns === void 0 ? void 0 : currentSameTypeCampaigns.length) {
+        switch (targetNotif === null || targetNotif === void 0 ? void 0 : (_targetNotif$msgConte2 = targetNotif.msgContent) === null || _targetNotif$msgConte2 === void 0 ? void 0 : _targetNotif$msgConte2.type) {
+          case WEB_NATIVE_TEMPLATES.KV_PAIR:
+            if ((_currentSameTypeCampa = currentSameTypeCampaigns.map(c => c === null || c === void 0 ? void 0 : c.eventTopic)) === null || _currentSameTypeCampa === void 0 ? void 0 : _currentSameTypeCampa.includes(targetNotif === null || targetNotif === void 0 ? void 0 : (_targetNotif$display = targetNotif.display) === null || _targetNotif$display === void 0 ? void 0 : (_targetNotif$display$ = _targetNotif$display.kv) === null || _targetNotif$display$ === void 0 ? void 0 : _targetNotif$display$.topic)) {
+              shouldSkip = true;
+            }
+
+            break;
+
+          /* TODO: Within Visual Editor : Why do we need to select a DOM node for create customEvent
+          and can we inform the user the type of event they will receive in the editor
+          */
+
+          /* TODO: Can we intro a key for `topic` similar to KV_PAIR in VISUAL_EDITOR & JSON for parity and better UX */
+
+          /* Visual Editor has all the events from different campaigns combined in single JSON within selectorData */
+
+          /* So we can not use Separated Campaigns logic for it, Hence skipping */
+
+          case WEB_NATIVE_TEMPLATES.VISUAL_BUILDER:
+          case WEB_NATIVE_TEMPLATES.JSON:
+            shouldSkip = true;
+            break;
+        }
+      }
+
+      return shouldSkip;
+    }
+
+  };
+  const deliveryPreferenceUtils = {
+    /**
+     * Updates a frequency counter object based on the given array.
+     * If a key from the array exists in the object, its value is incremented.
+     * Otherwise, the key is added with an initial count of 1.
+     *
+     * @param {string[]} arr - The array of keys to process.
+     * @param {Object<string, number>} [obj={}] - The existing frequency counter object (optional).
+     * @returns {Object<string, number>} - The updated frequency counter object.
+     *
+     * @example
+     * let freq = updateFrequencyCounter(["a", "b", "c"]);
+     * console.log(freq); // { a: 1, b: 1, c: 1 }
+     *
+     * freq = updateFrequencyCounter(["a", "b"], freq);
+     * console.log(freq); // { a: 2, b: 2, c: 1 }
+     */
+    updateFrequencyCounter(arr) {
+      let obj = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+
+      if (!arr || arr.length === 0) {
+        return obj;
+      }
+
+      arr.forEach(key => {
+        obj[key] = (obj[key] || 0) + 1;
+      });
+      return obj;
+    },
+
+    /**
+     * Updates a timestamp tracker object based on the given array of keys.
+     * If a key exists, it appends the current timestamp; otherwise, it starts a new array with the timestamp.
+     *
+     * @param {string[]} arr - The array of keys to process.
+     * @param {Object<string, number[]>} [obj={}] - The existing timestamp tracker object (optional).
+     * @returns {Object<string, number[]>} - The updated timestamp tracker object.
+     *
+     * @example
+     * let timestamps = updateTimestampTracker(["a", "b", "c"]);
+     * console.log(timestamps);
+     * // { a: [1712134567], b: [1712134567], c: [1712134567] }
+     *
+     * timestamps = updateTimestampTracker(["a", "b"], timestamps);
+     * console.log(timestamps);
+     * // { a: [1712134567, 1712134570], b: [1712134567, 1712134570], c: [1712134567] }
+     */
+    updateTimestampTracker(arr) {
+      let obj = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+
+      if (!arr || arr.length === 0) {
+        return obj;
+      }
+
+      const now = Math.floor(Date.now() / 1000); // Current timestamp in seconds (Epoch UTC)
+
+      arr.forEach(key => {
+        if (!obj[key]) {
+          obj[key] = [];
+        }
+
+        obj[key].push(now);
+      });
+      return obj;
+    },
+
+    /**
+     * Migrates legacy TLC data to the latest WSC
+     * and WFC structures.
+     *
+     * This function reads from `CAMP.wp`, which stores web popup data keyed by session IDs and global campaign data.
+     * Each campaign ID (except for the key `tc`, which is a total count) maps to either:
+     * - `1` → campaign was shown once
+     * - `'dnd'` → campaign was shown and dismissed (Do Not Disturb)
+     *
+     * After migrating each campaign's data using `deliveryPreferenceUtils.portCampaignDetails`,
+     * the old TLC data (`CAMP.wp`) is cleared from storage.
+     *
+     * @param {Object} _session - The current session object.
+     * @param {string} _session.sessionId - The unique identifier for the session, used to access session-specific campaign data.
+     */
+    portTLC(_session) {
+      var _existingCamp$wp, _existingCamp$wp2;
+
+      // TODO: Add the campaignId keys which has value as `dnd` to the `dnd` array
+      const existingCamp = getCampaignObject();
+      const dnd = [];
+      /* If no campaigns are present, then we don't need to port anything */
+
+      if (!(existingCamp === null || existingCamp === void 0 ? void 0 : existingCamp.wp) || Object.keys(existingCamp === null || existingCamp === void 0 ? void 0 : existingCamp.wp).length === 0) {
+        return;
+      }
+
+      const webPopupGlobalDetails = (existingCamp === null || existingCamp === void 0 ? void 0 : (_existingCamp$wp = existingCamp.wp) === null || _existingCamp$wp === void 0 ? void 0 : _existingCamp$wp.global) || {};
+      const webPopupSessionDetails = (existingCamp === null || existingCamp === void 0 ? void 0 : (_existingCamp$wp2 = existingCamp.wp) === null || _existingCamp$wp2 === void 0 ? void 0 : _existingCamp$wp2[_session.sessionId]) || {};
+      const campaignIds = Object.keys(webPopupGlobalDetails);
+
+      for (const campaignId of campaignIds) {
+        if (campaignId !== 'tc') {
+          const globalCampaignCount = webPopupGlobalDetails[campaignId];
+          const sessionCampaignCount = webPopupSessionDetails[campaignId];
+
+          if (sessionCampaignCount === 'dnd') {
+            dnd.push(campaignId);
+          }
+
+          const updatedCamp = deliveryPreferenceUtils.portCampaignDetails(campaignId, sessionCampaignCount, globalCampaignCount);
+          saveCampaignObject(updatedCamp);
+        }
+      }
+
+      const updatedCamp = getCampaignObject();
+      saveCampaignObject({ ...updatedCamp,
+        dnd: [...new Set([...(updatedCamp.dnd || []), ...dnd])],
+        wp: {}
+      });
+    },
+
+    portCampaignDetails(campaignId, sessionCount, globalCount) {
+      var _campaignObj$wsc;
+
+      /* If we have a dnd count for sesion then we will default its count to globalCount */
+      const sCount = sessionCount === 'dnd' ? globalCount : sessionCount;
+      const campaignObj = getCampaignObject(); // Ensure campaignObj and campaignObj.wfc exist
+
+      campaignObj.wfc = campaignObj.wfc || {}; // Fallback to an empty array if campaignObj.wfc[campaignId] is undefined
+
+      const existingTimestamps = Array.isArray(campaignObj.wfc[campaignId]) ? campaignObj.wfc[campaignId] : []; // Generate new timestamps safely
+
+      let newTimestamps = [];
+
+      try {
+        newTimestamps = deliveryPreferenceUtils.generateTimestamps(globalCount, sCount);
+      } catch (err) {
+        console.error('Failed to generate timestamps:', err);
+      } // Safely update the object
+
+
+      campaignObj.wfc = { ...campaignObj.wfc,
+        [campaignId]: [...existingTimestamps, ...newTimestamps]
+      };
+      /* Or tc can also be used to assign once */
+
+      campaignObj.wsc = ((_campaignObj$wsc = campaignObj === null || campaignObj === void 0 ? void 0 : campaignObj.wsc) !== null && _campaignObj$wsc !== void 0 ? _campaignObj$wsc : 0) + globalCount;
+      return campaignObj;
+    },
+
+    /**
+     * Generates an array of timestamps.
+     *
+     * - The first `a` timestamps are from the current time, each 1 second apart (now, now - 1s, now - 2s, ...).
+     * - The remaining `(b - a)` timestamps are from previous days (now - 1 day, now - 2 days, ...).
+     *
+     * @param {number} globalCount - Number of recent timestamps with 1-second gaps.
+     * @param {number} sessionCount - Total number of timestamps to generate.
+     * @returns {number[]} Array of timestamps in milliseconds since the Unix epoch.
+     */
+    generateTimestamps(globalCount, sessionCount) {
+      try {
+        const now = Math.floor(Date.now() / 1000);
+        const oneDay = 24 * 60 * 60; // (globalCount - sessionCount) timestamps: today - 1 day + 1ms, today - 1 day + 2ms, ...
+
+        const pastDays = Array.from({
+          length: globalCount - sessionCount
+        }, (_, i) => now - oneDay + (i + 1)); // a timestamps: today, today + 1ms, today + 2ms, ...
+
+        const recentMs = Array.from({
+          length: sessionCount
+        }, (_, i) => now + i + 1);
+        return [...recentMs, ...pastDays];
+      } catch {
+        return [];
+      }
+    },
+
+    isPopupCampaignAlreadyShown(campaignId) {
+      var _campaignObj$wfc;
+
+      const campaignObj = getCampaignObject();
+      const campaignDetails = campaignObj === null || campaignObj === void 0 ? void 0 : (_campaignObj$wfc = campaignObj.wfc) === null || _campaignObj$wfc === void 0 ? void 0 : _campaignObj$wfc[campaignId];
+      return (campaignDetails === null || campaignDetails === void 0 ? void 0 : campaignDetails.length) > 0;
+    },
+
+    isCampaignAddedToDND(campaignId) {
+      var _campaignObj$dnd;
+
+      const campaignObj = getCampaignObject();
+      return campaignObj === null || campaignObj === void 0 ? void 0 : (_campaignObj$dnd = campaignObj.dnd) === null || _campaignObj$dnd === void 0 ? void 0 : _campaignObj$dnd.includes(campaignId);
+    },
+
+    updateOccurenceForPopupAndNativeDisplay(msg, device, logger) {
+      var _getCampaignObject$wi, _getCampaignObject, _getCampaignObject$wp, _getCampaignObject2, _getCampaignObject$ws, _getCampaignObject3, _getCampaignObject$wn, _getCampaignObject4;
+
+      // If the guid is present in CAMP_G retain it instead of using the CAMP
+      const globalCamp = JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)));
+      const currentIdCamp = globalCamp === null || globalCamp === void 0 ? void 0 : globalCamp[device === null || device === void 0 ? void 0 : device.gcookie];
+      let campaignObj = currentIdCamp || getCampaignObject();
+      const woc = deliveryPreferenceUtils.updateFrequencyCounter(msg.wtq, campaignObj.woc);
+      const wndoc = deliveryPreferenceUtils.updateFrequencyCounter(msg.wndtq, campaignObj.wndoc); // If we are retreiving CAMP_G data, we can not retain details on web inbox as they are only session based.
+
+      const wi = (_getCampaignObject$wi = (_getCampaignObject = getCampaignObject()) === null || _getCampaignObject === void 0 ? void 0 : _getCampaignObject.wi) !== null && _getCampaignObject$wi !== void 0 ? _getCampaignObject$wi : {};
+      const wp = (_getCampaignObject$wp = (_getCampaignObject2 = getCampaignObject()) === null || _getCampaignObject2 === void 0 ? void 0 : _getCampaignObject2.wp) !== null && _getCampaignObject$wp !== void 0 ? _getCampaignObject$wp : {};
+      const wsc = (_getCampaignObject$ws = (_getCampaignObject3 = getCampaignObject()) === null || _getCampaignObject3 === void 0 ? void 0 : _getCampaignObject3.wsc) !== null && _getCampaignObject$ws !== void 0 ? _getCampaignObject$ws : 0;
+      const wndsc = (_getCampaignObject$wn = (_getCampaignObject4 = getCampaignObject()) === null || _getCampaignObject4 === void 0 ? void 0 : _getCampaignObject4.wndsc) !== null && _getCampaignObject$wn !== void 0 ? _getCampaignObject$wn : 0;
+      campaignObj = { ...campaignObj,
+        woc,
+        wndoc,
+        wi,
+        wp,
+        wsc,
+        wndsc
+      };
+      saveCampaignObject(campaignObj);
+    },
+
+    /**
+     * Gets the daily count for a campaign, automatically resetting to 1 when date changes
+     * Date tracking is done in localStorage for persistence across page reloads
+     * @param {Object} campaignObj - The campaign object to store count
+     * @param {string} dailyCountKey - The key to store the daily count
+     * @returns {number} The new daily count (incremented from previous or reset to 1)
+     */
+    getDailyCount(campaignObj, dailyCountKey) {
+      const DATE_TRACKER_KEY = 'ct_daily_date_tracker';
+      const today = new Date().toISOString().split('T')[0];
+      let storedDate = null;
+      storedDate = localStorage.getItem(DATE_TRACKER_KEY); // Get current count
+
+      const storedCount = typeof campaignObj[dailyCountKey] === 'number' ? campaignObj[dailyCountKey] : 0;
+      let newDailyCount;
+
+      if (storedDate !== today) {
+        newDailyCount = 1;
+        localStorage.setItem(DATE_TRACKER_KEY, today);
+      } else {
+        newDailyCount = storedCount + 1;
+      }
+
+      return newDailyCount;
+    },
+
+    /**
+    * Clears stale campaign entries from the campaign object based on provided message data.
+    *
+    * @param {Object} msg - Message object containing stale campaign information
+    * @param {Array<string>} [msg.native_display_stale] - Array of campaign IDs for native display campaigns to clear
+    * @param {Array<string>} [msg.inbox_stale] - Array of campaign IDs for inbox campaigns to clear
+    * @param {Object} logger - Logger instance for logging operations
+    * @returns {void}
+    *
+    * @description
+    * This function processes stale campaign data and removes corresponding entries:
+    * - For inbox_stale campaigns: removes entries from wfc and woc
+    * - For native_display_stale campaigns: removes entries from wndfc and wndoc
+    *
+    * The function retrieves the current campaign object, modifies it by removing
+    * stale entries, and saves the updated object back to storage.
+    */
+    clearStaleCampaigns(msg, logger) {
+      try {
+        // Get current campaign object
+        const campaignObject = getCampaignObject();
+
+        if (!campaignObject) {
+          logger.debug('No campaign object found');
+          return;
+        }
+
+        let modified = false; // Handle inbox_stale campaigns - clear wfc and woc entries
+
+        if (msg.inbox_stale && Array.isArray(msg.inbox_stale)) {
+          logger.debug("Processing ".concat(msg.inbox_stale.length, " inbox stale campaigns"));
+
+          for (const campaignId of msg.inbox_stale) {
+            // Clear wfc entry
+            if (campaignObject.wfc && campaignObject.wfc[campaignId]) {
+              delete campaignObject.wfc[campaignId];
+              logger.debug("Cleared wfc entry for campaign ".concat(campaignId));
+              modified = true;
+            } // Clear woc entry
+
+
+            if (campaignObject.woc && campaignObject.woc[campaignId]) {
+              delete campaignObject.woc[campaignId];
+              logger.debug("Cleared woc entry for campaign ".concat(campaignId));
+              modified = true;
+            }
+          }
+        } // Handle native_display_stale campaigns - clear wndfc and wndoc entries
+
+
+        if (msg.native_display_stale && Array.isArray(msg.native_display_stale)) {
+          logger.debug("Processing ".concat(msg.native_display_stale.length, " native display stale campaigns"));
+
+          for (const campaignId of msg.native_display_stale) {
+            // Clear wndfc entry
+            if (campaignObject.wndfc && campaignObject.wndfc[campaignId]) {
+              delete campaignObject.wndfc[campaignId];
+              logger.debug("Cleared wndfc entry for campaign ".concat(campaignId));
+              modified = true;
+            } // Clear wndoc entry
+
+
+            if (campaignObject.wndoc && campaignObject.wndoc[campaignId]) {
+              delete campaignObject.wndoc[campaignId];
+              logger.debug("Cleared wndoc entry for campaign ".concat(campaignId));
+              modified = true;
+            }
+          }
+        } // Save updated campaign object if modifications were made
+
+
+        if (modified) {
+          saveCampaignObject(campaignObject);
+          logger.debug('Campaign object updated with stale campaign removals');
+        } else {
+          logger.debug('No stale campaigns found to clear');
+        }
+      } catch (error) {
+        logger.error('Error clearing stale campaigns:', error);
+        throw error;
+      }
+    }
+
+  };
+  function addScriptTo(script) {
+    let target = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'body';
+    const targetEl = document.querySelector(target);
+    if (!targetEl) return;
+    const newScript = document.createElement('script');
+    newScript.textContent = script.textContent;
+    if (script.src) newScript.src = script.src;
+    newScript.async = script.async;
+    Array.from(script.attributes).forEach(attr => {
+      if (attr.name !== 'src' && attr.name !== 'async') {
+        newScript.setAttribute(attr.name, attr.value);
+      }
+    });
+    targetEl.appendChild(newScript);
+    script.remove();
+  }
+  function addCampaignToLocalStorage(campaign) {
+    var _campaign$display3;
+
+    let region = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'eu1';
+    let accountId = arguments.length > 2 ? arguments[2] : undefined;
+
+    /* No Need to store campaigns in local storage in preview mode */
+    if ((campaign === null || campaign === void 0 ? void 0 : (_campaign$display3 = campaign.display) === null || _campaign$display3 === void 0 ? void 0 : _campaign$display3.preview) === true) {
+      return;
+    }
+
+    const campaignId = campaign.wzrk_id.split('_')[0];
+    const dashboardUrl = "https://".concat(region, ".dashboard.clevertap.com/").concat(accountId, "/campaigns/campaign/").concat(campaignId, "/report/stats");
+    const enrichedCampaign = { ...campaign,
+      url: dashboardUrl
+    };
+    const storedData = StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS);
+    const existingCampaigns = storedData ? JSON.parse(decodeURIComponent(storedData)) : [];
+    const isDuplicate = existingCampaigns.some(c => c.wzrk_id === campaign.wzrk_id);
+
+    if (!isDuplicate) {
+      const updatedCampaigns = [...existingCampaigns, enrichedCampaign];
+      StorageManager.saveToLSorCookie(QUALIFIED_CAMPAIGNS, encodeURIComponent(JSON.stringify(updatedCampaigns)));
+    }
+  }
+
   // CleverTap specific utilities
   const getCampaignObject = () => {
     let finalcampObj = {};
@@ -8668,19 +9364,15 @@
 
       if (campObj != null) {
         campObj = JSON.parse(decodeURIComponent(campObj).replace(singleQuoteRegex, '\"'));
-
-        if (campObj.hasOwnProperty('global')) {
-          finalcampObj.wp = campObj;
-        } else {
-          finalcampObj = campObj;
-        }
+        finalcampObj = campObj;
       } else {
         finalcampObj = {};
       }
     }
 
     return finalcampObj;
-  };
+  }; // Save Camp here
+
   const saveCampaignObject = campaignObj => {
     if (StorageManager._isLocalStorageSupported()) {
       const newObj = { ...getCampaignObject(),
@@ -8690,6 +9382,71 @@
       StorageManager.save(CAMP_COOKIE_NAME, encodeURIComponent(campObj)); // Update the CAMP_COOKIE_G to be in sync with CAMP_COOKIE_NAME
 
       setCampaignObjectForGuid();
+    }
+  };
+  /**
+   * Updates campaign delivery preferences and tracking counters
+   *
+   * This function updates the campaign tracking object in the CAMP localstorage variables based on the campaign type,
+   * increments appropriate show counters, and updates frequency control timestamps.
+   *
+   * @param {CampaignDetails} campaignDetails - The campaign information object
+   * @param {any} wtq - Additional query parameters (if needed)
+   * @returns {void}
+   */
+
+  const addDeliveryPreferenceDetails = (campaignDetails, logger) => {
+    try {
+      var _campaignDetails$disp, _campaignDetails$disp2, _campaignDetails$disp3;
+
+      if (!campaignDetails || !campaignDetails.wzrk_id) {
+        throw new Error('Invalid campaign details provided');
+      }
+
+      const campaignObj = getCampaignObject() || {};
+      const campaignIdParts = campaignDetails.wzrk_id.split('_');
+      const campaignId = campaignIdParts[0];
+      const isCampaignExcludedFromFrequencyLimits = campaignDetails === null || campaignDetails === void 0 ? void 0 : (_campaignDetails$disp = campaignDetails.display) === null || _campaignDetails$disp === void 0 ? void 0 : _campaignDetails$disp.efc;
+
+      if (!campaignId) {
+        throw new Error('Failed to parse campaign ID');
+      }
+
+      const campaignType = campaignDetails === null || campaignDetails === void 0 ? void 0 : (_campaignDetails$disp2 = campaignDetails.display) === null || _campaignDetails$disp2 === void 0 ? void 0 : _campaignDetails$disp2.wtarget_type;
+      const campaignTypeConfig = {
+        [CAMPAIGN_TYPES.FOOTER_NOTIFICATION]: {
+          showCountKey: 'wsc',
+          frequencyControlKey: 'wfc',
+          dailyCountKey: 'wmp'
+        },
+        [CAMPAIGN_TYPES.WEB_NATIVE_DISPLAY]: {
+          showCountKey: 'wndsc',
+          frequencyControlKey: 'wndfc',
+          dailyCountKey: 'wndmp'
+        }
+      };
+      const config = campaignTypeConfig[campaignType];
+
+      if (!config) {
+        throw new Error("Unsupported campaign type: ".concat(campaignType));
+      }
+
+      if (!isCampaignExcludedFromFrequencyLimits) {
+        const showCountKey = config.showCountKey;
+        const dailyCountKey = config.dailyCountKey;
+        const currentShowCount = typeof campaignObj[showCountKey] === 'number' ? campaignObj[showCountKey] : 0;
+        campaignObj[showCountKey] = currentShowCount + 1;
+        campaignObj[dailyCountKey] = deliveryPreferenceUtils.getDailyCount(campaignObj, dailyCountKey);
+      }
+
+      if (campaignDetails === null || campaignDetails === void 0 ? void 0 : (_campaignDetails$disp3 = campaignDetails.display) === null || _campaignDetails$disp3 === void 0 ? void 0 : _campaignDetails$disp3.adp) {
+        const frequencyControlKey = config.frequencyControlKey;
+        campaignObj[frequencyControlKey] = deliveryPreferenceUtils.updateTimestampTracker([campaignId], campaignObj[frequencyControlKey] || {});
+      }
+
+      saveCampaignObject(campaignObj);
+    } catch (error) {
+      logger.error("Campaign delivery preference update failed: ".concat(error.message));
     }
   }; // set Campaign Object against the guid, with daily count and total count details
 
@@ -8705,6 +9462,8 @@
           if (guid && StorageManager._isLocalStorageSupported()) {
             var finalCampObj = {};
             var campObj = getCampaignObject();
+            /* TODO: Check if Webinbox needs these keys or get rid of them */
+
             Object.keys(campObj).forEach(key => {
               const campKeyObj = guid in guidCampObj && Object.keys(guidCampObj[guid]).length && guidCampObj[guid][key] ? guidCampObj[guid][key] : {};
               const globalObj = campObj[key].global;
@@ -8744,6 +9503,17 @@
                 [key]: campKeyObj
               };
             });
+            finalCampObj = { ...finalCampObj,
+              wsc: campObj.wsc,
+              wfc: campObj.wfc,
+              woc: campObj.woc,
+              wmp: campObj.wmp,
+              dnd: campObj.dnd,
+              wndsc: campObj.wndsc,
+              wndfc: campObj.wndfc,
+              wndoc: campObj.wndoc,
+              wndmp: campObj.wndmp
+            };
             guidCampObj[guid] = finalCampObj;
             StorageManager.save(CAMP_COOKIE_G, encodeURIComponent(JSON.stringify(guidCampObj)));
           }
@@ -8759,30 +9529,38 @@
     let campObj = {};
 
     if (StorageManager._isLocalStorageSupported()) {
+      var _campObj$wsc, _campObj, _campObj$wfc, _campObj2, _campObj$woc, _campObj3, _campObj$wndsc, _campObj4, _campObj$wndfc, _campObj5, _campObj$wndoc, _campObj6;
+
       let resultObj = {};
       campObj = getCampaignObject();
       const storageValue = StorageManager.read(CAMP_COOKIE_G);
       const decodedValue = storageValue ? decodeURIComponent(storageValue) : null;
       const parsedValue = decodedValue ? JSON.parse(decodedValue) : null;
-      const resultObjWP = !!guid && storageValue !== undefined && storageValue !== null && parsedValue && parsedValue[guid] && parsedValue[guid].wp ? Object.values(parsedValue[guid].wp) : [];
       const resultObjWI = !!guid && storageValue !== undefined && storageValue !== null && parsedValue && parsedValue[guid] && parsedValue[guid].wi ? Object.values(parsedValue[guid].wi) : [];
-      const today = getToday();
-      let todayCwp = 0;
-      let todayCwi = 0;
+      const webPopupDeliveryPreferenceDeatils = {
+        wsc: (_campObj$wsc = (_campObj = campObj) === null || _campObj === void 0 ? void 0 : _campObj.wsc) !== null && _campObj$wsc !== void 0 ? _campObj$wsc : 0,
+        wfc: (_campObj$wfc = (_campObj2 = campObj) === null || _campObj2 === void 0 ? void 0 : _campObj2.wfc) !== null && _campObj$wfc !== void 0 ? _campObj$wfc : {},
+        woc: (_campObj$woc = (_campObj3 = campObj) === null || _campObj3 === void 0 ? void 0 : _campObj3.woc) !== null && _campObj$woc !== void 0 ? _campObj$woc : {}
+      };
+      const webNativeDisplayDeliveryPreferenceDeatils = {
+        wndsc: (_campObj$wndsc = (_campObj4 = campObj) === null || _campObj4 === void 0 ? void 0 : _campObj4.wndsc) !== null && _campObj$wndsc !== void 0 ? _campObj$wndsc : 0,
+        wndfc: (_campObj$wndfc = (_campObj5 = campObj) === null || _campObj5 === void 0 ? void 0 : _campObj5.wndfc) !== null && _campObj$wndfc !== void 0 ? _campObj$wndfc : {},
+        wndoc: (_campObj$wndoc = (_campObj6 = campObj) === null || _campObj6 === void 0 ? void 0 : _campObj6.wndoc) !== null && _campObj$wndoc !== void 0 ? _campObj$wndoc : {}
+      };
+      const today = getToday(); // let todayCwp = 0
 
-      if (campObj.wp && campObj.wp[today] && campObj.wp[today].tc !== 'undefined') {
-        todayCwp = campObj.wp[today].tc;
-      }
+      let todayCwi = 0;
 
       if (campObj.wi && campObj.wi[today] && campObj.wi[today].tc !== 'undefined') {
         todayCwi = campObj.wi[today].tc;
-      }
+      } // CAMP Is generated here
+
 
       resultObj = {
-        wmp: todayCwp,
         wimp: todayCwi,
-        tlc: resultObjWP,
-        witlc: resultObjWI
+        witlc: resultObjWI,
+        ...webPopupDeliveryPreferenceDeatils,
+        ...webNativeDisplayDeliveryPreferenceDeatils
       };
       return resultObj;
     }
@@ -9065,15 +9843,11 @@
   const closeIframe = (campaignId, divIdIgnored, currentSessionId) => {
     if (campaignId != null && campaignId !== '-1') {
       if (StorageManager._isLocalStorageSupported()) {
-        const campaignObj = getCampaignObject();
-        let sessionCampaignObj = campaignObj.wp[currentSessionId];
+        var _campaignObj$dnd;
 
-        if (sessionCampaignObj == null) {
-          sessionCampaignObj = {};
-          campaignObj[currentSessionId] = sessionCampaignObj;
-        }
+        const campaignObj = getCampaignObject(); // CurrentSesion Id is the problem
 
-        sessionCampaignObj[campaignId] = 'dnd';
+        campaignObj.dnd = [...new Set([...((_campaignObj$dnd = campaignObj.dnd) !== null && _campaignObj$dnd !== void 0 ? _campaignObj$dnd : []), campaignId])];
         saveCampaignObject(campaignObj);
       }
     }
@@ -9934,6 +10708,1746 @@
     }
   };
 
+  const getBoxPromptStyles = style => {
+    const totalBorderWidth = style.card.borderEnabled ? style.card.border.borderWidth * 2 : 0;
+    const cardPadding = 16 * 2; // Left and right padding
+
+    const cardContentWidth = 360 - cardPadding - totalBorderWidth;
+    return "\n    #pnWrapper {\n      width: 360px;\n      font-family: proxima-nova, Arial, sans-serif;\n    }\n    \n    #pnWrapper * {\n       margin: 0px;\n       padding: 0px;\n       text-align: left;\n    }\n    ".concat(style.overlay.enabled ? "#pnOverlay {\n      background-color: ".concat(style.overlay.color || 'rgba(0, 0, 0, .15)', ";\n      position: fixed;\n      left: 0;\n      right: 0;\n      top: 0;\n      bottom: 0;\n      z-index: 10000\n    }\n") : '', "\n    #pnCard {\n      background-color: ").concat(style.card.color, ";\n      border-radius: ").concat(style.card.borderRadius, "px;\n      padding: 16px;\n      width: ").concat(cardContentWidth, "px;\n      position: fixed;\n      z-index: 999999;\n      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);\n      ").concat(style.card.borderEnabled ? "\n        border-width: ".concat(style.card.border.borderWidth, "px;\n        border-color: ").concat(style.card.border.borderColor, ";\n        border-style: solid;\n      ") : '', "\n      height: fit-content;\n    }\n\n    #iconTitleDescWrapper {\n      display: flex;\n      align-items: center;\n      margin-bottom: 16px;\n      gap: 12px;\n    }\n\n    #iconContainer {\n      min-width: 64px;\n      max-width: 64px;\n      aspect-ratio: 1;\n      object-fit: cover;\n    }\n\n    #titleDescWrapper {\n      flex-grow: 1;\n      overflow: hidden;\n      overflow-wrap: break-word;\n    }\n\n    #title {\n      font-size: 16px;\n      font-weight: 700;\n      color: ").concat(style.text.titleColor, ";\n      margin-bottom: 4px;\n      line-height: 24px;\n    }\n\n    #description {\n      font-size: 14px;\n      font-weight: 500;\n      color: ").concat(style.text.descriptionColor, ";\n      line-height: 20px;\n    }\n\n    #buttonsContainer {\n      display: flex;\n      justify-content: space-between;\n      min-height: 32px;\n      gap: 8px;\n      align-items: center;\n    }\n\n    #primaryButton, #secondaryButton {\n      padding: 6px 24px;\n      flex: 1;\n      cursor: pointer;\n      font-weight: bold;\n      display: flex;\n      align-items: center;\n      justify-content: center;\n      height: max-content;\n      font-size: 14px;\n      font-weight: 500;\n      line-height: 20px;\n      text-align: center;\n    }\n\n    #primaryButton {\n      background-color: ").concat(style.buttons.primaryButton.buttonColor, ";\n      color: ").concat(style.buttons.primaryButton.textColor, ";\n      border-radius: ").concat(style.buttons.primaryButton.borderRadius, "px;\n      ").concat(style.buttons.primaryButton.borderEnabled ? "\n          border-width: ".concat(style.buttons.primaryButton.border.borderWidth, "px;\n          border-color: ").concat(style.buttons.primaryButton.border.borderColor, ";\n          border-style: solid;\n        ") : 'border: none;', "\n    }\n\n    #secondaryButton {\n      background-color: ").concat(style.buttons.secondaryButton.buttonColor, ";\n      color: ").concat(style.buttons.secondaryButton.textColor, ";\n      border-radius: ").concat(style.buttons.secondaryButton.borderRadius, "px;\n      ").concat(style.buttons.secondaryButton.borderEnabled ? "\n          border-width: ".concat(style.buttons.secondaryButton.border.borderWidth, "px;\n          border-color: ").concat(style.buttons.secondaryButton.border.borderColor, ";\n          border-style: solid;\n        ") : 'border: none;', "\n    }\n\n    #primaryButton:hover, #secondaryButton:hover {\n      opacity: 0.9;\n    }\n  ");
+  };
+  const getBellIconStyles = style => {
+    return "\n    #bell_wrapper {\n      position: fixed;\n      cursor: pointer;\n      background-color: ".concat(style.card.backgroundColor, ";\n      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);\n      width: 48px;\n      height: 48px;\n      border-radius: 50%;\n      display: flex;\n      flex-direction: column;\n      gap: 8px;\n      z-index: 999999;\n    }\n\n    #bell_icon {\n      display: block;\n      width: 48px;\n      height: 48px;\n    }\n\n    #bell_wrapper:hover {\n      transform: scale(1.05);\n      transition: transform 0.2s ease-in-out;\n    }\n\n    #bell_tooltip {\n      display: none;\n      background-color: #2b2e3e;\n      color: #fff;\n      border-radius: 4px;\n      padding: 4px;\n      white-space: nowrap;\n      pointer-events: none;\n      font-size: 14px;\n      line-height: 1.4;\n    }\n\n    #gif_modal {\n      display: none;\n      background-color: #ffffff;\n      padding: 4px;\n      width: 400px;\n      height: 256px;\n      border-radius: 4px;\n      position: relative;\n      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);\n      cursor: default;\n    }\n\n    #gif_image {\n      object-fit: contain;\n      width: 100%;\n      height: 100%;\n    }\n\n    #close_modal {\n      position: absolute;\n      width: 24px;\n      height: 24px;\n      top: 8px;\n      right: 8px;\n      background: rgba(238, 238, 238, 0.8);\n      text-align: center;\n      line-height: 20px;\n      border-radius: 4px;\n      color: #000000;\n      font-size: 22px;\n      cursor: pointer;\n    }\n  ");
+  };
+
+  const isChrome = () => {
+    const ua = navigator.userAgent;
+    return ua.includes('Chrome') || ua.includes('CriOS');
+  };
+  const isFirefox = () => {
+    const ua = navigator.userAgent;
+    return ua.includes('Firefox') || ua.includes('FxiOS');
+  };
+  const isSafari = () => {
+    const ua = navigator.userAgent; // Ignoring the False Positive of Safari on iOS devices because it gives Safari in all Browsers
+
+    return ua.includes('Safari') && !ua.includes('CriOS') && !ua.includes('FxiOS') && !ua.includes('Chrome') && !ua.includes('Firefox');
+  };
+  /**
+   * Recursively checks if an object contains an array or a function at any level of nesting.
+   *
+   * @param {Object} obj - The object to check.
+   * @returns {boolean} - Returns `true` if the object contains an array or function, otherwise `false`.
+   */
+
+  const objectHasNestedArrayOrFunction = obj => {
+    if (!obj || typeof obj !== 'object') return false;
+    if (Array.isArray(obj)) return true;
+    return Object.values(obj).some(value => typeof value === 'function' || objectHasNestedArrayOrFunction(value));
+  };
+  /**
+   * Flattens a nested object into a single-level object using dot notation.
+   * Arrays are ignored in this transformation.
+   *
+   * @param {Object} obj - The object to be flattened.
+   * @param {string} [parentKey=""] - The parent key for recursion (used internally).
+   * @returns {Object} - The transformed object with dot notation keys.
+   */
+
+  const flattenObjectToDotNotation = function (obj) {
+    let parentKey = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : '';
+    const result = {};
+
+    for (const key in obj) {
+      if (Object.hasOwnProperty.call(obj, key)) {
+        const value = obj[key];
+        const newKey = parentKey ? "".concat(parentKey, ".").concat(key) : key;
+
+        if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+          // Recursively process nested objects
+          Object.assign(result, flattenObjectToDotNotation(value, newKey));
+        } else if (!Array.isArray(value)) {
+          // Assign non-array values directly
+          result[newKey] = {
+            defaultValue: value,
+            type: typeof value
+          };
+        }
+      }
+    }
+
+    return result;
+  };
+  /**
+   * Reconstructs an object from a flat key-value structure using dot notation.
+   *
+   * @param {Object} payload - The input object with flat dot notation keys.
+   * @returns {Object} - The reconstructed object with proper nesting.
+   */
+
+  const reconstructNestedObject = payload => {
+    const result = {};
+
+    for (const key in payload) {
+      if (Object.hasOwnProperty.call(payload, key)) {
+        const value = payload[key];
+        const keys = key.split('.'); // Split keys on dot notation
+
+        let current = result;
+        keys.forEach((part, index) => {
+          if (index === keys.length - 1) {
+            // Assign value at the last key level
+            current[part] = value;
+          } else {
+            // Ensure intermediate levels exist
+            current = current[part] = current[part] || {};
+          }
+        });
+      }
+    }
+
+    return result;
+  };
+  /**
+   * Validates and sanitizes a custom CleverTap ID based on platform rules.
+   *
+   * Rules:
+   * - Must be between 1 and 64 characters in length.
+   * - Allowed characters: A-Z, a-z, 0-9, (, ), !, :, @, $, _, -
+   * - Automatically lowercases the ID.
+   *
+   * @param {string} id - The custom CleverTap ID to validate.
+   * @returns {{ isValid: boolean, error?: string, sanitizedId?: string }} - Validation result.
+   */
+
+  function validateCustomCleverTapID(id) {
+    if (typeof id !== 'string') {
+      return {
+        isValid: false,
+        error: 'ID must be a string.'
+      };
+    }
+
+    const lowercaseId = id.toLowerCase();
+    const length = lowercaseId.length;
+
+    if (length < 1 || length > 64) {
+      return {
+        isValid: false,
+        error: 'ID must be between 1 and 64 characters.'
+      };
+    }
+
+    const allowedPattern = /^[a-z0-9()!:@$_-]+$/;
+
+    if (!allowedPattern.test(lowercaseId)) {
+      return {
+        isValid: false,
+        error: 'ID contains invalid characters. Only A-Z, a-z, 0-9, (, ), !, :, @, $, _, - are allowed.'
+      };
+    }
+
+    return {
+      isValid: true,
+      sanitizedId: addWebPrefix(lowercaseId)
+    };
+  }
+  /**
+   * Adds a `_w_` prefix to a sanitized CleverTap ID for web.
+   *
+   * - Converts the ID to lowercase.
+   * - Does not validate the characters or length — assumes the ID is already valid.
+   *
+   * @param {string} id - The custom CleverTap ID.
+   * @returns {string} - The prefixed and lowercased CleverTap ID.
+   */
+
+  function addWebPrefix(id) {
+    if (typeof id !== 'string') {
+      throw new Error('ID must be a string');
+    }
+
+    return "".concat(CUSTOM_CT_ID_PREFIX).concat(id.toLowerCase());
+  }
+
+  var _oldValues$1 = _classPrivateFieldLooseKey("oldValues");
+
+  var _logger$5 = _classPrivateFieldLooseKey("logger");
+
+  var _request$3 = _classPrivateFieldLooseKey("request");
+
+  var _account$4 = _classPrivateFieldLooseKey("account");
+
+  var _wizAlertJSPath = _classPrivateFieldLooseKey("wizAlertJSPath");
+
+  var _fcmPublicKey = _classPrivateFieldLooseKey("fcmPublicKey");
+
+  var _setUpWebPush = _classPrivateFieldLooseKey("setUpWebPush");
+
+  var _isNativeWebPushSupported = _classPrivateFieldLooseKey("isNativeWebPushSupported");
+
+  var _setUpSafariNotifications = _classPrivateFieldLooseKey("setUpSafariNotifications");
+
+  var _setUpChromeFirefoxNotifications = _classPrivateFieldLooseKey("setUpChromeFirefoxNotifications");
+
+  var _addWizAlertJS = _classPrivateFieldLooseKey("addWizAlertJS");
+
+  var _removeWizAlertJS = _classPrivateFieldLooseKey("removeWizAlertJS");
+
+  var _handleNotificationRegistration = _classPrivateFieldLooseKey("handleNotificationRegistration");
+
+  class NotificationHandler extends Array {
+    constructor(_ref, values) {
+      let {
+        logger,
+        session,
+        request,
+        account
+      } = _ref;
+      super();
+      Object.defineProperty(this, _handleNotificationRegistration, {
+        value: _handleNotificationRegistration2
+      });
+      Object.defineProperty(this, _removeWizAlertJS, {
+        value: _removeWizAlertJS2
+      });
+      Object.defineProperty(this, _addWizAlertJS, {
+        value: _addWizAlertJS2
+      });
+      Object.defineProperty(this, _setUpChromeFirefoxNotifications, {
+        value: _setUpChromeFirefoxNotifications2
+      });
+      Object.defineProperty(this, _setUpSafariNotifications, {
+        value: _setUpSafariNotifications2
+      });
+      Object.defineProperty(this, _isNativeWebPushSupported, {
+        value: _isNativeWebPushSupported2
+      });
+      Object.defineProperty(this, _setUpWebPush, {
+        value: _setUpWebPush2
+      });
+      Object.defineProperty(this, _oldValues$1, {
+        writable: true,
+        value: void 0
+      });
+      Object.defineProperty(this, _logger$5, {
+        writable: true,
+        value: void 0
+      });
+      Object.defineProperty(this, _request$3, {
+        writable: true,
+        value: void 0
+      });
+      Object.defineProperty(this, _account$4, {
+        writable: true,
+        value: void 0
+      });
+      Object.defineProperty(this, _wizAlertJSPath, {
+        writable: true,
+        value: void 0
+      });
+      Object.defineProperty(this, _fcmPublicKey, {
+        writable: true,
+        value: void 0
+      });
+      _classPrivateFieldLooseBase(this, _wizAlertJSPath)[_wizAlertJSPath] = 'https://d2r1yp2w7bby2u.cloudfront.net/js/wzrk_dialog.min.js';
+      _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] = null;
+      _classPrivateFieldLooseBase(this, _oldValues$1)[_oldValues$1] = values;
+      _classPrivateFieldLooseBase(this, _logger$5)[_logger$5] = logger;
+      _classPrivateFieldLooseBase(this, _request$3)[_request$3] = request;
+      _classPrivateFieldLooseBase(this, _account$4)[_account$4] = account;
+    }
+
+    setupWebPush(displayArgs) {
+      /*
+        A method in notification.js which can be accessed in prompt.js file to call the
+        private method this.#setUpWebPush
+      */
+      _classPrivateFieldLooseBase(this, _setUpWebPush)[_setUpWebPush](displayArgs);
+    }
+
+    push() {
+      if (StorageManager.readFromLSorCookie(ACCOUNT_ID)) {
+        /*
+          To handle a potential race condition, two flags are stored in Local Storage:
+          - `webPushConfigResponseReceived`: Indicates if the backend's webPushConfig has been received (set during the initial API call without a session ID).
+          - `NOTIFICATION_PUSH_METHOD_DEFERRED`: Tracks if `clevertap.notifications.push` was called before receiving the webPushConfig.
+           This ensures the soft prompt is rendered correctly:
+          - If `webPushConfigResponseReceived` is true, the soft prompt is processed immediately.
+          - Otherwise, `NOTIFICATION_PUSH_METHOD_DEFERRED` is set to true, and the rendering is deferred until the webPushConfig is received.
+        */
+        const isWebPushConfigPresent = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG_RECEIVED);
+        const isApplicationServerKeyReceived = StorageManager.readFromLSorCookie(APPLICATION_SERVER_KEY_RECEIVED);
+
+        for (var _len = arguments.length, displayArgs = new Array(_len), _key = 0; _key < _len; _key++) {
+          displayArgs[_key] = arguments[_key];
+        }
+
+        setNotificationHandlerValues({
+          logger: _classPrivateFieldLooseBase(this, _logger$5)[_logger$5],
+          account: _classPrivateFieldLooseBase(this, _account$4)[_account$4],
+          request: _classPrivateFieldLooseBase(this, _request$3)[_request$3],
+          displayArgs,
+          fcmPublicKey: _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey]
+        });
+
+        if (isWebPushConfigPresent && isApplicationServerKeyReceived) {
+          processSoftPrompt();
+        } else {
+          StorageManager.saveToLSorCookie(NOTIFICATION_PUSH_METHOD_DEFERRED, true);
+        }
+      } else {
+        _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Account ID is not set');
+      }
+    }
+
+    _processOldValues() {
+      if (_classPrivateFieldLooseBase(this, _oldValues$1)[_oldValues$1]) {
+        if (Array.isArray(_classPrivateFieldLooseBase(this, _oldValues$1)[_oldValues$1]) && _classPrivateFieldLooseBase(this, _oldValues$1)[_oldValues$1].length > 0) {
+          setNotificationHandlerValues({
+            logger: _classPrivateFieldLooseBase(this, _logger$5)[_logger$5],
+            account: _classPrivateFieldLooseBase(this, _account$4)[_account$4],
+            request: _classPrivateFieldLooseBase(this, _request$3)[_request$3],
+            displayArgs: _classPrivateFieldLooseBase(this, _oldValues$1)[_oldValues$1].slice(),
+            fcmPublicKey: _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey]
+          });
+          StorageManager.saveToLSorCookie(NOTIFICATION_PUSH_METHOD_DEFERRED, true);
+        }
+
+        _classPrivateFieldLooseBase(this, _setUpWebPush)[_setUpWebPush](_classPrivateFieldLooseBase(this, _oldValues$1)[_oldValues$1]);
+      }
+
+      _classPrivateFieldLooseBase(this, _oldValues$1)[_oldValues$1] = null;
+    }
+
+    setUpWebPushNotifications(subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsServiceUrl) {
+      if (isChrome() || isFirefox()) {
+        _classPrivateFieldLooseBase(this, _setUpChromeFirefoxNotifications)[_setUpChromeFirefoxNotifications](subscriptionCallback, serviceWorkerPath);
+      } else if (isSafari()) {
+        _classPrivateFieldLooseBase(this, _setUpSafariNotifications)[_setUpSafariNotifications](subscriptionCallback, apnsWebPushId, apnsServiceUrl, serviceWorkerPath);
+      }
+    }
+
+    setApplicationServerKey(applicationServerKey) {
+      _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] = applicationServerKey;
+    }
+
+    _enableWebPush(enabled, applicationServerKey) {
+      $ct.webPushEnabled = enabled;
+
+      if (applicationServerKey != null) {
+        this.setApplicationServerKey(applicationServerKey);
+      }
+
+      const isNotificationPushCalled = StorageManager.readFromLSorCookie(NOTIFICATION_PUSH_METHOD_DEFERRED);
+
+      if (isNotificationPushCalled) {
+        return;
+      }
+
+      if ($ct.webPushEnabled && $ct.notifApi.notifEnabledFromApi) {
+        _classPrivateFieldLooseBase(this, _handleNotificationRegistration)[_handleNotificationRegistration]($ct.notifApi.displayArgs);
+      } else if (!$ct.webPushEnabled && $ct.notifApi.notifEnabledFromApi) ;
+    }
+
+  }
+
+  var _setUpWebPush2 = function _setUpWebPush2(displayArgs) {
+    if ($ct.webPushEnabled && displayArgs.length > 0) {
+      _classPrivateFieldLooseBase(this, _handleNotificationRegistration)[_handleNotificationRegistration](displayArgs);
+    } else if ($ct.webPushEnabled == null && displayArgs.length > 0) {
+      $ct.notifApi.notifEnabledFromApi = true;
+      $ct.notifApi.displayArgs = displayArgs.slice();
+    } else if ($ct.webPushEnabled === false && displayArgs.length > 0) {
+      _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Make sure push notifications are fully enabled and integrated');
+    }
+  };
+
+  var _isNativeWebPushSupported2 = function _isNativeWebPushSupported2() {
+    return 'PushManager' in window;
+  };
+
+  var _setUpSafariNotifications2 = function _setUpSafariNotifications2(subscriptionCallback, apnsWebPushId, apnsServiceUrl, serviceWorkerPath) {
+    const softPromptCard = document.getElementById('pnWrapper');
+    const oldSoftPromptCard = document.getElementById('wzrk_wrapper');
+
+    if (_classPrivateFieldLooseBase(this, _isNativeWebPushSupported)[_isNativeWebPushSupported]() && _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] != null) {
+      StorageManager.setMetaProp(VAPID_MIGRATION_PROMPT_SHOWN, true);
+      navigator.serviceWorker.register(serviceWorkerPath).then(registration => {
+        window.Notification.requestPermission().then(permission => {
+          if (permission === 'granted') {
+            const subscribeObj = {
+              applicationServerKey: _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey],
+              userVisibleOnly: true
+            };
+
+            _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Sub Obj' + JSON.stringify(subscribeObj));
+
+            const subscribeForPush = () => {
+              registration.pushManager.subscribe(subscribeObj).then(subscription => {
+                _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Service Worker registered. Endpoint: ' + subscription.endpoint);
+
+                _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Service Data Sent: ' + JSON.stringify({
+                  applicationServerKey: _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey],
+                  userVisibleOnly: true
+                }));
+
+                _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Subscription Data Received: ' + JSON.stringify(subscription));
+
+                const subscriptionData = JSON.parse(JSON.stringify(subscription));
+                subscriptionData.endpoint = subscriptionData.endpoint.split('/').pop();
+                StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData);
+
+                _classPrivateFieldLooseBase(this, _request$3)[_request$3].registerToken(subscriptionData);
+
+                if (typeof subscriptionCallback !== 'undefined' && typeof subscriptionCallback === 'function') {
+                  subscriptionCallback();
+                }
+
+                const existingBellWrapper = document.getElementById('bell_wrapper');
+
+                if (existingBellWrapper) {
+                  existingBellWrapper.parentNode.removeChild(existingBellWrapper);
+                }
+
+                if (softPromptCard) {
+                  softPromptCard.parentNode.removeChild(softPromptCard);
+                }
+
+                if (oldSoftPromptCard) {
+                  oldSoftPromptCard.parentNode.removeChild(oldSoftPromptCard);
+                }
+              });
+            };
+
+            const serviceWorker = registration.installing || registration.waiting || registration.active;
+
+            if (serviceWorker && serviceWorker.state === 'activated') {
+              // Already activated, proceed with subscription
+              subscribeForPush();
+            } else if (serviceWorker) {
+              // Listen for state changes to handle activation
+              serviceWorker.addEventListener('statechange', event => {
+                if (event.target.state === 'activated') {
+                  _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Service Worker activated. Proceeding with subscription.');
+
+                  subscribeForPush();
+                }
+              });
+            }
+          } else if (permission === 'denied') {
+            _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Error subscribing to Safari web push');
+
+            if (softPromptCard) {
+              softPromptCard.parentNode.removeChild(softPromptCard);
+            }
+
+            if (oldSoftPromptCard) {
+              oldSoftPromptCard.parentNode.removeChild(oldSoftPromptCard);
+            }
+          }
+        });
+      });
+    } else {
+      // ensure that proper arguments are passed
+      if (typeof apnsWebPushId === 'undefined') {
+        _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Ensure that APNS Web Push ID is supplied');
+      }
+
+      if (typeof apnsServiceUrl === 'undefined') {
+        _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Ensure that APNS Web Push service path is supplied');
+      }
+
+      if ('safari' in window && 'pushNotification' in window.safari) {
+        window.safari.pushNotification.requestPermission(apnsServiceUrl, apnsWebPushId, {}, subscription => {
+          if (subscription.permission === 'granted') {
+            const subscriptionData = JSON.parse(JSON.stringify(subscription));
+            subscriptionData.endpoint = subscription.deviceToken;
+            subscriptionData.browser = 'Safari';
+
+            _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Service Data Sent: ' + JSON.stringify({
+              apnsServiceUrl,
+              apnsWebPushId
+            }));
+
+            _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Subscription Data Received: ' + JSON.stringify(subscription));
+
+            const existingBellWrapper = document.getElementById('bell_wrapper');
+
+            if (existingBellWrapper) {
+              existingBellWrapper.parentNode.removeChild(existingBellWrapper);
+            }
+
+            if (softPromptCard) {
+              softPromptCard.parentNode.removeChild(softPromptCard);
+            }
+
+            if (oldSoftPromptCard) {
+              oldSoftPromptCard.parentNode.removeChild(oldSoftPromptCard);
+            }
+
+            StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData);
+
+            _classPrivateFieldLooseBase(this, _request$3)[_request$3].registerToken(subscriptionData);
+
+            _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Safari Web Push registered. Device Token: ' + subscription.deviceToken);
+          } else if (subscription.permission === 'denied') {
+            _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Error subscribing to Safari web push');
+
+            if (softPromptCard) {
+              softPromptCard.parentNode.removeChild(softPromptCard);
+            }
+
+            if (oldSoftPromptCard) {
+              oldSoftPromptCard.parentNode.removeChild(oldSoftPromptCard);
+            }
+          }
+        });
+      }
+    }
+  };
+
+  var _setUpChromeFirefoxNotifications2 = function _setUpChromeFirefoxNotifications2(subscriptionCallback, serviceWorkerPath) {
+    let registrationScope = '';
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register(serviceWorkerPath).then(registration => {
+        if (typeof __wzrk_account_id !== 'undefined') {
+          // eslint-disable-line
+          // shopify accounts , since the service worker is not at root, serviceWorker.ready is never resolved.
+          // hence add a timeout and hope serviceWroker is ready within that time.
+          return new Promise(resolve => setTimeout(() => resolve(registration), 5000));
+        }
+
+        registrationScope = registration.scope; // IF SERVICE WORKER IS AT ROOT, RETURN THE READY PROMISE
+        // ELSE IF CHROME RETURN PROMISE AFTER 5 SECONDS
+        // OR getRegistrations PROMISE IF ITS FIREFOX
+
+        const rootDirRegex = /^(\.?)(\/?)([^/]*).js$/;
+        const isServiceWorkerAtRoot = rootDirRegex.test(serviceWorkerPath);
+
+        if (isServiceWorkerAtRoot) {
+          return navigator.serviceWorker.ready;
+        } else {
+          if (isChrome()) {
+            return new Promise(resolve => setTimeout(() => resolve(registration), 5000));
+          } else {
+            return navigator.serviceWorker.getRegistrations();
+          }
+        }
+      }).then(serviceWorkerRegistration => {
+        // ITS AN ARRAY IN CASE OF FIREFOX, SO USE THE REGISTRATION WITH PROPER SCOPE
+        if (isFirefox() && Array.isArray(serviceWorkerRegistration)) {
+          serviceWorkerRegistration = serviceWorkerRegistration.filter(i => i.scope === registrationScope)[0];
+        }
+
+        const subscribeObj = {
+          userVisibleOnly: true
+        };
+
+        if (_classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] != null) {
+          subscribeObj.applicationServerKey = urlBase64ToUint8Array(_classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey]);
+        }
+
+        const softPromptCard = document.getElementById('pnWrapper');
+        const oldSoftPromptCard = document.getElementById('wzrk_wrapper');
+        serviceWorkerRegistration.pushManager.subscribe(subscribeObj).then(subscription => {
+          _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Service Worker registered. Endpoint: ' + subscription.endpoint);
+
+          _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].debug('Service Data Sent: ' + JSON.stringify(subscribeObj));
+
+          _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].debug('Subscription Data Received: ' + JSON.stringify(subscription)); // convert the subscription keys to strings; this sets it up nicely for pushing to LC
+
+
+          const subscriptionData = JSON.parse(JSON.stringify(subscription)); // remove the common chrome/firefox endpoint at the beginning of the token
+
+          if (isChrome()) {
+            subscriptionData.endpoint = subscriptionData.endpoint.split('/').pop();
+            subscriptionData.browser = 'Chrome';
+          } else if (isFirefox()) {
+            subscriptionData.endpoint = subscriptionData.endpoint.split('/').pop();
+            subscriptionData.browser = 'Firefox';
+          }
+
+          StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData);
+
+          _classPrivateFieldLooseBase(this, _request$3)[_request$3].registerToken(subscriptionData);
+
+          if (typeof subscriptionCallback !== 'undefined' && typeof subscriptionCallback === 'function') {
+            subscriptionCallback();
+          }
+
+          const existingBellWrapper = document.getElementById('bell_wrapper');
+
+          if (existingBellWrapper) {
+            existingBellWrapper.parentNode.removeChild(existingBellWrapper);
+          }
+
+          if (softPromptCard) {
+            softPromptCard.parentNode.removeChild(softPromptCard);
+          }
+
+          if (oldSoftPromptCard) {
+            oldSoftPromptCard.parentNode.removeChild(oldSoftPromptCard);
+          }
+        }).catch(error => {
+          // unsubscribe from webpush if error
+          serviceWorkerRegistration.pushManager.getSubscription().then(subscription => {
+            if (subscription !== null) {
+              subscription.unsubscribe().then(successful => {
+                // You've successfully unsubscribed
+                _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Unsubscription successful');
+
+                window.clevertap.notifications.push({
+                  skipDialog: true
+                });
+              }).catch(e => {
+                // Unsubscription failed
+                _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Error unsubscribing: ' + e);
+              });
+            }
+          });
+
+          _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Error subscribing: ' + error);
+
+          if (softPromptCard) {
+            softPromptCard.parentNode.removeChild(softPromptCard);
+          }
+
+          if (oldSoftPromptCard) {
+            oldSoftPromptCard.parentNode.removeChild(oldSoftPromptCard);
+          }
+        });
+      }).catch(err => {
+        _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('error registering service worker: ' + err);
+      });
+    }
+  };
+
+  var _addWizAlertJS2 = function _addWizAlertJS2() {
+    const scriptTag = document.createElement('script');
+    scriptTag.setAttribute('type', 'text/javascript');
+    scriptTag.setAttribute('id', 'wzrk-alert-js');
+    scriptTag.setAttribute('src', _classPrivateFieldLooseBase(this, _wizAlertJSPath)[_wizAlertJSPath]); // add the script tag to the end of the body
+
+    document.getElementsByTagName('body')[0].appendChild(scriptTag);
+    return scriptTag;
+  };
+
+  var _removeWizAlertJS2 = function _removeWizAlertJS2() {
+    const scriptTag = document.getElementById('wzrk-alert-js');
+    scriptTag.parentNode.removeChild(scriptTag);
+  };
+
+  var _handleNotificationRegistration2 = function _handleNotificationRegistration2(displayArgs) {
+    // make sure everything is specified
+    let titleText;
+    let bodyText;
+    let okButtonText;
+    let rejectButtonText;
+    let okButtonColor;
+    let skipDialog;
+    let askAgainTimeInSeconds;
+    let okCallback;
+    let rejectCallback;
+    let subscriptionCallback;
+    let serviceWorkerPath;
+    let httpsPopupPath;
+    let httpsIframePath;
+    let apnsWebPushId;
+    let apnsWebPushServiceUrl;
+    let okButtonAriaLabel;
+    let rejectButtonAriaLabel;
+    const vapidSupportedAndMigrated = isSafari() && 'PushManager' in window && StorageManager.getMetaProp(VAPID_MIGRATION_PROMPT_SHOWN) && _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] !== null;
+
+    if (displayArgs.length === 1) {
+      if (isObject(displayArgs[0])) {
+        const notifObj = displayArgs[0];
+        titleText = notifObj.titleText;
+        bodyText = notifObj.bodyText;
+        okButtonText = notifObj.okButtonText;
+        rejectButtonText = notifObj.rejectButtonText;
+        okButtonAriaLabel = notifObj.okButtonAriaLabel;
+        rejectButtonAriaLabel = notifObj.rejectButtonAriaLabel;
+        okButtonColor = notifObj.okButtonColor;
+        skipDialog = notifObj.skipDialog;
+        askAgainTimeInSeconds = notifObj.askAgainTimeInSeconds;
+        okCallback = notifObj.okCallback;
+        rejectCallback = notifObj.rejectCallback;
+        subscriptionCallback = notifObj.subscriptionCallback;
+        serviceWorkerPath = notifObj.serviceWorkerPath;
+        httpsPopupPath = notifObj.httpsPopupPath;
+        httpsIframePath = notifObj.httpsIframePath;
+        apnsWebPushId = notifObj.apnsWebPushId;
+        apnsWebPushServiceUrl = notifObj.apnsWebPushServiceUrl;
+      }
+    } else {
+      titleText = displayArgs[0];
+      bodyText = displayArgs[1];
+      okButtonText = displayArgs[2];
+      rejectButtonText = displayArgs[3];
+      okButtonColor = displayArgs[4];
+      skipDialog = displayArgs[5];
+      askAgainTimeInSeconds = displayArgs[6];
+    }
+
+    if (skipDialog == null) {
+      skipDialog = false;
+    }
+
+    if (serviceWorkerPath == null) {
+      serviceWorkerPath = '/clevertap_sw.js';
+    } // ensure that the browser supports notifications
+
+
+    if (typeof navigator.serviceWorker === 'undefined') {
+      return;
+    } // Used for Shopify Web Push mentioned here
+    // (https://wizrocket.atlassian.net/wiki/spaces/TAMKB/pages/1824325665/Implementing+Web+Push+in+Shopify+if+not+using+the+Shopify+App+approach)
+
+
+    const isHTTP = httpsPopupPath != null && httpsIframePath != null; // make sure the site is on https for chrome notifications
+
+    if (window.location.protocol !== 'https:' && document.location.hostname !== 'localhost' && !isHTTP) {
+      _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Make sure you are https or localhost to register for notifications');
+
+      return;
+    }
+    /*
+       If it is chrome or firefox and the nativeWebPush is not supported then return
+       For Safari the APNs route is open if nativeWebPush is not supported
+    */
+
+
+    if (isChrome() || isFirefox()) {
+      if (!_classPrivateFieldLooseBase(this, _isNativeWebPushSupported)[_isNativeWebPushSupported]()) {
+        _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Web Push Notification is not supported on this browser');
+
+        return;
+      }
+    } // we check for the cookie in setUpChromeNotifications() the tokens may have changed
+
+
+    if (!isHTTP) {
+      const hasNotification = ('Notification' in window);
+
+      if (!hasNotification || Notification == null) {
+        _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Notification not supported on this Device or Browser');
+
+        return;
+      } // handle migrations from other services -> chrome notifications may have already been asked for before
+
+
+      if (Notification.permission === 'granted' && (vapidSupportedAndMigrated || isChrome() || isFirefox())) {
+        // skip the dialog and register
+        this.setUpWebPushNotifications(subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsWebPushServiceUrl);
+        return;
+      } else if (Notification.permission === 'denied') {
+        // we've lost this profile :'(
+        return;
+      }
+
+      if (skipDialog) {
+        this.setUpWebPushNotifications(subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsWebPushServiceUrl);
+        return;
+      }
+    } // make sure the right parameters are passed
+
+
+    if (!titleText || !bodyText || !okButtonText || !rejectButtonText) {
+      _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Missing input parameters; please specify title, body, ok button and cancel button text');
+
+      return;
+    } // make sure okButtonColor is formatted properly
+
+
+    if (okButtonColor == null || !okButtonColor.match(/^#[a-f\d]{6}$/i)) {
+      okButtonColor = '#f28046'; // default color for positive button
+    } // make sure the user isn't asked for notifications more than askAgainTimeInSeconds
+
+
+    const now = new Date().getTime() / 1000;
+
+    if (StorageManager.getMetaProp(NOTIF_LAST_TIME) == null) {
+      StorageManager.setMetaProp(NOTIF_LAST_TIME, now);
+    } else {
+      if (askAgainTimeInSeconds == null) {
+        // 7 days by default
+        askAgainTimeInSeconds = 7 * 24 * 60 * 60;
+      }
+
+      const notifLastTime = StorageManager.getMetaProp(NOTIF_LAST_TIME);
+
+      if (now - notifLastTime < askAgainTimeInSeconds) {
+        if (!isSafari()) {
+          return;
+        } // If Safari is migrated already or only APNS, then return
+
+
+        if (vapidSupportedAndMigrated || _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] === null) {
+          return;
+        }
+      } else {
+        StorageManager.setMetaProp(NOTIF_LAST_TIME, now);
+      }
+    }
+
+    if (isSafari() && _classPrivateFieldLooseBase(this, _isNativeWebPushSupported)[_isNativeWebPushSupported]() && _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] !== null) {
+      StorageManager.setMetaProp(VAPID_MIGRATION_PROMPT_SHOWN, true);
+    }
+
+    if (StorageManager.readFromLSorCookie(POPUP_LOADING) || document.getElementById(OLD_SOFT_PROMPT_SELCTOR_ID)) {
+      _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].debug('Soft prompt wrapper is already loading or loaded');
+
+      return;
+    }
+
+    StorageManager.saveToLSorCookie(POPUP_LOADING, true);
+
+    _classPrivateFieldLooseBase(this, _addWizAlertJS)[_addWizAlertJS]().onload = () => {
+      StorageManager.saveToLSorCookie(POPUP_LOADING, false); // create our wizrocket popup
+
+      window.wzrkPermissionPopup.wizAlert({
+        title: titleText,
+        body: bodyText,
+        confirmButtonText: okButtonText,
+        confirmButtonColor: okButtonColor,
+        rejectButtonText: rejectButtonText,
+        confirmButtonAriaLabel: okButtonAriaLabel,
+        rejectButtonAriaLabel: rejectButtonAriaLabel
+      }, enabled => {
+        // callback function
+        if (enabled) {
+          // the user accepted on the dialog box
+          if (typeof okCallback === 'function') {
+            okCallback();
+          }
+
+          this.setUpWebPushNotifications(subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsWebPushServiceUrl);
+        } else {
+          if (typeof rejectCallback === 'function') {
+            rejectCallback();
+          }
+        }
+
+        _classPrivateFieldLooseBase(this, _removeWizAlertJS)[_removeWizAlertJS]();
+      });
+    };
+  };
+
+  const BELL_BASE64 = 'PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiIGQ9Ik0xMi40OTYyIDUuMjQzOTVDMTIuODM5MSA1LjAzMzE3IDEzLjI4NDcgNS4xNDY4OSAxMy40OTczIDUuNDg4NjdDMTMuNzIyMyA1Ljg1MDE4IDEzLjYwMDIgNi4zMjUxOCAxMy4yMzggNi41NDkwMkM3LjM5Mzk5IDEwLjE2MDYgMy41IDE2LjYyNTcgMy41IDI0LjAwMDNDMy41IDM1LjMyMjEgMTIuNjc4MiA0NC41MDAzIDI0IDQ0LjUwMDNDMjguMDA1NSA0NC41MDAzIDMxLjc0MjYgNDMuMzUxNSAzNC45IDQxLjM2NTVDMzUuMjYwOCA0MS4xMzg1IDM1Ljc0MTYgNDEuMjM4NiAzNS45NjY4IDQxLjYwMDZDMzYuMTc5MiA0MS45NDE5IDM2LjA4NSA0Mi4zOTExIDM1Ljc0NTIgNDIuNjA2QzMyLjM0NjggNDQuNzU1OSAyOC4zMTg3IDQ2LjAwMDMgMjQgNDYuMDAwM0MxMS44NDk3IDQ2LjAwMDMgMiAzNi4xNTA1IDIgMjQuMDAwM0MyIDE2LjA2NjkgNi4xOTkyMSA5LjExNDMyIDEyLjQ5NjIgNS4yNDM5NVpNMzguOCAzOS45MDAzQzM4LjggNDAuMzk3MyAzOC4zOTcxIDQwLjgwMDMgMzcuOSA0MC44MDAzQzM3LjQwMjkgNDAuODAwMyAzNyA0MC4zOTczIDM3IDM5LjkwMDNDMzcgMzkuNDAzMiAzNy40MDI5IDM5LjAwMDMgMzcuOSAzOS4wMDAzQzM4LjM5NzEgMzkuMDAwMyAzOC44IDM5LjQwMzIgMzguOCAzOS45MDAzWiIgZmlsbD0id2hpdGUiLz4KPHBhdGggZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiIGQ9Ik0yNCAxMkMyMi44OTU0IDEyIDIyIDEyLjg5NTQgMjIgMTRWMTQuMjUyQzE4LjU0OTUgMTUuMTQwMSAxNiAxOC4yNzIzIDE2IDIyVjI5LjVIMTUuNDc2OUMxNC42NjEyIDI5LjUgMTQgMzAuMTYxMiAxNCAzMC45NzY5VjMxLjAyMzFDMTQgMzEuODM4OCAxNC42NjEyIDMyLjUgMTUuNDc2OSAzMi41SDMyLjUyMzFDMzMuMzM4OCAzMi41IDM0IDMxLjgzODggMzQgMzEuMDIzMVYzMC45NzY5QzM0IDMwLjE2MTIgMzMuMzM4OCAyOS41IDMyLjUyMzEgMjkuNUgzMlYyMkMzMiAxOC4yNzIzIDI5LjQ1MDUgMTUuMTQwMSAyNiAxNC4yNTJWMTRDMjYgMTIuODk1NCAyNS4xMDQ2IDEyIDI0IDEyWk0yNiAzNFYzMy41SDIyVjM0QzIyIDM1LjEwNDYgMjIuODk1NCAzNiAyNCAzNkMyNS4xMDQ2IDM2IDI2IDM1LjEwNDYgMjYgMzRaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K';
+  const PROMPT_BELL_BASE64 = 'PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByeD0iMzIiIGZpbGw9IiMwMEFFQjkiLz4KPHBhdGggZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiIGQ9Ik0zMS45OTg2IDIwQzMwLjkxOTggMjAgMzAuMDQyOCAyMC44NzQ2IDMwLjA0MjggMjEuOTUzNEwzMC4wNDI5IDIxLjk3MzRDMjYuNTQzNCAyMi41NTM1IDIzLjg3NSAyNS41OTQzIDIzLjg3NSAyOS4yNTgyVjM4LjA5OTVIMjMuODczNUMyMy4wNTg5IDM4LjA5OTUgMjIuMzk4NCAzOC43NiAyMi4zOTg0IDM5LjU3NDZDMjIuMzk4NCA0MC4zODkzIDIzLjA1ODkgNDEuMDQ5NyAyMy44NzM1IDQxLjA0OTdIMjkuNzgxMlY0MS43ODQyQzI5Ljc4MTIgNDMuMDA3NyAzMC43NzMxIDQzLjk5OTYgMzEuOTk2NiA0My45OTk2QzMzLjIyMDIgNDMuOTk5NiAzNC4yMTIgNDMuMDA3NyAzNC4yMTIgNDEuNzg0MlY0MS4wNDk3SDQwLjEyMzNDNDAuOTM4IDQxLjA0OTcgNDEuNTk4NCA0MC4zODkzIDQxLjU5ODQgMzkuNTc0NkM0MS41OTg0IDM4Ljc2IDQwLjkzOCAzOC4wOTk1IDQwLjEyMzMgMzguMDk5NUg0MC4xMjEyVjI5LjI1ODJDNDAuMTIxMiAyNS41OTQ2IDM3LjQ1MzMgMjIuNTU0MiAzMy45NTQzIDIxLjk3MzZMMzMuOTU0NCAyMS45NTM0QzMzLjk1NDQgMjAuODc0NiAzMy4wNzc1IDIwIDMxLjk5ODYgMjBaIiBmaWxsPSJ3aGl0ZSIvPgo8cmVjdCBvcGFjaXR5PSIwLjUiIHg9IjcuNSIgeT0iNy41IiB3aWR0aD0iNDkiIGhlaWdodD0iNDkiIHJ4PSIyNC41IiBzdHJva2U9IndoaXRlIi8+CjxyZWN0IG9wYWNpdHk9IjAuMyIgeD0iNC41IiB5PSI0LjUiIHdpZHRoPSI1NSIgaGVpZ2h0PSI1NSIgcng9IjI3LjUiIHN0cm9rZT0id2hpdGUiLz4KPHJlY3Qgb3BhY2l0eT0iMC44IiB4PSIxMC41IiB5PSIxMC41IiB3aWR0aD0iNDMiIGhlaWdodD0iNDMiIHJ4PSIyMS41IiBzdHJva2U9IndoaXRlIi8+Cjwvc3ZnPgo=';
+
+  let appServerKey = null;
+  let swPath = '/clevertap_sw.js';
+  let notificationHandler = null;
+  let logger$1 = null;
+  let account = null;
+  let request = null;
+  let displayArgs = null;
+  let fcmPublicKey = null;
+  const setNotificationHandlerValues = function () {
+    let notificationValues = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+    logger$1 = notificationValues.logger;
+    account = notificationValues.account;
+    request = notificationValues.request;
+    displayArgs = notificationValues.displayArgs;
+    fcmPublicKey = notificationValues.fcmPublicKey;
+  };
+  const processWebPushConfig = (webPushConfig, logger, request) => {
+    StorageManager.saveToLSorCookie(WEBPUSH_CONFIG_RECEIVED, true);
+
+    const updatePushConfig = () => {
+      $ct.pushConfig = webPushConfig;
+      StorageManager.saveToLSorCookie(WEBPUSH_CONFIG, webPushConfig);
+    };
+
+    updatePushConfig();
+
+    if (webPushConfig.isPreview) {
+      enablePush({
+        logger,
+        request
+      });
+    }
+
+    try {
+      const isNotificationPushCalled = StorageManager.readFromLSorCookie(NOTIFICATION_PUSH_METHOD_DEFERRED);
+
+      if (isNotificationPushCalled) {
+        try {
+          processSoftPrompt();
+        } catch (error) {
+          logger.error('processs soft prompt' + error);
+        }
+
+        return;
+      }
+    } catch (error) {
+      logger.error('Failed to process web push config:', error); // Fallback: Attempt to process soft prompt anyway
+
+      processSoftPrompt();
+    }
+  };
+  const processSoftPrompt = () => {
+    const webPushConfig = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {};
+    notificationHandler = new NotificationHandler({
+      logger: logger$1,
+      session: {},
+      request,
+      account
+    });
+
+    if (webPushConfig && !(Object.keys(webPushConfig).length > 0)) {
+      notificationHandler.setApplicationServerKey(appServerKey);
+      notificationHandler.setupWebPush(displayArgs);
+      return;
+    }
+
+    const {
+      showBox,
+      showBellIcon,
+      boxType
+    } = webPushConfig;
+    const {
+      serviceWorkerPath,
+      skipDialog,
+      okCallback,
+      subscriptionCallback,
+      rejectCallback,
+      apnsWebPushId,
+      apnsWebPushServiceUrl
+    } = parseDisplayArgs(displayArgs);
+    const isSoftPromptNew = showBellIcon || showBox && boxType === 'new';
+
+    if (isSoftPromptNew) {
+      const enablePushParams = {
+        serviceWorkerPath,
+        skipDialog,
+        okCallback,
+        subscriptionCallback,
+        rejectCallback,
+        logger: logger$1,
+        request,
+        account,
+        fcmPublicKey,
+        apnsWebPushId,
+        apnsWebPushServiceUrl
+      };
+      enablePush(enablePushParams);
+    }
+
+    if (showBox && boxType === 'old') {
+      notificationHandler.setApplicationServerKey(appServerKey);
+      notificationHandler.setupWebPush(displayArgs);
+    }
+
+    StorageManager.saveToLSorCookie(NOTIFICATION_PUSH_METHOD_DEFERRED, false);
+    StorageManager.saveToLSorCookie(APPLICATION_SERVER_KEY_RECEIVED, false);
+  };
+  const parseDisplayArgs = displayArgs => {
+    if (displayArgs && displayArgs.length === 1 && isObject(displayArgs[0])) {
+      const {
+        serviceWorkerPath,
+        skipDialog,
+        okCallback,
+        subscriptionCallback,
+        rejectCallback,
+        apnsWebPushServiceUrl,
+        apnsWebPushId
+      } = displayArgs[0];
+      return {
+        serviceWorkerPath,
+        skipDialog,
+        okCallback,
+        subscriptionCallback,
+        rejectCallback,
+        apnsWebPushServiceUrl,
+        apnsWebPushId
+      };
+    }
+
+    return {
+      serviceWorkerPath: undefined,
+      skipDialog: displayArgs[5],
+      okCallback: undefined,
+      subscriptionCallback: undefined,
+      rejectCallback: undefined,
+      apnsWebPushServiceUrl: undefined,
+      apnsWebPushId: undefined
+    };
+  };
+  const enablePush = enablePushParams => {
+    const {
+      serviceWorkerPath: customSwPath,
+      okCallback,
+      subscriptionCallback,
+      rejectCallback,
+      logger,
+      fcmPublicKey,
+      apnsWebPushId,
+      apnsWebPushServiceUrl
+    } = enablePushParams;
+    let {
+      skipDialog
+    } = enablePushParams;
+
+    const _pushConfig = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {};
+
+    $ct.pushConfig = _pushConfig;
+
+    if (!$ct.pushConfig) {
+      logger.error('Web Push config data not present');
+      return;
+    }
+
+    if (customSwPath) {
+      swPath = customSwPath;
+    }
+
+    if (skipDialog === null) {
+      skipDialog = false;
+    } // notificationHandler = new NotificationHandler({ logger, session: {}, request, account })
+
+
+    if (skipDialog) {
+      notificationHandler.setApplicationServerKey(appServerKey);
+      notificationHandler.setUpWebPushNotifications(subscriptionCallback, swPath, apnsWebPushId, apnsWebPushServiceUrl);
+      return;
+    }
+
+    const {
+      showBox,
+      boxType,
+      showBellIcon,
+      isPreview
+    } = $ct.pushConfig;
+
+    if (isPreview) {
+      if ($ct.pushConfig.boxConfig) createNotificationBox($ct.pushConfig, fcmPublicKey);
+      if ($ct.pushConfig.bellIconConfig) createBellIcon($ct.pushConfig);
+    } else {
+      if (showBox && boxType === 'new') createNotificationBox($ct.pushConfig, fcmPublicKey, okCallback, subscriptionCallback, rejectCallback, apnsWebPushId, apnsWebPushServiceUrl);
+      if (showBellIcon) createBellIcon($ct.pushConfig, subscriptionCallback, apnsWebPushId, apnsWebPushServiceUrl);
+    }
+  };
+
+  const createElementWithAttributes = function (tag) {
+    let attributes = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+    const element = document.createElement(tag);
+    Object.entries(attributes).forEach((_ref) => {
+      let [key, value] = _ref;
+      element[key] = value;
+    });
+    return element;
+  };
+
+  const createNotificationBox = (configData, fcmPublicKey, okCallback, subscriptionCallback, rejectCallback, apnsWebPushId, apnsWebPushServiceUrl) => {
+    var _content$icon;
+
+    if (document.getElementById(NEW_SOFT_PROMPT_SELCTOR_ID)) return;
+    const {
+      boxConfig: {
+        content,
+        style
+      }
+    } = configData; // Create the wrapper div
+
+    const wrapper = createElementWithAttributes('div', {
+      id: NEW_SOFT_PROMPT_SELCTOR_ID
+    });
+    const overlayDiv = style.overlay.enabled ? createElementWithAttributes('div', {
+      id: 'pnOverlay'
+    }) : '';
+    const pnCard = createElementWithAttributes('div', {
+      id: 'pnCard'
+    });
+    const iconTitleDescWrapper = createElementWithAttributes('div', {
+      id: 'iconTitleDescWrapper'
+    });
+    const iconContainer = createElementWithAttributes('img', {
+      id: 'iconContainer',
+      src: content.icon.type === 'default' ? "data:image/svg+xml;base64,".concat(PROMPT_BELL_BASE64) : content.icon.url,
+      alt: ((_content$icon = content.icon) === null || _content$icon === void 0 ? void 0 : _content$icon.altText) || ''
+    });
+    iconTitleDescWrapper.appendChild(iconContainer);
+    const titleDescWrapper = createElementWithAttributes('div', {
+      id: 'titleDescWrapper'
+    });
+    titleDescWrapper.appendChild(createElementWithAttributes('div', {
+      id: 'title',
+      textContent: content.title
+    }));
+    titleDescWrapper.appendChild(createElementWithAttributes('div', {
+      id: 'description',
+      textContent: content.description
+    }));
+    iconTitleDescWrapper.appendChild(titleDescWrapper);
+    const buttonsContainer = createElementWithAttributes('div', {
+      id: 'buttonsContainer'
+    });
+    const primaryButton = createElementWithAttributes('button', {
+      id: 'primaryButton',
+      textContent: content.buttons.primaryButtonText,
+      ariaLabel: content.buttons.primaryButtonAriaLabel || content.buttons.primaryButtonText
+    });
+    const secondaryButton = createElementWithAttributes('button', {
+      id: 'secondaryButton',
+      textContent: content.buttons.secondaryButtonText,
+      ariaLabel: content.buttons.secondaryButtonAriaLabel || content.buttons.secondaryButtonText
+    });
+    buttonsContainer.appendChild(secondaryButton);
+    buttonsContainer.appendChild(primaryButton);
+    pnCard.appendChild(iconTitleDescWrapper);
+    pnCard.appendChild(buttonsContainer); // Apply styles
+
+    const styleElement = createElementWithAttributes('style', {
+      textContent: getBoxPromptStyles(style)
+    });
+    wrapper.appendChild(styleElement);
+    wrapper.appendChild(pnCard);
+
+    if (overlayDiv) {
+      wrapper.appendChild(overlayDiv);
+    }
+
+    setElementPosition(pnCard, style.card.position);
+    const vapidSupportedAndMigrated = isSafari() && 'PushManager' in window && StorageManager.getMetaProp(VAPID_MIGRATION_PROMPT_SHOWN) && fcmPublicKey !== null;
+
+    if (!configData.isPreview) {
+      if ('Notification' in window && Notification !== null) {
+        if (Notification.permission === 'granted' && (vapidSupportedAndMigrated || isChrome() || isFirefox())) {
+          notificationHandler.setApplicationServerKey(appServerKey);
+          notificationHandler.setUpWebPushNotifications(subscriptionCallback, swPath, apnsWebPushId, apnsWebPushServiceUrl);
+          return;
+        } else if (Notification.permission === 'denied') {
+          return;
+        }
+      }
+    }
+
+    const now = new Date().getTime() / 1000;
+    const lastNotifTime = StorageManager.getMetaProp('webpush_last_notif_time');
+    const popupFrequency = content.popupFrequency || 7; // number of days
+
+    const shouldShowNotification = !lastNotifTime || now - lastNotifTime >= popupFrequency * 24 * 60 * 60;
+
+    if (shouldShowNotification) {
+      document.body.insertBefore(wrapper, document.body.firstChild);
+
+      if (!configData.isPreview) {
+        StorageManager.setMetaProp('webpush_last_notif_time', now);
+        addEventListeners(wrapper, okCallback, subscriptionCallback, rejectCallback, apnsWebPushId, apnsWebPushServiceUrl);
+
+        if (isSafari() && 'PushManager' in window && fcmPublicKey != null) {
+          StorageManager.setMetaProp(VAPID_MIGRATION_PROMPT_SHOWN, true);
+        }
+      }
+    } else {
+      if (isSafari()) {
+        // This is for migration case for safari from apns to vapid, show popup even when timer is not expired.
+        if (vapidSupportedAndMigrated || fcmPublicKey === null) {
+          return;
+        }
+
+        if (!configData.isPreview) {
+          document.body.appendChild(wrapper);
+          addEventListeners(wrapper, okCallback, subscriptionCallback, rejectCallback, apnsWebPushId, apnsWebPushServiceUrl);
+          StorageManager.setMetaProp('webpush_last_notif_time', now);
+          StorageManager.setMetaProp(VAPID_MIGRATION_PROMPT_SHOWN, true);
+        }
+      }
+    }
+  };
+  const createBellIcon = (configData, subscriptionCallback, apnsWebPushId, apnsWebPushServiceUrl) => {
+    if (document.getElementById('bell_wrapper') || Notification.permission === 'granted') return;
+    const {
+      bellIconConfig: {
+        content,
+        style
+      }
+    } = configData;
+    const bellWrapper = createElementWithAttributes('div', {
+      id: 'bell_wrapper'
+    });
+    const bellIcon = createElementWithAttributes('img', {
+      id: 'bell_icon',
+      src: content.icon.type === 'default' ? "data:image/svg+xml;base64,".concat(BELL_BASE64) : content.icon.url
+    }); // For playing gif
+
+    const gifModal = createElementWithAttributes('div', {
+      id: 'gif_modal',
+      style: 'display: none;'
+    });
+    const gifImage = createElementWithAttributes('img', {
+      id: 'gif_image',
+      src: 'https://d2r1yp2w7bby2u.cloudfront.net/js/permission_grant.gif'
+    });
+    const closeModal = createElementWithAttributes('div', {
+      id: 'close_modal',
+      innerHTML: '&times;'
+    });
+    gifModal.appendChild(gifImage);
+    gifModal.appendChild(closeModal);
+    bellWrapper.appendChild(bellIcon);
+    bellWrapper.appendChild(gifModal);
+
+    if (content.hoverText.enabled) {
+      const tooltip = createElementWithAttributes('div', {
+        id: 'bell_tooltip',
+        textContent: content.hoverText.text
+      });
+      bellWrapper.appendChild(tooltip);
+    }
+
+    setElementPosition(bellWrapper, style.card.position); // Apply styles
+
+    const styleElement = createElementWithAttributes('style', {
+      textContent: getBellIconStyles(style)
+    });
+    document.head.appendChild(styleElement);
+    document.body.appendChild(bellWrapper);
+
+    if (!configData.isPreview) {
+      addBellEventListeners(bellWrapper, subscriptionCallback, apnsWebPushId, apnsWebPushServiceUrl);
+    }
+
+    return bellWrapper;
+  };
+  const setServerKey = serverKey => {
+    appServerKey = serverKey;
+    fcmPublicKey = serverKey;
+  };
+  const addEventListeners = (wrapper, okCallback, subscriptionCallback, rejectCallback, apnsWebPushId, apnsWebPushServiceUrl) => {
+    const primaryButton = wrapper.querySelector('#primaryButton');
+    const secondaryButton = wrapper.querySelector('#secondaryButton');
+
+    const removeWrapper = () => {
+      var _wrapper$parentNode;
+
+      return (_wrapper$parentNode = wrapper.parentNode) === null || _wrapper$parentNode === void 0 ? void 0 : _wrapper$parentNode.removeChild(wrapper);
+    };
+
+    primaryButton.addEventListener('click', () => {
+      removeWrapper();
+      notificationHandler.setApplicationServerKey(appServerKey);
+      notificationHandler.setUpWebPushNotifications(subscriptionCallback, swPath, apnsWebPushId, apnsWebPushServiceUrl);
+
+      if (typeof okCallback === 'function') {
+        okCallback();
+      }
+    });
+    secondaryButton.addEventListener('click', () => {
+      removeWrapper();
+
+      if (typeof rejectCallback === 'function') {
+        rejectCallback();
+      }
+    });
+  };
+  const addBellEventListeners = (bellWrapper, subscriptionCallback, apnsWebPushId, apnsWebPushServiceUrl) => {
+    const bellIcon = bellWrapper.querySelector('#bell_icon');
+    bellIcon.addEventListener('click', () => {
+      if (Notification.permission === 'denied') {
+        toggleGifModal(bellWrapper);
+      } else {
+        notificationHandler.setApplicationServerKey(appServerKey);
+        notificationHandler.setUpWebPushNotifications(subscriptionCallback, swPath, apnsWebPushId, apnsWebPushServiceUrl);
+
+        if (Notification.permission === 'granted') {
+          bellWrapper.remove();
+        }
+      }
+    });
+    bellIcon.addEventListener('mouseenter', () => displayTooltip(bellWrapper));
+    bellIcon.addEventListener('mouseleave', () => clearTooltip(bellWrapper));
+    bellWrapper.querySelector('#close_modal').addEventListener('click', () => toggleGifModal(bellWrapper));
+  };
+  const setElementPosition = (element, position) => {
+    Object.assign(element.style, {
+      inset: 'auto',
+      transform: 'none'
+    });
+    const positions = {
+      'Top Right': {
+        inset: '16px 16px auto auto'
+      },
+      'Top Left': {
+        inset: '16px auto auto 16px'
+      },
+      'Bottom Right': {
+        inset: 'auto 16px 16px auto'
+      },
+      'Bottom Left': {
+        inset: 'auto auto 16px 16px'
+      },
+      Center: {
+        inset: '50%',
+        transform: 'translate(-50%, -50%)'
+      },
+      Top: {
+        inset: '16px auto auto 50%',
+        transform: 'translateX(-50%)'
+      },
+      Bottom: {
+        inset: 'auto auto 16px 50%',
+        transform: 'translateX(-50%)'
+      }
+    };
+    Object.assign(element.style, positions[position] || positions['top-right']);
+  };
+
+  const displayTooltip = bellWrapper => {
+    const gifModal = bellWrapper.querySelector('#gif_modal');
+
+    if (gifModal.style.display === 'flex') {
+      return;
+    }
+
+    const tooltip = bellWrapper.querySelector('#bell_tooltip');
+
+    if (tooltip) {
+      tooltip.style.display = 'flex';
+    }
+
+    const bellIcon = bellWrapper.querySelector('#bell_icon');
+    const bellRect = bellIcon.getBoundingClientRect();
+    var midX = window.innerWidth / 2;
+    var midY = window.innerHeight / 2;
+    bellWrapper.style['flex-direction'] = bellRect.y > midY ? 'column-reverse' : 'column';
+    bellWrapper.style['align-items'] = bellRect.x > midX ? 'flex-end' : 'flex-start';
+  };
+
+  const clearTooltip = bellWrapper => {
+    const tooltip = bellWrapper.querySelector('#bell_tooltip');
+
+    if (tooltip) {
+      tooltip.style.display = 'none';
+    }
+  };
+
+  const toggleGifModal = bellWrapper => {
+    clearTooltip(bellWrapper);
+    const gifModal = bellWrapper.querySelector('#gif_modal');
+    gifModal.style.display = gifModal.style.display === 'none' ? 'flex' : 'none';
+  };
+
+  // contextManager.js
+  const CampaignContext = {
+    _device: null,
+    _session: null,
+    _request: null,
+    _logger: null,
+    _msg: null,
+    _region: null,
+
+    // Initialize with context objects
+    update(device, session, request, logger, msg, region) {
+      this._device = device;
+      this._session = session;
+      this._request = request;
+      this._logger = logger;
+      this._msg = msg;
+      this._region = region;
+    },
+
+    // Getters for clean access
+    get device() {
+      return this._device;
+    },
+
+    get session() {
+      return this._session;
+    },
+
+    get request() {
+      return this._request;
+    },
+
+    get logger() {
+      return this._logger;
+    },
+
+    get msg() {
+      return this._msg;
+    },
+
+    get region() {
+      return this._region;
+    }
+
+  };
+
+  const OVERLAY_PATH = 'https://web-native-display-campaign.clevertap.com/production/lib-overlay/overlay.js';
+  const CSS_PATH = 'https://web-native-display-campaign.clevertap.com/production/lib-overlay/style.css';
+  const WVE_CLASS = {
+    FLICKER_SHOW: 'wve-anti-flicker-show',
+    FLICKER_HIDE: 'wve-anti-flicker-hide',
+    FLICKER_ID: 'wve-flicker-style'
+  };
+  const WVE_QUERY_PARAMS = {
+    BUILDER: 'ctBuilder',
+    PREVIEW: 'ctBuilderPreview',
+    SDK_CHECK: 'ctBuilderSDKCheck'
+  };
+  const WVE_URL_ORIGIN = {
+    CLEVERTAP: 'dashboard.clevertap.com',
+    LOCAL: 'localhost'
+  };
+
+  const logLevels = {
+    DISABLE: 0,
+    ERROR: 1,
+    INFO: 2,
+    DEBUG: 3,
+    DEBUG_PE: 4
+  };
+
+  var _logLevel = _classPrivateFieldLooseKey("logLevel");
+
+  var _log = _classPrivateFieldLooseKey("log");
+
+  var _isLegacyDebug = _classPrivateFieldLooseKey("isLegacyDebug");
+
+  class Logger {
+    constructor(logLevel) {
+      Object.defineProperty(this, _isLegacyDebug, {
+        get: _get_isLegacyDebug,
+        set: void 0
+      });
+      Object.defineProperty(this, _log, {
+        value: _log2
+      });
+      Object.defineProperty(this, _logLevel, {
+        writable: true,
+        value: void 0
+      });
+      this.wzrkError = {};
+
+      // Singleton pattern - return existing instance if it exists
+      if (Logger.instance) {
+        return Logger.instance;
+      }
+
+      _classPrivateFieldLooseBase(this, _logLevel)[_logLevel] = logLevel == null ? logLevels.INFO : logLevel;
+      this.wzrkError = {};
+      Logger.instance = this;
+    } // Static method for explicit singleton access
+
+
+    static getInstance(logLevel) {
+      if (!Logger.instance) {
+        Logger.instance = new Logger(logLevel);
+      }
+
+      return Logger.instance;
+    }
+
+    get logLevel() {
+      return _classPrivateFieldLooseBase(this, _logLevel)[_logLevel];
+    }
+
+    set logLevel(logLevel) {
+      _classPrivateFieldLooseBase(this, _logLevel)[_logLevel] = logLevel;
+    }
+
+    error(message) {
+      if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.ERROR) {
+        _classPrivateFieldLooseBase(this, _log)[_log]('error', message);
+      }
+    }
+
+    info(message) {
+      if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.INFO) {
+        _classPrivateFieldLooseBase(this, _log)[_log]('log', message);
+      }
+    }
+
+    debug(message) {
+      if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.DEBUG || _classPrivateFieldLooseBase(this, _isLegacyDebug)[_isLegacyDebug]) {
+        _classPrivateFieldLooseBase(this, _log)[_log]('debug', message);
+      }
+    }
+
+    debugPE(message) {
+      if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.DEBUG_PE) {
+        _classPrivateFieldLooseBase(this, _log)[_log]('debug_pe', message);
+      }
+    }
+
+    reportError(code, description) {
+      this.wzrkError.c = code;
+      this.wzrkError.d = description;
+      this.error("".concat(CLEVERTAP_ERROR_PREFIX, " ").concat(code, ": ").concat(description));
+    }
+
+  }
+
+  var _log2 = function _log2(level, message) {
+    if (window.console) {
+      try {
+        const ts = new Date().getTime();
+        console[level]("CleverTap [".concat(ts, "]: ").concat(message));
+      } catch (e) {}
+    }
+  };
+
+  var _get_isLegacyDebug = function () {
+    return typeof sessionStorage !== 'undefined' && sessionStorage.WZRK_D === '';
+  };
+
+  const renderPopUpImageOnly = (targetingMsgJson, _session) => {
+    const divId = 'wzrkImageOnlyDiv';
+    const popupImageOnly = document.createElement('ct-web-popup-imageonly');
+    popupImageOnly.session = _session;
+    popupImageOnly.target = targetingMsgJson;
+    const containerEl = document.getElementById(divId);
+    containerEl.innerHTML = '';
+    containerEl.style.visibility = 'hidden';
+    containerEl.appendChild(popupImageOnly);
+  };
+  const FULLSCREEN_STYLE = "\n  z-index: 2147483647;\n  display: block;\n  position: fixed;\n  top: 0;\n  left: 0;\n  width: 100vw !important;\n  height: 100vh !important;\n  margin: 0;\n  padding: 0;\n  background: transparent;\n";
+  const IFRAME_STYLE = "\n  ".concat(FULLSCREEN_STYLE, "\n  border: 0 !important;\n");
+  const renderAdvancedBuilder = function (targetingMsgJson, _session, _logger) {
+    let isPreview = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : false;
+    const divId = 'wizAdvBuilder';
+    const campaignId = targetingMsgJson.wzrk_id.split('_')[0]; // Check for existing wrapper and handle accordingly
+
+    if (handleExistingWrapper(divId)) {
+      return; // Early exit if existing wrapper should not be replaced
+    }
+
+    $ct.campaignDivMap[campaignId] = divId; // Create DOM elements
+
+    const msgDiv = createWrapperDiv(divId);
+    const iframe = createIframe(targetingMsgJson, _logger);
+
+    if (!iframe) {
+      _logger.error('Failed to create iframe for Advanced Builder');
+
+      return;
+    } // Setup event handling
+
+
+    setupIframeEventListeners(iframe, targetingMsgJson, divId, _session, _logger, isPreview); // Append to DOM
+
+    msgDiv.appendChild(iframe);
+    document.body.appendChild(msgDiv); // Track notification view
+
+    window.clevertap.renderNotificationViewed({
+      msgId: targetingMsgJson.wzrk_id,
+      pivotId: targetingMsgJson.wzrk_pivot
+    });
+  };
+
+  const handleIframeEvent = (e, targetingMsgJson, divId, _session, _logger, isPreview) => {
+    var _e$detail, _e$detail$elementDeta;
+
+    const campaignId = targetingMsgJson.wzrk_id.split('_')[0];
+    const {
+      detail
+    } = e;
+
+    if (!(detail === null || detail === void 0 ? void 0 : detail.type)) {
+      return _logger.debug('Empty or missing event type');
+    }
+
+    _logger.debug('Received event type:', detail);
+
+    const payload = {
+      msgId: targetingMsgJson.wzrk_id,
+      pivotId: targetingMsgJson.wzrk_pivot,
+      kv: {
+        wzrk_c2a: (_e$detail = e.detail) === null || _e$detail === void 0 ? void 0 : (_e$detail$elementDeta = _e$detail.elementDetails) === null || _e$detail$elementDeta === void 0 ? void 0 : _e$detail$elementDeta.name
+      }
+    };
+
+    switch (detail.type) {
+      case ACTION_TYPES.CLOSE:
+        // close Iframe
+        if (!isPreview) {
+          window.clevertap.renderNotificationClicked(payload);
+        }
+
+        closeIframe(campaignId, divId, _session === null || _session === void 0 ? void 0 : _session.sessionId);
+        break;
+
+      case ACTION_TYPES.OPEN_WEB_URL:
+        // handle opening of url
+        if (!isPreview) {
+          window.clevertap.renderNotificationClicked(payload);
+        }
+
+        if (detail.openInNewTab) {
+          window.open(detail.url.value.replacements, '_blank', 'noopener');
+
+          if (detail.closeOnClick) {
+            closeIframe(campaignId, divId, _session === null || _session === void 0 ? void 0 : _session.sessionId);
+          }
+        } else {
+          window.location.href = detail.url.value.replacements;
+        }
+
+        break;
+
+      case ACTION_TYPES.SOFT_PROMPT:
+        // Handle soft prompt
+        if (!isPreview) {
+          window.clevertap.renderNotificationClicked(payload);
+        }
+
+        window.clevertap.notifications.push({
+          skipDialog: true
+        });
+        break;
+
+      case ACTION_TYPES.RUN_JS:
+        // Handle JS code
+        if (!isPreview) {
+          window.clevertap.renderNotificationClicked(payload);
+        }
+
+        invokeExternalJs(e.detail.js.name, targetingMsgJson);
+        break;
+
+      default:
+        _logger.debug('Empty event type received');
+
+    }
+  }; // Utility: Check and handle existing wrapper
+
+
+  const handleExistingWrapper = divId => {
+    const existingWrapper = document.getElementById(divId);
+
+    if (existingWrapper) {
+      if ($ct.dismissSpamControl) {
+        existingWrapper.remove();
+        return false; // Continue with creation
+      } else {
+          return true; // Stop execution
+        }
+    }
+
+    return false; // No existing wrapper, continue
+  }; // Utility: Create wrapper div
+
+
+  const createWrapperDiv = divId => {
+    const msgDiv = document.createElement('div');
+    msgDiv.id = divId;
+    msgDiv.setAttribute('style', FULLSCREEN_STYLE);
+    return msgDiv;
+  }; // Utility: Create iframe with attributes and content
+
+
+  const createIframe = (targetingMsgJson, _logger) => {
+    try {
+      const staticHTML = targetingMsgJson.msgContent.html;
+      const isDesktop = window.matchMedia('(min-width: 480px)').matches;
+      const config = isDesktop ? targetingMsgJson.display.desktopConfig : targetingMsgJson.display.mobileConfig;
+      const html = staticHTML.replace('"##Vars##"', JSON.stringify(config));
+      const iframe = document.createElement('iframe');
+      iframe.id = 'wiz-iframe';
+      iframe.srcdoc = html;
+      iframe.setAttribute('style', IFRAME_STYLE);
+      return iframe;
+    } catch (error) {
+      _logger.error('Error creating iframe:', error);
+
+      return null;
+    }
+  }; // Utility: Setup iframe event listeners
+
+
+  const setupIframeEventListeners = (iframe, targetingMsgJson, divId, _session, _logger, isPreview) => {
+    iframe.onload = () => {
+      try {
+        // Try direct document access first
+        iframe.contentDocument.addEventListener('CT_custom_event', e => {
+          _logger.debug('Event received ', e);
+
+          handleIframeEvent(e, targetingMsgJson, divId, _session, _logger, isPreview);
+        });
+      } catch (error) {
+        // Fallback to postMessage
+        _logger.error('Iframe document inaccessible, using postMessage:', error);
+
+        setupPostMessageListener(targetingMsgJson, divId, _session, _logger);
+      }
+    };
+  }; // Utility: Setup postMessage listener as fallback
+
+
+  const setupPostMessageListener = (targetingMsgJson, divId, _session, _logger) => {
+    const messageHandler = event => {
+      var _event$data;
+
+      if (!event.origin.endsWith(WVE_URL_ORIGIN.CLEVERTAP)) {
+        return;
+      }
+
+      if (((_event$data = event.data) === null || _event$data === void 0 ? void 0 : _event$data.type) === 'CT_custom_event') {
+        _logger.debug('Event received ', event);
+
+        handleIframeEvent({
+          detail: event.data.detail
+        }, targetingMsgJson, divId, _session, _logger);
+      }
+    };
+
+    window.removeEventListener('message', messageHandler); // Avoid duplicate bindings
+
+    window.addEventListener('message', messageHandler);
+  };
+
+  function handleWebPopupPreviewPostMessageEvent(event) {
+    if (!event.origin.endsWith(WVE_URL_ORIGIN.CLEVERTAP) && !event.origin.endsWith(window.location.origin)) {
+      return;
+    }
+
+    const logger = Logger.getInstance();
+
+    try {
+      const eventData = JSON.parse(event.data);
+      const inAppNotifs = eventData.inapp_notifs;
+      const msgContent = inAppNotifs[0].msgContent;
+
+      if (eventData && msgContent && msgContent.templateType === 'advanced-web-popup-builder') {
+        renderAdvancedBuilder(inAppNotifs[0], null, Logger.getInstance(), true);
+      }
+    } catch (error) {
+      logger.error('Error parsing event data:', error);
+    }
+  }
+
+  const checkWebPopupPreview = () => {
+    const logger = Logger.getInstance();
+    const searchParams = new URLSearchParams(window.location.search);
+    const ctType = searchParams.get('ctActionMode');
+
+    if (ctType) {
+      const parentWindow = window.opener;
+      const referrer = new URL(document.referrer);
+
+      switch (ctType) {
+        case WEB_POPUP_PREVIEW:
+          if (parentWindow) {
+            parentWindow.postMessage('ready', referrer.origin);
+
+            const eventHandler = event => handleWebPopupPreviewPostMessageEvent(event);
+
+            window.addEventListener('message', eventHandler, false);
+          }
+
+          break;
+
+        default:
+          logger.debug("unknown query param ".concat(ctType));
+          break;
+      }
+    }
+  };
+
   class CTWebPopupImageOnly extends HTMLElement {
     constructor() {
       super();
@@ -10003,23 +12517,18 @@
       this.resizeObserver.observe(this.popup);
 
       const closeFn = () => {
-        const campaignId = this.target.wzrk_id.split('_')[0];
-        const currentSessionId = this.session.sessionId;
+        const campaignId = this.target.wzrk_id.split('_')[0]; // const currentSessionId = this.session.sessionId
+
         this.resizeObserver.unobserve(this.popup);
         document.getElementById('wzrkImageOnlyDiv').style.display = 'none';
         this.remove();
 
         if (campaignId != null && campaignId !== '-1') {
           if (StorageManager._isLocalStorageSupported()) {
+            var _campaignObj$dnd;
+
             const campaignObj = getCampaignObject();
-            let sessionCampaignObj = campaignObj.wp[currentSessionId];
-
-            if (sessionCampaignObj == null) {
-              sessionCampaignObj = {};
-              campaignObj[currentSessionId] = sessionCampaignObj;
-            }
-
-            sessionCampaignObj[campaignId] = 'dnd';
+            campaignObj.dnd = [...new Set([...((_campaignObj$dnd = campaignObj.dnd) !== null && _campaignObj$dnd !== void 0 ? _campaignObj$dnd : []), campaignId])];
             saveCampaignObject(campaignObj);
           }
         }
@@ -10034,7 +12543,9 @@
         });
       }
 
-      if (this.onClickUrl) {
+      if (this.onClickAction === 'none') {
+        this.popup.addEventListener('click', closeFn);
+      } else if (this.onClickUrl) {
         this.popup.addEventListener('click', () => {
           if (!this.target.display.preview) {
             window.clevertap.renderNotificationClicked({
@@ -10054,10 +12565,6 @@
               this.target.display.window ? window.open(this.onClickUrl, '_blank') : window.parent.location.href = this.onClickUrl;
           }
         });
-      }
-
-      if (this.onClickAction === 'none') {
-        this.popup.addEventListener('click', closeFn);
       }
     }
 
@@ -11209,23 +13716,6 @@
   const arrowSvg = "<svg width=\"6\" height=\"10\" viewBox=\"0 0 6 10\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n<path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M0.258435 9.74751C-0.0478584 9.44825 -0.081891 8.98373 0.156337 8.64775L0.258435 8.52836L3.87106 5L0.258435 1.47164C-0.0478588 1.17239 -0.0818914 0.707867 0.156337 0.371887L0.258435 0.252494C0.564728 -0.0467585 1.04018 -0.0800085 1.38407 0.152743L1.50627 0.252494L5.74156 4.39042C6.04786 4.68968 6.08189 5.1542 5.84366 5.49018L5.74156 5.60957L1.50627 9.74751C1.16169 10.0842 0.603015 10.0842 0.258435 9.74751Z\" fill=\"#63698F\"/>\n</svg>\n";
   const greenTickSvg = "<svg width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n<path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M16 8C16 3.58172 12.4183 0 8 0C3.58172 0 0 3.58172 0 8C0 12.4183 3.58172 16 8 16C12.4183 16 16 12.4183 16 8ZM9.6839 5.93602C9.97083 5.55698 10.503 5.48833 10.8725 5.78269C11.2135 6.0544 11.2968 6.54044 11.0819 6.91173L11.0219 7.00198L8.09831 10.864C7.80581 11.2504 7.26654 11.3086 6.90323 11.0122L6.82822 10.9433L5.04597 9.10191C4.71635 8.76136 4.71826 8.21117 5.05023 7.87303C5.35666 7.5609 5.83722 7.53855 6.16859 7.80482L6.24814 7.87739L7.35133 9.01717L9.6839 5.93602Z\" fill=\"#03A387\"/>\n</svg>\n";
 
-  const OVERLAY_PATH = 'https://web-native-display-campaign.clevertap.com/production/lib-overlay/overlay.js';
-  const CSS_PATH = 'https://web-native-display-campaign.clevertap.com/production/lib-overlay/style.css';
-  const WVE_CLASS = {
-    FLICKER_SHOW: 'wve-anti-flicker-show',
-    FLICKER_HIDE: 'wve-anti-flicker-hide',
-    FLICKER_ID: 'wve-flicker-style'
-  };
-  const WVE_QUERY_PARAMS = {
-    BUILDER: 'ctBuilder',
-    PREVIEW: 'ctBuilderPreview',
-    SDK_CHECK: 'ctBuilderSDKCheck'
-  };
-  const WVE_URL_ORIGIN = {
-    CLEVERTAP: 'dashboard.clevertap.com',
-    LOCAL: 'localhost'
-  };
-
   const updateFormData = function (element, formStyle, payload) {
     let isPreview = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : false;
 
@@ -11286,352 +13776,18 @@
     }
   };
 
-  const invokeExternalJs = (jsFunc, targetingMsgJson) => {
-    const func = window.parent[jsFunc];
-
-    if (typeof func === 'function') {
-      if (targetingMsgJson.display.kv != null) {
-        func(targetingMsgJson.display.kv);
-      } else {
-        func();
-      }
-    }
-  };
-  const appendScriptForCustomEvent = (targetingMsgJson, html) => {
-    const script = "<script>\n      const ct__camapignId = '".concat(targetingMsgJson.wzrk_id, "';\n      const ct__formatVal = (v) => {\n          return v && v.trim().substring(0, 20);\n      }\n      const ct__parentOrigin =  window.parent.origin;\n      document.body.addEventListener('click', (event) => {\n        const elem = event.target.closest?.('a[wzrk_c2a], button[wzrk_c2a]');\n        if (elem) {\n            const {innerText, id, name, value, href} = elem;\n            const clickAttr = elem.getAttribute('onclick') || elem.getAttribute('click');\n            const onclickURL = clickAttr?.match(/(window.open)[(](\"|')(.*)(\"|',)/)?.[3] || clickAttr?.match(/(location.href *= *)(\"|')(.*)(\"|')/)?.[3];\n            const props = {innerText, id, name, value};\n            let msgCTkv = Object.keys(props).reduce((acc, c) => {\n                const formattedVal = ct__formatVal(props[c]);\n                formattedVal && (acc['wzrk_click_' + c] = formattedVal);\n                return acc;\n            }, {});\n            if(onclickURL) { msgCTkv['wzrk_click_' + 'url'] = onclickURL; }\n            if(href) { msgCTkv['wzrk_click_' + 'c2a'] = href; }\n            const notifData = { msgId: ct__camapignId, msgCTkv, pivotId: '").concat(targetingMsgJson.wzrk_pivot, "' };\n            window.parent.clevertap.renderNotificationClicked(notifData);\n        }\n      });\n      </script>\n    ");
-    return html.replace(/(<\s*\/\s*body)/, "".concat(script, "\n$1"));
-  };
-  const staleDataUpdate = (staledata, campType) => {
-    const campObj = getCampaignObject();
-    const globalObj = campObj[campType].global;
-
-    if (globalObj != null && campType) {
-      for (const idx in staledata) {
-        if (staledata.hasOwnProperty(idx)) {
-          delete globalObj[staledata[idx]];
-
-          if (StorageManager.read(CAMP_COOKIE_G)) {
-            const guidCampObj = JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)));
-            const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
-
-            if (guidCampObj[guid] && guidCampObj[guid][campType] && guidCampObj[guid][campType][staledata[idx]]) {
-              delete guidCampObj[guid][campType][staledata[idx]];
-              StorageManager.save(CAMP_COOKIE_G, encodeURIComponent(JSON.stringify(guidCampObj)));
-            }
-          }
-        }
-      }
-    }
-
-    saveCampaignObject(campObj);
-  };
-  const mergeEventMap = newEvtMap => {
-    if ($ct.globalEventsMap == null) {
-      $ct.globalEventsMap = StorageManager.readFromLSorCookie(EV_COOKIE);
-
-      if ($ct.globalEventsMap == null) {
-        $ct.globalEventsMap = newEvtMap;
-        return;
-      }
-    }
-
-    for (const key in newEvtMap) {
-      if (newEvtMap.hasOwnProperty(key)) {
-        const oldEvtObj = $ct.globalEventsMap[key];
-        const newEvtObj = newEvtMap[key];
-
-        if ($ct.globalEventsMap[key] != null) {
-          if (newEvtObj[0] != null && newEvtObj[0] > oldEvtObj[0]) {
-            $ct.globalEventsMap[key] = newEvtObj;
-          }
-        } else {
-          $ct.globalEventsMap[key] = newEvtObj;
-        }
-      }
-    }
-  };
-  const incrementImpression = (targetingMsgJson, _request) => {
-    const data = {};
-    data.type = 'event';
-    data.evtName = NOTIFICATION_VIEWED;
-    data.evtData = {
-      [WZRK_ID]: targetingMsgJson.wzrk_id
-    };
-
-    if (targetingMsgJson.wzrk_pivot) {
-      data.evtData = { ...data.evtData,
-        wzrk_pivot: targetingMsgJson.wzrk_pivot
-      };
-    }
-
-    _request.processEvent(data);
-  };
-  const setupClickEvent = (onClick, targetingMsgJson, contentDiv, divId, isLegacy, _device, _session) => {
-    if (onClick !== '' && onClick != null) {
-      let ctaElement;
-      let jsCTAElements;
-
-      if (isLegacy) {
-        ctaElement = contentDiv;
-      } else if (contentDiv !== null) {
-        jsCTAElements = contentDiv.getElementsByClassName('jsCT_CTA');
-
-        if (jsCTAElements != null && jsCTAElements.length === 1) {
-          ctaElement = jsCTAElements[0];
-        }
-      }
-
-      const jsFunc = targetingMsgJson.display.jsFunc;
-      const isPreview = targetingMsgJson.display.preview;
-
-      if (isPreview == null) {
-        onClick += getCookieParams(_device, _session);
-      }
-
-      if (ctaElement != null) {
-        ctaElement.onclick = () => {
-          // invoke js function call
-          if (jsFunc != null) {
-            // track notification clicked event
-            if (isPreview == null) {
-              RequestDispatcher.fireRequest(onClick);
-            }
-
-            invokeExternalJs(jsFunc, targetingMsgJson); // close iframe. using -1 for no campaignId
-
-            closeIframe('-1', divId, _session.sessionId);
-          } else {
-            const rValue = targetingMsgJson.display.preview ? targetingMsgJson.display.onClick : new URL(targetingMsgJson.display.onClick).searchParams.get('r');
-            const campaignId = targetingMsgJson.wzrk_id.split('_')[0];
-
-            if (rValue === 'pushPrompt') {
-              if (!targetingMsgJson.display.preview) {
-                window.parent.clevertap.renderNotificationClicked({
-                  msgId: targetingMsgJson.wzrk_id,
-                  pivotId: targetingMsgJson.wzrk_pivot
-                });
-              } // Open Web Push Soft prompt
-
-
-              window.clevertap.notifications.push({
-                skipDialog: true
-              });
-              closeIframe(campaignId, divId, _session.sessionId);
-            } else if (rValue === 'none') {
-              // Close notification
-              closeIframe(campaignId, divId, _session.sessionId);
-            } else {
-              // Will get the url to open
-              if (targetingMsgJson.display.window === 1) {
-                window.open(onClick, '_blank');
-
-                if (targetingMsgJson.display['close-popup']) {
-                  closeIframe(campaignId, divId, _session.sessionId);
-                }
-
-                if (!targetingMsgJson.display.preview) {
-                  window.parent.clevertap.renderNotificationClicked({
-                    msgId: targetingMsgJson.wzrk_id,
-                    pivotId: targetingMsgJson.wzrk_pivot
-                  });
-                }
-              } else {
-                window.location = onClick;
-              }
-            }
-          }
-        };
-      }
-    }
-  };
-  const getCookieParams = (_device, _session) => {
-    const gcookie = _device.getGuid();
-
-    const scookieObj = _session.getSessionCookieObject();
-
-    return '&t=wc&d=' + encodeURIComponent(compressToBase64(gcookie + '|' + scookieObj.p + '|' + scookieObj.s));
-  };
-  const webNativeDisplayCampaignUtils = {
-    /**
-     * Checks if a campaign triggers a custom event push based on its template type.
-     *
-     * @param {Object} campaign - The campaign object to evaluate.
-     * @returns {boolean} - Returns true if the campaign pushes a custom event, otherwise false.
-     */
-    doesCampaignPushCustomEvent: campaign => {
-      var _campaign$msgContent, _campaign$msgContent2, _campaign$display, _campaign$display$det, _campaign$display$det2, _campaign$display$det3, _campaign$display$det4;
-
-      return [WEB_NATIVE_TEMPLATES.KV_PAIR, WEB_NATIVE_TEMPLATES.JSON].includes(campaign === null || campaign === void 0 ? void 0 : (_campaign$msgContent = campaign.msgContent) === null || _campaign$msgContent === void 0 ? void 0 : _campaign$msgContent.type) || (campaign === null || campaign === void 0 ? void 0 : (_campaign$msgContent2 = campaign.msgContent) === null || _campaign$msgContent2 === void 0 ? void 0 : _campaign$msgContent2.type) === WEB_NATIVE_TEMPLATES.VISUAL_BUILDER && (campaign === null || campaign === void 0 ? void 0 : (_campaign$display = campaign.display) === null || _campaign$display === void 0 ? void 0 : (_campaign$display$det = _campaign$display.details) === null || _campaign$display$det === void 0 ? void 0 : (_campaign$display$det2 = _campaign$display$det[0]) === null || _campaign$display$det2 === void 0 ? void 0 : (_campaign$display$det3 = _campaign$display$det2.selectorData) === null || _campaign$display$det3 === void 0 ? void 0 : (_campaign$display$det4 = _campaign$display$det3.map(s => {
-        var _s$values;
-
-        return s === null || s === void 0 ? void 0 : (_s$values = s.values) === null || _s$values === void 0 ? void 0 : _s$values.editor;
-      })) === null || _campaign$display$det4 === void 0 ? void 0 : _campaign$display$det4.includes(WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES.JSON));
-    },
-
-    /**
-     * Determines if a campaign mutates the DOM node based on its template type.
-     *
-     * @param {Object} campaign - The campaign object to evaluate.
-     * @returns {boolean} - Returns true if the campaign mutates the DOM node, otherwise false.
-     */
-    doesCampaignMutateDOMNode: campaign => {
-      var _campaign$msgContent3, _campaign$msgContent4, _campaign$display2, _campaign$display2$de, _campaign$display2$de2, _campaign$display2$de3;
-
-      return [WEB_NATIVE_TEMPLATES.BANNER, WEB_NATIVE_TEMPLATES.CAROUSEL, WEB_NATIVE_TEMPLATES.CUSTOM_HTML].includes(campaign === null || campaign === void 0 ? void 0 : (_campaign$msgContent3 = campaign.msgContent) === null || _campaign$msgContent3 === void 0 ? void 0 : _campaign$msgContent3.type) || WEB_NATIVE_TEMPLATES.VISUAL_BUILDER === (campaign === null || campaign === void 0 ? void 0 : (_campaign$msgContent4 = campaign.msgContent) === null || _campaign$msgContent4 === void 0 ? void 0 : _campaign$msgContent4.type) && (campaign === null || campaign === void 0 ? void 0 : (_campaign$display2 = campaign.display) === null || _campaign$display2 === void 0 ? void 0 : (_campaign$display2$de = _campaign$display2.details) === null || _campaign$display2$de === void 0 ? void 0 : (_campaign$display2$de2 = _campaign$display2$de[0]) === null || _campaign$display2$de2 === void 0 ? void 0 : (_campaign$display2$de3 = _campaign$display2$de2.selectorData) === null || _campaign$display2$de3 === void 0 ? void 0 : _campaign$display2$de3.some(s => {
-        var _s$values2;
-
-        return [WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES.HTML, WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES.FORM].includes(s === null || s === void 0 ? void 0 : (_s$values2 = s.values) === null || _s$values2 === void 0 ? void 0 : _s$values2.editor);
-      }));
-    },
-
-    /**
-     * Sorts campaigns based on their priority in descending order.
-     *
-     * @param {Array<Object>} campaigns - The list of campaign objects.
-     * @returns {Array<Object>} - A new array of campaigns sorted by priority.
-     */
-    sortCampaignsByPriority: campaigns => {
-      return campaigns.sort((a, b) => b.priority - a.priority);
-    },
-
-    /**
-     * Retrieves the DOM nodes associated with a campaign based on its template type.
-     *
-     * @param {Object} campaign - The campaign object to extract nodes from.
-     * @returns {Array<string>} - An array of DOM node selectors or IDs associated with the campaign.
-     */
-    getCampaignNodes: campaign => {
-      var _display$details, _display$details$, _display$details$$sel, _display$details$$sel2;
-
-      const {
-        msgContent,
-        display
-      } = campaign;
-      const {
-        type
-      } = msgContent;
-
-      switch (type) {
-        case WEB_NATIVE_TEMPLATES.BANNER:
-        case WEB_NATIVE_TEMPLATES.CAROUSEL:
-          return [display === null || display === void 0 ? void 0 : display.divSelector];
-
-        case WEB_NATIVE_TEMPLATES.CUSTOM_HTML:
-          return [display === null || display === void 0 ? void 0 : display.divId];
-
-        case WEB_NATIVE_TEMPLATES.VISUAL_BUILDER:
-          return (display === null || display === void 0 ? void 0 : (_display$details = display.details) === null || _display$details === void 0 ? void 0 : (_display$details$ = _display$details[0]) === null || _display$details$ === void 0 ? void 0 : (_display$details$$sel = _display$details$.selectorData) === null || _display$details$$sel === void 0 ? void 0 : (_display$details$$sel2 = _display$details$$sel.filter(s => {
-            var _s$values3;
-
-            return (s === null || s === void 0 ? void 0 : (_s$values3 = s.values) === null || _s$values3 === void 0 ? void 0 : _s$values3.editor) === WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES.HTML;
-          })) === null || _display$details$$sel2 === void 0 ? void 0 : _display$details$$sel2.map(s => s === null || s === void 0 ? void 0 : s.selector)) || [];
-
-        default:
-          return [];
-      }
-    },
-
-    /**
-     * Determines whether the current custom event campaign should be skipped based on existing executed targets.
-     *
-     * @param {Object} targetNotif - The current notification object containing campaign details.
-     * @param {ExecutedTargets} executedTargets - An object holding already executed custom events.
-     * @returns {boolean} - Returns true if the current custom event campaign should be skipped, false otherwise.
-    */
-    shouldCurrentCustomEventCampaignBeSkipped(targetNotif, executedTargets) {
-      var _targetNotif$msgConte2, _currentSameTypeCampa, _targetNotif$display, _targetNotif$display$;
-
-      const currentSameTypeCampaigns = executedTargets.customEvents.filter(customEvent => {
-        var _targetNotif$msgConte;
-
-        return customEvent.customEventType === (targetNotif === null || targetNotif === void 0 ? void 0 : (_targetNotif$msgConte = targetNotif.msgContent) === null || _targetNotif$msgConte === void 0 ? void 0 : _targetNotif$msgConte.type);
-      });
-      let shouldSkip = false; // If KV Pair, check for topic and type
-      // if visual builder or JSON, just check for the type of event, because we do not have `topic`
-
-      if (currentSameTypeCampaigns === null || currentSameTypeCampaigns === void 0 ? void 0 : currentSameTypeCampaigns.length) {
-        switch (targetNotif === null || targetNotif === void 0 ? void 0 : (_targetNotif$msgConte2 = targetNotif.msgContent) === null || _targetNotif$msgConte2 === void 0 ? void 0 : _targetNotif$msgConte2.type) {
-          case WEB_NATIVE_TEMPLATES.KV_PAIR:
-            if ((_currentSameTypeCampa = currentSameTypeCampaigns.map(c => c === null || c === void 0 ? void 0 : c.eventTopic)) === null || _currentSameTypeCampa === void 0 ? void 0 : _currentSameTypeCampa.includes(targetNotif === null || targetNotif === void 0 ? void 0 : (_targetNotif$display = targetNotif.display) === null || _targetNotif$display === void 0 ? void 0 : (_targetNotif$display$ = _targetNotif$display.kv) === null || _targetNotif$display$ === void 0 ? void 0 : _targetNotif$display$.topic)) {
-              shouldSkip = true;
-            }
-            break;
-
-          /* TODO: Within Visual Editor : Why do we need to select a DOM node for create customEvent
-          and can we inform the user the type of event they will receive in the editor
-          */
-
-          /* TODO: Can we intro a key for `topic` similar to KV_PAIR in VISUAL_EDITOR & JSON for parity and better UX */
-
-          /* Visual Editor has all the events from different campaigns combined in single JSON within selectorData */
-
-          /* So we can not use Separated Campaigns logic for it, Hence skipping */
-
-          case WEB_NATIVE_TEMPLATES.VISUAL_BUILDER:
-          case WEB_NATIVE_TEMPLATES.JSON:
-            shouldSkip = true;
-            break;
-        }
-      }
-
-      return shouldSkip;
-    }
-
-  };
-  function addScriptTo(script) {
-    let target = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'body';
-    const targetEl = document.querySelector(target);
-    if (!targetEl) return;
-    const newScript = document.createElement('script');
-    newScript.textContent = script.textContent;
-    if (script.src) newScript.src = script.src;
-    newScript.async = script.async;
-    Array.from(script.attributes).forEach(attr => {
-      if (attr.name !== 'src' && attr.name !== 'async') {
-        newScript.setAttribute(attr.name, attr.value);
-      }
-    });
-    targetEl.appendChild(newScript);
-    script.remove();
-  }
-  function addCampaignToLocalStorage(campaign) {
-    var _campaign$display3;
-
-    let region = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'eu1';
-    let accountId = arguments.length > 2 ? arguments[2] : undefined;
-
-    /* No Need to store campaigns in local storage in preview mode */
-    if ((campaign === null || campaign === void 0 ? void 0 : (_campaign$display3 = campaign.display) === null || _campaign$display3 === void 0 ? void 0 : _campaign$display3.preview) === true) {
-      return;
-    }
-
-    const campaignId = campaign.wzrk_id.split('_')[0];
-    const dashboardUrl = "https://".concat(region, ".dashboard.clevertap.com/").concat(accountId, "/campaigns/campaign/").concat(campaignId, "/report/stats");
-    const enrichedCampaign = { ...campaign,
-      url: dashboardUrl
-    };
-    const storedData = StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS);
-    const existingCampaigns = storedData ? JSON.parse(decodeURIComponent(storedData)) : [];
-    const isDuplicate = existingCampaigns.some(c => c.wzrk_id === campaign.wzrk_id);
-
-    if (!isDuplicate) {
-      const updatedCampaigns = [...existingCampaigns, enrichedCampaign];
-      StorageManager.saveToLSorCookie(QUALIFIED_CAMPAIGNS, encodeURIComponent(JSON.stringify(updatedCampaigns)));
-    }
-  }
-
-  let logger$1 = null;
+  let logger = null;
   const handleActionMode = (_logger, accountId) => {
     const searchParams = new URLSearchParams(window.location.search);
     const ctType = searchParams.get('ctActionMode');
-    logger$1 = _logger;
+    logger = _logger;
 
     if (ctType) {
       const parentWindow = window.opener;
 
       switch (ctType) {
         case WVE_QUERY_PARAMS.BUILDER:
-          logger$1.debug('open in visual builder mode');
+          logger.debug('open in visual builder mode');
           window.addEventListener('message', handleMessageEvent, false);
 
           if (parentWindow) {
@@ -11644,7 +13800,7 @@
           break;
 
         case WVE_QUERY_PARAMS.PREVIEW:
-          logger$1.debug('preview of visual editor');
+          logger.debug('preview of visual editor');
           window.addEventListener('message', handleMessageEvent, false);
 
           if (parentWindow) {
@@ -11658,8 +13814,8 @@
 
         case WVE_QUERY_PARAMS.SDK_CHECK:
           if (parentWindow) {
-            logger$1.debug('SDK version check');
-            const sdkVersion = '1.17.0';
+            logger.debug('SDK version check');
+            const sdkVersion = '2.1.2';
             parentWindow.postMessage({
               message: 'SDKVersion',
               accountId,
@@ -11671,7 +13827,7 @@
           break;
 
         default:
-          logger$1.debug("unknown query param ".concat(ctType));
+          logger.debug("unknown query param ".concat(ctType));
           break;
       }
     }
@@ -11743,10 +13899,10 @@
       container.style.display = 'flex';
       document.body.appendChild(container);
       loadOverlayScript(OVERLAY_PATH, url, variant, details, personalisation).then(() => {
-        logger$1.debug('Overlay script loaded successfully.');
+        logger.debug('Overlay script loaded successfully.');
         contentLoaded = true;
       }).catch(error => {
-        logger$1.debug('Error loading overlay script:', error);
+        logger.debug('Error loading overlay script:', error);
       });
       loadCSS();
     }
@@ -11813,18 +13969,15 @@
 
   const renderVisualBuilder = (targetingMsgJson, isPreview, _logger) => {
     if (_logger) {
-      logger$1 = _logger;
+      logger = _logger;
+    }
+
+    if (isPreview) {
+      sessionStorage.setItem('visualEditorData', JSON.stringify(targetingMsgJson));
     }
 
     const insertedElements = [];
     const details = isPreview ? targetingMsgJson.details : targetingMsgJson.display.details;
-    const url = window.location.href;
-
-    if (isPreview) {
-      const currentUrl = new URL(url);
-      currentUrl.searchParams.delete('ctActionMode');
-    }
-
     let notificationViewed = false;
     const payload = {
       msgId: targetingMsgJson.wzrk_id,
@@ -11902,10 +14055,11 @@
           processElement(retryElement, selector);
           clearInterval(intervalId);
         } else if (++count >= 20) {
-          logger$1.debug("No element present on DOM with selector '".concat(selector, "'."));
+          logger.debug("No element present on DOM with selector '".concat(selector, "'."));
           clearInterval(intervalId);
         }
       }, 500);
+      $ct.intervalArray.push(intervalId);
     };
 
     details.forEach(d => {
@@ -11961,10 +14115,11 @@
           processElement(insertedElement, selector);
           clearInterval(intervalId);
         } else if (++count >= 20) {
-          logger$1.debug("No element present on DOM with selector '".concat(sibling, "'."));
+          logger.debug("No element present on DOM with selector '".concat(sibling, "'."));
           clearInterval(intervalId);
         }
       }, 500);
+      $ct.intervalArray.push(intervalId);
     };
 
     if (insertedElements.length > 0) {
@@ -12150,7 +14305,7 @@
         addScriptTo(script);
       });
     } catch (error) {
-      logger$1.debug('Error loading script', error);
+      logger.debug('Error loading script', error);
     }
   }
 
@@ -12408,6 +14563,7 @@
     const containerEl = targetingMsgJson.display.divId ? document.getElementById(divId) : document.querySelector(divId);
     containerEl.innerHTML = '';
     containerEl.appendChild(bannerEl);
+    commonCampaignUtils.doCampHouseKeeping(targetingMsgJson, Logger.getInstance());
   };
   const renderPersonalisationCarousel = targetingMsgJson => {
     var _targetingMsgJson$dis2;
@@ -12422,6 +14578,7 @@
     const container = targetingMsgJson.display.divId ? document.getElementById(divId) : document.querySelector(divId);
     container.innerHTML = '';
     container.appendChild(carousel);
+    commonCampaignUtils.doCampHouseKeeping(targetingMsgJson, Logger.getInstance());
   };
   const handleKVpairCampaign = targetingMsgJson => {
     const inaObj = {};
@@ -12439,6 +14596,7 @@
       detail: inaObj
     });
     document.dispatchEvent(kvPairsEvent);
+    commonCampaignUtils.doCampHouseKeeping(targetingMsgJson, Logger.getInstance());
   };
   const renderCustomHtml = (targetingMsgJson, logger) => {
     const {
@@ -12488,6 +14646,7 @@
           scripts.forEach(script => {
             addScriptTo(script);
           });
+          commonCampaignUtils.doCampHouseKeeping(targetingMsgJson, Logger.getInstance());
           clearInterval(intervalId);
         } else if (++count >= 20) {
           logger.error("No element present on DOM with divId '".concat(divId, "'."));
@@ -12516,6 +14675,7 @@
       detail: inaObj
     });
     document.dispatchEvent(jsonEvent);
+    commonCampaignUtils.doCampHouseKeeping(targetingMsgJson, Logger.getInstance());
   };
 
   function handleCustomHtmlPreviewPostMessageEvent(event, logger) {
@@ -12557,1757 +14717,362 @@
       }
     }
   };
+  const renderWebNativeDisplayBanner = (targetNotif, logger, arrInAppNotifs) => {
+    let count = 0;
+    const intervalId = setInterval(() => {
+      const element = targetNotif.display.divId ? document.getElementById(targetNotif.display.divId) : document.querySelector(targetNotif.display.divSelector);
 
-  const renderPopUpImageOnly = (targetingMsgJson, _session) => {
-    const divId = 'wzrkImageOnlyDiv';
-    const popupImageOnly = document.createElement('ct-web-popup-imageonly');
-    popupImageOnly.session = _session;
-    popupImageOnly.target = targetingMsgJson;
-    const containerEl = document.getElementById(divId);
-    containerEl.innerHTML = '';
-    containerEl.style.visibility = 'hidden';
-    containerEl.appendChild(popupImageOnly);
-  };
-  const FULLSCREEN_STYLE = "\n  z-index: 2147483647;\n  display: block;\n  position: fixed;\n  top: 0;\n  left: 0;\n  width: 100vw !important;\n  height: 100vh !important;\n  margin: 0;\n  padding: 0;\n  background: transparent;\n";
-  const IFRAME_STYLE = "\n  ".concat(FULLSCREEN_STYLE, "\n  border: 0 !important;\n");
-  const renderAdvancedBuilder = (targetingMsgJson, _session, _logger) => {
-    const divId = 'wizAdvBuilder';
-    const campaignId = targetingMsgJson.wzrk_id.split('_')[0]; // Check for existing wrapper and handle accordingly
+      if (element !== null) {
+        targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.BANNER ? renderPersonalisationBanner(targetNotif) : renderPersonalisationCarousel(targetNotif);
+        clearInterval(intervalId);
+      } else if (++count >= 20) {
+        logger.debug("No element present on DOM with selector '".concat(targetNotif.display.divId || targetNotif.display.divSelector, "'."));
+        arrInAppNotifs[targetNotif.wzrk_id.split('_')[0]] = targetNotif; // Add targetNotif to object
 
-    if (handleExistingWrapper(divId)) {
-      return; // Early exit if existing wrapper should not be replaced
-    }
-
-    $ct.campaignDivMap[campaignId] = divId; // Create DOM elements
-
-    const msgDiv = createWrapperDiv(divId);
-    const iframe = createIframe(targetingMsgJson, _logger);
-
-    if (!iframe) {
-      _logger.error('Failed to create iframe for Advanced Builder');
-
-      return;
-    } // Setup event handling
-
-
-    setupIframeEventListeners(iframe, targetingMsgJson, divId, _session, _logger); // Append to DOM
-
-    msgDiv.appendChild(iframe);
-    document.body.appendChild(msgDiv); // Track notification view
-
-    window.clevertap.renderNotificationViewed({
-      msgId: targetingMsgJson.wzrk_id,
-      pivotId: targetingMsgJson.wzrk_pivot
-    });
-  };
-
-  const handleIframeEvent = (e, targetingMsgJson, divId, _session, _logger) => {
-    var _e$detail, _e$detail$elementDeta;
-
-    const campaignId = targetingMsgJson.wzrk_id.split('_')[0];
-    const {
-      detail
-    } = e;
-
-    if (!(detail === null || detail === void 0 ? void 0 : detail.type)) {
-      return _logger.debug('Empty or missing event type');
-    }
-
-    _logger.debug('Received event type:', detail);
-
-    const payload = {
-      msgId: targetingMsgJson.wzrk_id,
-      pivotId: targetingMsgJson.wzrk_pivot,
-      kv: {
-        wzrk_c2a: (_e$detail = e.detail) === null || _e$detail === void 0 ? void 0 : (_e$detail$elementDeta = _e$detail.elementDetails) === null || _e$detail$elementDeta === void 0 ? void 0 : _e$detail$elementDeta.name
+        clearInterval(intervalId);
       }
-    };
-
-    switch (detail.type) {
-      case ACTION_TYPES.CLOSE:
-        // close Iframe
-        window.clevertap.renderNotificationClicked(payload);
-        closeIframe(campaignId, divId, _session.sessionId);
-        break;
-
-      case ACTION_TYPES.OPEN_WEB_URL:
-        // handle opening of url
-        window.clevertap.renderNotificationClicked(payload);
-
-        if (detail.openInNewTab) {
-          window.open(detail.url.value.replacements, '_blank', 'noopener');
-
-          if (detail.closeOnClick) {
-            closeIframe(campaignId, divId, _session.sessionId);
-          }
-        } else {
-          window.location.href = detail.url.value.replacements;
-        }
-
-        break;
-
-      case ACTION_TYPES.SOFT_PROMPT:
-        // Handle soft prompt
-        window.clevertap.renderNotificationClicked(payload);
-        window.clevertap.notifications.push({
-          skipDialog: true
-        });
-        break;
-
-      case ACTION_TYPES.RUN_JS:
-        // Handle JS code
-        window.clevertap.renderNotificationClicked(payload);
-        invokeExternalJs(e.detail.js.name, targetingMsgJson);
-        break;
-
-      default:
-        _logger.debug('Empty event type received');
-
-    }
-  }; // Utility: Check and handle existing wrapper
-
-
-  const handleExistingWrapper = divId => {
-    const existingWrapper = document.getElementById(divId);
-
-    if (existingWrapper) {
-      if ($ct.dismissSpamControl) {
-        existingWrapper.remove();
-        return false; // Continue with creation
-      } else {
-          return true; // Stop execution
-        }
-    }
-
-    return false; // No existing wrapper, continue
-  }; // Utility: Create wrapper div
-
-
-  const createWrapperDiv = divId => {
-    const msgDiv = document.createElement('div');
-    msgDiv.id = divId;
-    msgDiv.setAttribute('style', FULLSCREEN_STYLE);
-    return msgDiv;
-  }; // Utility: Create iframe with attributes and content
-
-
-  const createIframe = (targetingMsgJson, _logger) => {
-    try {
-      const staticHTML = targetingMsgJson.msgContent.html;
-      const isDesktop = window.matchMedia('(min-width: 480px)').matches;
-      const config = isDesktop ? targetingMsgJson.display.desktopConfig : targetingMsgJson.display.mobileConfig;
-      const html = staticHTML.replace('"##Vars##"', JSON.stringify(config));
-      const iframe = document.createElement('iframe');
-      iframe.id = 'wiz-iframe';
-      iframe.srcdoc = html;
-      iframe.setAttribute('style', IFRAME_STYLE);
-      return iframe;
-    } catch (error) {
-      _logger.error('Error creating iframe:', error);
-
-      return null;
-    }
-  }; // Utility: Setup iframe event listeners
-
-
-  const setupIframeEventListeners = (iframe, targetingMsgJson, divId, _session, _logger) => {
-    iframe.onload = () => {
-      try {
-        // Try direct document access first
-        iframe.contentDocument.addEventListener('CT_custom_event', e => {
-          _logger.debug('Event received ', e);
-
-          handleIframeEvent(e, targetingMsgJson, divId, _session, _logger);
-        });
-      } catch (error) {
-        // Fallback to postMessage
-        _logger.error('Iframe document inaccessible, using postMessage:', error);
-
-        setupPostMessageListener(targetingMsgJson, divId, _session, _logger);
-      }
-    };
-  }; // Utility: Setup postMessage listener as fallback
-
-
-  const setupPostMessageListener = (targetingMsgJson, divId, _session, _logger) => {
-    const messageHandler = event => {
-      var _event$data;
-
-      if (!event.origin.endsWith(WVE_URL_ORIGIN.CLEVERTAP)) {
-        return;
-      }
-
-      if (((_event$data = event.data) === null || _event$data === void 0 ? void 0 : _event$data.type) === 'CT_custom_event') {
-        _logger.debug('Event received ', event);
-
-        handleIframeEvent({
-          detail: event.data.detail
-        }, targetingMsgJson, divId, _session, _logger);
-      }
-    };
-
-    window.removeEventListener('message', messageHandler); // Avoid duplicate bindings
-
-    window.addEventListener('message', messageHandler);
+    }, 500);
   };
 
-  const getBoxPromptStyles = style => {
-    const totalBorderWidth = style.card.borderEnabled ? style.card.border.borderWidth * 2 : 0;
-    const cardPadding = 16 * 2; // Left and right padding
-
-    const cardContentWidth = 360 - cardPadding - totalBorderWidth;
-    return "\n    #pnWrapper {\n      width: 360px;\n      font-family: proxima-nova, Arial, sans-serif;\n    }\n    \n    #pnWrapper * {\n       margin: 0px;\n       padding: 0px;\n       text-align: left;\n    }\n    ".concat(style.overlay.enabled ? "#pnOverlay {\n      background-color: ".concat(style.overlay.color || 'rgba(0, 0, 0, .15)', ";\n      position: fixed;\n      left: 0;\n      right: 0;\n      top: 0;\n      bottom: 0;\n      z-index: 10000\n    }\n") : '', "\n    #pnCard {\n      background-color: ").concat(style.card.color, ";\n      border-radius: ").concat(style.card.borderRadius, "px;\n      padding: 16px;\n      width: ").concat(cardContentWidth, "px;\n      position: fixed;\n      z-index: 999999;\n      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);\n      ").concat(style.card.borderEnabled ? "\n        border-width: ".concat(style.card.border.borderWidth, "px;\n        border-color: ").concat(style.card.border.borderColor, ";\n        border-style: solid;\n      ") : '', "\n      height: fit-content;\n    }\n\n    #iconTitleDescWrapper {\n      display: flex;\n      align-items: center;\n      margin-bottom: 16px;\n      gap: 12px;\n    }\n\n    #iconContainer {\n      min-width: 64px;\n      max-width: 64px;\n      aspect-ratio: 1;\n      object-fit: cover;\n    }\n\n    #titleDescWrapper {\n      flex-grow: 1;\n      overflow: hidden;\n      overflow-wrap: break-word;\n    }\n\n    #title {\n      font-size: 16px;\n      font-weight: 700;\n      color: ").concat(style.text.titleColor, ";\n      margin-bottom: 4px;\n      line-height: 24px;\n    }\n\n    #description {\n      font-size: 14px;\n      font-weight: 500;\n      color: ").concat(style.text.descriptionColor, ";\n      line-height: 20px;\n    }\n\n    #buttonsContainer {\n      display: flex;\n      justify-content: space-between;\n      min-height: 32px;\n      gap: 8px;\n      align-items: center;\n    }\n\n    #primaryButton, #secondaryButton {\n      padding: 6px 24px;\n      flex: 1;\n      cursor: pointer;\n      font-weight: bold;\n      display: flex;\n      align-items: center;\n      justify-content: center;\n      height: max-content;\n      font-size: 14px;\n      font-weight: 500;\n      line-height: 20px;\n      text-align: center;\n    }\n\n    #primaryButton {\n      background-color: ").concat(style.buttons.primaryButton.buttonColor, ";\n      color: ").concat(style.buttons.primaryButton.textColor, ";\n      border-radius: ").concat(style.buttons.primaryButton.borderRadius, "px;\n      ").concat(style.buttons.primaryButton.borderEnabled ? "\n          border-width: ".concat(style.buttons.primaryButton.border.borderWidth, "px;\n          border-color: ").concat(style.buttons.primaryButton.border.borderColor, ";\n          border-style: solid;\n        ") : 'border: none;', "\n    }\n\n    #secondaryButton {\n      background-color: ").concat(style.buttons.secondaryButton.buttonColor, ";\n      color: ").concat(style.buttons.secondaryButton.textColor, ";\n      border-radius: ").concat(style.buttons.secondaryButton.borderRadius, "px;\n      ").concat(style.buttons.secondaryButton.borderEnabled ? "\n          border-width: ".concat(style.buttons.secondaryButton.border.borderWidth, "px;\n          border-color: ").concat(style.buttons.secondaryButton.border.borderColor, ";\n          border-style: solid;\n        ") : 'border: none;', "\n    }\n\n    #primaryButton:hover, #secondaryButton:hover {\n      opacity: 0.9;\n    }\n  ");
-  };
-  const getBellIconStyles = style => {
-    return "\n    #bell_wrapper {\n      position: fixed;\n      cursor: pointer;\n      background-color: ".concat(style.card.backgroundColor, ";\n      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);\n      width: 48px;\n      height: 48px;\n      border-radius: 50%;\n      display: flex;\n      flex-direction: column;\n      gap: 8px;\n      z-index: 999999;\n    }\n\n    #bell_icon {\n      display: block;\n      width: 48px;\n      height: 48px;\n    }\n\n    #bell_wrapper:hover {\n      transform: scale(1.05);\n      transition: transform 0.2s ease-in-out;\n    }\n\n    #bell_tooltip {\n      display: none;\n      background-color: #2b2e3e;\n      color: #fff;\n      border-radius: 4px;\n      padding: 4px;\n      white-space: nowrap;\n      pointer-events: none;\n      font-size: 14px;\n      line-height: 1.4;\n    }\n\n    #gif_modal {\n      display: none;\n      background-color: #ffffff;\n      padding: 4px;\n      width: 400px;\n      height: 256px;\n      border-radius: 4px;\n      position: relative;\n      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);\n      cursor: default;\n    }\n\n    #gif_image {\n      object-fit: contain;\n      width: 100%;\n      height: 100%;\n    }\n\n    #close_modal {\n      position: absolute;\n      width: 24px;\n      height: 24px;\n      top: 8px;\n      right: 8px;\n      background: rgba(238, 238, 238, 0.8);\n      text-align: center;\n      line-height: 20px;\n      border-radius: 4px;\n      color: #000000;\n      font-size: 22px;\n      cursor: pointer;\n    }\n  ");
-  };
-
-  const isChrome = () => {
-    const ua = navigator.userAgent;
-    return ua.includes('Chrome') || ua.includes('CriOS');
-  };
-  const isFirefox = () => {
-    const ua = navigator.userAgent;
-    return ua.includes('Firefox') || ua.includes('FxiOS');
-  };
-  const isSafari = () => {
-    const ua = navigator.userAgent; // Ignoring the False Positive of Safari on iOS devices because it gives Safari in all Browsers
-
-    return ua.includes('Safari') && !ua.includes('CriOS') && !ua.includes('FxiOS') && !ua.includes('Chrome') && !ua.includes('Firefox');
-  };
-  /**
-   * Recursively checks if an object contains an array or a function at any level of nesting.
-   *
-   * @param {Object} obj - The object to check.
-   * @returns {boolean} - Returns `true` if the object contains an array or function, otherwise `false`.
-   */
-
-  const objectHasNestedArrayOrFunction = obj => {
-    if (!obj || typeof obj !== 'object') return false;
-    if (Array.isArray(obj)) return true;
-    return Object.values(obj).some(value => typeof value === 'function' || objectHasNestedArrayOrFunction(value));
-  };
-  /**
-   * Flattens a nested object into a single-level object using dot notation.
-   * Arrays are ignored in this transformation.
-   *
-   * @param {Object} obj - The object to be flattened.
-   * @param {string} [parentKey=""] - The parent key for recursion (used internally).
-   * @returns {Object} - The transformed object with dot notation keys.
-   */
-
-  const flattenObjectToDotNotation = function (obj) {
-    let parentKey = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : '';
-    const result = {};
-
-    for (const key in obj) {
-      if (Object.hasOwnProperty.call(obj, key)) {
-        const value = obj[key];
-        const newKey = parentKey ? "".concat(parentKey, ".").concat(key) : key;
-
-        if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
-          // Recursively process nested objects
-          Object.assign(result, flattenObjectToDotNotation(value, newKey));
-        } else if (!Array.isArray(value)) {
-          // Assign non-array values directly
-          result[newKey] = {
-            defaultValue: value,
-            type: typeof value
-          };
-        }
-      }
-    }
-
-    return result;
-  };
-  /**
-   * Reconstructs an object from a flat key-value structure using dot notation.
-   *
-   * @param {Object} payload - The input object with flat dot notation keys.
-   * @returns {Object} - The reconstructed object with proper nesting.
-   */
-
-  const reconstructNestedObject = payload => {
-    const result = {};
-
-    for (const key in payload) {
-      if (Object.hasOwnProperty.call(payload, key)) {
-        const value = payload[key];
-        const keys = key.split('.'); // Split keys on dot notation
-
-        let current = result;
-        keys.forEach((part, index) => {
-          if (index === keys.length - 1) {
-            // Assign value at the last key level
-            current[part] = value;
-          } else {
-            // Ensure intermediate levels exist
-            current = current[part] = current[part] || {};
-          }
-        });
-      }
-    }
-
-    return result;
-  };
-  /**
-   * Validates and sanitizes a custom CleverTap ID based on platform rules.
-   *
-   * Rules:
-   * - Must be between 1 and 64 characters in length.
-   * - Allowed characters: A-Z, a-z, 0-9, (, ), !, :, @, $, _, -
-   * - Automatically lowercases the ID.
-   *
-   * @param {string} id - The custom CleverTap ID to validate.
-   * @returns {{ isValid: boolean, error?: string, sanitizedId?: string }} - Validation result.
-   */
-
-  function validateCustomCleverTapID(id) {
-    if (typeof id !== 'string') {
-      return {
-        isValid: false,
-        error: 'ID must be a string.'
-      };
-    }
-
-    const lowercaseId = id.toLowerCase();
-    const length = lowercaseId.length;
-
-    if (length < 1 || length > 64) {
-      return {
-        isValid: false,
-        error: 'ID must be between 1 and 64 characters.'
-      };
-    }
-
-    const allowedPattern = /^[a-z0-9()!:@$_-]+$/;
-
-    if (!allowedPattern.test(lowercaseId)) {
-      return {
-        isValid: false,
-        error: 'ID contains invalid characters. Only A-Z, a-z, 0-9, (, ), !, :, @, $, _, - are allowed.'
-      };
-    }
-
-    return {
-      isValid: true,
-      sanitizedId: addWebPrefix(lowercaseId)
-    };
-  }
-  /**
-   * Adds a `_w_` prefix to a sanitized CleverTap ID for web.
-   *
-   * - Converts the ID to lowercase.
-   * - Does not validate the characters or length — assumes the ID is already valid.
-   *
-   * @param {string} id - The custom CleverTap ID.
-   * @returns {string} - The prefixed and lowercased CleverTap ID.
-   */
-
-  function addWebPrefix(id) {
-    if (typeof id !== 'string') {
-      throw new Error('ID must be a string');
-    }
-
-    return "".concat(CUSTOM_CT_ID_PREFIX).concat(id.toLowerCase());
-  }
-
-  var _oldValues$1 = _classPrivateFieldLooseKey("oldValues");
-
-  var _logger$5 = _classPrivateFieldLooseKey("logger");
-
-  var _request$3 = _classPrivateFieldLooseKey("request");
-
-  var _account$4 = _classPrivateFieldLooseKey("account");
-
-  var _wizAlertJSPath = _classPrivateFieldLooseKey("wizAlertJSPath");
-
-  var _fcmPublicKey = _classPrivateFieldLooseKey("fcmPublicKey");
-
-  var _setUpWebPush = _classPrivateFieldLooseKey("setUpWebPush");
-
-  var _isNativeWebPushSupported = _classPrivateFieldLooseKey("isNativeWebPushSupported");
-
-  var _setUpSafariNotifications = _classPrivateFieldLooseKey("setUpSafariNotifications");
-
-  var _setUpChromeFirefoxNotifications = _classPrivateFieldLooseKey("setUpChromeFirefoxNotifications");
-
-  var _addWizAlertJS = _classPrivateFieldLooseKey("addWizAlertJS");
-
-  var _removeWizAlertJS = _classPrivateFieldLooseKey("removeWizAlertJS");
-
-  var _handleNotificationRegistration = _classPrivateFieldLooseKey("handleNotificationRegistration");
-
-  class NotificationHandler extends Array {
-    constructor(_ref, values) {
-      let {
-        logger,
-        session,
-        request,
-        account
-      } = _ref;
-      super();
-      Object.defineProperty(this, _handleNotificationRegistration, {
-        value: _handleNotificationRegistration2
-      });
-      Object.defineProperty(this, _removeWizAlertJS, {
-        value: _removeWizAlertJS2
-      });
-      Object.defineProperty(this, _addWizAlertJS, {
-        value: _addWizAlertJS2
-      });
-      Object.defineProperty(this, _setUpChromeFirefoxNotifications, {
-        value: _setUpChromeFirefoxNotifications2
-      });
-      Object.defineProperty(this, _setUpSafariNotifications, {
-        value: _setUpSafariNotifications2
-      });
-      Object.defineProperty(this, _isNativeWebPushSupported, {
-        value: _isNativeWebPushSupported2
-      });
-      Object.defineProperty(this, _setUpWebPush, {
-        value: _setUpWebPush2
-      });
-      Object.defineProperty(this, _oldValues$1, {
-        writable: true,
-        value: void 0
-      });
-      Object.defineProperty(this, _logger$5, {
-        writable: true,
-        value: void 0
-      });
-      Object.defineProperty(this, _request$3, {
-        writable: true,
-        value: void 0
-      });
-      Object.defineProperty(this, _account$4, {
-        writable: true,
-        value: void 0
-      });
-      Object.defineProperty(this, _wizAlertJSPath, {
-        writable: true,
-        value: void 0
-      });
-      Object.defineProperty(this, _fcmPublicKey, {
-        writable: true,
-        value: void 0
-      });
-      _classPrivateFieldLooseBase(this, _wizAlertJSPath)[_wizAlertJSPath] = 'https://d2r1yp2w7bby2u.cloudfront.net/js/wzrk_dialog.min.js';
-      _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] = null;
-      _classPrivateFieldLooseBase(this, _oldValues$1)[_oldValues$1] = values;
-      _classPrivateFieldLooseBase(this, _logger$5)[_logger$5] = logger;
-      _classPrivateFieldLooseBase(this, _request$3)[_request$3] = request;
-      _classPrivateFieldLooseBase(this, _account$4)[_account$4] = account;
-    }
-
-    setupWebPush(displayArgs) {
-      /*
-        A method in notification.js which can be accessed in prompt.js file to call the
-        private method this.#setUpWebPush
-      */
-      _classPrivateFieldLooseBase(this, _setUpWebPush)[_setUpWebPush](displayArgs);
-    }
-
-    push() {
-      if (StorageManager.readFromLSorCookie(ACCOUNT_ID)) {
-        /*
-          To handle a potential race condition, two flags are stored in Local Storage:
-          - `webPushConfigResponseReceived`: Indicates if the backend's webPushConfig has been received (set during the initial API call without a session ID).
-          - `NOTIFICATION_PUSH_METHOD_DEFERRED`: Tracks if `clevertap.notifications.push` was called before receiving the webPushConfig.
-           This ensures the soft prompt is rendered correctly:
-          - If `webPushConfigResponseReceived` is true, the soft prompt is processed immediately.
-          - Otherwise, `NOTIFICATION_PUSH_METHOD_DEFERRED` is set to true, and the rendering is deferred until the webPushConfig is received.
-        */
-        const isWebPushConfigPresent = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG_RECEIVED);
-        const isApplicationServerKeyReceived = StorageManager.readFromLSorCookie(APPLICATION_SERVER_KEY_RECEIVED);
-
-        for (var _len = arguments.length, displayArgs = new Array(_len), _key = 0; _key < _len; _key++) {
-          displayArgs[_key] = arguments[_key];
-        }
-
-        setNotificationHandlerValues({
-          logger: _classPrivateFieldLooseBase(this, _logger$5)[_logger$5],
-          account: _classPrivateFieldLooseBase(this, _account$4)[_account$4],
-          request: _classPrivateFieldLooseBase(this, _request$3)[_request$3],
-          displayArgs,
-          fcmPublicKey: _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey]
-        });
-
-        if (isWebPushConfigPresent && isApplicationServerKeyReceived) {
-          processSoftPrompt();
-        } else {
-          StorageManager.saveToLSorCookie(NOTIFICATION_PUSH_METHOD_DEFERRED, true);
-        }
-      } else {
-        _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Account ID is not set');
-      }
-    }
-
-    _processOldValues() {
-      if (_classPrivateFieldLooseBase(this, _oldValues$1)[_oldValues$1]) {
-        if (Array.isArray(_classPrivateFieldLooseBase(this, _oldValues$1)[_oldValues$1]) && _classPrivateFieldLooseBase(this, _oldValues$1)[_oldValues$1].length > 0) {
-          setNotificationHandlerValues({
-            logger: _classPrivateFieldLooseBase(this, _logger$5)[_logger$5],
-            account: _classPrivateFieldLooseBase(this, _account$4)[_account$4],
-            request: _classPrivateFieldLooseBase(this, _request$3)[_request$3],
-            displayArgs: _classPrivateFieldLooseBase(this, _oldValues$1)[_oldValues$1].slice(),
-            fcmPublicKey: _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey]
-          });
-          StorageManager.saveToLSorCookie(NOTIFICATION_PUSH_METHOD_DEFERRED, true);
-        }
-
-        _classPrivateFieldLooseBase(this, _setUpWebPush)[_setUpWebPush](_classPrivateFieldLooseBase(this, _oldValues$1)[_oldValues$1]);
-      }
-
-      _classPrivateFieldLooseBase(this, _oldValues$1)[_oldValues$1] = null;
-    }
-
-    setUpWebPushNotifications(subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsServiceUrl) {
-      if (isChrome() || isFirefox()) {
-        _classPrivateFieldLooseBase(this, _setUpChromeFirefoxNotifications)[_setUpChromeFirefoxNotifications](subscriptionCallback, serviceWorkerPath);
-      } else if (isSafari()) {
-        _classPrivateFieldLooseBase(this, _setUpSafariNotifications)[_setUpSafariNotifications](subscriptionCallback, apnsWebPushId, apnsServiceUrl, serviceWorkerPath);
-      }
-    }
-
-    setApplicationServerKey(applicationServerKey) {
-      _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] = applicationServerKey;
-    }
-
-    _enableWebPush(enabled, applicationServerKey) {
-      $ct.webPushEnabled = enabled;
-
-      if (applicationServerKey != null) {
-        this.setApplicationServerKey(applicationServerKey);
-      }
-
-      const isNotificationPushCalled = StorageManager.readFromLSorCookie(NOTIFICATION_PUSH_METHOD_DEFERRED);
-
-      if (isNotificationPushCalled) {
-        return;
-      }
-
-      if ($ct.webPushEnabled && $ct.notifApi.notifEnabledFromApi) {
-        _classPrivateFieldLooseBase(this, _handleNotificationRegistration)[_handleNotificationRegistration]($ct.notifApi.displayArgs);
-      } else if (!$ct.webPushEnabled && $ct.notifApi.notifEnabledFromApi) ;
-    }
-
-  }
-
-  var _setUpWebPush2 = function _setUpWebPush2(displayArgs) {
-    if ($ct.webPushEnabled && displayArgs.length > 0) {
-      _classPrivateFieldLooseBase(this, _handleNotificationRegistration)[_handleNotificationRegistration](displayArgs);
-    } else if ($ct.webPushEnabled == null && displayArgs.length > 0) {
-      $ct.notifApi.notifEnabledFromApi = true;
-      $ct.notifApi.displayArgs = displayArgs.slice();
-    } else if ($ct.webPushEnabled === false && displayArgs.length > 0) {
-      _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Make sure push notifications are fully enabled and integrated');
-    }
-  };
-
-  var _isNativeWebPushSupported2 = function _isNativeWebPushSupported2() {
-    return 'PushManager' in window;
-  };
-
-  var _setUpSafariNotifications2 = function _setUpSafariNotifications2(subscriptionCallback, apnsWebPushId, apnsServiceUrl, serviceWorkerPath) {
-    const softPromptCard = document.getElementById('pnWrapper');
-    const oldSoftPromptCard = document.getElementById('wzrk_wrapper');
-
-    if (_classPrivateFieldLooseBase(this, _isNativeWebPushSupported)[_isNativeWebPushSupported]() && _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] != null) {
-      StorageManager.setMetaProp(VAPID_MIGRATION_PROMPT_SHOWN, true);
-      navigator.serviceWorker.register(serviceWorkerPath).then(registration => {
-        window.Notification.requestPermission().then(permission => {
-          if (permission === 'granted') {
-            const subscribeObj = {
-              applicationServerKey: _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey],
-              userVisibleOnly: true
-            };
-
-            _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Sub Obj' + JSON.stringify(subscribeObj));
-
-            const subscribeForPush = () => {
-              registration.pushManager.subscribe(subscribeObj).then(subscription => {
-                _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Service Worker registered. Endpoint: ' + subscription.endpoint);
-
-                _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Service Data Sent: ' + JSON.stringify({
-                  applicationServerKey: _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey],
-                  userVisibleOnly: true
-                }));
-
-                _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Subscription Data Received: ' + JSON.stringify(subscription));
-
-                const subscriptionData = JSON.parse(JSON.stringify(subscription));
-                subscriptionData.endpoint = subscriptionData.endpoint.split('/').pop();
-                StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData);
-
-                _classPrivateFieldLooseBase(this, _request$3)[_request$3].registerToken(subscriptionData);
-
-                if (typeof subscriptionCallback !== 'undefined' && typeof subscriptionCallback === 'function') {
-                  subscriptionCallback();
-                }
-
-                const existingBellWrapper = document.getElementById('bell_wrapper');
-
-                if (existingBellWrapper) {
-                  existingBellWrapper.parentNode.removeChild(existingBellWrapper);
-                }
-
-                if (softPromptCard) {
-                  softPromptCard.parentNode.removeChild(softPromptCard);
-                }
-
-                if (oldSoftPromptCard) {
-                  oldSoftPromptCard.parentNode.removeChild(oldSoftPromptCard);
-                }
-              });
-            };
-
-            const serviceWorker = registration.installing || registration.waiting || registration.active;
-
-            if (serviceWorker && serviceWorker.state === 'activated') {
-              // Already activated, proceed with subscription
-              subscribeForPush();
-            } else if (serviceWorker) {
-              // Listen for state changes to handle activation
-              serviceWorker.addEventListener('statechange', event => {
-                if (event.target.state === 'activated') {
-                  _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Service Worker activated. Proceeding with subscription.');
-
-                  subscribeForPush();
-                }
-              });
-            }
-          } else if (permission === 'denied') {
-            _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Error subscribing to Safari web push');
-
-            if (softPromptCard) {
-              softPromptCard.parentNode.removeChild(softPromptCard);
-            }
-
-            if (oldSoftPromptCard) {
-              oldSoftPromptCard.parentNode.removeChild(oldSoftPromptCard);
-            }
-          }
-        });
-      });
-    } else {
-      // ensure that proper arguments are passed
-      if (typeof apnsWebPushId === 'undefined') {
-        _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Ensure that APNS Web Push ID is supplied');
-      }
-
-      if (typeof apnsServiceUrl === 'undefined') {
-        _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Ensure that APNS Web Push service path is supplied');
-      }
-
-      if ('safari' in window && 'pushNotification' in window.safari) {
-        window.safari.pushNotification.requestPermission(apnsServiceUrl, apnsWebPushId, {}, subscription => {
-          if (subscription.permission === 'granted') {
-            const subscriptionData = JSON.parse(JSON.stringify(subscription));
-            subscriptionData.endpoint = subscription.deviceToken;
-            subscriptionData.browser = 'Safari';
-
-            _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Service Data Sent: ' + JSON.stringify({
-              apnsServiceUrl,
-              apnsWebPushId
-            }));
-
-            _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Subscription Data Received: ' + JSON.stringify(subscription));
-
-            const existingBellWrapper = document.getElementById('bell_wrapper');
-
-            if (existingBellWrapper) {
-              existingBellWrapper.parentNode.removeChild(existingBellWrapper);
-            }
-
-            if (softPromptCard) {
-              softPromptCard.parentNode.removeChild(softPromptCard);
-            }
-
-            if (oldSoftPromptCard) {
-              oldSoftPromptCard.parentNode.removeChild(oldSoftPromptCard);
-            }
-
-            StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData);
-
-            _classPrivateFieldLooseBase(this, _request$3)[_request$3].registerToken(subscriptionData);
-
-            _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Safari Web Push registered. Device Token: ' + subscription.deviceToken);
-          } else if (subscription.permission === 'denied') {
-            _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Error subscribing to Safari web push');
-
-            if (softPromptCard) {
-              softPromptCard.parentNode.removeChild(softPromptCard);
-            }
-
-            if (oldSoftPromptCard) {
-              oldSoftPromptCard.parentNode.removeChild(oldSoftPromptCard);
-            }
-          }
-        });
-      }
-    }
-  };
-
-  var _setUpChromeFirefoxNotifications2 = function _setUpChromeFirefoxNotifications2(subscriptionCallback, serviceWorkerPath) {
-    let registrationScope = '';
-
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register(serviceWorkerPath).then(registration => {
-        if (typeof __wzrk_account_id !== 'undefined') {
-          // eslint-disable-line
-          // shopify accounts , since the service worker is not at root, serviceWorker.ready is never resolved.
-          // hence add a timeout and hope serviceWroker is ready within that time.
-          return new Promise(resolve => setTimeout(() => resolve(registration), 5000));
-        }
-
-        registrationScope = registration.scope; // IF SERVICE WORKER IS AT ROOT, RETURN THE READY PROMISE
-        // ELSE IF CHROME RETURN PROMISE AFTER 5 SECONDS
-        // OR getRegistrations PROMISE IF ITS FIREFOX
-
-        const rootDirRegex = /^(\.?)(\/?)([^/]*).js$/;
-        const isServiceWorkerAtRoot = rootDirRegex.test(serviceWorkerPath);
-
-        if (isServiceWorkerAtRoot) {
-          return navigator.serviceWorker.ready;
-        } else {
-          if (isChrome()) {
-            return new Promise(resolve => setTimeout(() => resolve(registration), 5000));
-          } else {
-            return navigator.serviceWorker.getRegistrations();
-          }
-        }
-      }).then(serviceWorkerRegistration => {
-        // ITS AN ARRAY IN CASE OF FIREFOX, SO USE THE REGISTRATION WITH PROPER SCOPE
-        if (isFirefox() && Array.isArray(serviceWorkerRegistration)) {
-          serviceWorkerRegistration = serviceWorkerRegistration.filter(i => i.scope === registrationScope)[0];
-        }
-
-        const subscribeObj = {
-          userVisibleOnly: true
-        };
-
-        if (_classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] != null) {
-          subscribeObj.applicationServerKey = urlBase64ToUint8Array(_classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey]);
-        }
-
-        const softPromptCard = document.getElementById('pnWrapper');
-        const oldSoftPromptCard = document.getElementById('wzrk_wrapper');
-        serviceWorkerRegistration.pushManager.subscribe(subscribeObj).then(subscription => {
-          _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Service Worker registered. Endpoint: ' + subscription.endpoint);
-
-          _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].debug('Service Data Sent: ' + JSON.stringify(subscribeObj));
-
-          _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].debug('Subscription Data Received: ' + JSON.stringify(subscription)); // convert the subscription keys to strings; this sets it up nicely for pushing to LC
-
-
-          const subscriptionData = JSON.parse(JSON.stringify(subscription)); // remove the common chrome/firefox endpoint at the beginning of the token
-
-          if (isChrome()) {
-            subscriptionData.endpoint = subscriptionData.endpoint.split('/').pop();
-            subscriptionData.browser = 'Chrome';
-          } else if (isFirefox()) {
-            subscriptionData.endpoint = subscriptionData.endpoint.split('/').pop();
-            subscriptionData.browser = 'Firefox';
-          }
-
-          StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData);
-
-          _classPrivateFieldLooseBase(this, _request$3)[_request$3].registerToken(subscriptionData);
-
-          if (typeof subscriptionCallback !== 'undefined' && typeof subscriptionCallback === 'function') {
-            subscriptionCallback();
-          }
-
-          const existingBellWrapper = document.getElementById('bell_wrapper');
-
-          if (existingBellWrapper) {
-            existingBellWrapper.parentNode.removeChild(existingBellWrapper);
-          }
-
-          if (softPromptCard) {
-            softPromptCard.parentNode.removeChild(softPromptCard);
-          }
-
-          if (oldSoftPromptCard) {
-            oldSoftPromptCard.parentNode.removeChild(oldSoftPromptCard);
-          }
-        }).catch(error => {
-          // unsubscribe from webpush if error
-          serviceWorkerRegistration.pushManager.getSubscription().then(subscription => {
-            if (subscription !== null) {
-              subscription.unsubscribe().then(successful => {
-                // You've successfully unsubscribed
-                _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Unsubscription successful');
-
-                window.clevertap.notifications.push({
-                  skipDialog: true
-                });
-              }).catch(e => {
-                // Unsubscription failed
-                _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Error unsubscribing: ' + e);
-              });
-            }
-          });
-
-          _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Error subscribing: ' + error);
-
-          if (softPromptCard) {
-            softPromptCard.parentNode.removeChild(softPromptCard);
-          }
-
-          if (oldSoftPromptCard) {
-            oldSoftPromptCard.parentNode.removeChild(oldSoftPromptCard);
-          }
-        });
-      }).catch(err => {
-        _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('error registering service worker: ' + err);
-      });
-    }
-  };
-
-  var _addWizAlertJS2 = function _addWizAlertJS2() {
-    const scriptTag = document.createElement('script');
-    scriptTag.setAttribute('type', 'text/javascript');
-    scriptTag.setAttribute('id', 'wzrk-alert-js');
-    scriptTag.setAttribute('src', _classPrivateFieldLooseBase(this, _wizAlertJSPath)[_wizAlertJSPath]); // add the script tag to the end of the body
-
-    document.getElementsByTagName('body')[0].appendChild(scriptTag);
-    return scriptTag;
-  };
-
-  var _removeWizAlertJS2 = function _removeWizAlertJS2() {
-    const scriptTag = document.getElementById('wzrk-alert-js');
-    scriptTag.parentNode.removeChild(scriptTag);
-  };
-
-  var _handleNotificationRegistration2 = function _handleNotificationRegistration2(displayArgs) {
-    // make sure everything is specified
-    let titleText;
-    let bodyText;
-    let okButtonText;
-    let rejectButtonText;
-    let okButtonColor;
-    let skipDialog;
-    let askAgainTimeInSeconds;
-    let okCallback;
-    let rejectCallback;
-    let subscriptionCallback;
-    let serviceWorkerPath;
-    let httpsPopupPath;
-    let httpsIframePath;
-    let apnsWebPushId;
-    let apnsWebPushServiceUrl;
-    let okButtonAriaLabel;
-    let rejectButtonAriaLabel;
-    const vapidSupportedAndMigrated = isSafari() && 'PushManager' in window && StorageManager.getMetaProp(VAPID_MIGRATION_PROMPT_SHOWN) && _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] !== null;
-
-    if (displayArgs.length === 1) {
-      if (isObject(displayArgs[0])) {
-        const notifObj = displayArgs[0];
-        titleText = notifObj.titleText;
-        bodyText = notifObj.bodyText;
-        okButtonText = notifObj.okButtonText;
-        rejectButtonText = notifObj.rejectButtonText;
-        okButtonAriaLabel = notifObj.okButtonAriaLabel;
-        rejectButtonAriaLabel = notifObj.rejectButtonAriaLabel;
-        okButtonColor = notifObj.okButtonColor;
-        skipDialog = notifObj.skipDialog;
-        askAgainTimeInSeconds = notifObj.askAgainTimeInSeconds;
-        okCallback = notifObj.okCallback;
-        rejectCallback = notifObj.rejectCallback;
-        subscriptionCallback = notifObj.subscriptionCallback;
-        serviceWorkerPath = notifObj.serviceWorkerPath;
-        httpsPopupPath = notifObj.httpsPopupPath;
-        httpsIframePath = notifObj.httpsIframePath;
-        apnsWebPushId = notifObj.apnsWebPushId;
-        apnsWebPushServiceUrl = notifObj.apnsWebPushServiceUrl;
-      }
-    } else {
-      titleText = displayArgs[0];
-      bodyText = displayArgs[1];
-      okButtonText = displayArgs[2];
-      rejectButtonText = displayArgs[3];
-      okButtonColor = displayArgs[4];
-      skipDialog = displayArgs[5];
-      askAgainTimeInSeconds = displayArgs[6];
-    }
-
-    if (skipDialog == null) {
-      skipDialog = false;
-    }
-
-    if (serviceWorkerPath == null) {
-      serviceWorkerPath = '/clevertap_sw.js';
-    } // ensure that the browser supports notifications
-
-
-    if (typeof navigator.serviceWorker === 'undefined') {
-      return;
-    } // Used for Shopify Web Push mentioned here
-    // (https://wizrocket.atlassian.net/wiki/spaces/TAMKB/pages/1824325665/Implementing+Web+Push+in+Shopify+if+not+using+the+Shopify+App+approach)
-
-
-    const isHTTP = httpsPopupPath != null && httpsIframePath != null; // make sure the site is on https for chrome notifications
-
-    if (window.location.protocol !== 'https:' && document.location.hostname !== 'localhost' && !isHTTP) {
-      _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Make sure you are https or localhost to register for notifications');
-
-      return;
-    }
+  const commonCampaignUtils = {
     /*
-       If it is chrome or firefox and the nativeWebPush is not supported then return
-       For Safari the APNs route is open if nativeWebPush is not supported
+      This function is used to increment the counters for session, daily, and global objects
     */
+    incrCount(obj, campaignId, excludeFromFreqCaps) {
+      let currentCount = 0;
+      let totalCount = 0;
 
-
-    if (isChrome() || isFirefox()) {
-      if (!_classPrivateFieldLooseBase(this, _isNativeWebPushSupported)[_isNativeWebPushSupported]()) {
-        _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Web Push Notification is not supported on this browser');
-
-        return;
-      }
-    } // we check for the cookie in setUpChromeNotifications() the tokens may have changed
-
-
-    if (!isHTTP) {
-      const hasNotification = ('Notification' in window);
-
-      if (!hasNotification || Notification == null) {
-        _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Notification not supported on this Device or Browser');
-
-        return;
-      } // handle migrations from other services -> chrome notifications may have already been asked for before
-
-
-      if (Notification.permission === 'granted' && (vapidSupportedAndMigrated || isChrome() || isFirefox())) {
-        // skip the dialog and register
-        this.setUpWebPushNotifications(subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsWebPushServiceUrl);
-        return;
-      } else if (Notification.permission === 'denied') {
-        // we've lost this profile :'(
-        return;
+      if (obj[campaignId] != null) {
+        // Current count for this campaign
+        currentCount = obj[campaignId];
       }
 
-      if (skipDialog) {
-        this.setUpWebPushNotifications(subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsWebPushServiceUrl);
-        return;
-      }
-    } // make sure the right parameters are passed
+      currentCount++;
+
+      if (obj.tc != null) {
+        // Total count across all campaigns
+        totalCount = obj.tc;
+      } // If campaign is excluded from frequency caps, don't increment total count
 
 
-    if (!titleText || !bodyText || !okButtonText || !rejectButtonText) {
-      _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Missing input parameters; please specify title, body, ok button and cancel button text');
-
-      return;
-    } // make sure okButtonColor is formatted properly
-
-
-    if (okButtonColor == null || !okButtonColor.match(/^#[a-f\d]{6}$/i)) {
-      okButtonColor = '#f28046'; // default color for positive button
-    } // make sure the user isn't asked for notifications more than askAgainTimeInSeconds
-
-
-    const now = new Date().getTime() / 1000;
-
-    if (StorageManager.getMetaProp(NOTIF_LAST_TIME) == null) {
-      StorageManager.setMetaProp(NOTIF_LAST_TIME, now);
-    } else {
-      if (askAgainTimeInSeconds == null) {
-        // 7 days by default
-        askAgainTimeInSeconds = 7 * 24 * 60 * 60;
+      if (excludeFromFreqCaps < 0) {
+        totalCount++;
       }
 
-      const notifLastTime = StorageManager.getMetaProp(NOTIF_LAST_TIME);
+      obj.tc = totalCount;
+      obj[campaignId] = currentCount;
+    },
 
-      if (now - notifLastTime < askAgainTimeInSeconds) {
-        if (!isSafari()) {
-          return;
-        } // If Safari is migrated already or only APNS, then return
+    /**
+     * Creates a reusable mouse leave handler for exit intent campaigns
+     * @param {Object} targetingMsgJson - Campaign configuration
+     * @param {Object} exitintentObj - Exit intent object
+     * @returns {Function} - Mouse leave event handler
+     */
+    createExitIntentMouseLeaveHandler(targetingMsgJson, exitintentObj) {
+      const handleMouseLeave = event => {
+        const wasRendered = this.showExitIntent(event, targetingMsgJson, null, exitintentObj);
 
-
-        if (vapidSupportedAndMigrated || _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] === null) {
-          return;
+        if (wasRendered) {
+          window.document.removeEventListener('mouseleave', handleMouseLeave);
         }
-      } else {
-        StorageManager.setMetaProp(NOTIF_LAST_TIME, now);
-      }
-    }
+      };
 
-    if (isSafari() && _classPrivateFieldLooseBase(this, _isNativeWebPushSupported)[_isNativeWebPushSupported]() && _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] !== null) {
-      StorageManager.setMetaProp(VAPID_MIGRATION_PROMPT_SHOWN, true);
-    }
+      return handleMouseLeave;
+    },
 
-    if (StorageManager.readFromLSorCookie(POPUP_LOADING) || document.getElementById(OLD_SOFT_PROMPT_SELCTOR_ID)) {
-      _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].debug('Soft prompt wrapper is already loading or loaded');
+    /*
+       * @param {Object} campTypeObj - Campaign type object to check/modify
+       * @param {string} campaignId - Current campaign ID
+       * @param {Object} targetingMsgJson - Campaign configuration
+       * @param {Object} capSettings - Frequency capping settings
+       * @returns {boolean|Object} - false if cap exceeded, session object otherwise
+       */
+    checkSessionCapping(campTypeObj, campaignId, targetingMsgJson, capSettings) {
+      // Session-level capping: Checks if campaign exceeds session limits
+      const sessionId = CampaignContext.session.sessionId;
+      let sessionObj = campTypeObj[sessionId];
 
-      return;
-    }
+      if (sessionObj) {
+        const campaignSessionCount = sessionObj[campaignId];
+        const totalSessionCount = sessionObj.tc; // For web inbox campaigns
 
-    StorageManager.saveToLSorCookie(POPUP_LOADING, true);
-
-    _classPrivateFieldLooseBase(this, _addWizAlertJS)[_addWizAlertJS]().onload = () => {
-      StorageManager.saveToLSorCookie(POPUP_LOADING, false); // create our wizrocket popup
-
-      window.wzrkPermissionPopup.wizAlert({
-        title: titleText,
-        body: bodyText,
-        confirmButtonText: okButtonText,
-        confirmButtonColor: okButtonColor,
-        rejectButtonText: rejectButtonText,
-        confirmButtonAriaLabel: okButtonAriaLabel,
-        rejectButtonAriaLabel: rejectButtonAriaLabel
-      }, enabled => {
-        // callback function
-        if (enabled) {
-          // the user accepted on the dialog box
-          if (typeof okCallback === 'function') {
-            okCallback();
+        if (targetingMsgJson[DISPLAY].wtarget_type === 3) {
+          // Inbox session limit check
+          if (capSettings.totalInboxSessionLimit > 0 && totalSessionCount >= capSettings.totalInboxSessionLimit && capSettings.excludeFromFreqCaps < 0) {
+            return false;
           }
-
-          this.setUpWebPushNotifications(subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsWebPushServiceUrl);
         } else {
-          if (typeof rejectCallback === 'function') {
-            rejectCallback();
+          // Web popup session limit check
+          if (capSettings.totalSessionLimit > 0 && totalSessionCount >= capSettings.totalSessionLimit && capSettings.excludeFromFreqCaps < 0) {
+            return false;
           }
+        } // Campaign-specific session limit check
+
+
+        if (capSettings.campaignSessionLimit > 0 && campaignSessionCount >= capSettings.campaignSessionLimit) {
+          return false;
         }
-
-        _classPrivateFieldLooseBase(this, _removeWizAlertJS)[_removeWizAlertJS]();
-      });
-    };
-  };
-
-  const BELL_BASE64 = 'PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiIGQ9Ik0xMi40OTYyIDUuMjQzOTVDMTIuODM5MSA1LjAzMzE3IDEzLjI4NDcgNS4xNDY4OSAxMy40OTczIDUuNDg4NjdDMTMuNzIyMyA1Ljg1MDE4IDEzLjYwMDIgNi4zMjUxOCAxMy4yMzggNi41NDkwMkM3LjM5Mzk5IDEwLjE2MDYgMy41IDE2LjYyNTcgMy41IDI0LjAwMDNDMy41IDM1LjMyMjEgMTIuNjc4MiA0NC41MDAzIDI0IDQ0LjUwMDNDMjguMDA1NSA0NC41MDAzIDMxLjc0MjYgNDMuMzUxNSAzNC45IDQxLjM2NTVDMzUuMjYwOCA0MS4xMzg1IDM1Ljc0MTYgNDEuMjM4NiAzNS45NjY4IDQxLjYwMDZDMzYuMTc5MiA0MS45NDE5IDM2LjA4NSA0Mi4zOTExIDM1Ljc0NTIgNDIuNjA2QzMyLjM0NjggNDQuNzU1OSAyOC4zMTg3IDQ2LjAwMDMgMjQgNDYuMDAwM0MxMS44NDk3IDQ2LjAwMDMgMiAzNi4xNTA1IDIgMjQuMDAwM0MyIDE2LjA2NjkgNi4xOTkyMSA5LjExNDMyIDEyLjQ5NjIgNS4yNDM5NVpNMzguOCAzOS45MDAzQzM4LjggNDAuMzk3MyAzOC4zOTcxIDQwLjgwMDMgMzcuOSA0MC44MDAzQzM3LjQwMjkgNDAuODAwMyAzNyA0MC4zOTczIDM3IDM5LjkwMDNDMzcgMzkuNDAzMiAzNy40MDI5IDM5LjAwMDMgMzcuOSAzOS4wMDAzQzM4LjM5NzEgMzkuMDAwMyAzOC44IDM5LjQwMzIgMzguOCAzOS45MDAzWiIgZmlsbD0id2hpdGUiLz4KPHBhdGggZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiIGQ9Ik0yNCAxMkMyMi44OTU0IDEyIDIyIDEyLjg5NTQgMjIgMTRWMTQuMjUyQzE4LjU0OTUgMTUuMTQwMSAxNiAxOC4yNzIzIDE2IDIyVjI5LjVIMTUuNDc2OUMxNC42NjEyIDI5LjUgMTQgMzAuMTYxMiAxNCAzMC45NzY5VjMxLjAyMzFDMTQgMzEuODM4OCAxNC42NjEyIDMyLjUgMTUuNDc2OSAzMi41SDMyLjUyMzFDMzMuMzM4OCAzMi41IDM0IDMxLjgzODggMzQgMzEuMDIzMVYzMC45NzY5QzM0IDMwLjE2MTIgMzMuMzM4OCAyOS41IDMyLjUyMzEgMjkuNUgzMlYyMkMzMiAxOC4yNzIzIDI5LjQ1MDUgMTUuMTQwMSAyNiAxNC4yNTJWMTRDMjYgMTIuODk1NCAyNS4xMDQ2IDEyIDI0IDEyWk0yNiAzNFYzMy41SDIyVjM0QzIyIDM1LjEwNDYgMjIuODk1NCAzNiAyNCAzNkMyNS4xMDQ2IDM2IDI2IDM1LjEwNDYgMjYgMzRaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K';
-  const PROMPT_BELL_BASE64 = 'PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByeD0iMzIiIGZpbGw9IiMwMEFFQjkiLz4KPHBhdGggZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiIGQ9Ik0zMS45OTg2IDIwQzMwLjkxOTggMjAgMzAuMDQyOCAyMC44NzQ2IDMwLjA0MjggMjEuOTUzNEwzMC4wNDI5IDIxLjk3MzRDMjYuNTQzNCAyMi41NTM1IDIzLjg3NSAyNS41OTQzIDIzLjg3NSAyOS4yNTgyVjM4LjA5OTVIMjMuODczNUMyMy4wNTg5IDM4LjA5OTUgMjIuMzk4NCAzOC43NiAyMi4zOTg0IDM5LjU3NDZDMjIuMzk4NCA0MC4zODkzIDIzLjA1ODkgNDEuMDQ5NyAyMy44NzM1IDQxLjA0OTdIMjkuNzgxMlY0MS43ODQyQzI5Ljc4MTIgNDMuMDA3NyAzMC43NzMxIDQzLjk5OTYgMzEuOTk2NiA0My45OTk2QzMzLjIyMDIgNDMuOTk5NiAzNC4yMTIgNDMuMDA3NyAzNC4yMTIgNDEuNzg0MlY0MS4wNDk3SDQwLjEyMzNDNDAuOTM4IDQxLjA0OTcgNDEuNTk4NCA0MC4zODkzIDQxLjU5ODQgMzkuNTc0NkM0MS41OTg0IDM4Ljc2IDQwLjkzOCAzOC4wOTk1IDQwLjEyMzMgMzguMDk5NUg0MC4xMjEyVjI5LjI1ODJDNDAuMTIxMiAyNS41OTQ2IDM3LjQ1MzMgMjIuNTU0MiAzMy45NTQzIDIxLjk3MzZMMzMuOTU0NCAyMS45NTM0QzMzLjk1NDQgMjAuODc0NiAzMy4wNzc1IDIwIDMxLjk5ODYgMjBaIiBmaWxsPSJ3aGl0ZSIvPgo8cmVjdCBvcGFjaXR5PSIwLjUiIHg9IjcuNSIgeT0iNy41IiB3aWR0aD0iNDkiIGhlaWdodD0iNDkiIHJ4PSIyNC41IiBzdHJva2U9IndoaXRlIi8+CjxyZWN0IG9wYWNpdHk9IjAuMyIgeD0iNC41IiB5PSI0LjUiIHdpZHRoPSI1NSIgaGVpZ2h0PSI1NSIgcng9IjI3LjUiIHN0cm9rZT0id2hpdGUiLz4KPHJlY3Qgb3BhY2l0eT0iMC44IiB4PSIxMC41IiB5PSIxMC41IiB3aWR0aD0iNDMiIGhlaWdodD0iNDMiIHJ4PSIyMS41IiBzdHJva2U9IndoaXRlIi8+Cjwvc3ZnPgo=';
-
-  let appServerKey = null;
-  let swPath = '/clevertap_sw.js';
-  let notificationHandler = null;
-  let logger = null;
-  let account = null;
-  let request = null;
-  let displayArgs = null;
-  let fcmPublicKey = null;
-  const setNotificationHandlerValues = function () {
-    let notificationValues = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-    logger = notificationValues.logger;
-    account = notificationValues.account;
-    request = notificationValues.request;
-    displayArgs = notificationValues.displayArgs;
-    fcmPublicKey = notificationValues.fcmPublicKey;
-  };
-  const processWebPushConfig = (webPushConfig, logger, request) => {
-    StorageManager.saveToLSorCookie(WEBPUSH_CONFIG_RECEIVED, true);
-
-    const updatePushConfig = () => {
-      $ct.pushConfig = webPushConfig;
-      StorageManager.saveToLSorCookie(WEBPUSH_CONFIG, webPushConfig);
-    };
-
-    updatePushConfig();
-
-    if (webPushConfig.isPreview) {
-      enablePush({
-        logger,
-        request
-      });
-    }
-
-    try {
-      const isNotificationPushCalled = StorageManager.readFromLSorCookie(NOTIFICATION_PUSH_METHOD_DEFERRED);
-
-      if (isNotificationPushCalled) {
-        try {
-          processSoftPrompt();
-        } catch (error) {
-          logger.error('processs soft prompt' + error);
-        }
-
-        return;
-      }
-    } catch (error) {
-      logger.error('Failed to process web push config:', error); // Fallback: Attempt to process soft prompt anyway
-
-      processSoftPrompt();
-    }
-  };
-  const processSoftPrompt = () => {
-    const webPushConfig = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {};
-    notificationHandler = new NotificationHandler({
-      logger,
-      session: {},
-      request,
-      account
-    });
-
-    if (webPushConfig && !(Object.keys(webPushConfig).length > 0)) {
-      notificationHandler.setApplicationServerKey(appServerKey);
-      notificationHandler.setupWebPush(displayArgs);
-      return;
-    }
-
-    const {
-      showBox,
-      showBellIcon,
-      boxType
-    } = webPushConfig;
-    const {
-      serviceWorkerPath,
-      skipDialog,
-      okCallback,
-      subscriptionCallback,
-      rejectCallback,
-      apnsWebPushId,
-      apnsWebPushServiceUrl
-    } = parseDisplayArgs(displayArgs);
-    const isSoftPromptNew = showBellIcon || showBox && boxType === 'new';
-
-    if (isSoftPromptNew) {
-      const enablePushParams = {
-        serviceWorkerPath,
-        skipDialog,
-        okCallback,
-        subscriptionCallback,
-        rejectCallback,
-        logger,
-        request,
-        account,
-        fcmPublicKey,
-        apnsWebPushId,
-        apnsWebPushServiceUrl
-      };
-      enablePush(enablePushParams);
-    }
-
-    if (showBox && boxType === 'old') {
-      notificationHandler.setApplicationServerKey(appServerKey);
-      notificationHandler.setupWebPush(displayArgs);
-    }
-
-    StorageManager.saveToLSorCookie(NOTIFICATION_PUSH_METHOD_DEFERRED, false);
-    StorageManager.saveToLSorCookie(APPLICATION_SERVER_KEY_RECEIVED, false);
-  };
-  const parseDisplayArgs = displayArgs => {
-    if (displayArgs && displayArgs.length === 1 && isObject(displayArgs[0])) {
-      const {
-        serviceWorkerPath,
-        skipDialog,
-        okCallback,
-        subscriptionCallback,
-        rejectCallback,
-        apnsWebPushServiceUrl,
-        apnsWebPushId
-      } = displayArgs[0];
-      return {
-        serviceWorkerPath,
-        skipDialog,
-        okCallback,
-        subscriptionCallback,
-        rejectCallback,
-        apnsWebPushServiceUrl,
-        apnsWebPushId
-      };
-    }
-
-    return {
-      serviceWorkerPath: undefined,
-      skipDialog: displayArgs[5],
-      okCallback: undefined,
-      subscriptionCallback: undefined,
-      rejectCallback: undefined,
-      apnsWebPushServiceUrl: undefined,
-      apnsWebPushId: undefined
-    };
-  };
-  const enablePush = enablePushParams => {
-    const {
-      serviceWorkerPath: customSwPath,
-      okCallback,
-      subscriptionCallback,
-      rejectCallback,
-      logger,
-      fcmPublicKey,
-      apnsWebPushId,
-      apnsWebPushServiceUrl
-    } = enablePushParams;
-    let {
-      skipDialog
-    } = enablePushParams;
-
-    const _pushConfig = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {};
-
-    $ct.pushConfig = _pushConfig;
-
-    if (!$ct.pushConfig) {
-      logger.error('Web Push config data not present');
-      return;
-    }
-
-    if (customSwPath) {
-      swPath = customSwPath;
-    }
-
-    if (skipDialog === null) {
-      skipDialog = false;
-    } // notificationHandler = new NotificationHandler({ logger, session: {}, request, account })
-
-
-    if (skipDialog) {
-      notificationHandler.setApplicationServerKey(appServerKey);
-      notificationHandler.setUpWebPushNotifications(subscriptionCallback, swPath, apnsWebPushId, apnsWebPushServiceUrl);
-      return;
-    }
-
-    const {
-      showBox,
-      boxType,
-      showBellIcon,
-      isPreview
-    } = $ct.pushConfig;
-
-    if (isPreview) {
-      if ($ct.pushConfig.boxConfig) createNotificationBox($ct.pushConfig, fcmPublicKey);
-      if ($ct.pushConfig.bellIconConfig) createBellIcon($ct.pushConfig);
-    } else {
-      if (showBox && boxType === 'new') createNotificationBox($ct.pushConfig, fcmPublicKey, okCallback, subscriptionCallback, rejectCallback, apnsWebPushId, apnsWebPushServiceUrl);
-      if (showBellIcon) createBellIcon($ct.pushConfig, subscriptionCallback, apnsWebPushId, apnsWebPushServiceUrl);
-    }
-  };
-
-  const createElementWithAttributes = function (tag) {
-    let attributes = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
-    const element = document.createElement(tag);
-    Object.entries(attributes).forEach((_ref) => {
-      let [key, value] = _ref;
-      element[key] = value;
-    });
-    return element;
-  };
-
-  const createNotificationBox = (configData, fcmPublicKey, okCallback, subscriptionCallback, rejectCallback, apnsWebPushId, apnsWebPushServiceUrl) => {
-    var _content$icon;
-
-    if (document.getElementById(NEW_SOFT_PROMPT_SELCTOR_ID)) return;
-    const {
-      boxConfig: {
-        content,
-        style
-      }
-    } = configData; // Create the wrapper div
-
-    const wrapper = createElementWithAttributes('div', {
-      id: NEW_SOFT_PROMPT_SELCTOR_ID
-    });
-    const overlayDiv = style.overlay.enabled ? createElementWithAttributes('div', {
-      id: 'pnOverlay'
-    }) : '';
-    const pnCard = createElementWithAttributes('div', {
-      id: 'pnCard'
-    });
-    const iconTitleDescWrapper = createElementWithAttributes('div', {
-      id: 'iconTitleDescWrapper'
-    });
-    const iconContainer = createElementWithAttributes('img', {
-      id: 'iconContainer',
-      src: content.icon.type === 'default' ? "data:image/svg+xml;base64,".concat(PROMPT_BELL_BASE64) : content.icon.url,
-      alt: ((_content$icon = content.icon) === null || _content$icon === void 0 ? void 0 : _content$icon.altText) || ''
-    });
-    iconTitleDescWrapper.appendChild(iconContainer);
-    const titleDescWrapper = createElementWithAttributes('div', {
-      id: 'titleDescWrapper'
-    });
-    titleDescWrapper.appendChild(createElementWithAttributes('div', {
-      id: 'title',
-      textContent: content.title
-    }));
-    titleDescWrapper.appendChild(createElementWithAttributes('div', {
-      id: 'description',
-      textContent: content.description
-    }));
-    iconTitleDescWrapper.appendChild(titleDescWrapper);
-    const buttonsContainer = createElementWithAttributes('div', {
-      id: 'buttonsContainer'
-    });
-    const primaryButton = createElementWithAttributes('button', {
-      id: 'primaryButton',
-      textContent: content.buttons.primaryButtonText,
-      ariaLabel: content.buttons.primaryButtonAriaLabel || content.buttons.primaryButtonText
-    });
-    const secondaryButton = createElementWithAttributes('button', {
-      id: 'secondaryButton',
-      textContent: content.buttons.secondaryButtonText,
-      ariaLabel: content.buttons.secondaryButtonAriaLabel || content.buttons.secondaryButtonText
-    });
-    buttonsContainer.appendChild(secondaryButton);
-    buttonsContainer.appendChild(primaryButton);
-    pnCard.appendChild(iconTitleDescWrapper);
-    pnCard.appendChild(buttonsContainer); // Apply styles
-
-    const styleElement = createElementWithAttributes('style', {
-      textContent: getBoxPromptStyles(style)
-    });
-    wrapper.appendChild(styleElement);
-    wrapper.appendChild(pnCard);
-
-    if (overlayDiv) {
-      wrapper.appendChild(overlayDiv);
-    }
-
-    setElementPosition(pnCard, style.card.position);
-    const vapidSupportedAndMigrated = isSafari() && 'PushManager' in window && StorageManager.getMetaProp(VAPID_MIGRATION_PROMPT_SHOWN) && fcmPublicKey !== null;
-
-    if (!configData.isPreview) {
-      if ('Notification' in window && Notification !== null) {
-        if (Notification.permission === 'granted' && (vapidSupportedAndMigrated || isChrome() || isFirefox())) {
-          notificationHandler.setApplicationServerKey(appServerKey);
-          notificationHandler.setUpWebPushNotifications(subscriptionCallback, swPath, apnsWebPushId, apnsWebPushServiceUrl);
-          return;
-        } else if (Notification.permission === 'denied') {
-          return;
-        }
-      }
-    }
-
-    const now = new Date().getTime() / 1000;
-    const lastNotifTime = StorageManager.getMetaProp('webpush_last_notif_time');
-    const popupFrequency = content.popupFrequency || 7; // number of days
-
-    const shouldShowNotification = !lastNotifTime || now - lastNotifTime >= popupFrequency * 24 * 60 * 60;
-
-    if (shouldShowNotification) {
-      document.body.insertBefore(wrapper, document.body.firstChild);
-
-      if (!configData.isPreview) {
-        StorageManager.setMetaProp('webpush_last_notif_time', now);
-        addEventListeners(wrapper, okCallback, subscriptionCallback, rejectCallback, apnsWebPushId, apnsWebPushServiceUrl);
-
-        if (isSafari() && 'PushManager' in window && fcmPublicKey != null) {
-          StorageManager.setMetaProp(VAPID_MIGRATION_PROMPT_SHOWN, true);
-        }
-      }
-    } else {
-      if (isSafari()) {
-        // This is for migration case for safari from apns to vapid, show popup even when timer is not expired.
-        if (vapidSupportedAndMigrated || fcmPublicKey === null) {
-          return;
-        }
-
-        if (!configData.isPreview) {
-          document.body.appendChild(wrapper);
-          addEventListeners(wrapper, okCallback, subscriptionCallback, rejectCallback, apnsWebPushId, apnsWebPushServiceUrl);
-          StorageManager.setMetaProp('webpush_last_notif_time', now);
-          StorageManager.setMetaProp(VAPID_MIGRATION_PROMPT_SHOWN, true);
-        }
-      }
-    }
-  };
-  const createBellIcon = (configData, subscriptionCallback, apnsWebPushId, apnsWebPushServiceUrl) => {
-    if (document.getElementById('bell_wrapper') || Notification.permission === 'granted') return;
-    const {
-      bellIconConfig: {
-        content,
-        style
-      }
-    } = configData;
-    const bellWrapper = createElementWithAttributes('div', {
-      id: 'bell_wrapper'
-    });
-    const bellIcon = createElementWithAttributes('img', {
-      id: 'bell_icon',
-      src: content.icon.type === 'default' ? "data:image/svg+xml;base64,".concat(BELL_BASE64) : content.icon.url
-    }); // For playing gif
-
-    const gifModal = createElementWithAttributes('div', {
-      id: 'gif_modal',
-      style: 'display: none;'
-    });
-    const gifImage = createElementWithAttributes('img', {
-      id: 'gif_image',
-      src: 'https://d2r1yp2w7bby2u.cloudfront.net/js/permission_grant.gif'
-    });
-    const closeModal = createElementWithAttributes('div', {
-      id: 'close_modal',
-      innerHTML: '&times;'
-    });
-    gifModal.appendChild(gifImage);
-    gifModal.appendChild(closeModal);
-    bellWrapper.appendChild(bellIcon);
-    bellWrapper.appendChild(gifModal);
-
-    if (content.hoverText.enabled) {
-      const tooltip = createElementWithAttributes('div', {
-        id: 'bell_tooltip',
-        textContent: content.hoverText.text
-      });
-      bellWrapper.appendChild(tooltip);
-    }
-
-    setElementPosition(bellWrapper, style.card.position); // Apply styles
-
-    const styleElement = createElementWithAttributes('style', {
-      textContent: getBellIconStyles(style)
-    });
-    document.head.appendChild(styleElement);
-    document.body.appendChild(bellWrapper);
-
-    if (!configData.isPreview) {
-      addBellEventListeners(bellWrapper, subscriptionCallback, apnsWebPushId, apnsWebPushServiceUrl);
-    }
-
-    return bellWrapper;
-  };
-  const setServerKey = serverKey => {
-    appServerKey = serverKey;
-    fcmPublicKey = serverKey;
-  };
-  const addEventListeners = (wrapper, okCallback, subscriptionCallback, rejectCallback, apnsWebPushId, apnsWebPushServiceUrl) => {
-    const primaryButton = wrapper.querySelector('#primaryButton');
-    const secondaryButton = wrapper.querySelector('#secondaryButton');
-
-    const removeWrapper = () => {
-      var _wrapper$parentNode;
-
-      return (_wrapper$parentNode = wrapper.parentNode) === null || _wrapper$parentNode === void 0 ? void 0 : _wrapper$parentNode.removeChild(wrapper);
-    };
-
-    primaryButton.addEventListener('click', () => {
-      removeWrapper();
-      notificationHandler.setApplicationServerKey(appServerKey);
-      notificationHandler.setUpWebPushNotifications(subscriptionCallback, swPath, apnsWebPushId, apnsWebPushServiceUrl);
-
-      if (typeof okCallback === 'function') {
-        okCallback();
-      }
-    });
-    secondaryButton.addEventListener('click', () => {
-      removeWrapper();
-
-      if (typeof rejectCallback === 'function') {
-        rejectCallback();
-      }
-    });
-  };
-  const addBellEventListeners = (bellWrapper, subscriptionCallback, apnsWebPushId, apnsWebPushServiceUrl) => {
-    const bellIcon = bellWrapper.querySelector('#bell_icon');
-    bellIcon.addEventListener('click', () => {
-      if (Notification.permission === 'denied') {
-        toggleGifModal(bellWrapper);
       } else {
-        notificationHandler.setApplicationServerKey(appServerKey);
-        notificationHandler.setUpWebPushNotifications(subscriptionCallback, swPath, apnsWebPushId, apnsWebPushServiceUrl);
+        // Initializes session object if not present
+        sessionObj = {};
+        campTypeObj[sessionId] = sessionObj;
+      }
 
-        if (Notification.permission === 'granted') {
-          bellWrapper.remove();
+      return sessionObj;
+    },
+
+    /**
+       * Checks daily-level capping and initializes daily object if needed
+       * Mutates campTypeObj reference
+       *
+       * @param {Object} campTypeObj - Campaign type object to check/modify
+       * @param {string} campaignId - Current campaign ID
+       * @param {string} today - Today's date string
+       * @param {Object} capSettings - Frequency capping settings
+       * @returns {boolean|Object} - false if cap exceeded, daily object otherwise
+       */
+    checkDailyCapping(campTypeObj, campaignId, today, capSettings) {
+      // Daily-level capping: Checks if campaign exceeds daily limits
+      let dailyObj = campTypeObj[today];
+
+      if (dailyObj != null) {
+        const campaignDailyCount = dailyObj[campaignId];
+        const totalDailyCount = dailyObj.tc; // Total daily limit check
+
+        if (capSettings.totalDailyLimit > 0 && totalDailyCount >= capSettings.totalDailyLimit && capSettings.excludeFromFreqCaps < 0) {
+          return false;
+        } // Campaign-specific daily limit check
+
+
+        if (capSettings.campaignDailyLimit > 0 && campaignDailyCount >= capSettings.campaignDailyLimit) {
+          return false;
         }
+      } else {
+        // Initializes daily object if not present
+        dailyObj = {};
+        campTypeObj[today] = dailyObj;
       }
-    });
-    bellIcon.addEventListener('mouseenter', () => displayTooltip(bellWrapper));
-    bellIcon.addEventListener('mouseleave', () => clearTooltip(bellWrapper));
-    bellWrapper.querySelector('#close_modal').addEventListener('click', () => toggleGifModal(bellWrapper));
-  };
-  const setElementPosition = (element, position) => {
-    Object.assign(element.style, {
-      inset: 'auto',
-      transform: 'none'
-    });
-    const positions = {
-      'Top Right': {
-        inset: '16px 16px auto auto'
-      },
-      'Top Left': {
-        inset: '16px auto auto 16px'
-      },
-      'Bottom Right': {
-        inset: 'auto 16px 16px auto'
-      },
-      'Bottom Left': {
-        inset: 'auto auto 16px 16px'
-      },
-      Center: {
-        inset: '50%',
-        transform: 'translate(-50%, -50%)'
-      },
-      Top: {
-        inset: '16px auto auto 50%',
-        transform: 'translateX(-50%)'
-      },
-      Bottom: {
-        inset: 'auto auto 16px 50%',
-        transform: 'translateX(-50%)'
+
+      return dailyObj;
+    },
+
+    /**
+       * Checks global-level (lifetime) capping and initializes global object if needed
+       * Mutates campTypeObj reference
+       *
+       * @param {Object} campTypeObj - Campaign type object to check/modify
+       * @param {string} campaignId - Current campaign ID
+       * @param {number} campaignTotalLimit - Campaign lifetime limit
+       * @returns {boolean|Object} - false if cap exceeded, global object otherwise
+       */
+    checkGlobalCapping(campTypeObj, campaignId, campaignTotalLimit) {
+      // Global-level capping: Checks lifetime limit for the campaign
+      let globalObj = campTypeObj[GLOBAL];
+
+      if (globalObj != null) {
+        const campaignTotalCount = globalObj[campaignId]; // Campaign lifetime limit check
+
+        if (campaignTotalLimit > 0 && campaignTotalCount >= campaignTotalLimit) {
+          return false;
+        }
+      } else {
+        // Initializes global object if not present
+        globalObj = {};
+        campTypeObj[GLOBAL] = globalObj;
       }
-    };
-    Object.assign(element.style, positions[position] || positions['top-right']);
-  };
 
-  const displayTooltip = bellWrapper => {
-    const gifModal = bellWrapper.querySelector('#gif_modal');
+      return globalObj;
+    },
 
-    if (gifModal.style.display === 'flex') {
-      return;
-    }
+    /**
+       * Extracts frequency capping settings from campaign configuration
+       * @param {Object} targetingMsgJson - Campaign configuration
+       * @returns {Object} - Object containing all frequency capping settings
+       */
+    extractFrequencyCappingSettings(targetingMsgJson) {
+      // Variables to store campaign frequency capping settings
+      var excludeFromFreqCaps = -1; // efc - Exclude from frequency caps (-1 means not excluded)
 
-    const tooltip = bellWrapper.querySelector('#bell_tooltip');
+      let campaignSessionLimit = -1; // mdc - Once per session
 
-    if (tooltip) {
-      tooltip.style.display = 'flex';
-    }
+      let campaignDailyLimit = -1; // tdc - Once per day
 
-    const bellIcon = bellWrapper.querySelector('#bell_icon');
-    const bellRect = bellIcon.getBoundingClientRect();
-    var midX = window.innerWidth / 2;
-    var midY = window.innerHeight / 2;
-    bellWrapper.style['flex-direction'] = bellRect.y > midY ? 'column-reverse' : 'column';
-    bellWrapper.style['align-items'] = bellRect.x > midX ? 'flex-end' : 'flex-start';
-  };
+      let campaignTotalLimit = -1; // tlc - Once per user for the duration of campaign
 
-  const clearTooltip = bellWrapper => {
-    const tooltip = bellWrapper.querySelector('#bell_tooltip');
+      let totalDailyLimit = -1;
+      let totalSessionLimit = -1; // wmc - Web Popup Global Session Limit
 
-    if (tooltip) {
-      tooltip.style.display = 'none';
-    }
-  };
+      let totalInboxSessionLimit = -1; // wimc - Web Inbox Global Session Limit
+      // Parses frequency capping settings from the message
 
-  const toggleGifModal = bellWrapper => {
-    clearTooltip(bellWrapper);
-    const gifModal = bellWrapper.querySelector('#gif_modal');
-    gifModal.style.display = gifModal.style.display === 'none' ? 'flex' : 'none';
-  };
+      if (targetingMsgJson[DISPLAY].efc != null) {
+        // exclude from frequency cap
+        excludeFromFreqCaps = parseInt(targetingMsgJson[DISPLAY].efc, 10);
+      }
 
-  const _tr = (msg, _ref) => {
-    let {
-      device,
-      session,
-      request,
-      logger,
-      region
-    } = _ref;
-    const _device = device;
-    const _session = session;
-    const _request = request;
-    const _logger = logger;
-    const _region = region; // msg = builderdata
+      if (targetingMsgJson[DISPLAY].mdc != null) {
+        // Campaign Session Limit
+        campaignSessionLimit = parseInt(targetingMsgJson[DISPLAY].mdc, 10);
+      }
 
-    let _wizCounter = 0; // Campaign House keeping
+      if (targetingMsgJson[DISPLAY].tdc != null) {
+        // No of web popups in a day per campaign
+        campaignDailyLimit = parseInt(targetingMsgJson[DISPLAY].tdc, 10);
+      }
 
-    const doCampHouseKeeping = targetingMsgJson => {
-      const campaignId = targetingMsgJson.wzrk_id.split('_')[0];
+      if (targetingMsgJson[DISPLAY].tlc != null) {
+        // Total lifetime count
+        campaignTotalLimit = parseInt(targetingMsgJson[DISPLAY].tlc, 10);
+      }
+
+      if (targetingMsgJson[DISPLAY].wmp != null) {
+        // No of campaigns per day
+        totalDailyLimit = parseInt(targetingMsgJson[DISPLAY].wmp, 10);
+      }
+
+      if (targetingMsgJson[DISPLAY].wmc != null) {
+        // No of campaigns per session
+        totalSessionLimit = parseInt(targetingMsgJson[DISPLAY].wmc, 10);
+      }
+
+      if (targetingMsgJson[DISPLAY].wimc != null) {
+        // No of inbox campaigns per session
+        totalInboxSessionLimit = parseInt(targetingMsgJson[DISPLAY].wimc, 10);
+      }
+
+      return {
+        excludeFromFreqCaps,
+        // efc - Exclude from frequency caps (-1 means not excluded)
+        campaignSessionLimit,
+        // mdc - Once per session
+        campaignDailyLimit,
+        // tdc - Once per day per campaign
+        campaignTotalLimit,
+        // tlc - Once per user for the duration of campaign
+        totalDailyLimit,
+        // wmp - No of campaigns per day
+        totalSessionLimit,
+        // wmc - Web Popup Global Session Limit
+        totalInboxSessionLimit // wimc - Web Inbox Global Session Limit
+
+      };
+    },
+
+    doCampHouseKeeping(targetingMsgJson, logger) {
+      // Extracts campaign ID from wzrk_id (e.g., "123_456" -> "123")
+      const campaignId = targetingMsgJson.wzrk_id.split('_')[0]; // Gets current date for daily capping
+
       const today = getToday();
 
-      const incrCount = (obj, campaignId, excludeFromFreqCaps) => {
-        let currentCount = 0;
-        let totalCount = 0;
-
-        if (obj[campaignId] != null) {
-          currentCount = obj[campaignId];
-        }
-
-        currentCount++;
-
-        if (obj.tc != null) {
-          totalCount = obj.tc;
-        } // if exclude from caps then dont add to total counts
-
-
-        if (excludeFromFreqCaps < 0) {
-          totalCount++;
-        }
-
-        obj.tc = totalCount;
-        obj[campaignId] = currentCount;
-      };
-
-      if (StorageManager._isLocalStorageSupported()) {
-        delete sessionStorage[CAMP_COOKIE_NAME];
-        var campTypeObj = {};
-        const campObj = getCampaignObject();
-
-        if (targetingMsgJson.display.wtarget_type === 3 && campObj.hasOwnProperty('wi')) {
-          campTypeObj = campObj.wi;
-        } else if ((targetingMsgJson.display.wtarget_type === 0 || targetingMsgJson.display.wtarget_type === 1) && campObj.hasOwnProperty('wp')) {
-          campTypeObj = campObj.wp;
-        } else {
-          campTypeObj = {};
-        }
-
-        if (campObj.hasOwnProperty('global')) {
-          campTypeObj.wp = campObj;
-        } // global session limit. default is 1
-
-
-        if (targetingMsgJson[DISPLAY].wmc == null) {
-          targetingMsgJson[DISPLAY].wmc = 1;
-        } // global session limit for web inbox. default is 1
-
-
-        if (targetingMsgJson[DISPLAY].wimc == null) {
-          targetingMsgJson[DISPLAY].wimc = 1;
-        }
-
-        var excludeFromFreqCaps = -1; // efc - Exclude from frequency caps
-
-        let campaignSessionLimit = -1; // mdc - Once per session
-
-        let campaignDailyLimit = -1; // tdc - Once per day
-
-        let campaignTotalLimit = -1; // tlc - Once per user for the duration of campaign
-
-        let totalDailyLimit = -1;
-        let totalSessionLimit = -1; // wmc - Web Popup Global Session Limit
-
-        let totalInboxSessionLimit = -1; // wimc - Web Inbox Global Session Limit
-
-        if (targetingMsgJson[DISPLAY].efc != null) {
-          // exclude from frequency cap
-          excludeFromFreqCaps = parseInt(targetingMsgJson[DISPLAY].efc, 10);
-        }
-
-        if (targetingMsgJson[DISPLAY].mdc != null) {
-          // Campaign Session Limit
-          campaignSessionLimit = parseInt(targetingMsgJson[DISPLAY].mdc, 10);
-        }
-
-        if (targetingMsgJson[DISPLAY].tdc != null) {
-          // No of web popups in a day per campaign
-          campaignDailyLimit = parseInt(targetingMsgJson[DISPLAY].tdc, 10);
-        }
-
-        if (targetingMsgJson[DISPLAY].tlc != null) {
-          // Total lifetime count
-          campaignTotalLimit = parseInt(targetingMsgJson[DISPLAY].tlc, 10);
-        }
-
-        if (targetingMsgJson[DISPLAY].wmp != null) {
-          // No of campaigns per day
-          totalDailyLimit = parseInt(targetingMsgJson[DISPLAY].wmp, 10);
-        }
-
-        if (targetingMsgJson[DISPLAY].wmc != null) {
-          // No of campaigns per session
-          totalSessionLimit = parseInt(targetingMsgJson[DISPLAY].wmc, 10);
-        }
-
-        if (targetingMsgJson[DISPLAY].wimc != null) {
-          // No of inbox campaigns per session
-          totalInboxSessionLimit = parseInt(targetingMsgJson[DISPLAY].wimc, 10);
-        } // session level capping
-
-
-        var sessionObj = campTypeObj[_session.sessionId];
-
-        if (sessionObj) {
-          const campaignSessionCount = sessionObj[campaignId];
-          const totalSessionCount = sessionObj.tc; // dnd
-
-          if (campaignSessionCount === 'dnd' && !$ct.dismissSpamControl) {
-            return false;
-          }
-
-          if (targetingMsgJson[DISPLAY].wtarget_type === 3) {
-            // Inbox session
-            if (totalInboxSessionLimit > 0 && totalSessionCount >= totalInboxSessionLimit && excludeFromFreqCaps < 0) {
-              return false;
-            }
-          } else {
-            // session
-            if (totalSessionLimit > 0 && totalSessionCount >= totalSessionLimit && excludeFromFreqCaps < 0) {
-              return false;
-            }
-          } // campaign session
-
-
-          if (campaignSessionLimit > 0 && campaignSessionCount >= campaignSessionLimit) {
-            return false;
-          }
-        } else {
-          sessionObj = {};
-          campTypeObj[_session.sessionId] = sessionObj;
-        } // daily level capping
-
-
-        var dailyObj = campTypeObj[today];
-
-        if (dailyObj != null) {
-          const campaignDailyCount = dailyObj[campaignId];
-          const totalDailyCount = dailyObj.tc; // daily
-
-          if (totalDailyLimit > 0 && totalDailyCount >= totalDailyLimit && excludeFromFreqCaps < 0) {
-            return false;
-          } // campaign daily
-
-
-          if (campaignDailyLimit > 0 && campaignDailyCount >= campaignDailyLimit) {
-            return false;
-          }
-        } else {
-          dailyObj = {};
-          campTypeObj[today] = dailyObj;
-        }
-
-        var globalObj = campTypeObj[GLOBAL];
-
-        if (globalObj != null) {
-          const campaignTotalCount = globalObj[campaignId]; // campaign total
-
-          if (campaignTotalLimit > 0 && campaignTotalCount >= campaignTotalLimit) {
-            return false;
-          }
-        } else {
-          globalObj = {};
-          campTypeObj[GLOBAL] = globalObj;
-        }
-      } // delay
-
-
-      const displayObj = targetingMsgJson.display;
-
-      if (displayObj.delay != null && displayObj.delay > 0) {
-        const delay = displayObj.delay;
-        displayObj.delay = 0;
-        setTimeout(_tr, delay * 1000, msg, {
-          device: _device,
-          session: _session,
-          request: _request,
-          logger: _logger
-        });
+      if (deliveryPreferenceUtils.isCampaignAddedToDND(campaignId) && !$ct.dismissSpamControl) {
         return false;
       }
 
-      incrCount(sessionObj, campaignId, excludeFromFreqCaps);
-      incrCount(dailyObj, campaignId, excludeFromFreqCaps);
-      incrCount(globalObj, campaignId, excludeFromFreqCaps);
-      let campKey = 'wp';
+      if (StorageManager._isLocalStorageSupported()) {
+        // Clears old session storage for campaigns
+        delete sessionStorage[CAMP_COOKIE_NAME];
+        var campTypeObj = {}; // Retrieves stored campaign data from local storage
 
-      if (targetingMsgJson[DISPLAY].wtarget_type === 3) {
-        campKey = 'wi';
-      } // get ride of stale sessions and day entries
+        const campObj = getCampaignObject(); // Determines campaign type (web inbox or web popup) and fetches corresponding data
+
+        if (targetingMsgJson.display.wtarget_type === 3 && campObj.hasOwnProperty('wi')) {
+          // Web inbox campaigns
+          campTypeObj = campObj.wi;
+        } else if ((targetingMsgJson.display.wtarget_type === 0 || targetingMsgJson.display.wtarget_type === 1) && campObj.hasOwnProperty('wp')) ; else {
+          campTypeObj = {};
+        }
+
+        if (campObj.hasOwnProperty('global')) ; // Sets default global session limits if not specified
 
 
-      const newCampObj = {};
-      newCampObj[_session.sessionId] = sessionObj;
-      newCampObj[today] = dailyObj;
-      newCampObj[GLOBAL] = globalObj;
-      saveCampaignObject({
-        [campKey]: newCampObj
-      });
-    };
+        if (targetingMsgJson[DISPLAY].wmc == null) {
+          // Default web popup session limit
+          targetingMsgJson[DISPLAY].wmc = 1;
+        } // Sets default global session limit for web inbox if not specified
 
-    const setupClickUrl = (onClick, targetingMsgJson, contentDiv, divId, isLegacy) => {
-      incrementImpression(targetingMsgJson, _request);
-      setupClickEvent(onClick, targetingMsgJson, contentDiv, divId, isLegacy, _device, _session);
-    };
 
-    const handleImageOnlyPopup = targetingMsgJson => {
-      const divId = 'wzrkImageOnlyDiv';
+        if (targetingMsgJson[DISPLAY].wimc == null) {
+          // Default web inbox session limit
+          targetingMsgJson[DISPLAY].wimc = 1;
+        }
 
-      if (doCampHouseKeeping(targetingMsgJson) === false) {
-        return;
+        const capSettings = this.extractFrequencyCappingSettings(targetingMsgJson); // Session-level capping: Checks if campaign exceeds session limits
+
+        const sessionObj = this.checkSessionCapping(campTypeObj, campaignId, targetingMsgJson, capSettings);
+        if (sessionObj === false) return false; // Daily-level capping: Checks if campaign exceeds daily limits
+
+        const dailyObj = this.checkDailyCapping(campTypeObj, campaignId, today, capSettings);
+        if (dailyObj === false) return false; // Global-level capping: Checks lifetime limit for the campaign
+
+        const globalObj = this.checkGlobalCapping(campTypeObj, campaignId, capSettings.campaignTotalLimit);
+        if (globalObj === false) return false; // Handles delay in displaying the campaign
+
+        const displayObj = targetingMsgJson.display;
+
+        if (displayObj.delay != null && displayObj.delay > 0) {
+          const delay = displayObj.delay; // Resets delay to prevent re-triggering
+
+          displayObj.delay = 0;
+          setTimeout(_tr, delay * 1000, CampaignContext.msg, {
+            device: CampaignContext.device,
+            session: CampaignContext.session,
+            request: CampaignContext.request,
+            logger: logger
+          }); // Delays execution, skips immediate rendering
+
+          return false;
+        } // Increments counters for session, daily, and global objects
+
+
+        this.incrCount(sessionObj, campaignId, capSettings.excludeFromFreqCaps);
+        this.incrCount(dailyObj, campaignId, capSettings.excludeFromFreqCaps);
+        this.incrCount(globalObj, campaignId, capSettings.excludeFromFreqCaps); // Determines storage key based on campaign type (web popup or inbox)
+
+        let campKey;
+
+        if (targetingMsgJson[DISPLAY].wtarget_type === 3) {
+          campKey = 'wi';
+        }
+
+        if (campKey === 'wi') {
+          // Updates campaign object with new counts and saves to storage
+          const newCampObj = {};
+          newCampObj[CampaignContext.session.sessionId] = sessionObj;
+          newCampObj[today] = dailyObj;
+          newCampObj[GLOBAL] = globalObj; // Save CAMP to localstorage here
+
+          saveCampaignObject({
+            [campKey]: newCampObj
+          });
+        } else {
+          /* For Web Native Display and Web Popup */
+          addDeliveryPreferenceDetails(targetingMsgJson, logger);
+        }
       }
+    },
+
+    // Sets up click tracking and impression increment for a campaign
+    setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, isLegacy) {
+      // Records an impression
+      incrementImpression(targetingMsgJson, CampaignContext.request); // Sets up click event listener
+
+      setupClickEvent(onClick, targetingMsgJson, contentDiv, divId, isLegacy, CampaignContext.device, CampaignContext.session);
+    },
+
+    // Handles rendering of image-only popup campaigns
+    handleImageOnlyPopup(targetingMsgJson) {
+      const divId = 'wzrkImageOnlyDiv'; // Skips if frequency limits are exceeded
+
+      if (this.doCampHouseKeeping(targetingMsgJson, Logger.getInstance()) === false) {
+        return;
+      } // Removes existing popup if spam control is active
+
 
       if ($ct.dismissSpamControl && document.getElementById(divId) != null) {
         const element = document.getElementById(divId);
         element.remove();
-      } // ImageOnly campaign and Interstitial/Exit Intent shouldn't coexist
+      } // Prevents coexistence with other popups (e.g., exit intent)
 
 
       if (document.getElementById(divId) != null || document.getElementById('intentPreview') != null) {
@@ -14316,16 +15081,18 @@
 
       const msgDiv = document.createElement('div');
       msgDiv.id = divId;
-      document.body.appendChild(msgDiv);
+      document.body.appendChild(msgDiv); // Registers custom element for image-only popup if not already defined
 
       if (customElements.get('ct-web-popup-imageonly') === undefined) {
         customElements.define('ct-web-popup-imageonly', CTWebPopupImageOnly);
-      }
+      } // Renders the popup
 
-      return renderPopUpImageOnly(targetingMsgJson, _session);
-    };
 
-    const isExistingCampaign = campaignId => {
+      return renderPopUpImageOnly(targetingMsgJson, CampaignContext.session);
+    },
+
+    // Checks if a campaign is already rendered in an iframe
+    isExistingCampaign(campaignId) {
       const testIframe = document.getElementById('wiz-iframe-intent') || document.getElementById('wiz-iframe');
 
       if (testIframe) {
@@ -14334,34 +15101,36 @@
       }
 
       return false;
-    };
+    },
 
-    const createTemplate = (targetingMsgJson, isExitIntent) => {
+    // Creates and renders campaign templates (e.g., exit intent, banners, popups)
+    createTemplate(targetingMsgJson, isExitIntent, wtq) {
       const campaignId = targetingMsgJson.wzrk_id.split('_')[0];
-      const displayObj = targetingMsgJson.display;
+      const displayObj = targetingMsgJson.display; // Handles specific layout types
 
       if (displayObj.layout === WEB_POPUP_TEMPLATES.INTERSTITIAL) {
         // Handling Web Exit Intent
-        return showExitIntent(undefined, targetingMsgJson);
+        return this.showExitIntent(undefined, targetingMsgJson, wtq);
       }
 
       if (displayObj.layout === WEB_POPUP_TEMPLATES.IMAGE_ONLY) {
         // Handling Web Popup Image Only
-        handleImageOnlyPopup(targetingMsgJson);
+        this.handleImageOnlyPopup(targetingMsgJson);
         return;
-      }
+      } // Skips if frequency limits are exceeded
 
-      if (doCampHouseKeeping(targetingMsgJson) === false) {
+
+      if (this.doCampHouseKeeping(targetingMsgJson, Logger.getInstance()) === false) {
         return;
       }
 
       if (displayObj.layout === WEB_POPUP_TEMPLATES.ADVANCED_BUILDER) {
-        renderAdvancedBuilder(targetingMsgJson, _session, _logger);
+        renderAdvancedBuilder(targetingMsgJson, CampaignContext.session, Logger.getInstance());
         return;
       }
 
       const divId = 'wizParDiv' + displayObj.layout;
-      const opacityDivId = 'intentOpacityDiv' + displayObj.layout;
+      const opacityDivId = 'intentOpacityDiv' + displayObj.layout; // Removes existing elements if spam control is active
 
       if ($ct.dismissSpamControl && document.getElementById(divId) != null) {
         const element = document.getElementById(divId);
@@ -14374,16 +15143,19 @@
         if (opacityElement) {
           opacityElement.remove();
         }
-      }
+      } // Skips if campaign is already rendered
 
-      if (isExistingCampaign(campaignId)) return;
+
+      if (this.isExistingCampaign(campaignId)) return;
 
       if (document.getElementById(divId) != null) {
+        // Skips if div already exists
         return;
-      }
+      } // Maps campaign ID to div ID
+
 
       $ct.campaignDivMap[campaignId] = divId;
-      const isBanner = displayObj.layout === WEB_POPUP_TEMPLATES.BANNER;
+      const isBanner = displayObj.layout === WEB_POPUP_TEMPLATES.BANNER; // Adds opacity layer for exit intent campaigns
 
       if (isExitIntent) {
         const opacityDiv = document.createElement('div');
@@ -14398,7 +15170,7 @@
       msgDiv.id = divId;
       const viewHeight = window.innerHeight;
       const viewWidth = window.innerWidth;
-      let legacy = false;
+      let legacy = false; // Sets styling based on device type and layout
 
       if (!isBanner) {
         const marginBottom = viewHeight * 5 / 100;
@@ -14406,19 +15178,19 @@
         let right = viewWidth * 5 / 100;
         let bottomPosition = contentHeight + marginBottom;
         let width = viewWidth * 30 / 100 + 20;
-        let widthPerct = 'width:30%;'; // for small devices  - mobile phones
+        let widthPerct = 'width:30%;'; // Adjusts for mobile devices
 
         if ((/mobile/i.test(navigator.userAgent) || /mini/i.test(navigator.userAgent)) && /iPad/i.test(navigator.userAgent) === false) {
           width = viewWidth * 85 / 100 + 20;
           right = viewWidth * 5 / 100;
           bottomPosition = viewHeight * 5 / 100;
-          widthPerct = 'width:80%;'; // medium devices - tablets
+          widthPerct = 'width:80%;'; // Adjusts for tablets
         } else if ('ontouchstart' in window || /tablet/i.test(navigator.userAgent)) {
           width = viewWidth * 50 / 100 + 20;
           right = viewWidth * 5 / 100;
           bottomPosition = viewHeight * 5 / 100;
           widthPerct = 'width:50%;';
-        } // legacy footer notif
+        } // Applies legacy styling if proto is absent
 
 
         if (displayObj.proto == null) {
@@ -14439,8 +15211,6 @@
       iframe.marginwidth = '0px';
       iframe.scrolling = 'no';
       iframe.id = 'wiz-iframe';
-      iframe.setAttribute('role', 'dialog');
-      iframe.setAttribute('aria-modal', 'true');
       const onClick = targetingMsgJson.display.onClick;
       let pointerCss = '';
 
@@ -14452,13 +15222,14 @@
         iframe.sandbox = 'allow-scripts allow-popups allow-popups-to-escape-sandbox allow-same-origin';
       }
 
-      let html; // direct html
+      let html; // Direct HTML content
 
       if (targetingMsgJson.msgContent.type === 1) {
         html = targetingMsgJson.msgContent.html;
         html = html.replace(/##campaignId##/g, campaignId);
         html = html.replace(/##campaignId_batchId##/g, targetingMsgJson.wzrk_id);
       } else {
+        // Generated HTML with styling
         const css = '' + '<style type="text/css">' + 'body{margin:0;padding:0;}' + '#contentDiv.wzrk{overflow:hidden;padding:0;text-align:center;' + pointerCss + '}' + '#contentDiv.wzrk td{padding:15px 10px;}' + '.wzrkPPtitle{font-weight: bold;font-size: 16px;font-family:arial;padding-bottom:10px;word-break: break-word;}' + '.wzrkPPdscr{font-size: 14px;font-family:arial;line-height:16px;word-break: break-word;display:inline-block;}' + '.PL15{padding-left:15px;}' + '.wzrkPPwarp{margin:20px 20px 0 5px;padding:0px;border-radius: ' + borderRadius + 'px;box-shadow: 1px 1px 5px #888888;}' + 'a.wzrkClose{cursor:pointer;position: absolute;top: 11px;right: 11px;z-index: 2147483647;font-size:19px;font-family:arial;font-weight:bold;text-decoration: none;width: 25px;/*height: 25px;*/text-align: center; -webkit-appearance: none; line-height: 25px;' + 'background: #353535;border: #fff 2px solid;border-radius: 100%;box-shadow: #777 2px 2px 2px;color:#fff;}' + 'a:hover.wzrkClose{background-color:#d1914a !important;color:#fff !important; -webkit-appearance: none;}' + 'td{vertical-align:top;}' + 'td.imgTd{border-top-left-radius:8px;border-bottom-left-radius:8px;}' + '</style>';
         let bgColor, textColor, btnBg, leftTd, btColor;
 
@@ -14492,19 +15263,20 @@
       }
 
       iframe.setAttribute('style', 'color-scheme: none; z-index: 2147483647; display:block; width: 100% !important; border:0px !important; border-color:none !important;');
-      msgDiv.appendChild(iframe); // Dispatch event for popup box/banner close
+      msgDiv.appendChild(iframe); // Dispatches event to signal campaign rendering
 
       const closeCampaign = new Event('CT_campaign_rendered');
       document.dispatchEvent(closeCampaign);
 
       if (displayObj['custom-editor']) {
+        // Adds custom event scripts if needed
         html = appendScriptForCustomEvent(targetingMsgJson, html);
       }
 
-      iframe.srcdoc = html;
+      iframe.srcdoc = html; // Adjusts iframe height based on content
 
       const adjustIFrameHeight = () => {
-        // adjust iframe and body height of html inside correctly
+        // Gets scroll height of content div inside iframe
         contentHeight = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv').scrollHeight;
 
         if (displayObj['custom-editor'] !== true && !isBanner) {
@@ -14522,7 +15294,7 @@
           iframe.onload = () => {
             adjustIFrameHeight();
             const contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv');
-            setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy);
+            this.setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy);
           };
         } else {
           let inDoc = iframe.contentDocument || iframe.contentWindow;
@@ -14534,7 +15306,7 @@
 
               adjustIFrameHeight();
               const contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv');
-              setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy);
+              this.setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy);
             }
           }, 300);
         }
@@ -14543,20 +15315,20 @@
           // adjust iframe and body height of html inside correctly
           adjustIFrameHeight();
           const contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv');
-          setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy);
+          this.setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy);
         };
       }
-    };
+    },
 
-    const renderFooterNotification = targetingMsgJson => {
-      createTemplate(targetingMsgJson, false);
-    };
+    // Renders footer notification
+    renderFooterNotification(targetingMsgJson, exitintentObj) {
+      this.createTemplate(targetingMsgJson, false);
+    },
 
-    let _callBackCalled = false;
-
-    const showFooterNotification = targetingMsgJson => {
+    // Displays footer notification with callback handling
+    showFooterNotification(targetingMsgJson, _callBackCalled, exitintentObj) {
       let onClick = targetingMsgJson.display.onClick;
-      const displayObj = targetingMsgJson.display; // TODO: Needs wizrocket as a global variable
+      const displayObj = targetingMsgJson.display; // Checks for custom notification callback from CleverTap
 
       if (window.clevertap.hasOwnProperty('notificationCallback') && typeof window.clevertap.notificationCallback !== 'undefined' && typeof window.clevertap.notificationCallback === 'function') {
         const notificationCallback = window.clevertap.notificationCallback;
@@ -14572,19 +15344,24 @@
 
           if (targetingMsgJson.display.kv != null) {
             inaObj.kv = targetingMsgJson.display.kv;
+          } // If present add delivery triggers to callback
+
+
+          if (targetingMsgJson.display.deliveryTrigger) {
+            inaObj.deliveryTrigger = targetingMsgJson.display.deliveryTrigger;
           }
 
           window.clevertap.raiseNotificationClicked = () => {
             if (onClick !== '' && onClick != null) {
               const jsFunc = targetingMsgJson.display.jsFunc;
-              onClick += getCookieParams(_device, _session); // invoke js function call
+              onClick += getCookieParams(CampaignContext.device, CampaignContext.session); // Invokes JS function or redirects based on click action
 
               if (jsFunc != null) {
-                // track notification clicked event
+                // Tracks notification clicked event
                 RequestDispatcher.fireRequest(onClick);
                 invokeExternalJs(jsFunc, targetingMsgJson);
                 return;
-              } // pass on the gcookie|page|scookieId for capturing the click event
+              } // Opens link in new tab or redirects current page
 
 
               if (targetingMsgJson.display.window === 1) {
@@ -14603,33 +15380,36 @@
           _callBackCalled = true;
         }
       } else {
-        window.clevertap.popupCurrentWzrkId = targetingMsgJson.wzrk_id;
+        window.clevertap.popupCurrentWzrkId = targetingMsgJson.wzrk_id; // Handles delivery triggers (inactivity, scroll, exit intent, delay)
 
         if (displayObj.deliveryTrigger) {
           if (displayObj.deliveryTrigger.inactive) {
-            triggerByInactivity(targetingMsgJson);
+            this.triggerByInactivity(targetingMsgJson);
           }
 
           if (displayObj.deliveryTrigger.scroll) {
-            triggerByScroll(targetingMsgJson);
+            this.triggerByScroll(targetingMsgJson);
           }
 
           if (displayObj.deliveryTrigger.isExitIntent) {
             exitintentObj = targetingMsgJson;
-            window.document.onmouseleave = showExitIntent;
-          } // delay
+            /* Show it only once per callback */
 
+            const handleMouseLeave = this.createExitIntentMouseLeaveHandler(targetingMsgJson, exitintentObj);
+            window.document.addEventListener('mouseleave', handleMouseLeave);
+          }
 
           const delay = displayObj.delay || displayObj.deliveryTrigger.deliveryDelayed;
 
           if (delay != null && delay > 0) {
             setTimeout(() => {
-              renderFooterNotification(targetingMsgJson);
+              this.renderFooterNotification(targetingMsgJson, exitintentObj);
             }, delay * 1000);
           }
         } else {
-          renderFooterNotification(targetingMsgJson);
-        }
+          this.renderFooterNotification(targetingMsgJson, exitintentObj);
+        } // Handles popup-specific callbacks
+
 
         if (window.clevertap.hasOwnProperty('popupCallbacks') && typeof window.clevertap.popupCallbacks !== 'undefined' && typeof window.clevertap.popupCallbacks[targetingMsgJson.wzrk_id] === 'function') {
           const popupCallback = window.clevertap.popupCallbacks[targetingMsgJson.wzrk_id];
@@ -14644,7 +15424,7 @@
           var msgCTkv = [];
 
           for (var wzrkPrefixKey in targetingMsgJson) {
-            // ADD WZRK PREFIX KEY VALUE PAIRS
+            // Adds WZRK prefix key-value pairs to callback data
             if (wzrkPrefixKey.startsWith(WZRK_PREFIX) && wzrkPrefixKey !== WZRK_ID) {
               const wzrkJson = {
                 [wzrkPrefixKey]: targetingMsgJson[wzrkPrefixKey]
@@ -14659,7 +15439,7 @@
 
           if (targetingMsgJson.display.kv != null) {
             inaObj.kv = targetingMsgJson.display.kv;
-          } // PUBLIC API TO RECORD CLICKED EVENT
+          } // Public API to record clicked event
 
 
           window.clevertap.raisePopupNotificationClicked = notificationData => {
@@ -14678,7 +15458,7 @@
               eventData.evtData = { ...eventData.evtData,
                 wzrk_pivot: notificationData.pivotId
               };
-            } // WZRK PREFIX KEY VALUE PAIRS
+            } // Adds WZRK prefix key-value pairs to event data
 
 
             if (notificationData.msgCTkv) {
@@ -14689,15 +15469,16 @@
               }
             }
 
-            _request.processEvent(eventData);
+            CampaignContext.request.processEvent(eventData);
           };
 
           popupCallback(inaObj);
         }
       }
-    };
+    },
 
-    const triggerByInactivity = targetNotif => {
+    // Triggers campaign based on user inactivity
+    triggerByInactivity(targetNotif) {
       const IDLE_TIME_THRESHOLD = targetNotif.display.deliveryTrigger.inactive * 1000; // Convert to milliseconds
 
       let idleTimer;
@@ -14706,7 +15487,7 @@
       const resetIdleTimer = () => {
         clearTimeout(idleTimer);
         idleTimer = setTimeout(() => {
-          renderFooterNotification(targetNotif);
+          this.renderFooterNotification(targetNotif);
           removeEventListeners();
         }, IDLE_TIME_THRESHOLD);
       };
@@ -14726,11 +15507,13 @@
       };
 
       setupEventListeners();
-      resetIdleTimer();
-      return removeEventListeners; // Return a cleanup function
-    };
+      resetIdleTimer(); // Returns cleanup function
 
-    const triggerByScroll = targetNotif => {
+      return removeEventListeners;
+    },
+
+    // Triggers campaign based on scroll percentage
+    triggerByScroll(targetNotif) {
       const calculateScrollPercentage = () => {
         const {
           scrollHeight,
@@ -14744,7 +15527,7 @@
         const scrollPercentage = calculateScrollPercentage();
 
         if (scrollPercentage >= targetNotif.display.deliveryTrigger.scroll) {
-          renderFooterNotification(targetNotif);
+          this.renderFooterNotification(targetNotif);
           window.removeEventListener('scroll', throttledScrollListener);
         }
       };
@@ -14771,27 +15554,31 @@
       const throttledScrollListener = throttle(scrollListener, 200);
       window.addEventListener('scroll', throttledScrollListener, {
         passive: true
-      });
-      return () => window.removeEventListener('scroll', throttledScrollListener); // Return a cleanup function
-    };
+      }); // Returns cleanup function
 
-    let exitintentObj;
+      return () => window.removeEventListener('scroll', throttledScrollListener);
+    },
 
-    const showExitIntent = (event, targetObj) => {
+    // Handles exit intent campaigns (triggered when mouse leaves window)
+    showExitIntent(event, targetObj, wtq, exitintentObj) {
+      // Only triggers when mouse moves upward out of window
       if ((event === null || event === void 0 ? void 0 : event.clientY) > 0) return;
       const targetingMsgJson = targetObj || exitintentObj;
       const campaignId = targetingMsgJson.wzrk_id.split('_')[0];
-      const layout = targetingMsgJson.display.layout;
-      if (isExistingCampaign(campaignId)) return;
+      const layout = targetingMsgJson.display.layout; // Skips if campaign is already rendered
+
+      if (this.isExistingCampaign(campaignId)) return;
 
       if (targetingMsgJson.display.wtarget_type === 0 && (layout === WEB_POPUP_TEMPLATES.BOX || layout === WEB_POPUP_TEMPLATES.BANNER || layout === WEB_POPUP_TEMPLATES.IMAGE_ONLY)) {
-        createTemplate(targetingMsgJson, true);
-        return;
-      }
+        this.createTemplate(targetingMsgJson, true);
+        return true;
+      } // Skips if frequency limits are exceeded
 
-      if (doCampHouseKeeping(targetingMsgJson) === false) {
+
+      if (this.doCampHouseKeeping(targetingMsgJson, Logger.getInstance()) === false) {
         return;
-      }
+      } // Removes existing exit intent elements if spam control is active
+
 
       if ($ct.dismissSpamControl && targetingMsgJson.display.wtarget_type === 0) {
         const intentPreview = document.getElementById('intentPreview');
@@ -14801,12 +15588,12 @@
           intentPreview.remove();
           intentOpacityDiv.remove();
         }
-      } // ImageOnly campaign and Interstitial/Exit Intent shouldn't coexist`
+      } // Prevents coexistence with other popups
 
 
       if (document.getElementById('intentPreview') != null || document.getElementById('wzrkImageOnlyDiv') != null) {
         return;
-      } // dont show exit intent on tablet/mobile - only on desktop
+      } // Skips exit intent on mobile/tablet devices
 
 
       if (targetingMsgJson.display.layout == null && (/mobile/i.test(navigator.userAgent) || /mini/i.test(navigator.userAgent) || /iPad/i.test(navigator.userAgent) || 'ontouchstart' in window || /tablet/i.test(navigator.userAgent))) {
@@ -14839,8 +15626,6 @@
       iframe.marginwidth = '0px';
       iframe.scrolling = 'no';
       iframe.id = 'wiz-iframe-intent';
-      iframe.setAttribute('role', 'dialog');
-      iframe.setAttribute('aria-modal', 'true');
       const onClick = targetingMsgJson.display.onClick;
       let pointerCss = '';
 
@@ -14852,13 +15637,14 @@
         iframe.sandbox = 'allow-scripts allow-popups allow-popups-to-escape-sandbox';
       }
 
-      let html; // direct html
+      let html; // Direct HTML content
 
       if (targetingMsgJson.msgContent.type === 1) {
         html = targetingMsgJson.msgContent.html;
         html = html.replace(/##campaignId##/g, campaignId);
         html = html.replace(/##campaignId_batchId##/g, targetingMsgJson.wzrk_id);
       } else {
+        // Generated HTML with styling
         const css = '' + '<style type="text/css">' + 'body{margin:0;padding:0;}' + '#contentDiv.wzrk{overflow:hidden;padding:0 0 20px 0;text-align:center;' + pointerCss + '}' + '#contentDiv.wzrk td{padding:15px 10px;}' + '.wzrkPPtitle{font-weight: bold;font-size: 24px;font-family:arial;word-break: break-word;padding-top:20px;}' + '.wzrkPPdscr{font-size: 14px;font-family:arial;line-height:16px;word-break: break-word;display:inline-block;padding:20px 20px 0 20px;line-height:20px;}' + '.PL15{padding-left:15px;}' + '.wzrkPPwarp{margin:20px 20px 0 5px;padding:0px;border-radius: ' + borderRadius + 'px;box-shadow: 1px 1px 5px #888888;}' + 'a.wzrkClose{cursor:pointer;position: absolute;top: 11px;right: 11px;z-index: 2147483647;font-size:19px;font-family:arial;font-weight:bold;text-decoration: none;width: 25px;/*height: 25px;*/text-align: center; -webkit-appearance: none; line-height: 25px;' + 'background: #353535;border: #fff 2px solid;border-radius: 100%;box-shadow: #777 2px 2px 2px;color:#fff;}' + 'a:hover.wzrkClose{background-color:#d1914a !important;color:#fff !important; -webkit-appearance: none;}' + '#contentDiv .button{padding-top:20px;}' + '#contentDiv .button a{font-size: 14px;font-weight:bold;font-family:arial;text-align:center;display:inline-block;text-decoration:none;padding:0 30px;height:40px;line-height:40px;background:#ea693b;color:#fff;border-radius:4px;-webkit-border-radius:4px;-moz-border-radius:4px;}' + '</style>';
         let bgColor, textColor, btnBg, btColor;
 
@@ -14895,7 +15681,7 @@
       }
 
       iframe.setAttribute('style', 'color-scheme: none; z-index: 2147483647; display:block; height: 100% !important; width: 100% !important;min-height:80px !important;border:0px !important; border-color:none !important;');
-      msgDiv.appendChild(iframe); // Dispatch event for interstitial/exit intent close
+      msgDiv.appendChild(iframe); // Dispatches event for interstitial/exit intent close
 
       const closeCampaign = new Event('CT_campaign_rendered');
       document.dispatchEvent(closeCampaign);
@@ -14908,9 +15694,246 @@
 
       iframe.onload = () => {
         const contentDiv = document.getElementById('wiz-iframe-intent').contentDocument.getElementById('contentDiv');
-        setupClickUrl(onClick, targetingMsgJson, contentDiv, 'intentPreview', legacy);
+        this.setupClickUrl(onClick, targetingMsgJson, contentDiv, 'intentPreview', legacy);
       };
-    };
+
+      return true;
+    },
+
+    // Processes native display campaigns (e.g., banners, carousels)
+    processNativeDisplayArr(arrInAppNotifs) {
+      Object.keys(arrInAppNotifs).map(key => {
+        var elementId, id;
+
+        if (arrInAppNotifs[key].display.divId) {
+          elementId = arrInAppNotifs[key].display.divId;
+          id = document.getElementById(elementId);
+        } else {
+          elementId = arrInAppNotifs[key].display.divSelector;
+          id = document.querySelector(elementId);
+        }
+
+        if (id !== null) {
+          arrInAppNotifs[key].msgContent.type === 2 ? renderPersonalisationBanner(arrInAppNotifs[key]) : renderPersonalisationCarousel(arrInAppNotifs[key]); // Removes processed campaign
+
+          delete arrInAppNotifs[key];
+        }
+      });
+    },
+
+    // Adds listener to process native displays after page load
+    addLoadListener(arrInAppNotifs) {
+      window.addEventListener('load', () => {
+        let count = 0;
+
+        if (count < 20) {
+          const t = setInterval(() => {
+            this.processNativeDisplayArr(arrInAppNotifs);
+
+            if (Object.keys(arrInAppNotifs).length === 0 || count === 20) {
+              clearInterval(t);
+              arrInAppNotifs = {};
+            }
+
+            count++;
+          }, 500);
+        }
+      });
+    },
+
+    // Processes web inbox notifications
+    handleInboxNotifications(msg) {
+      if (msg.inbox_preview) {
+        processInboxNotifs(msg);
+        return;
+      }
+
+      if (msg.inbox_notifs) {
+        const msgArr = [];
+
+        for (let index = 0; index < msg.inbox_notifs.length; index++) {
+          var _CampaignContext$msg, _CampaignContext$msg$;
+
+          addCampaignToLocalStorage(msg.inbox_notifs[index], CampaignContext.region, (_CampaignContext$msg = CampaignContext.msg) === null || _CampaignContext$msg === void 0 ? void 0 : (_CampaignContext$msg$ = _CampaignContext$msg.arp) === null || _CampaignContext$msg$ === void 0 ? void 0 : _CampaignContext$msg$.id);
+
+          if (this.doCampHouseKeeping(msg.inbox_notifs[index], Logger.getInstance()) !== false) {
+            msgArr.push(msg.inbox_notifs[index]);
+          }
+        }
+
+        processInboxNotifs(msgArr);
+      }
+    },
+
+    processCampaigns(msg, _callBackCalled, exitintentObj, logger) {
+      const arrInAppNotifs = {};
+      const sortedCampaigns = webNativeDisplayCampaignUtils.sortCampaignsByPriority(msg.inapp_notifs);
+      const executedTargets = {
+        nodes: [],
+        customEvents: []
+      };
+
+      for (let index = 0; index < sortedCampaigns.length; index++) {
+        var _CampaignContext$msg2, _CampaignContext$msg3;
+
+        addCampaignToLocalStorage(sortedCampaigns[index], CampaignContext.region, (_CampaignContext$msg2 = CampaignContext.msg) === null || _CampaignContext$msg2 === void 0 ? void 0 : (_CampaignContext$msg3 = _CampaignContext$msg2.arp) === null || _CampaignContext$msg3 === void 0 ? void 0 : _CampaignContext$msg3.id);
+        const targetNotif = sortedCampaigns[index];
+
+        if (targetNotif.display.wtarget_type === CAMPAIGN_TYPES.FOOTER_NOTIFICATION || targetNotif.display.wtarget_type === CAMPAIGN_TYPES.FOOTER_NOTIFICATION_2) {
+          this.showFooterNotification(targetNotif, _callBackCalled, exitintentObj);
+        } else if (targetNotif.display.wtarget_type === CAMPAIGN_TYPES.EXIT_INTENT) {
+          // if display['wtarget_type']==1 then exit intent
+          exitintentObj = targetNotif;
+          /* Show it only once per callback */
+
+          const handleMouseLeave = this.createExitIntentMouseLeaveHandler(targetNotif, exitintentObj);
+          window.document.addEventListener('mouseleave', handleMouseLeave);
+        } else if (targetNotif.display.wtarget_type === CAMPAIGN_TYPES.WEB_NATIVE_DISPLAY) {
+          // if display['wtarget_type']==2 then web native display
+          // Skips duplicate custom event campaigns
+          if (webNativeDisplayCampaignUtils.doesCampaignPushCustomEvent(targetNotif) && executedTargets.customEvents.length > 0 && webNativeDisplayCampaignUtils.shouldCurrentCustomEventCampaignBeSkipped(targetNotif, executedTargets)) {
+            logger.debug('Custom Event Campaign Skipped with id :: ' + (targetNotif === null || targetNotif === void 0 ? void 0 : targetNotif.wzrk_id));
+            continue;
+          } // Skips duplicate DOM node campaigns
+
+
+          if (webNativeDisplayCampaignUtils.doesCampaignMutateDOMNode(targetNotif) && executedTargets.nodes.some(node => {
+            var _webNativeDisplayCamp;
+
+            return (_webNativeDisplayCamp = webNativeDisplayCampaignUtils.getCampaignNodes(targetNotif)) === null || _webNativeDisplayCamp === void 0 ? void 0 : _webNativeDisplayCamp.includes(node);
+          })) {
+            logger.debug('DOM Campaign Skipped with id :: ' + (targetNotif === null || targetNotif === void 0 ? void 0 : targetNotif.wzrk_id));
+            continue;
+          } // Tracks executed custom events
+
+
+          if (webNativeDisplayCampaignUtils.doesCampaignPushCustomEvent(targetNotif)) {
+            /*
+                This basically stores the CustomEvents with their type that we will push so that
+                the next time we receive a CustomEvent with the same type we can skip it
+              */
+            const eventTopic = targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.KV_PAIR ? targetNotif.display.kv.topic : null;
+            executedTargets.customEvents.push({
+              customEventType: targetNotif.msgContent.type,
+              eventTopic
+            });
+          } else if (webNativeDisplayCampaignUtils.doesCampaignMutateDOMNode(targetNotif)) {
+            // Tracks executed DOM nodes
+            const nodes = webNativeDisplayCampaignUtils.getCampaignNodes(targetNotif);
+            executedTargets.nodes.push(...nodes);
+          } // Handles different native display types
+
+
+          if (targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.KV_PAIR) {
+            handleKVpairCampaign(targetNotif);
+          } else if (targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.BANNER || targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.CAROUSEL) {
+            renderWebNativeDisplayBanner(targetNotif, logger, arrInAppNotifs);
+          } else if (targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.VISUAL_BUILDER) {
+            renderVisualBuilder(targetNotif, false);
+          } else if (targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.CUSTOM_HTML) {
+            renderCustomHtml(targetNotif, logger);
+          } else if (targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.JSON) {
+            handleJson(targetNotif);
+          } else {
+            this.showFooterNotification(targetNotif, _callBackCalled, exitintentObj);
+          }
+        }
+      } // Processes banner or carousel campaign array
+
+
+      if (Object.keys(arrInAppNotifs).length) {
+        if (document.readyState === 'complete') {
+          this.processNativeDisplayArr(arrInAppNotifs);
+        } else {
+          this.addLoadListener(arrInAppNotifs);
+        }
+      }
+    },
+
+    handleWebInbox(msg, logger) {
+      if (hasWebInboxSettingsInLS()) {
+        checkAndRegisterWebInboxElements();
+      }
+
+      if ($ct.inbox === null) {
+        msg.webInboxSetting && processWebInboxSettings(msg.webInboxSetting);
+        initializeWebInbox(logger).then(() => {
+          this.handleInboxNotifications(msg);
+        }).catch(e => {});
+      } else {
+        this.handleInboxNotifications(msg);
+      }
+    },
+
+    persistsEventsAndProfileData(msg, logger) {
+      // Persists events and profile data to local storage
+      if (StorageManager._isLocalStorageSupported()) {
+        try {
+          if (msg.evpr != null) {
+            const eventsMap = msg.evpr.events;
+            const profileMap = msg.evpr.profile;
+            const syncExpiry = msg.evpr.expires_in;
+            const now = getNow();
+            StorageManager.setMetaProp('lsTime', now);
+            StorageManager.setMetaProp('exTs', syncExpiry);
+            mergeEventMap(eventsMap);
+            StorageManager.saveToLSorCookie(EV_COOKIE, $ct.globalEventsMap);
+
+            if ($ct.globalProfileMap == null) {
+              addToLocalProfileMap(profileMap, true);
+            } else {
+              addToLocalProfileMap(profileMap, false);
+            }
+          }
+
+          if (msg.arp != null) {
+            arp(msg.arp);
+          }
+
+          if (msg.inapp_stale != null && msg.inapp_stale.length > 0) {
+            // Updates stale web popup data
+            staleDataUpdate(msg.inapp_stale, 'wp');
+          }
+
+          if (msg.inbox_stale != null && msg.inbox_stale.length > 0) {
+            // Updates stale web inbox data
+            staleDataUpdate(msg.inbox_stale, 'wi');
+          }
+        } catch (e) {
+          logger.error('Unable to persist evrp/arp: ' + e);
+        }
+      }
+    },
+
+    handleVariables(msg) {
+      // Merges variables into storage
+      if (msg.vars) {
+        $ct.variableStore.mergeVariables(msg.vars);
+      }
+    }
+
+  };
+
+  const _tr = (msg, _ref) => {
+    let {
+      device,
+      session,
+      request,
+      logger,
+      region
+    } = _ref;
+    const _device = device;
+    const _session = session;
+    const _request = request;
+    const _logger = logger;
+    let _wizCounter = 0; // Campaign House keeping
+
+    CampaignContext.update(device, session, request, logger, msg, region);
+    deliveryPreferenceUtils.clearStaleCampaigns(msg, logger);
+    deliveryPreferenceUtils.updateOccurenceForPopupAndNativeDisplay(msg, device, logger);
+    deliveryPreferenceUtils.portTLC(_session, logger);
+    const _callBackCalled = false;
+    let exitintentObj; // Retries processing if document.body isn't ready (up to 6 attempts)
 
     if (!document.body) {
       if (_wizCounter < 6) {
@@ -14924,158 +15947,13 @@
       }
 
       return;
-    }
+    } // Processes in-app notifications (e.g., footers, exit intents, native displays)
 
-    const processNativeDisplayArr = arrInAppNotifs => {
-      Object.keys(arrInAppNotifs).map(key => {
-        var elementId, id;
-
-        if (arrInAppNotifs[key].display.divId) {
-          elementId = arrInAppNotifs[key].display.divId;
-          id = document.getElementById(elementId);
-        } else {
-          elementId = arrInAppNotifs[key].display.divSelector;
-          id = document.querySelector(elementId);
-        }
-
-        if (id !== null) {
-          arrInAppNotifs[key].msgContent.type === 2 ? renderPersonalisationBanner(arrInAppNotifs[key]) : renderPersonalisationCarousel(arrInAppNotifs[key]);
-          delete arrInAppNotifs[key];
-        }
-      });
-    };
-
-    const addLoadListener = arrInAppNotifs => {
-      window.addEventListener('load', () => {
-        let count = 0;
-
-        if (count < 20) {
-          const t = setInterval(() => {
-            processNativeDisplayArr(arrInAppNotifs);
-
-            if (Object.keys(arrInAppNotifs).length === 0 || count === 20) {
-              clearInterval(t);
-              arrInAppNotifs = {};
-            }
-
-            count++;
-          }, 500);
-        }
-      });
-    };
 
     if (msg.inapp_notifs != null) {
-      const arrInAppNotifs = {};
-      const sortedCampaigns = webNativeDisplayCampaignUtils.sortCampaignsByPriority(msg.inapp_notifs);
-      const executedTargets = {
-        nodes: [],
-        customEvents: []
-      };
+      commonCampaignUtils.processCampaigns(msg, _callBackCalled, exitintentObj, logger);
+    } // Initializes and processes web inbox settings and notifications
 
-      for (let index = 0; index < sortedCampaigns.length; index++) {
-        var _msg$arp;
-
-        addCampaignToLocalStorage(sortedCampaigns[index], _region, msg === null || msg === void 0 ? void 0 : (_msg$arp = msg.arp) === null || _msg$arp === void 0 ? void 0 : _msg$arp.id);
-        const targetNotif = sortedCampaigns[index];
-
-        if (targetNotif.display.wtarget_type === CAMPAIGN_TYPES.FOOTER_NOTIFICATION || targetNotif.display.wtarget_type === CAMPAIGN_TYPES.FOOTER_NOTIFICATION_2) {
-          showFooterNotification(targetNotif);
-        } else if (targetNotif.display.wtarget_type === CAMPAIGN_TYPES.EXIT_INTENT) {
-          // if display['wtarget_type']==1 then exit intent
-          exitintentObj = targetNotif;
-          window.document.onmouseleave = showExitIntent;
-        } else if (targetNotif.display.wtarget_type === CAMPAIGN_TYPES.WEB_NATIVE_DISPLAY) {
-          // if display['wtarget_type']==2 then web native display
-
-          /* Skip current campaign if we have already executed one with same CustomEvent and topic */
-          if (webNativeDisplayCampaignUtils.doesCampaignPushCustomEvent(targetNotif) && executedTargets.customEvents.length > 0 && webNativeDisplayCampaignUtils.shouldCurrentCustomEventCampaignBeSkipped(targetNotif, executedTargets)) {
-            _logger.debug('Custom Event Campaign Skipped with id :: ' + (targetNotif === null || targetNotif === void 0 ? void 0 : targetNotif.wzrk_id));
-
-            continue;
-          }
-          /* Skip current campaign if we have already executed one with same DOM Node */
-
-
-          if (webNativeDisplayCampaignUtils.doesCampaignMutateDOMNode(targetNotif) && executedTargets.nodes.some(node => {
-            var _webNativeDisplayCamp;
-
-            return (_webNativeDisplayCamp = webNativeDisplayCampaignUtils.getCampaignNodes(targetNotif)) === null || _webNativeDisplayCamp === void 0 ? void 0 : _webNativeDisplayCamp.includes(node);
-          })) {
-            _logger.debug('DOM Campaign Skipped with id :: ' + (targetNotif === null || targetNotif === void 0 ? void 0 : targetNotif.wzrk_id));
-
-            continue;
-          }
-
-          if (webNativeDisplayCampaignUtils.doesCampaignPushCustomEvent(targetNotif)) {
-            /*
-              This basically stores the CustomEvents with their type that we will push so that
-              the next time we receive a CustomEvent with the same type we can skip it
-            */
-            const eventTopic = targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.KV_PAIR ? targetNotif.display.kv.topic : null;
-            executedTargets.customEvents.push({
-              customEventType: targetNotif.msgContent.type,
-              eventTopic
-            });
-          } else if (webNativeDisplayCampaignUtils.doesCampaignMutateDOMNode(targetNotif)) {
-            const nodes = webNativeDisplayCampaignUtils.getCampaignNodes(targetNotif);
-            executedTargets.nodes.push(...nodes);
-          }
-
-          if (targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.KV_PAIR) {
-            handleKVpairCampaign(targetNotif);
-          } else if (targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.BANNER || targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.CAROUSEL) {
-            // Check for banner and carousel
-            const element = targetNotif.display.divId ? document.getElementById(targetNotif.display.divId) : document.querySelector(targetNotif.display.divSelector);
-
-            if (element !== null) {
-              targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.BANNER ? renderPersonalisationBanner(targetNotif) : renderPersonalisationCarousel(targetNotif);
-            } else {
-              arrInAppNotifs[targetNotif.wzrk_id.split('_')[0]] = targetNotif; // Add targetNotif to object
-            }
-          } else if (targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.VISUAL_BUILDER) {
-            renderVisualBuilder(targetNotif, false, _logger);
-          } else if (targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.CUSTOM_HTML) {
-            renderCustomHtml(targetNotif, _logger);
-          } else if (targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.JSON) {
-            handleJson(targetNotif);
-          } else {
-            showFooterNotification(targetNotif);
-          }
-        }
-      } // Process banner or carousel campaign array
-
-
-      if (Object.keys(arrInAppNotifs).length) {
-        if (document.readyState === 'complete') {
-          processNativeDisplayArr(arrInAppNotifs);
-        } else {
-          addLoadListener(arrInAppNotifs);
-        }
-      }
-    }
-
-    const handleInboxNotifications = () => {
-      if (msg.inbox_preview) {
-        processInboxNotifs(msg);
-        return;
-      }
-
-      if (msg.inbox_notifs) {
-        const msgArr = [];
-
-        for (let index = 0; index < msg.inbox_notifs.length; index++) {
-          var _msg$arp2;
-
-          addCampaignToLocalStorage(msg.inbox_notifs[index], _region, msg === null || msg === void 0 ? void 0 : (_msg$arp2 = msg.arp) === null || _msg$arp2 === void 0 ? void 0 : _msg$arp2.id);
-
-          if (doCampHouseKeeping(msg.inbox_notifs[index]) !== false) {
-            msgArr.push(msg.inbox_notifs[index]);
-          }
-        }
-
-        processInboxNotifs(msgArr);
-      }
-    };
 
     if (msg.webInboxSetting || msg.inbox_notifs != null) {
       /**
@@ -15083,65 +15961,16 @@
        * we need to initialise the inbox here because the initializeWebInbox method within init will not be executed
        * as we would not have any entry related to webInboxSettings in the LS
        */
-      if (hasWebInboxSettingsInLS()) {
-        checkAndRegisterWebInboxElements();
-      }
+      commonCampaignUtils.handleWebInbox(msg, logger);
+    } // Processes web push configuration
 
-      if ($ct.inbox === null) {
-        msg.webInboxSetting && processWebInboxSettings(msg.webInboxSetting);
-        initializeWebInbox(_logger).then(() => {
-          handleInboxNotifications();
-        }).catch(e => {});
-      } else {
-        handleInboxNotifications();
-      }
-    }
 
     if (msg.webPushConfig) {
       processWebPushConfig(msg.webPushConfig, logger, request);
     }
 
-    if (msg.vars) {
-      $ct.variableStore.mergeVariables(msg.vars);
-      return;
-    }
-
-    if (StorageManager._isLocalStorageSupported()) {
-      try {
-        if (msg.evpr != null) {
-          const eventsMap = msg.evpr.events;
-          const profileMap = msg.evpr.profile;
-          const syncExpiry = msg.evpr.expires_in;
-          const now = getNow();
-          StorageManager.setMetaProp('lsTime', now);
-          StorageManager.setMetaProp('exTs', syncExpiry);
-          mergeEventMap(eventsMap);
-          StorageManager.saveToLSorCookie(EV_COOKIE, $ct.globalEventsMap);
-
-          if ($ct.globalProfileMap == null) {
-            addToLocalProfileMap(profileMap, true);
-          } else {
-            addToLocalProfileMap(profileMap, false);
-          }
-        }
-
-        if (msg.arp != null) {
-          arp(msg.arp);
-        }
-
-        if (msg.inapp_stale != null && msg.inapp_stale.length > 0) {
-          // web popup stale
-          staleDataUpdate(msg.inapp_stale, 'wp');
-        }
-
-        if (msg.inbox_stale != null && msg.inbox_stale.length > 0) {
-          // web inbox stale
-          staleDataUpdate(msg.inbox_stale, 'wi');
-        }
-      } catch (e) {
-        _logger.error('Unable to persist evrp/arp: ' + e);
-      }
-    }
+    commonCampaignUtils.handleVariables(msg);
+    commonCampaignUtils.persistsEventsAndProfileData(msg, logger);
   };
 
   var _isPersonalisationActive$2 = _classPrivateFieldLooseKey("isPersonalisationActive");
@@ -15185,91 +16014,6 @@
     }
 
   }
-
-  const logLevels = {
-    DISABLE: 0,
-    ERROR: 1,
-    INFO: 2,
-    DEBUG: 3,
-    DEBUG_PE: 4
-  };
-
-  var _logLevel = _classPrivateFieldLooseKey("logLevel");
-
-  var _log = _classPrivateFieldLooseKey("log");
-
-  var _isLegacyDebug = _classPrivateFieldLooseKey("isLegacyDebug");
-
-  class Logger {
-    constructor(logLevel) {
-      Object.defineProperty(this, _isLegacyDebug, {
-        get: _get_isLegacyDebug,
-        set: void 0
-      });
-      Object.defineProperty(this, _log, {
-        value: _log2
-      });
-      Object.defineProperty(this, _logLevel, {
-        writable: true,
-        value: void 0
-      });
-      this.wzrkError = {};
-      _classPrivateFieldLooseBase(this, _logLevel)[_logLevel] = logLevel == null ? logLevel : logLevels.INFO;
-      this.wzrkError = {};
-    }
-
-    get logLevel() {
-      return _classPrivateFieldLooseBase(this, _logLevel)[_logLevel];
-    }
-
-    set logLevel(logLevel) {
-      _classPrivateFieldLooseBase(this, _logLevel)[_logLevel] = logLevel;
-    }
-
-    error(message) {
-      if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.ERROR) {
-        _classPrivateFieldLooseBase(this, _log)[_log]('error', message);
-      }
-    }
-
-    info(message) {
-      if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.INFO) {
-        _classPrivateFieldLooseBase(this, _log)[_log]('log', message);
-      }
-    }
-
-    debug(message) {
-      if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.DEBUG || _classPrivateFieldLooseBase(this, _isLegacyDebug)[_isLegacyDebug]) {
-        _classPrivateFieldLooseBase(this, _log)[_log]('debug', message);
-      }
-    }
-
-    debugPE(message) {
-      if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.DEBUG_PE) {
-        _classPrivateFieldLooseBase(this, _log)[_log]('debug_pe', message);
-      }
-    }
-
-    reportError(code, description) {
-      this.wzrkError.c = code;
-      this.wzrkError.d = description;
-      this.error("".concat(CLEVERTAP_ERROR_PREFIX, " ").concat(code, ": ").concat(description));
-    }
-
-  }
-
-  var _log2 = function _log2(level, message) {
-    if (window.console) {
-      try {
-        const ts = new Date().getTime();
-        console[level]("CleverTap [".concat(ts, "]: ").concat(message));
-      } catch (e) {}
-    }
-  };
-
-  var _get_isLegacyDebug = function () {
-    return typeof sessionStorage !== 'undefined' && sessionStorage.WZRK_D === '';
-  };
 
   var _logger$4 = _classPrivateFieldLooseKey("logger");
 
@@ -15422,6 +16166,8 @@
 
   var _clearCookie = _classPrivateFieldLooseKey("clearCookie");
 
+  var _getNextAvailableReqN = _classPrivateFieldLooseKey("getNextAvailableReqN");
+
   var _addToLocalEventMap = _classPrivateFieldLooseKey("addToLocalEventMap");
 
   class RequestManager {
@@ -15435,6 +16181,9 @@
       } = _ref;
       Object.defineProperty(this, _addToLocalEventMap, {
         value: _addToLocalEventMap2
+      });
+      Object.defineProperty(this, _getNextAvailableReqN, {
+        value: _getNextAvailableReqN2
       });
       Object.defineProperty(this, _logger$3, {
         writable: true,
@@ -15470,8 +16219,14 @@
       RequestDispatcher.device = device;
       RequestDispatcher.account = account;
     }
+    /**
+    * Unified backup processing method
+    * @param {boolean} oulOnly - If true, process only OUL requests. If false, process all non-fired requests.
+    */
+
 
     processBackupEvents() {
+      let oulOnly = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
       const backupMap = StorageManager.readFromLSorCookie(LCOOKIE_NAME);
 
       if (typeof backupMap === 'undefined' || backupMap === null) {
@@ -15484,12 +16239,17 @@
         if (backupMap.hasOwnProperty(idx)) {
           const backupEvent = backupMap[idx];
 
-          if (typeof backupEvent.fired === 'undefined') {
-            _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].debug('Processing backup event : ' + backupEvent.q);
+          if (typeof backupEvent.fired !== 'undefined') {
+            continue;
+          }
+
+          const isOULRequest = StorageManager.isBackupOUL(parseInt(idx));
+          const shouldProcess = oulOnly ? isOULRequest : true;
+
+          if (shouldProcess) {
+            _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].debug("Processing ".concat(isOULRequest ? 'OUL' : 'regular', " backup event : ").concat(backupEvent.q));
 
             if (typeof backupEvent.q !== 'undefined') {
-              /* For extremely slow networks we often recreate the session from the SE hence appending
-              the session to the request */
               const session = JSON.parse(StorageManager.readCookie(SCOOKIE_PREFIX + '_' + _classPrivateFieldLooseBase(this, _account$3)[_account$3].id));
 
               if (session === null || session === void 0 ? void 0 : session.s) {
@@ -15534,7 +16294,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.17.0',
+        lib: 'web-sdk-v2.1.2',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -15586,12 +16346,21 @@
 
 
     saveAndFireRequest(url, override, sendOULFlag, evtName) {
-      const now = getNow();
-      url = addToURL(url, 'rn', ++$ct.globalCache.REQ_N);
-      const data = url + '&i=' + now + '&sn=' + seqNo;
-      StorageManager.backupEvent(data, $ct.globalCache.REQ_N, _classPrivateFieldLooseBase(this, _logger$3)[_logger$3]); // if offline is set to true, save the request in backup and return
+      const now = getNow(); // Get the next available request number that doesn't conflict with existing backups
 
-      if ($ct.offline) return; // if there is no override
+      const nextReqN = _classPrivateFieldLooseBase(this, _getNextAvailableReqN)[_getNextAvailableReqN]();
+
+      $ct.globalCache.REQ_N = nextReqN;
+      url = addToURL(url, 'rn', nextReqN);
+      const data = url + '&i=' + now + '&sn=' + seqNo;
+      StorageManager.backupEvent(data, nextReqN, _classPrivateFieldLooseBase(this, _logger$3)[_logger$3]); // Mark as OUL if it's an OUL request
+
+      if (sendOULFlag) {
+        StorageManager.markBackupAsOUL(nextReqN);
+      } // if offline is set to true, save the request in backup and return
+
+
+      if ($ct.offline || $ct.delayEvents) return; // if there is no override
       // and an OUL request is not in progress
       // then process the request as it is
       // else block the request
@@ -15605,7 +16374,7 @@
           seqNo = 0;
         }
 
-        window.oulReqN = $ct.globalCache.REQ_N;
+        window.oulReqN = nextReqN;
         RequestDispatcher.fireRequest(data, false, sendOULFlag, evtName);
       } else {
         _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].debug("Not fired due to override - ".concat($ct.blockRequest, " or clearCookie - ").concat(_classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie], " or OUL request in progress - ").concat(window.isOULInProgress));
@@ -15699,6 +16468,28 @@
     }
 
   }
+
+  var _getNextAvailableReqN2 = function _getNextAvailableReqN2() {
+    // Read existing backup data to check for conflicts
+    const backupMap = StorageManager.readFromLSorCookie(LCOOKIE_NAME); // Start from the current REQ_N + 1
+
+    let candidateReqN = $ct.globalCache.REQ_N + 1; // If no backup data exists, use the candidate
+
+    if (!backupMap || typeof backupMap !== 'object') {
+      return candidateReqN;
+    } // Keep incrementing until we find a request number that doesn't exist in backup
+
+
+    while (backupMap.hasOwnProperty(candidateReqN.toString())) {
+      candidateReqN++;
+
+      _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].debug("Request number ".concat(candidateReqN - 1, " already exists in backup, trying ").concat(candidateReqN));
+    }
+
+    _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].debug("Using request number: ".concat(candidateReqN));
+
+    return candidateReqN;
+  };
 
   var _addToLocalEventMap2 = function _addToLocalEventMap2(evtName) {
     if (StorageManager._isLocalStorageSupported()) {
@@ -16127,7 +16918,8 @@
         name
       } = varInstance;
       _classPrivateFieldLooseBase(this, _variables)[_variables][name] = varInstance;
-      console.log('registerVariable', _classPrivateFieldLooseBase(this, _variables)[_variables]);
+
+      _classPrivateFieldLooseBase(this, _logger$1)[_logger$1].debug('registerVariable', _classPrivateFieldLooseBase(this, _variables)[_variables]);
     }
     /**
      * Retrieves a variable by its name.
@@ -16248,7 +17040,8 @@
     }
 
     mergeVariables(vars) {
-      console.log('msg vars is ', vars);
+      _classPrivateFieldLooseBase(this, _logger$1)[_logger$1].debug('msg vars is ', vars);
+
       _classPrivateFieldLooseBase(this, _hasVarsRequestCompleted)[_hasVarsRequestCompleted] = true;
       StorageManager.saveToLSorCookie(VARIABLES, vars);
       _classPrivateFieldLooseBase(this, _remoteVariables)[_remoteVariables] = vars;
@@ -16391,7 +17184,7 @@
     }
 
     constructor() {
-      var _clevertap$account, _clevertap$account2, _clevertap$account3, _clevertap$account4, _clevertap$account5, _clevertap$config, _clevertap$config2, _clevertap$account6;
+      var _clevertap$account, _clevertap$account2, _clevertap$account3, _clevertap$account4, _clevertap$account5, _clevertap$config, _clevertap$config2, _clevertap$dismissSpa, _clevertap$dismissSpa2, _clevertap$account6;
 
       let clevertap = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
       Object.defineProperty(this, _sendLocationData, {
@@ -16492,7 +17285,7 @@
         logger: _classPrivateFieldLooseBase(this, _logger)[_logger],
         customId: (result === null || result === void 0 ? void 0 : result.isValid) ? result === null || result === void 0 ? void 0 : result.sanitizedId : null
       });
-      _classPrivateFieldLooseBase(this, _dismissSpamControl)[_dismissSpamControl] = clevertap.dismissSpamControl || false;
+      _classPrivateFieldLooseBase(this, _dismissSpamControl)[_dismissSpamControl] = (_clevertap$dismissSpa = clevertap.dismissSpamControl) !== null && _clevertap$dismissSpa !== void 0 ? _clevertap$dismissSpa : true;
       this.shpfyProxyPath = clevertap.shpfyProxyPath || '';
       _classPrivateFieldLooseBase(this, _session)[_session] = new SessionManager({
         logger: _classPrivateFieldLooseBase(this, _logger)[_logger],
@@ -16547,7 +17340,7 @@
         session: _classPrivateFieldLooseBase(this, _session)[_session]
       });
       this.spa = clevertap.spa;
-      this.dismissSpamControl = clevertap.dismissSpamControl;
+      this.dismissSpamControl = (_clevertap$dismissSpa2 = clevertap.dismissSpamControl) !== null && _clevertap$dismissSpa2 !== void 0 ? _clevertap$dismissSpa2 : true;
       this.user = new User({
         isPersonalisationActive: this._isPersonalisationActive
       });
@@ -17193,6 +17986,7 @@
 
       handleActionMode(_classPrivateFieldLooseBase(this, _logger)[_logger], _classPrivateFieldLooseBase(this, _account)[_account].id);
       checkCustomHtmlNativeDisplayPreview(_classPrivateFieldLooseBase(this, _logger)[_logger]);
+      checkWebPopupPreview();
       _classPrivateFieldLooseBase(this, _session)[_session].cookieName = SCOOKIE_PREFIX + '_' + _classPrivateFieldLooseBase(this, _account)[_account].id;
 
       if (region) {
@@ -17209,6 +18003,14 @@
 
       if (config === null || config === void 0 ? void 0 : config.customId) {
         this.createCustomIdIfValid(config.customId);
+      } // Only process OUL backup events if BLOCK_REQUEST_COOKIE is set
+      // This ensures user identity is established before other events
+
+
+      if (StorageManager.readFromLSorCookie(BLOCK_REQUEST_COOKIE) === true) {
+        _classPrivateFieldLooseBase(this, _logger)[_logger].debug('Processing OUL backup events first to establish user identity');
+
+        _classPrivateFieldLooseBase(this, _request)[_request].processBackupEvents(true);
       }
 
       const currLocation = location.href;
@@ -17344,6 +18146,23 @@
       }, FIRST_PING_FREQ_IN_MILLIS);
 
       _classPrivateFieldLooseBase(this, _updateUnviewedBadgePosition)[_updateUnviewedBadgePosition]();
+
+      this._handleVisualEditorPreview();
+    }
+
+    _handleVisualEditorPreview() {
+      if ($ct.intervalArray.length) {
+        $ct.intervalArray.forEach(interval => {
+          clearInterval(interval);
+        });
+      }
+
+      const storedData = sessionStorage.getItem('visualEditorData');
+      const targetJson = storedData ? JSON.parse(storedData) : null;
+
+      if (targetJson) {
+        renderVisualBuilder(targetJson, true, _classPrivateFieldLooseBase(this, _logger)[_logger]);
+      }
     }
 
     _isPersonalisationActive() {
@@ -17382,8 +18201,17 @@
       $ct.offline = arg;
     }
 
+    delayEvents(arg) {
+      if (typeof arg !== 'boolean') {
+        console.error('delayEvents should be called with a value of type boolean');
+        return;
+      }
+
+      $ct.delayEvents = arg;
+    }
+
     getSDKVersion() {
-      return 'web-sdk-v1.17.0';
+      return 'web-sdk-v2.1.2';
     }
 
     defineVariable(name, defaultValue) {

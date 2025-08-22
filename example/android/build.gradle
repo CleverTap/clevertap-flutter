@@ -1,3 +1,4 @@
+
 allprojects {
     repositories {
         google()
@@ -8,15 +9,20 @@ allprojects {
     }
 }
 
-rootProject.layout.buildDirectory = '../build'
+// SIMPLE FIX: Use file() instead of string
+rootProject.layout.buildDirectory = file('../build')
 
 subprojects {
-    project.layout.buildDirectory = "${rootProject.layout.buildDirectory}/${project.name}"
+    // SIMPLE FIX: Get the resolved path instead of Property object
+    def buildPath = rootProject.layout.buildDirectory.get().getAsFile().getAbsolutePath()
+    project.layout.buildDirectory = file("${buildPath}/${project.name}")
 }
+
 subprojects {
     project.evaluationDependsOn(':app')
 }
 
 tasks.register("clean", Delete) {
-    delete rootProject.layout.buildDirectory
+    // SIMPLE FIX: Resolve the property before deleting
+    delete rootProject.layout.buildDirectory.get()
 }

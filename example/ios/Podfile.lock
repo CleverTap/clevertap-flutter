@@ -1,8 +1,8 @@
 PODS:
-  - CleverTap-iOS-SDK (7.3.1):
+  - CleverTap-iOS-SDK (7.3.2):
     - SDWebImage (~> 5.11)
-  - clevertap_plugin (3.5.0):
-    - CleverTap-iOS-SDK (= 7.3.1)
+  - clevertap_plugin (3.5.1):
+    - CleverTap-iOS-SDK (= 7.3.2)
     - Flutter
   - Firebase/CoreOnly (10.25.0):
     - FirebaseCore (= 10.25.0)
@@ -107,8 +107,8 @@ EXTERNAL SOURCES:
     :path: Flutter
 
 SPEC CHECKSUMS:
-  CleverTap-iOS-SDK: 05c1860785c898f4f2316df6a207eb0ebd9d890a
-  clevertap_plugin: 352ff244d46566302aed3652aa7e8ac58d50c284
+  CleverTap-iOS-SDK: f2ddee86352069eaf9344d1654d0af677fe4047e
+  clevertap_plugin: 8c9eef08b90fff5e9377989db9f5809c23c28aac
   Firebase: 0312a2352584f782ea56f66d91606891d4607f06
   firebase_core: 3b49a055ff54114cae400581c13671fe53936c36
   firebase_messaging: 30fa3ec8cd0dc8a860b7817548911b97345a0875
