@@ -8,4 +8,5 @@ example/android/app/google-services.json
 build/
 example/pubspec.lock
 pubspec.lock
+example/android/app/property*
 
