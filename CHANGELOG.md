@@ -1,5 +1,11 @@
 ## CHANGE LOG
 
+Version 3.5.1 *(22 August 2025)*
+-------------------------------------------
+**What's new**
+* **[Web Platform]**
+  * Supports [CleverTap Web SDK v2.1.2](https://github.com/CleverTap/clevertap-web-sdk/releases/tag/v2.1.2)
+
 Version 3.5.0 *(21 July 2025)*
 -------------------------------------------
 * **[Android Platform]**
