@@ -455,11 +455,22 @@ class CleverTapPluginWeb {
       CleverTapOnKVDataChangedHandler handler) async {
     addDocumentEventListenerImpl(
         'CT_web_native_display',
-        ((JSAny object) {
-          var object_ = _dartify(object) as Map<Object?, Object?>;
-          Map<String, Object?> data = Map.fromEntries(object_.entries
-              .map((entry) => MapEntry(entry.key.toString(), entry.value)));
-          handler(data);
+        ((JSAny jsEvent) {
+          try {
+            // Extract the detail property from the event
+            final jsObject = jsEvent as JSObject;
+            final eventDetail = jsObject.getProperty('detail'.toJS);
+            if (eventDetail != null) {
+              var object_ = _dartify(eventDetail) as Map<Object?, Object?>;
+              Map<String, Object?> data = Map.fromEntries(object_.entries
+                  .map((entry) => MapEntry(entry.key.toString(), entry.value)));
+              handler(data);
+            } else {
+              print('No detail in CleverTap event');
+            }
+          } catch (e) {
+            print('Error processing CleverTap KV data: $e');
+          }
         }).toJS);
   }
 
