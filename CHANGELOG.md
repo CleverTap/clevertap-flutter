@@ -7,6 +7,12 @@ Version 3.5.3 *(22 September 2025)*
   * Supports [CleverTap Web SDK v2.3.0](https://github.com/CleverTap/clevertap-web-sdk/releases/tag/v2.3.0)
   * Fixed a bug where the method 'addKVDataChangeListener()' was not returning the kv data.
 
+* **[Android Platform]**
+  * Supports [CleverTap Android SDK v7.5.2](https://github.com/CleverTap/clevertap-android-sdk/blob/master/docs/CTCORECHANGELOG.md#version-752-september-11-2025).
+
+* **[iOS Platform]**
+  * Supports [CleverTap iOS SDK v7.3.3](https://github.com/CleverTap/clevertap-ios-sdk/blob/master/CHANGELOG.md#version-733-september-11-2025).
+
 Version 3.5.2 *(28 August 2025)*
 -------------------------------------------
 **What's new**
