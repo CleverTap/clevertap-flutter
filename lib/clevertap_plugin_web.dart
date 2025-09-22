@@ -457,16 +457,23 @@ class CleverTapPluginWeb {
         'CT_web_native_display',
         ((JSAny jsEvent) {
           try {
-            // Extract the detail property from the event
-            final jsObject = jsEvent as JSObject;
+            if (jsEvent is! JSObject) {
+              print('Unexpected CleverTap event type: ${jsEvent.runtimeType}');
+              return;
+            }
+            final jsObject = jsEvent;
             final eventDetail = jsObject.getProperty('detail'.toJS);
-            if (eventDetail != null) {
-              var object_ = _dartify(eventDetail) as Map<Object?, Object?>;
-              Map<String, Object?> data = Map.fromEntries(object_.entries
-                  .map((entry) => MapEntry(entry.key.toString(), entry.value)));
+            final dartDetail = _dartify(eventDetail);
+            if (dartDetail is Map) {
+              final data = dartDetail
+                  .map((k, v) => MapEntry(k.toString(), v as Object?))
+                  .cast<String, Object?>();
               handler(data);
-            } else {
+            } else if (dartDetail == null) {
               print('No detail in CleverTap event');
+            } else {
+              print(
+                  'CleverTap event.detail is not a Map; got ${dartDetail.runtimeType}');
             }
           } catch (e) {
             print('Error processing CleverTap KV data: $e');
