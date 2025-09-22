@@ -1,5 +1,12 @@
 ## CHANGE LOG
 
+Version 3.5.3 *(22 September 2025)*
+-------------------------------------------
+**What's new**
+* **[Web Platform]**
+  * Supports [CleverTap Web SDK v2.3.0](https://github.com/CleverTap/clevertap-web-sdk/releases/tag/v2.3.0)
+  * Fixed a bug where the method 'addKVDataChangeListener()' was not returning the kv data.
+
 Version 3.5.2 *(28 August 2025)*
 -------------------------------------------
 **What's new**
