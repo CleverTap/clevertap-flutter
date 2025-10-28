@@ -1,5 +1,11 @@
 ## CHANGE LOG
 
+Version 3.6.0 *(28 October 2025)*
+-------------------------------------------
+**What's new**
+* **[Android Platform]**
+  * Supports [CleverTap Android SDK v7.6.0](https://github.com/CleverTap/clevertap-android-sdk/blob/master/docs/CTCORECHANGELOG.md#version-760-october-17-2025).
+
 Version 3.5.3 *(22 September 2025)*
 -------------------------------------------
 **What's new**
