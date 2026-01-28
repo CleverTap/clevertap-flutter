@@ -11,6 +11,61 @@ Update the CleverTap Flutter wrapper SDK to use the latest native Android and iO
 
 ---
 
+## Execution Modes
+
+### Interactive Mode (Default)
+Requires user confirmation at critical decision points:
+- Version selection (detected vs manual)
+- API implementation decisions
+- Build failure handling
+
+**Usage**: Normal execution without flags
+
+### Auto-Confirm Mode
+Automatically proceeds with detected versions and recommended decisions. Use for:
+- Automated CI/CD pipelines
+- Batch updates of multiple SDKs
+- When you trust the automated analysis
+
+**Usage**: Pass `--auto-confirm` flag or set environment variable `CLAUDE_AUTO_CONFIRM=true`
+
+**Safety Features in Auto-Confirm Mode**:
+- ✅ Still validates version formats
+- ✅ Still checks changelog existence
+- ✅ Still creates git backup before changes
+- ✅ Still runs build validation
+- ✅ Fails fast on errors (no silent failures)
+- ❌ Skips interactive prompts
+- ❌ Always chooses option 1 (detected version)
+
+**Detection Logic**:
+```
+IF environment variable CLAUDE_AUTO_CONFIRM exists AND equals "true" THEN
+    AUTO_CONFIRM_MODE = true
+ELSE IF command line contains "--auto-confirm" flag THEN
+    AUTO_CONFIRM_MODE = true
+ELSE
+    AUTO_CONFIRM_MODE = false (Interactive Mode)
+END IF
+```
+
+---
+
+## Phase 0: Pre-Flight Checks (ALWAYS RUN)
+
+### 0.1 Environment Detection
+
+**Detect Auto-Confirm Mode**:
+```bash
+if [ "$CLAUDE_AUTO_CONFIRM" = "true" ] || [[ "$*" == *"--auto-confirm"* ]]; then
+    AUTO_CONFIRM_MODE=true
+    echo "[AUTO-CONFIRM] Running in automated mode"
+else
+    AUTO_CONFIRM_MODE=false
+    echo "[INTERACTIVE] Running in interactive mode"
+fi
+```
+
 ## Phase 1: Information Gathering
 
 ### 1.1 Read Current Versions
@@ -44,7 +99,9 @@ Extract current native SDK versions from:
 1. Fetch URL: `https://github.com/CleverTap/clevertap-android-sdk/blob/master/docs/CTCORECHANGELOG.md`
 2. Parse the first version entry (most recent)
 3. Store as: `NEW_ANDROID_VERSION`
-4. **⚠️ USER CONFIRMATION REQUIRED**: Present the detected version to the user:
+4. **Version Confirmation**:
+   
+   **IF AUTO_CONFIRM_MODE = false (Interactive)**:
    ```
    Detected latest Android SDK version: {NEW_ANDROID_VERSION}
    Current version in Flutter: {OLD_ANDROID_VERSION}
@@ -56,17 +113,28 @@ Extract current native SDK versions from:
    
    Please select an option (1/2/3):
    ```
-5. Wait for user input:
+   Wait for user input:
    - If option 1: Proceed with `NEW_ANDROID_VERSION`
    - If option 2: Prompt for version input and validate format (X.Y.Z)
    - If option 3: Exit gracefully
-6. Store final version as: `NEW_ANDROID_VERSION`
+   
+   **IF AUTO_CONFIRM_MODE = true (Auto-Confirm)**:
+   ```
+   [AUTO-CONFIRM] Detected latest Android SDK version: {NEW_ANDROID_VERSION}
+   [AUTO-CONFIRM] Current version in Flutter: {OLD_ANDROID_VERSION}
+   [AUTO-CONFIRM] Proceeding with detected version (no user input required)
+   ```
+   Automatically proceed with `NEW_ANDROID_VERSION`
+   
+5. Store final version as: `NEW_ANDROID_VERSION`
 
 **iOS**:
 1. Fetch URL: `https://github.com/CleverTap/clevertap-ios-sdk/blob/master/CHANGELOG.md`
 2. Parse the first version entry (most recent)
 3. Store as: `NEW_IOS_VERSION`
-4. **⚠️ USER CONFIRMATION REQUIRED**: Present the detected version to the user:
+4. **Version Confirmation**:
+   
+   **IF AUTO_CONFIRM_MODE = false (Interactive)**:
    ```
    Detected latest iOS SDK version: {NEW_IOS_VERSION}
    Current version in Flutter: {OLD_IOS_VERSION}
@@ -78,11 +146,20 @@ Extract current native SDK versions from:
    
    Please select an option (1/2/3):
    ```
-5. Wait for user input:
+   Wait for user input:
    - If option 1: Proceed with `NEW_IOS_VERSION`
    - If option 2: Prompt for version input and validate format (X.Y.Z)
    - If option 3: Exit gracefully
-6. Store final version as: `NEW_IOS_VERSION`
+   
+   **IF AUTO_CONFIRM_MODE = true (Auto-Confirm)**:
+   ```
+   [AUTO-CONFIRM] Detected latest iOS SDK version: {NEW_IOS_VERSION}
+   [AUTO-CONFIRM] Current version in Flutter: {OLD_IOS_VERSION}
+   [AUTO-CONFIRM] Proceeding with detected version (no user input required)
+   ```
+   Automatically proceed with `NEW_IOS_VERSION`
+   
+5. Store final version as: `NEW_IOS_VERSION`
 
 **Version Validation**:
 When user manually enters a version:
