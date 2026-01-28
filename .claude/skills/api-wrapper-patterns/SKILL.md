@@ -40,8 +40,6 @@ Method that triggers an action but doesn't return data.
 /// Parameters:
 /// - [eventName]: The name of the event to record
 /// - [properties]: Optional properties for the event
-///
-/// ```
 static Future<void> recordEvent(
   String eventName,
   {Map<String, dynamic>? properties}
@@ -91,7 +89,7 @@ if ([@"recordEvent" isEqualToString:call.method]) {
 
 Add implementation:
 ```objectivec
-- (void)recordEvent:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+- (void)recordEvent:(FlutterMethodCall *)call result:(FlutterResult)result {
     [[CleverTap sharedInstance] recordEvent:call.arguments[@"eventName"] withProps:call.arguments[@"eventData"]];
     result(nil);
 }
@@ -115,7 +113,6 @@ Method that retrieves data from native SDK based on input parameters.
 /// - [propertyName]: The name of the property to retrieve
 ///
 /// Returns: The property value, or null if not found
-/// ```
 static Future<dynamic> profileGetProperty(String propertyName) async {
   return await _dartToNativeMethodChannel.invokeMethod(
     'profileGetProperty',
@@ -176,7 +173,6 @@ Method that returns an Object data from the Native SDKs.
 /// Retrieves all inbox messages
 ///
 /// Returns: List of inbox message objects, or empty list if none
-/// ```
 static Future<List?> getAllInboxMessages() async {
   return await _dartToNativeMethodChannel
         .invokeMethod('getAllInboxMessages', {});
