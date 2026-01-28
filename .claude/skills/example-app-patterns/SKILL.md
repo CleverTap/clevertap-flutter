@@ -150,26 +150,95 @@ if (!kIsWeb)
 
 ### When Signature Changes
 
-If an API adds new optional parameters:
+If an API adds new optional parameters, create TWO buttons to demonstrate both use cases:
 
-**Before**:
+**Option 1: Keep existing button (without new parameter)**
 ```dart
-void methodName() async {
+// Existing button - unchanged behavior
+_buildListTile(
+    "Original API Name",
+    methodNameOriginal,
+    "Original description without new parameter."),
+```
+
+**Option 2: Add new button (with new parameter)**
+```dart
+// New button - demonstrates new parameter
+_buildListTile(
+    "API Name (With New Feature)",
+    methodNameWithNewParam,
+    "Description highlighting the new parameter behavior."),
+```
+
+**Implementation methods**:
+```dart
+// Original method - maintains backward compatibility
+void methodNameOriginal() async {
   var result = await CleverTapPlugin.apiMethod();
-  // ...
+  if (result == null) {
+    showToast("No result found");
+    print("API Name (Original) -> No result");
+  } else {
+    showToast("Result fetched, check console");
+    print("API Name (Original) -> Result: " + result.toString());
+  }
+}
+
+// New method - demonstrates new parameter
+void methodNameWithNewParam() async {
+  var result = await CleverTapPlugin.apiMethod(
+    newParam: true  // Demonstrate the new parameter
+  );
+  if (result == null) {
+    showToast("No result found");
+    print("API Name (With Param) -> No result");
+  } else {
+    showToast("Result with new parameter, check console");
+    print("API Name (With Param) -> Result: " + result.toString());
+  }
 }
 ```
 
-**After**:
+**Example**:
+If `getInboxMessageCount()` adds optional `unreadOnly` parameter:
+
 ```dart
-void methodName() async {
-  // Demonstrate new optional parameter
-  var result = await CleverTapPlugin.apiMethod(
-    newParam: true  // Show the new parameter
+// Button 1: Original behavior
+_buildListTile(
+    "Get All Inbox Message Count",
+    getInboxMessageCount,
+    "Returns total count of all inbox messages."),
+
+// Button 2: New parameter
+_buildListTile(
+    "Get Unread Inbox Message Count",
+    getUnreadInboxMessageCount,
+    "Returns count of unread inbox messages only."),
+```
+
+```dart
+// Implementation 1: Original
+void getInboxMessageCount() async {
+  int? count = await CleverTapPlugin.getInboxMessageCount();
+  showToast("Total messages: ${count ?? 0}");
+  print("Inbox Count (All) -> $count");
+}
+
+// Implementation 2: With new parameter
+void getUnreadInboxMessageCount() async {
+  int? count = await CleverTapPlugin.getInboxMessageCount(
+    unreadOnly: true
   );
-  // ...
+  showToast("Unread messages: ${count ?? 0}");
+  print("Inbox Count (Unread) -> $count");
 }
 ```
+
+**Why Two Buttons?**
+- Demonstrates backward compatibility (existing apps still work)
+- Shows the new feature clearly
+- Allows users to test both behaviors
+- Makes it obvious what the new parameter does
 ---
 
 ## Code Style Guidelines

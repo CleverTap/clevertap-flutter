@@ -247,10 +247,9 @@ Add implementation:
 
 ### Error Handling
 Always include:
-1. Try-catch blocks
-2. Null checks for required parameters
-3. CleverTap API instance null check
-4. Descriptive error messages
+1. Null checks for required parameters
+2. CleverTap API instance null check
+3. Descriptive error messages
 
 ### Method Channel Names
 - Must match exactly across Dart, Android, and iOS
@@ -288,6 +287,7 @@ Every public Dart method must have:
 **Solution**: Check type mapping:
 - `Map<String, dynamic>` (Dart) ↔ `Map<String, Any>` (Kotlin) ↔ `NSDictionary` (ObjC)
 - `List<dynamic>` (Dart) ↔ `List<Any>` (Kotlin) ↔ `NSArray` (ObjC)
+- `List?` (Dart) ↔ `List<Map<..>>` (Kotlin)
 
 ### Issue 3: Null Safety Issues
 **Symptom**: Crashes or unexpected null values  
