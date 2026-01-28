@@ -242,7 +242,7 @@ clevertap_plugin: {NEW_FLUTTER_VERSION}
 3. **Implement in Dart layer** (`lib/clevertap_plugin.dart`)
 4. **Implement in Android layer** (`DartToNativePlatformCommunicator.kt`)
 5. **Implement in iOS layer** (`CleverTapPlugin.m`)
-6. **Update example app** (`example/lib/main.dart`)
+6. **Update example app** using **example-app-patterns skill** (`example/lib/main.dart`)
 
 **Do NOT skip this phase** without explicit user approval.
 
@@ -346,4 +346,5 @@ Task complete when:
 
 - **version-detection** - Used in Phases 1 and 3
 - **changelog-generation** - Used in Phase 5
-- **api-wrapper-patterns** - Used in Phase 4
+- **api-wrapper-patterns** - Used in Phase 4 for SDK APIs
+- **example-app-patterns** - Used in Phase 4 for example app updates
