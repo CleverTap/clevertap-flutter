@@ -107,19 +107,27 @@ Changelogs use vague language like "returns variant data" without specifying exa
 
 **For iOS APIs**:
 
-1. Fetch the main public header file:
+1. **Try to extract the return type from the Changelog first**
+   - Look for explicit method signatures in the changelog entry (e.g., `- (NSArray *)methodName`)
+   - If the complete Objective-C signature is present with return type, use it directly
+   - If the changelog only has vague descriptions like "returns user data" or "gets profile info" without explicit types, proceed to step 2
+
+2. **Fetch the main public header file** (If step 1 didn't provide explicit signature)
+   - **ONLY fetch and search this single file**, do not look at any other files:
    ```
    URL: https://raw.githubusercontent.com/CleverTap/clevertap-ios-sdk/master/CleverTapSDK/CleverTap.h
    ```
+   - This is the primary public API surface for iOS SDK
+   - Do NOT search in implementation files (.m files) or private headers
 
-2. Search for the exact method name
+3. Search for the exact method name
 
-3. Extract complete Objective-C signature:
+4. Extract complete Objective-C signature:
    ```objc
-   - (NSArray<NSDictionary<NSString *, id> *> * _Nonnull)variants;
+   - (NSArray<CleverTapInboxMessage *> * _Nullable)getAllInboxMessages;
    ```
 
-4. Parse return type:
+5. Parse return type:
    - `NSArray` → Dart `List`
    - `NSDictionary` → Dart `Map`
    - `NSArray<NSDictionary*>` → Dart `List<Map>`
@@ -127,19 +135,27 @@ Changelogs use vague language like "returns variant data" without specifying exa
 
 **For Android APIs**:
 
-1. Search in priority order:
+1. **Try to extract the return type from the Changelog first**
+   - Look for explicit method signatures in the changelog entry (e.g., `public ArrayList<T> methodName()`)
+   - If the complete Java/Kotlin signature is present with return type, use it directly
+   - If the changelog only has vague descriptions like "returns user data" or "gets profile info" without explicit types, proceed to step 2
+
+2. **Fetch the main entry file** (If step 1 didn't provide explicit signature)
+   - **ONLY fetch and search this single file**, do not look at any other files:
    ```
    Primary: https://raw.githubusercontent.com/CleverTap/clevertap-android-sdk/master/clevertap-core/src/main/java/com/clevertap/android/sdk/CleverTapAPI.java
    ```
+   - This is the primary public API surface for Android SDK
+   - Do NOT search in internal implementation files or private classes
 
-2. Search for method name in file content
+3. Search for method name in file content
 
-3. Extract Java/Kotlin signature:
+4. Extract Java/Kotlin signature:
    ```java
-   public List<Map<String, Object>> getVariants();
+   public ArrayList<CTMessageType> getAllInboxMessages();
    ```
 
-4. Parse return type and generics
+5. Parse return type and generics````
 
 **Cross-Platform Verification**:
 
@@ -156,16 +172,15 @@ Compare return types across platforms - they should be equivalent:
 | `NSArray<NSDictionary*>` | `List<Map>` | `List<Map<String, dynamic>>` |
 
 **Common Mistakes to Avoid**:
-- ❌ Trusting changelog descriptions like "returns variant information"
+- ❌ Trusting changelog descriptions like "returns user profile data"
 - ❌ Guessing based on method name semantics
 - ❌ Assuming types without checking source code
 - ❌ Using incorrect generic type parameters
 
 **If Source Code Not Found**:
 1. Report exact search performed
-2. List files checked
-3. Ask user to manually verify or provide signature
-4. Do NOT proceed with implementation until confirmed
+2. Ask user to manually verify or provide signature
+3. Do NOT proceed with implementation until confirmed
 
 ### Step 5: Determine Wrapper Requirements
 
@@ -199,9 +214,9 @@ Generate a structured table for ALL APIs requiring action:
 
 | # | API Name | Return Type | Parameters | Category | Platforms | Decision |
 |---|----------|-------------|------------|----------|-----------|----------|
-| 1 | `getVariants()` | `List<Map<String, dynamic>>` | none | NEW_API | Android 7.1.0+, iOS 7.1.0+ | NEW_IMPLEMENTATION |
-| 2 | `setOptOut(enabled)` | `void` | enabled: bool | NEW_API | Android 7.1.0+, iOS 7.1.0+ | NEW_IMPLEMENTATION |
-| 3 | `recordEvent(name, props)` | `void` | name: String, props: Map? | UPDATED_API | Android 7.1.0+, iOS 7.1.0+ | UPDATE (added optional param) |
+| 1 | `getAllInboxMessages()` | `List<dynamic>` | none | NEW_API | Android 5.0.0+, iOS 4.2.0+ | NEW_IMPLEMENTATION |
+| 2 | `setOptOut(enabled)` | `void` | enabled: bool | NEW_API | Android 4.5.0+, iOS 4.5.0+ | NEW_IMPLEMENTATION |
+| 3 | `recordEvent(name, props)` | `void` | name: String, props: Map? | UPDATED_API | Android 5.1.0+, iOS 5.1.0+ | UPDATE (added optional param) |
 
 ### Breaking Changes (Immediate Attention)
 
@@ -242,7 +257,7 @@ Generate a structured table for ALL APIs requiring action:
 
 **Example**:
 ```
-Added getVariants() method to retrieve product variants
+Added getAllInboxMessages() method to retrieve all inbox messages
 → NEW_IMPLEMENTATION required
 ```
 
@@ -260,7 +275,7 @@ Added getVariants() method to retrieve product variants
 
 **Example**:
 ```
-recordEvent() now requires Map<String, dynamic> instead of JSONObject
+pushNotificationClickedWithExtras() signature changed to accept additional metadata
 → UPDATE required with migration guide
 ```
 
@@ -324,43 +339,6 @@ Before outputting the implementation plan, verify:
 - ✅ Platform versions correctly noted (Android X.Y.Z+, iOS X.Y.Z+)
 - ✅ Method signatures include full parameter details
 - ✅ Cross-platform consistency checked (iOS ↔ Android types match)
----
-
-## Error Scenarios
-
-### Changelog Fetch Failure
-```
-❌ Error: Failed to fetch Android changelog after 3 attempts
-URL: https://github.com/CleverTap/clevertap-android-sdk/blob/master/docs/CTCORECHANGELOG.md
-Last error: Network timeout
-
-Action: Cannot proceed with analysis. Please check network or provide changelog manually.
-```
-
-### Version Not Found
-```
-❌ Error: Version 7.5.0 not found in changelog
-Available versions: 7.0.0, 7.0.1, 7.1.0, 7.2.0
-
-Action: Please verify version number or specify a different version range.
-```
-
-### Source Code Signature Not Found
-```
-⚠️ Warning: Could not verify return type for getVariants()
-Searched: CleverTapAPI.java, CleverTap.h
-Changelog description: "Returns variant information"
-
-Action: Manual verification needed. Please provide method signature or skip this API.
-```
-
-### Ambiguous Categorization
-```
-⚠️ Warning: Unclear if API change is BREAKING or NEW_API
-Entry: "Updated recordEvent to accept optional metadata parameter"
-
-Action: Need clarification - is this backward compatible or breaking change?
-```
 
 ---
 
@@ -371,21 +349,21 @@ Action: Need clarification - is this backward compatible or breaking change?
 ```
 Input:
 - Platform: android
-- Old Version: 7.0.0
-- New Version: 7.1.0
+- Old Version: 5.0.0
+- New Version: 5.1.0
 
 Process:
 1. Fetch Android changelog
-2. Extract entries between 7.0.0 and 7.1.0
-3. Find NEW_API: getVariants()
+2. Extract entries between 5.0.0 and 5.1.0
+3. Find NEW_API: getFeatureFlag(String flagName, boolean defaultValue)
 4. Verify signature from CleverTapAPI.java:
-   public List<Map<String, Object>> getVariants()
+   public boolean getFeatureFlag(String flagName, boolean defaultValue)
 5. Categorize as NEW_IMPLEMENTATION
 
 Output:
 | # | API Name | Return Type | Parameters | Category | Decision |
 |---|----------|-------------|------------|----------|----------|
-| 1 | `getVariants()` | `List<Map<String, dynamic>>` | none | NEW_API | NEW_IMPLEMENTATION |
+| 1 | `getFeatureFlag()` | `bool` | flagName: String, defaultValue: bool | NEW_API | NEW_IMPLEMENTATION |
 ```
 
 ### Example 2: Identify Breaking Changes
@@ -417,22 +395,22 @@ Migration: Update Flutter wrapper to use new method, add deprecation warning
 ```
 Input:
 - Platforms: both (android + ios)
-- Old Version: 7.0.0
-- New Version: 7.1.0
+- Old Version: 5.0.0
+- New Version: 5.1.0
 
 Process:
-1. Analyze Android changelog → Find getVariants()
-2. Analyze iOS changelog → Find getVariants()
+1. Analyze Android changelog → Find suspendInAppNotifications()
+2. Analyze iOS changelog → Find suspendInAppNotifications()
 3. Verify signatures match:
-   - Android: List<Map<String, Object>>
-   - iOS: NSArray<NSDictionary<NSString *, id> *>
-   - Dart equivalent: List<Map<String, dynamic>>
+   - Android: void suspendInAppNotifications()
+   - iOS: - (void)suspendInAppNotifications
+   - Dart equivalent: void (Future<void>)
 4. Confirm NEW_IMPLEMENTATION needed for both platforms
 
 Output:
 | # | API Name | Return Type | Platforms | Decision |
 |---|----------|-------------|-----------|----------|
-| 1 | `getVariants()` | `List<Map<String, dynamic>>` | Android 7.1.0+, iOS 7.1.0+ | NEW_IMPLEMENTATION |
+| 1 | `suspendInAppNotifications()` | `void` | Android 5.1.0+, iOS 5.1.0+ | NEW_IMPLEMENTATION |
 ```
 
 ---

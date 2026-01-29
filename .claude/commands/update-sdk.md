@@ -152,7 +152,20 @@ END IF
 
 ---
 
-## Phase 3: Update Version Files
+## Phase 3: Implement API Wrappers
+
+**MANDATORY**: Implement ALL items in wrapper implementation plan marked NEW_IMPLEMENTATION or UPDATE.
+
+**For each API**:
+
+1. **Use api-wrapper-patterns skill** for updating
+2. **Update example app** using **example-app-patterns skill** (`example/lib/main.dart`)
+
+**Do NOT skip this phase** without explicit user approval.
+
+---
+
+## Phase 4: Update Version Files
 
 **Use version-detection skill** to know which files to update.
 
@@ -195,19 +208,6 @@ clevertap_plugin: {NEW_FLUTTER_VERSION}
 ```
 
 **Verification**: Read back each file to confirm changes applied correctly.
-
----
-
-## Phase 4: Implement API Wrappers
-
-**MANDATORY**: Implement ALL items in wrapper implementation plan marked NEW_IMPLEMENTATION or UPDATE.
-
-**For each API**:
-
-1. **Use api-wrapper-patterns skill** for updating
-2. **Update example app** using **example-app-patterns skill** (`example/lib/main.dart`)
-
-**Do NOT skip this phase** without explicit user approval.
 
 ---
 
