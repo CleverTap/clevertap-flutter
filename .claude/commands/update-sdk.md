@@ -130,58 +130,25 @@ END IF
 
 ## Phase 2: Analyze Native SDK Changes
 
-### 2.1 Extract Android SDK Changelog
+**Use the native-sdk-changelog-analysis skill** to:
 
-**Input**:
-- URL: Android SDK changelog  
-- Version range: `OLD_ANDROID_VERSION` to `NEW_ANDROID_VERSION`
+1. Extract changelog entries for both Android and iOS between version ranges:
+   - Android: `OLD_ANDROID_VERSION` to `NEW_ANDROID_VERSION`
+   - iOS: `OLD_IOS_VERSION` to `NEW_IOS_VERSION`
 
-**Process**:
-1. Fetch entire changelog
-2. Extract all entries between versions (inclusive)
-3. Categorize each change:
-   - `NEW_API` - New public methods/classes
-   - `DEPRECATED` - Methods marked deprecated
-   - `BREAKING` - Methods removed or signatures changed
-   - `BUG_FIX` - Bug fixes (no API impact)
-   - `INTERNAL` - Internal changes (no public API impact)
+2. Categorize all changes (NEW_API, BREAKING, DEPRECATED, BUG_FIX, INTERNAL)
 
-**Output**: List of changes with categories
+3. Verify method signatures from source code for all NEW_API and BREAKING changes
 
-### 2.2 Extract iOS SDK Changelog
+4. Generate wrapper implementation plan table
 
-Same process as 2.1, but for iOS SDK.
+5. Present the plan to user and **wait for acknowledgment** before proceeding to Phase 3
 
-### 2.3 Identify APIs Requiring Wrappers
-
-For each change marked `NEW_API` or `BREAKING`:
-
-**Decision Logic**:
-```
-Is this API already exposed in Flutter?
-├─ YES → Does it need updating?
-│  ├─ YES → Mark for UPDATE
-│  └─ NO → Mark as NO_ACTION
-└─ NO → Is this commonly used?
-   ├─ YES → Mark for NEW_IMPLEMENTATION
-   └─ NO → DISCUSS with user
-```
-
-**MANDATORY OUTPUT**:
-```markdown
-## Wrapper Implementation Plan
-
-### APIs Requiring Implementation
-
-| API Name | Category | Platforms | Decision |
-|----------|----------|-----------|----------|
-| methodName() | NEW_API | Android 7.x+, iOS 7.x+ | NEW_IMPLEMENTATION |
-
-### Implementation Details
-[For each API marked NEW_IMPLEMENTATION or UPDATE]
-```
-
-**CRITICAL**: Output this plan to user and get acknowledgment before Phase 3.
+**Output**: Structured implementation plan with:
+- APIs requiring implementation (with verified signatures)
+- Breaking changes requiring immediate attention
+- Deprecated APIs with migration paths
+- Items requiring no action
 
 ---
 
@@ -237,12 +204,8 @@ clevertap_plugin: {NEW_FLUTTER_VERSION}
 
 **For each API**:
 
-1. **Read existing similar implementations** to match patterns
-2. **Use api-wrapper-patterns skill** for templates
-3. **Implement in Dart layer** (`lib/clevertap_plugin.dart`)
-4. **Implement in Android layer** (`DartToNativePlatformCommunicator.kt`)
-5. **Implement in iOS layer** (`CleverTapPlugin.m`)
-6. **Update example app** using **example-app-patterns skill** (`example/lib/main.dart`)
+1. **Use api-wrapper-patterns skill** for updating
+2. **Update example app** using **example-app-patterns skill** (`example/lib/main.dart`)
 
 **Do NOT skip this phase** without explicit user approval.
 
@@ -251,32 +214,6 @@ clevertap_plugin: {NEW_FLUTTER_VERSION}
 ## Phase 5: Generate Changelog
 
 **Use changelog-generation skill** for formatting rules.
-
-### 5.1 Create Entry
-
-Calculate release date (current date + 3 days):
-```bash
-RELEASE_DATE=$(date -v+3d +'%-d %B %Y')  # macOS
-# or
-RELEASE_DATE=$(date -d '+3 days' +'%-d %B %Y')  # Linux
-```
-
-Generate entry following the template from changelog-generation skill.
-
-### 5.2 Insert at Top of CHANGELOG.md
-
-Read entire file, insert new entry after header, write back.
-
-### 5.3 Validate Changelog Links
-
-Test each native SDK changelog link:
-```bash
-curl -s -o /dev/null -w "%{http_code}" {LINK}
-```
-
-Expected: 200
-
-**If 404**: Adjust anchor format and retry.
 
 ---
 
@@ -287,12 +224,7 @@ Expected: 200
 flutter pub get
 ```
 
-### 6.2 Static Analysis
-```bash
-flutter analyze
-```
-
-### 6.3 Build Test
+### 6.2 Build Test
 ```bash
 cd example
 flutter build apk --debug --no-pub
@@ -345,6 +277,7 @@ Task complete when:
 ## Related Skills
 
 - **version-detection** - Used in Phases 1 and 3
-- **changelog-generation** - Used in Phase 5
+- **native-sdk-changelog-analysis** - Used in Phase 2
 - **api-wrapper-patterns** - Used in Phase 4 for SDK APIs
 - **example-app-patterns** - Used in Phase 4 for example app updates
+- **changelog-generation** - Used in Phase 5

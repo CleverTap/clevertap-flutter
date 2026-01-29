@@ -130,7 +130,6 @@ Version 3.8.0 *(15 February 2026)*
 
 **API changes**
 * **[Android and iOS Platform]**
-  * New API: `getExperimentVariants()` - Returns all active A/B experiment variants
   * New API: `setCustomInAppListener(callback)` - Allows custom handling of in-app notifications
 ```
 
