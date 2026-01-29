@@ -1,34 +1,29 @@
-# Skill: API Wrapper Patterns
-
-**Purpose**: Standard patterns for wrapping native CleverTap Android/iOS SDK APIs in Flutter
-
-**When to use**:
-- When new native SDK APIs are added
-- When updating existing API signatures
-- When implementing cross-platform features
-
+---
+name: api-wrapper-patterns
+description: Standard patterns for wrapping native CleverTap Android/iOS SDK APIs in Flutter. Use when adding new native SDK APIs, updating existing API signatures, implementing cross-platform features, or creating Flutter method channel bridges.
 ---
 
-## Decision Tree: Should This API Be Wrapped?
+# API Wrapper Patterns
+
+Standard patterns for wrapping native CleverTap Android/iOS SDK APIs in Flutter with proper method channels, error handling, and type conversions.
+
+## Decision Tree
 
 ```
 Is this a public API that apps call directly?
 ├─ YES → Does it already exist in Flutter?
-│  ├─ YES → Does the signature need updating?
+│  ├─ YES → Does signature need updating?
 │  │  ├─ YES → UPDATE existing wrapper
-│  │  └─ NO → NO ACTION needed
+│  │  └─ NO → NO ACTION
 │  └─ NO → Is this commonly used functionality?
 │     ├─ YES → CREATE new wrapper
 │     └─ NO → DISCUSS with user
 └─ NO (internal/config/payload) → NO wrapper needed
 ```
 
----
-
 ## Pattern 1: Simple Method (No Return Value)
 
-### Use Case
-Method that triggers an action but doesn't return data.
+**Use case**: Method that triggers an action but doesn't return data.
 
 **Example**: `recordEvent(String eventName, {Map<String, dynamic>? properties})`
 
@@ -95,16 +90,13 @@ Add implementation:
 }
 ```
 
----
+## Pattern 2: Method with Return Value
 
-## Pattern 2: Method with Return Value and Parameters
-
-### Use Case
-Method that retrieves data from native SDK based on input parameters.
+**Use case**: Method that retrieves data from native SDK.
 
 **Example**: `profileGetProperty(String propertyName) -> dynamic`
 
-### Dart Layer (`lib/clevertap_plugin.dart`)
+### Dart Layer
 
 ```dart
 /// Gets the value of a user profile property
@@ -121,16 +113,8 @@ static Future<dynamic> profileGetProperty(String propertyName) async {
 }
 ```
 
-### Android Layer (`DartToNativePlatformCommunicator.kt`)
+### Android Layer
 
-Add to `onMethodCall` switch:
-```kotlin
-"profileGetProperty" -> {
-    profileGetProperty(call, result)
-}
-```
-
-Add implementation:
 ```kotlin
 private fun profileGetProperty(call: MethodCall, result: MethodChannel.Result) {
     val propertyName = call.argument<String>("propertyName")
@@ -143,31 +127,21 @@ private fun profileGetProperty(call: MethodCall, result: MethodChannel.Result) {
 }
 ```
 
-### iOS Layer (`CleverTapPlugin.m`)
+### iOS Layer
 
-Add to `handleMethodCall`:
-```objectivec
-else if ([@"profileGetProperty" isEqualToString:call.method])
-[self profileGetProperty:call withResult:result];
-```
-
-Add implementation:
 ```objectivec
 - (void)profileGetProperty:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     result([[CleverTap sharedInstance] profileGet:call.arguments[@"propertyName"]]);
 }
 ```
 
----
-
 ## Pattern 3: Method Returning Complex Data
 
-### Use Case
-Method that returns an Object data from the Native SDKs.
+**Use case**: Method that returns objects/collections from native SDKs.
 
-**Example**: `getAllInboxMessages()` returns `List<CTInboxMessage>` in the native layer
+**Example**: `getAllInboxMessages()` returns `List<CTInboxMessage>`
 
-### Dart Layer (`lib/clevertap_plugin.dart`)
+### Dart Layer
 
 ```dart
 /// Retrieves all inbox messages
@@ -179,16 +153,9 @@ static Future<List?> getAllInboxMessages() async {
 }
 ```
 
-### Android Layer (`DartToNativePlatformCommunicator.kt`)
+### Android Layer
 
-Add to `onMethodCall` switch:
-```kotlin
-"getAllInboxMessages" -> {
-    getAllInboxMessages(result)
-}
-```
-
-Add implementation:
+Add conversion utility if needed:
 ```kotlin
 private fun getAllInboxMessages(result: MethodChannel.Result) {
    if (cleverTapAPI != null) {
@@ -197,10 +164,8 @@ private fun getAllInboxMessages(result: MethodChannel.Result) {
       result.error(TAG, ERROR_MSG, null)
    }
 }
-```
 
-Also add a Utils function to convert the object type to to a native type, if applicable:
-```kotlin
+// In Utils class
 static ArrayList<Map<String, Object>> inboxMessageListToArrayList(
       ArrayList<CTInboxMessage> inboxMessageArrayList) {
   ArrayList<Map<String, Object>> inboxMessageList = new ArrayList<>();
@@ -212,17 +177,9 @@ static ArrayList<Map<String, Object>> inboxMessageListToArrayList(
   return inboxMessageList;
 }
 ```
-### iOS Layer (`CleverTapPlugin.m`)
 
-Add to `handleMethodCall`:
-```objectivec
-if ([@"getAllInboxMessages" isEqualToString:call.method]) {
-    [self getAllInboxMessages:result];
-    return;
-}
-```
+### iOS Layer
 
-Add implementation:
 ```objectivec
 - (void)getAllInboxMessages:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     NSArray *messages = [[CleverTap sharedInstance] getAllInboxMessages];
@@ -231,40 +188,30 @@ Add implementation:
 }
 ```
 
----
-
 ## Code Style Guidelines
 
-### Dart Code Style
+### Dart
 - Use `static Future<ReturnType>` for all public methods
-- Use named optional parameters with `?` for optional params: `{Type? param}`
-- Format with proper indentation (2 spaces)
+- Named optional parameters: `{Type? param}`
+- 2-space indentation
 
-### Naming Conventions
-- **Dart**: camelCase for methods (`recordEvent`, `getCleverTapID`)
+### Naming
+- **Dart**: camelCase (`recordEvent`, `getCleverTapID`)
 - **Android**: camelCase for methods, UPPER_SNAKE_CASE for constants
 - **iOS**: camelCase for methods
 
 ### Error Handling
+
 Always include:
 1. Null checks for required parameters
 2. CleverTap API instance null check
 3. Descriptive error messages
 
-### Method Channel Names
-- Must match exactly across Dart, Android, and iOS
-- Use camelCase
-- Keep consistent with CleverTap SDK naming when possible
-
 ### Documentation
-Every public Dart method must have:
-- `///` doc comment
-- **Parameters** section describing each param
-- **Returns** section (if applicable)
 
-**Documentation Template**:
+Every public Dart method must have:
 ```dart
-/// [Brief description of what the method does]
+/// [Brief description]
 ///
 /// Parameters:
 /// - [param1]: Description
@@ -272,31 +219,31 @@ Every public Dart method must have:
 ///
 /// Returns: Description of return value
 ```
----
+
+## Type Mapping
+
+| Dart | Kotlin | Objective-C |
+|------|--------|-------------|
+| `Map<String, dynamic>` | `Map<String, Any>` | `NSDictionary` |
+| `List<dynamic>` | `List<Any>` | `NSArray` |
+| `String` | `String` | `NSString` |
+| `int` | `Int`, `Long` | `NSNumber` |
+| `double` | `Double` | `NSNumber` |
+| `bool` | `Boolean` | `BOOL` |
 
 ## Common Issues
 
 ### Issue 1: Method Not Found
-**Symptom**: `MissingPluginException` on Android/iOS  
-**Cause**: Method name mismatch between Dart and native  
-**Solution**: Verify exact string match in all 3 files
+**Symptom**: `MissingPluginException`  
+**Cause**: Method name mismatch  
+**Solution**: Verify exact string match across all 3 files
 
 ### Issue 2: Type Conversion Error
-**Symptom**: Cast exception or type mismatch  
+**Symptom**: Cast exception  
 **Cause**: Dart type doesn't map to native type  
-**Solution**: Check type mapping:
-- `Map<String, dynamic>` (Dart) ↔ `Map<String, Any>` (Kotlin) ↔ `NSDictionary` (ObjC)
-- `List<dynamic>` (Dart) ↔ `List<Any>` (Kotlin) ↔ `NSArray` (ObjC)
-- `List?` (Dart) ↔ `List<Map<..>>` (Kotlin)
+**Solution**: Check type mapping table above
 
-### Issue 3: Null Safety Issues
-**Symptom**: Crashes or unexpected null values  
+### Issue 3: Null Safety
+**Symptom**: Crashes or unexpected nulls  
 **Cause**: Missing null checks  
 **Solution**: Always check for null before using values
-
----
-
-## Related Skills
-
-- **version-detection** - Check which SDK versions support new APIs
-- **changelog-generation** - Document new APIs in changelog

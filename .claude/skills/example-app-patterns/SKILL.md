@@ -1,46 +1,28 @@
-# Skill: Example App Update Patterns
-
-**Purpose**: Standard patterns for demonstrating new APIs in the Flutter example app
-
-**When to use**:
-- After implementing new API wrappers
-- When updating existing API functionality
-- When adding new feature categories
-
 ---
+name: example-app-patterns
+description: Standard patterns for demonstrating new APIs in the Flutter example app. Use when implementing new API wrappers, updating existing API functionality, or adding new feature categories to the example app. Ensures all APIs have corresponding UI demonstrations.
+---
+
+# Example App Update Patterns
+
+Standard patterns for demonstrating CleverTap Flutter SDK APIs in the example app with proper UI organization, implementation methods, and user feedback.
 
 ## Overview
 
-The example app (`example/lib/main.dart`) serves as a live demo and testing ground for all CleverTap Flutter SDK APIs. Every new or updated API MUST be demonstrated in the example app.
+The example app (`example/lib/main.dart`) serves as live demo and testing ground for all CleverTap Flutter SDK APIs. Every new or updated API MUST be demonstrated.
 
----
-
-## File Structure
-
-### Main File
-`example/lib/main.dart` contains:
+**Structure**:
 - UI sections organized by feature category (ExpansionTiles)
 - Individual API buttons (ListTiles)
-- Implementation methods that call SDK APIs
+- Implementation methods calling SDK APIs
 - Helper methods for logging and user feedback
-
-### Pattern
-```
-_buildExpansionTile("Feature Category", [
-  _buildListTile("API Display Name", methodName, "Description"),
-  _buildListTile("Another API", anotherMethod, "Description"),
-])
-```
-
----
 
 ## Adding New APIs
 
 ### Step 1: Add UI Entry Point
 
-**Location**: Inside the appropriate `_buildExpansionTile` in the `build()` method
+Inside the appropriate `_buildExpansionTile` in the `build()` method:
 
-**Template**:
 ```dart
 _buildListTile(
     "User-Facing API Name",
@@ -71,9 +53,9 @@ _buildListTile(
 
 ### Step 2: Add Implementation Method
 
-**Location**: Inside `_MyAppState` class, grouped with related methods
+Inside `_MyAppState` class, grouped with related methods.
 
-**Template for Methods Returning Data**:
+**Methods returning data**:
 ```dart
 void methodName() async {
   var result = await CleverTapPlugin.apiMethod();
@@ -87,7 +69,7 @@ void methodName() async {
 }
 ```
 
-**Template for Methods Without Return Values**:
+**Methods without return values**:
 ```dart
 void methodName() {
   CleverTapPlugin.apiMethod();
@@ -96,7 +78,7 @@ void methodName() {
 }
 ```
 
-**Template for Methods with Parameters**:
+**Methods with parameters**:
 ```dart
 void methodName() async {
   Map<String, dynamic> params = {
@@ -117,11 +99,8 @@ void methodName() async {
 
 ### Step 3: Create New Section (If Needed)
 
-If the API belongs to a new feature category:
+If API belongs to a new feature category:
 
-**Location**: In the `build()` method, add new `_buildExpansionTile`
-
-**Template**:
 ```dart
 _buildExpansionTile("New Feature Category", [
   _buildListTile("API Name", methodName, "Description"),
@@ -129,41 +108,22 @@ _buildExpansionTile("New Feature Category", [
 ]),
 ```
 
-**Example**:
-```dart
-if (!kIsWeb)
-  _buildExpansionTile("Product Experiences", [
-    _buildListTile(
-        "Fetch Variables",
-        fetchVariables,
-        "Fetches all product experience variables."),
-    _buildListTile(
-        "Get Variable",
-        getVariable,
-        "Gets a specific variable value."),
-  ]),
-```
-
----
-
 ## Updating Existing APIs
 
 ### When Signature Changes
 
-If an API adds new optional parameters, create TWO buttons to demonstrate both use cases:
+If API adds new optional parameters, create TWO buttons to demonstrate both use cases:
 
-**Option 1: Keep existing button (without new parameter)**
+**Button 1: Original behavior**
 ```dart
-// Existing button - unchanged behavior
 _buildListTile(
     "Original API Name",
     methodNameOriginal,
     "Original description without new parameter."),
 ```
 
-**Option 2: Add new button (with new parameter)**
+**Button 2: New parameter**
 ```dart
-// New button - demonstrates new parameter
 _buildListTile(
     "API Name (With New Feature)",
     methodNameWithNewParam,
@@ -172,7 +132,7 @@ _buildListTile(
 
 **Implementation methods**:
 ```dart
-// Original method - maintains backward compatibility
+// Original method - backward compatibility
 void methodNameOriginal() async {
   var result = await CleverTapPlugin.apiMethod();
   if (result == null) {
@@ -187,7 +147,7 @@ void methodNameOriginal() async {
 // New method - demonstrates new parameter
 void methodNameWithNewParam() async {
   var result = await CleverTapPlugin.apiMethod(
-    newParam: true  // Demonstrate the new parameter
+    newParam: true
   );
   if (result == null) {
     showToast("No result found");
@@ -199,54 +159,18 @@ void methodNameWithNewParam() async {
 }
 ```
 
-**Example**:
-If `getInboxMessageCount()` adds optional `unreadOnly` parameter:
-
-```dart
-// Button 1: Original behavior
-_buildListTile(
-    "Get All Inbox Message Count",
-    getInboxMessageCount,
-    "Returns total count of all inbox messages."),
-
-// Button 2: New parameter
-_buildListTile(
-    "Get Unread Inbox Message Count",
-    getUnreadInboxMessageCount,
-    "Returns count of unread inbox messages only."),
-```
-
-```dart
-// Implementation 1: Original
-void getInboxMessageCount() async {
-  int? count = await CleverTapPlugin.getInboxMessageCount();
-  showToast("Total messages: ${count ?? 0}");
-  print("Inbox Count (All) -> $count");
-}
-
-// Implementation 2: With new parameter
-void getUnreadInboxMessageCount() async {
-  int? count = await CleverTapPlugin.getInboxMessageCount(
-    unreadOnly: true
-  );
-  showToast("Unread messages: ${count ?? 0}");
-  print("Inbox Count (Unread) -> $count");
-}
-```
-
-**Why Two Buttons?**
-- Demonstrates backward compatibility (existing apps still work)
-- Shows the new feature clearly
-- Allows users to test both behaviors
-- Makes it obvious what the new parameter does
----
+**Why two buttons?**
+- Demonstrates backward compatibility
+- Shows new feature clearly
+- Allows testing both behaviors
+- Makes parameter impact obvious
 
 ## Code Style Guidelines
 
 ### Method Naming
-- Use descriptive camelCase names
-- Match the SDK API name when possible
-- Example: `getCleverTapId`, `recordCustomEvent`, `fetchInboxMessages`
+- Descriptive camelCase names
+- Match SDK API name when possible
+- Example: `getCleverTapId`, `recordCustomEvent`
 
 ### User Feedback
 Always provide dual feedback:
@@ -266,7 +190,7 @@ if (result == null) {
 ```
 
 ### Platform-Specific APIs
-Wrap platform-specific sections with checks:
+Wrap platform-specific sections:
 ```dart
 if (!kIsWeb)
   _buildExpansionTile("Mobile-Only Feature", [
@@ -279,13 +203,9 @@ if (!kIsWeb)
 - Always `await` the SDK call
 - Handle potential null returns
 
----
-
 ## Common Patterns
 
 ### Pattern 1: Simple Getter
-
-**Use Case**: API that returns a single value (String, int, bool)
 
 ```dart
 void getCleverTapId() async {
@@ -301,8 +221,6 @@ void getCleverTapId() async {
 ```
 
 ### Pattern 2: List Fetcher
-
-**Use Case**: API that returns a list of items
 
 ```dart
 void getAllInboxMessages() async {
@@ -320,8 +238,6 @@ void getAllInboxMessages() async {
 
 ### Pattern 3: Action Trigger
 
-**Use Case**: API that performs an action without returning data
-
 ```dart
 void recordCustomEvent() {
   Map<String, dynamic> eventData = {
@@ -338,8 +254,6 @@ void recordCustomEvent() {
 
 ### Pattern 4: Complex Operation
 
-**Use Case**: API with multiple parameters or complex logic
-
 ```dart
 void setMultiValueForKey() async {
   List<String> values = ["Apple", "Orange", "Banana"];
@@ -353,8 +267,6 @@ void setMultiValueForKey() async {
 
 ### Pattern 5: Platform-Specific API
 
-**Use Case**: API that only works on mobile platforms
-
 ```dart
 void registerForPush() {
   if (!kIsWeb) {
@@ -367,56 +279,34 @@ void registerForPush() {
   }
 }
 ```
----
+
 ## Testing Checklist
 
-After adding/updating example app code:
-
-- [ ] New API has a corresponding button in the UI
-- [ ] Button is in the correct feature category
+- [ ] New API has corresponding button in UI
+- [ ] Button is in correct feature category
 - [ ] Description is clear and helpful
-- [ ] Implementation method exists and is named correctly
+- [ ] Implementation method exists and named correctly
 - [ ] Method handles null/error cases
-- [ ] Both `showToast` and `print` are used for feedback
-- [ ] Platform checks are added if needed
+- [ ] Both `showToast` and `print` are used
+- [ ] Platform checks added if needed
 - [ ] Example data is realistic and helpful
-- [ ] Code follows existing patterns in the file
+- [ ] Code follows existing patterns
 - [ ] App builds and runs without errors
-
----
 
 ## Common Issues
 
 ### Issue 1: Button Not Visible
-**Symptom**: Added ListTile but not showing in app  
 **Cause**: Platform check filtering it out or wrong ExpansionTile  
-**Solution**: 
-- Check if wrapped in `if (!kIsWeb)` and running on web
-- Verify correct ExpansionTile section
-- Check for syntax errors in build method
+**Solution**: Check `if (!kIsWeb)` wrapper, verify correct ExpansionTile, check for syntax errors
 
 ### Issue 2: Method Not Found
-**Symptom**: Clicking button shows error  
-**Cause**: Method name mismatch between ListTile and implementation  
+**Cause**: Method name mismatch  
 **Solution**: Verify exact method name match, including case
 
 ### Issue 3: No User Feedback
-**Symptom**: Button works but no visible confirmation  
 **Cause**: Missing `showToast()` call  
 **Solution**: Always add `showToast()` for user feedback
 
 ### Issue 4: Crash on Button Press
-**Symptom**: App crashes when testing  
 **Cause**: Missing null checks or type mismatch  
-**Solution**: 
-- Add null checks before using results
-- Verify return type matches expected type
-- Wrap in try-catch if needed
-
----
-
-## Related Skills
-
-- **api-wrapper-patterns** - For implementing the underlying SDK APIs
-- **version-detection** - For checking compatibility
-- **changelog-generation** - For documenting new example app additions
+**Solution**: Add null checks, verify return type, wrap in try-catch if needed

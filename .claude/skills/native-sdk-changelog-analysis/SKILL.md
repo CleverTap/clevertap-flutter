@@ -1,27 +1,11 @@
-# Skill: Native SDK Changelog Analysis
-
-**Purpose**: Analyze CleverTap native SDK changelogs to identify API changes and generate implementation plans for Flutter wrapper updates.
-
-**When to Use**:
-- During SDK version updates (called by update-sdk command)
-- Investigating impact of specific version changes
-- Planning API wrapper implementations
-- Reviewing breaking changes before updates
-
+---
+name: native-sdk-changelog-analysis
+description: Analyze CleverTap native SDK changelogs to identify API changes and generate implementation plans for Flutter wrapper updates. Use during SDK version updates, when investigating impact of version changes, planning API wrapper implementations, or reviewing breaking changes before updates.
 ---
 
-## Overview
+# Native SDK Changelog Analysis
 
-This skill extracts and categorizes changes from native Android and iOS SDK changelogs, verifies method signatures from source code, and generates a structured implementation plan for Flutter wrapper updates.
-
-**Key Capabilities**:
-- Parse changelog entries between version ranges
-- Categorize changes by impact type
-- Verify exact method signatures from source code
-- Generate wrapper implementation decision matrix
-- Identify breaking changes requiring immediate attention
-
----
+Extract and categorize changes from native Android and iOS SDK changelogs, verify method signatures from source code, and generate structured implementation plans for Flutter wrapper updates.
 
 ## Input Parameters
 
@@ -32,11 +16,9 @@ This skill extracts and categorizes changes from native Android and iOS SDK chan
 | `new_version` | string | Target version | "7.1.0" |
 | `changelog_url` | string (optional) | Override default URL | Custom URL |
 
-**Default Changelog URLs**:
+**Default URLs**:
 - **Android**: `https://github.com/CleverTap/clevertap-android-sdk/blob/master/docs/CTCORECHANGELOG.md`
 - **iOS**: `https://github.com/CleverTap/clevertap-ios-sdk/blob/master/CHANGELOG.md`
-
----
 
 ## Process
 
@@ -44,7 +26,7 @@ This skill extracts and categorizes changes from native Android and iOS SDK chan
 
 1. Fetch changelog from GitHub
 2. Extract content between version range (inclusive)
-3. Handle fetch errors with retry logic (3 attempts, exponential backoff)
+3. Handle errors with retry logic (3 attempts, exponential backoff)
 
 **Error Handling**:
 ```
@@ -56,110 +38,78 @@ END IF
 
 ### Step 2: Categorize Changes
 
-Parse each changelog entry and categorize:
-
 | Category | Criteria | Impact |
 |----------|----------|--------|
-| `NEW_API` | New public methods/classes introduced | Wrapper implementation needed |
-| `DEPRECATED` | Methods marked deprecated but still functional | Documentation update, future removal warning |
+| `NEW_API` | New public methods/classes | Wrapper implementation needed |
+| `DEPRECATED` | Methods marked deprecated but functional | Documentation update, future removal warning |
 | `BREAKING` | Methods removed or signatures changed | Immediate wrapper update required |
 | `BUG_FIX` | Bug fixes with no API surface changes | No wrapper changes needed |
 | `INTERNAL` | Internal refactoring, no public API impact | No action needed |
 
-**Parsing Rules**:
-- Look for keywords: "New", "Added", "Introduced", "Deprecated", "Removed", "Breaking"
-- Check method signatures in code blocks
-- Identify class/method names in backticks or code formatting
+**Parsing keywords**: "New", "Added", "Introduced", "Deprecated", "Removed", "Breaking"
 
 ### Step 3: Extract Method Signatures
 
-**For each NEW_API or BREAKING change**, extract complete signature details:
+**For each NEW_API or BREAKING change**, extract:
 
-#### Required Information
-
-1. **Method Name**:
-   - Full qualified name if applicable: `CleverTapAPI.methodName()`
-
-2. **Return Type**:
-   - Primitive types: `void`, `boolean`, `int`, `long`, `double`, `float`
-   - Objects: `String`, `JSONObject`, `JSONArray`
-   - Collections: `List<T>`, `Map<K,V>`, `Set<T>` (include generic types)
-   - SDK-specific types: `CTInboxMessage`, `EventDetail`, `UTMDetail`, etc.
-   - Nullable annotations: `@Nullable` or `@NonNull`
-
-3. **Parameters**:
-   - Name and type for each parameter
-   - Nullable/NonNull annotations
-   - Default values (Kotlin methods)
-   - Required vs optional indicators
-
-4. **Platform Version**:
-   - Android SDK version where introduced/changed
-   - iOS SDK version where introduced/changed
+1. **Method Name**: Full qualified name (e.g., `CleverTapAPI.methodName()`)
+2. **Return Type**: Include generics, nullability annotations
+3. **Parameters**: Name, type, nullable/non-null, default values, required vs optional
+4. **Platform Version**: SDK version where introduced/changed
 
 ### Step 4: Verify Return Types from Source Code
 
 **⚠️ CRITICAL: NEVER assume or guess return types from changelog descriptions.**
 
-Changelogs use vague language like "returns variant data" without specifying exact types. You **MUST** verify from native SDK source code.
+Changelogs use vague language like "returns variant data". You **MUST** verify from native SDK source code.
 
-#### Verification Process (MANDATORY)
+#### iOS Verification (MANDATORY)
 
-**For iOS APIs**:
+1. **Try to extract return type from Changelog first**
+   - Look for explicit method signatures (e.g., `- (NSArray *)methodName`)
+   - If complete Objective-C signature is present with return type, use it directly
+   - If only vague descriptions like "returns user data", proceed to step 2
 
-1. **Try to extract the return type from the Changelog first**
-   - Look for explicit method signatures in the changelog entry (e.g., `- (NSArray *)methodName`)
-   - If the complete Objective-C signature is present with return type, use it directly
-   - If the changelog only has vague descriptions like "returns user data" or "gets profile info" without explicit types, proceed to step 2
-
-2. **Fetch the main public header file** (If step 1 didn't provide explicit signature)
-   - **ONLY fetch and search this single file**, do not look at any other files:
+2. **Fetch main public header file** (if step 1 didn't provide explicit signature)
+   - **ONLY fetch this single file**:
    ```
-   URL: https://raw.githubusercontent.com/CleverTap/clevertap-ios-sdk/master/CleverTapSDK/CleverTap.h
+   https://raw.githubusercontent.com/CleverTap/clevertap-ios-sdk/master/CleverTapSDK/CleverTap.h
    ```
-   - This is the primary public API surface for iOS SDK
-   - Do NOT search in implementation files (.m files) or private headers
+   - Do NOT search other files
 
-3. Search for the exact method name
+3. Search for exact method name
 
 4. Extract complete Objective-C signature:
    ```objc
    - (NSArray<CleverTapInboxMessage *> * _Nullable)getAllInboxMessages;
    ```
 
-5. Parse return type:
-   - `NSArray` → Dart `List`
-   - `NSDictionary` → Dart `Map`
-   - `NSArray<NSDictionary*>` → Dart `List<Map>`
-   - Note nullability: `_Nonnull`, `_Nullable`
+5. Parse return type with nullability
 
-**For Android APIs**:
+#### Android Verification (MANDATORY)
 
-1. **Try to extract the return type from the Changelog first**
-   - Look for explicit method signatures in the changelog entry (e.g., `public ArrayList<T> methodName()`)
-   - If the complete Java/Kotlin signature is present with return type, use it directly
-   - If the changelog only has vague descriptions like "returns user data" or "gets profile info" without explicit types, proceed to step 2
+1. **Try to extract return type from Changelog first**
+   - Look for explicit method signatures (e.g., `public ArrayList<T> methodName()`)
+   - If complete Java/Kotlin signature is present, use it directly
+   - If only vague descriptions, proceed to step 2
 
-2. **Fetch the main entry file** (If step 1 didn't provide explicit signature)
-   - **ONLY fetch and search this single file**, do not look at any other files:
+2. **Fetch main entry file** (if step 1 didn't provide explicit signature)
+   - **ONLY fetch this single file**:
    ```
-   Primary: https://raw.githubusercontent.com/CleverTap/clevertap-android-sdk/master/clevertap-core/src/main/java/com/clevertap/android/sdk/CleverTapAPI.java
+   https://raw.githubusercontent.com/CleverTap/clevertap-android-sdk/master/clevertap-core/src/main/java/com/clevertap/android/sdk/CleverTapAPI.java
    ```
-   - This is the primary public API surface for Android SDK
-   - Do NOT search in internal implementation files or private classes
+   - Do NOT search other files
 
-3. Search for method name in file content
+3. Search for method name
 
 4. Extract Java/Kotlin signature:
    ```java
    public ArrayList<CTMessageType> getAllInboxMessages();
    ```
 
-5. Parse return type and generics````
+5. Parse return type and generics
 
-**Cross-Platform Verification**:
-
-Compare return types across platforms - they should be equivalent:
+#### Type Mapping
 
 | iOS Type | Android Type | Dart Type |
 |----------|--------------|-----------|
@@ -184,28 +134,22 @@ Compare return types across platforms - they should be equivalent:
 
 ### Step 5: Determine Wrapper Requirements
 
-For each API change, decide on action needed:
-
 ```
 Decision Tree:
 
 Is this API already exposed in Flutter?
 ├─ YES → Does signature/behavior need updating?
 │  ├─ YES → Mark for UPDATE
-│  └─ NO → Mark as NO_ACTION (already handled)
+│  └─ NO → Mark as NO_ACTION
 └─ NO → Is this commonly used functionality?
    ├─ YES → Mark for NEW_IMPLEMENTATION
-   ├─ MAYBE → Mark for DISCUSS (low priority, ask user)
-   └─ NO → Mark as SKIP (internal/rare use case)
+   ├─ MAYBE → Mark for DISCUSS
+   └─ NO → Mark as SKIP
 ```
-
----
 
 ## Output Format
 
 ### Wrapper Implementation Plan
-
-Generate a structured table for ALL APIs requiring action:
 
 ```markdown
 ## Wrapper Implementation Plan
@@ -216,7 +160,6 @@ Generate a structured table for ALL APIs requiring action:
 |---|----------|-------------|------------|----------|-----------|----------|
 | 1 | `getAllInboxMessages()` | `List<dynamic>` | none | NEW_API | Android 5.0.0+, iOS 4.2.0+ | NEW_IMPLEMENTATION |
 | 2 | `setOptOut(enabled)` | `void` | enabled: bool | NEW_API | Android 4.5.0+, iOS 4.5.0+ | NEW_IMPLEMENTATION |
-| 3 | `recordEvent(name, props)` | `void` | name: String, props: Map? | UPDATED_API | Android 5.1.0+, iOS 5.1.0+ | UPDATE (added optional param) |
 
 ### Breaking Changes (Immediate Attention)
 
@@ -228,119 +171,52 @@ Generate a structured table for ALL APIs requiring action:
 
 | # | API Name | Replacement | Removal Version | Platforms |
 |---|----------|-------------|-----------------|-----------|
-| 1 | `legacyMethod()` | Use `modernMethod()` instead | 8.0.0 (estimated) | Android 7.1.0+, iOS 7.1.0+ |
+| 1 | `legacyMethod()` | Use `modernMethod()` | 8.0.0 (estimated) | Android 7.1.0+, iOS 7.1.0+ |
 
 ### No Action Required
 
 - Bug fix: Crash in push notification rendering on Android 14
 - Internal: Refactored network layer implementation
-- Performance: Optimized event batching logic
 ```
 
-**CRITICAL**: Output this plan and **wait for user acknowledgment** before proceeding with implementation.
-
----
+**CRITICAL**: Output this plan and **wait for user acknowledgment** before proceeding.
 
 ## Change Category Details
 
 ### NEW_API
-**Characteristics**:
 - Brand new public method/class/property
-- Not previously available in any form
 - Adds new functionality
-
-**Action Required**:
-- Implement Flutter wrapper method
-- Add platform channel handlers (Android/iOS)
-- Update example app with usage
-- Document in README/API docs
-
-**Example**:
-```
-Added getAllInboxMessages() method to retrieve all inbox messages
-→ NEW_IMPLEMENTATION required
-```
+- **Action**: Implement Flutter wrapper, add platform channel handlers, update example app
 
 ### BREAKING
-**Characteristics**:
 - Existing API removed entirely
-- Method signature changed (params, return type)
+- Method signature changed
 - Behavior fundamentally altered
-
-**Action Required**:
-- Update existing Flutter wrapper
-- Migrate existing Flutter code
-- Add migration notes to changelog
-- Consider deprecation path for Flutter API
-
-**Example**:
-```
-pushNotificationClickedWithExtras() signature changed to accept additional metadata
-→ UPDATE required with migration guide
-```
+- **Action**: Update Flutter wrapper, migrate code, add migration notes
 
 ### DEPRECATED
-**Characteristics**:
 - Method marked for future removal
 - Still functional but discouraged
-- Alternative method available
-
-**Action Required**:
-- Add deprecation warning to Flutter wrapper
-- Document replacement in dartdoc
-- Plan future removal in Flutter SDK
-
-**Example**:
-```
-setLocation() deprecated, use setUserLocation() instead
-→ Add @deprecated annotation, update docs
-```
+- **Action**: Add deprecation warning, document replacement
 
 ### BUG_FIX
-**Characteristics**:
 - Fixes incorrect behavior
 - No API signature changes
-- No new functionality
-
-**Action Required**:
-- Usually no wrapper changes needed
-- May need to update example app if bug affected demo
-- Note in changelog if user-facing
-
-**Example**:
-```
-Fixed crash when recording events with null properties
-→ NO_ACTION (Flutter wrapper unchanged)
-```
+- **Action**: Usually no wrapper changes
 
 ### INTERNAL
-**Characteristics**:
 - Refactoring/optimization
 - No public API changes
-- Implementation details only
-
-**Action Required**:
-- No wrapper changes needed
-- May note in changelog as "Updated native SDK"
-
-**Example**:
-```
-Refactored internal threading model for better performance
-→ NO_ACTION (transparent to Flutter layer)
-```
-
----
+- **Action**: No wrapper changes
 
 ## Verification Checklist
 
-Before outputting the implementation plan, verify:
+Before outputting implementation plan:
 
 - ✅ All NEW_API entries have verified return types from source code
 - ✅ Platform versions correctly noted (Android X.Y.Z+, iOS X.Y.Z+)
 - ✅ Method signatures include full parameter details
 - ✅ Cross-platform consistency checked (iOS ↔ Android types match)
-
----
 
 ## Usage Examples
 
@@ -366,31 +242,7 @@ Output:
 | 1 | `getFeatureFlag()` | `bool` | flagName: String, defaultValue: bool | NEW_API | NEW_IMPLEMENTATION |
 ```
 
-### Example 2: Identify Breaking Changes
-
-```
-Input:
-- Platform: ios
-- Old Version: 6.9.0
-- New Version: 7.0.0
-
-Process:
-1. Fetch iOS changelog
-2. Detect major version bump (6.x → 7.x)
-3. Find BREAKING: Removed deprecated setLocation()
-4. Find NEW_API: setUserLocation() as replacement
-5. Generate migration guidance
-
-Output:
-Breaking Changes:
-| # | API Name | Change | Impact |
-|---|----------|--------|--------|
-| 1 | `setLocation()` | Removed | Use setUserLocation() instead |
-
-Migration: Update Flutter wrapper to use new method, add deprecation warning
-```
-
-### Example 3: Cross-Platform Analysis
+### Example 2: Cross-Platform Analysis
 
 ```
 Input:
@@ -405,7 +257,7 @@ Process:
    - Android: void suspendInAppNotifications()
    - iOS: - (void)suspendInAppNotifications
    - Dart equivalent: void (Future<void>)
-4. Confirm NEW_IMPLEMENTATION needed for both platforms
+4. Confirm NEW_IMPLEMENTATION needed for both
 
 Output:
 | # | API Name | Return Type | Platforms | Decision |
@@ -413,24 +265,10 @@ Output:
 | 1 | `suspendInAppNotifications()` | `void` | Android 5.1.0+, iOS 5.1.0+ | NEW_IMPLEMENTATION |
 ```
 
----
-
-## Integration with Other Skills
-
-This skill is designed to integrate with:
-
-- **update-sdk command**: Called during Phase 2 of SDK update process
-- **api-wrapper-patterns**: Uses output to guide wrapper implementation
-- **changelog-generation**: Provides categorized changes for Flutter changelog entries
-
----
-
 ## Success Criteria
 
 Task complete when:
 - ✅ All changes between versions extracted and categorized
 - ✅ All NEW_API and BREAKING changes have verified signatures from source code
 - ✅ Implementation plan table generated with complete details
-- ✅ User has acknowledge``d the plan before proceeding
-
----
+- ✅ User has acknowledged the plan before proceeding
