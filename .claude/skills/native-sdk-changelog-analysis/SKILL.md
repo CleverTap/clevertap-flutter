@@ -53,84 +53,165 @@ END IF
 **For each NEW_API or BREAKING change**, extract:
 
 1. **Method Name**: Full qualified name (e.g., `CleverTapAPI.methodName()`)
-2. **Return Type**: Include generics, nullability annotations
+2. **Return Type**: See Step 4 for how to determine
 3. **Parameters**: Name, type, nullable/non-null, default values, required vs optional
 4. **Platform Version**: SDK version where introduced/changed
 
-### Step 4: Verify Return Types from Source Code
+### Step 4: Determine Return Types
 
-**⚠️ CRITICAL: NEVER assume or guess return types from changelog descriptions.**
+**⚠️ CRITICAL: Follow this priority order to find return types efficiently.**
 
-Changelogs use vague language like "returns variant data". You **MUST** verify from native SDK source code.
+#### Priority 1: Extract from Changelog (If Explicit)
 
-#### iOS Verification (MANDATORY)
+First, check if the changelog entry contains explicit type information:
 
-1. **Try to extract return type from Changelog first**
-   - Look for explicit method signatures (e.g., `- (NSArray *)methodName`)
-   - If complete Objective-C signature is present with return type, use it directly
-   - If only vague descriptions like "returns user data", proceed to step 2
+**Look for:**
+- Direct type mentions: "returns `ArrayList<String>`", "returns `NSArray<NSDictionary *> *`"
+- Method signature showing the signature
+- Code snippets showing the signature
+- Example usage showing the return type
 
-2. **Fetch main public header file** (if step 1 didn't provide explicit signature)
-   - **ONLY fetch this single file**:
-   ```
-   https://raw.githubusercontent.com/CleverTap/clevertap-ios-sdk/master/CleverTapSDK/CleverTap.h
-   ```
-   - Do NOT search other files
+**If found:** Use the explicit type and skip to implementation.
 
-3. Search for exact method name
+**If vague** (e.g., "returns variant data", "gets inbox messages"): Proceed to Priority 2.
 
-4. Extract complete Objective-C signature:
-   ```objc
+---
+
+#### Priority 2: Check Native SDK Files
+
+**For iOS APIs - Fetch ONLY this file:**
+```
+https://raw.githubusercontent.com/CleverTap/clevertap-ios-sdk/master/CleverTapSDK/CleverTap.h
+```
+
+**For Android APIs - Fetch ONLY this file:**
+```
+https://raw.githubusercontent.com/CleverTap/clevertap-android-sdk/master/clevertap-core/src/main/java/com/clevertap/android/sdk/CleverTapAPI.java
+```
+
+**Process:**
+1. Use `web_fetch` with `text_content_token_limit: 50000` to fetch the appropriate file
+2. Search for the method name (case-insensitive, allow partial matches)
+3. Extract the complete signature:
+
+   **iOS Example:**
+```objc
    - (NSArray<CleverTapInboxMessage *> * _Nullable)getAllInboxMessages;
-   ```
+```
 
-5. Parse return type with nullability
+**Android Example:**
+```java
+   public ArrayList<CTInboxMessage> getAllInboxMessages();
+```
 
-#### Android Verification (MANDATORY)
+4. Note the native return type including generics and nullability annotations
 
-1. **Try to extract return type from Changelog first**
-   - Look for explicit method signatures (e.g., `public ArrayList<T> methodName()`)
-   - If complete Java/Kotlin signature is present, use it directly
-   - If only vague descriptions, proceed to step 2
+**If method found:** Use the native signature and proceed to implementation.
 
-2. **Fetch main entry file** (if step 1 didn't provide explicit signature)
-   - **ONLY fetch this single file**:
-   ```
-   https://raw.githubusercontent.com/CleverTap/clevertap-android-sdk/master/clevertap-core/src/main/java/com/clevertap/android/sdk/CleverTapAPI.java
-   ```
-   - Do NOT search other files
+**If method NOT found in primary file:** Proceed to Priority 3.
 
-3. Search for method name
+---
 
-4. Extract Java/Kotlin signature:
-   ```java
-   public ArrayList<CTMessageType> getAllInboxMessages();
-   ```
+#### Priority 3: Cross-Platform Inference
 
-5. Parse return type and generics
+**If the API exists in BOTH platforms and you found ONE signature:**
 
-#### Type Mapping
+Use type mapping to infer the other:
+
+| iOS Type | Android Type | Flutter/Dart Type |
+|----------|--------------|-------------------|
+| `NSArray<T *> *` | `ArrayList<T>` | `List<T>` |
+| `NSDictionary<K, V> *` | `Map<K, V>` | `Map<K, V>` |
+| `NSString *` | `String` | `String` |
+| `NSNumber *` / `int` | `int` / `Integer` | `int` |
+| `BOOL` | `boolean` | `bool` |
+| `void` | `void` | `void` |
+| `id` | `Object` | `dynamic` |
+
+**Process:**
+1. If Android signature found but iOS missing → infer iOS type using table
+2. If iOS signature found but Android missing → infer Android type using table
+3. Document the inference: "// Inferred from Android: ArrayList<CTInboxMessage>"
+
+**Example:**
+- **Found in Android:** `public Map<String, Object> getVariants()`
+- **Infer for iOS:** `- (NSDictionary<NSString *, id> *)getVariants`
+
+---
+
+#### Priority 4: Method Not Found - Verification Required
+
+**If method not found after all steps:**
+
+1. **Verify the method name with user:**
+```
+   I couldn't find `methodName()` in the public API files:
+   - iOS: CleverTap.h
+   - Android: CleverTapAPI.java
+   
+   Could you verify:
+   - The exact method name from the changelog?
+   - Whether this is a public-facing API?
+   - If it might be in a different class/module?
+```
+
+2. **Do NOT proceed with implementation until confirmed**
+
+3. **Suggest alternatives:**
+   - Check if it's an internal/private API
+   - Look for similar method names in the files
+   - Verify the SDK version in the changelog
+
+---
+
+#### Special Cases
+
+**1. File too large / truncated:**
+- If `web_fetch` truncates the file, use `web_search`:
+```
+  site:github.com/CleverTap/clevertap-android-sdk "methodName"
+```
+- Fetch the specific file from search results
+
+**2. Method has multiple overloads:**
+- Extract ALL signatures
+- Ask user which variant to implement
+- Document all variants in comments
+
+**3. Deprecated methods:**
+- Note deprecation in comments
+- Suggest modern alternative if available
+- Proceed with implementation unless user objects
+
+---
+
+#### Quality Checklist
+
+Before proceeding to implementation, verify:
+- [ ] Return type explicitly found OR reasonably inferred
+- [ ] Generics/type parameters included (e.g., `ArrayList<T>` not just `ArrayList`)
+- [ ] Nullability annotations captured (iOS: `_Nullable`, `_Nonnull`)
+- [ ] Method signature is complete (access modifier, return type, name, parameters)
+- [ ] If inferred, inference is documented in code comments
+
+#### Type Mapping Reference
 
 | iOS Type | Android Type | Dart Type |
 |----------|--------------|-----------|
-| `NSArray` | `List` | `List` |
-| `NSDictionary` | `Map` | `Map` |
+| `NSArray` | `List`, `ArrayList` | `List` |
+| `NSDictionary` | `Map`, `HashMap` | `Map` |
 | `NSString` | `String` | `String` |
 | `NSNumber` | `Integer`, `Long`, `Double` | `int`, `double` |
 | `BOOL` | `boolean` | `bool` |
 | `void` | `void` | `void` |
-| `NSArray<NSDictionary*>` | `List<Map>` | `List<Map<String, dynamic>>` |
+| `NSArray<NSDictionary*>` | `List<Map>`, `ArrayList<HashMap>` | `List<Map<String, dynamic>>` |
 
 **Common Mistakes to Avoid**:
 - ❌ Trusting changelog descriptions like "returns user profile data"
 - ❌ Guessing based on method name semantics
 - ❌ Assuming types without checking source code
+- ❌ Fetching or reading files other than the two main files listed above
 - ❌ Using incorrect generic type parameters
-
-**If Source Code Not Found**:
-1. Report exact search performed
-2. Ask user to manually verify or provide signature
-3. Do NOT proceed with implementation until confirmed
 
 ### Step 5: Determine Wrapper Requirements
 
@@ -151,15 +232,18 @@ Is this API already exposed in Flutter?
 
 ### Wrapper Implementation Plan
 
+**CRITICAL**: The "Native Return Type" columns MUST show the actual native SDK return types (e.g., `ArrayList<CTInboxMessage>` for Android, `NSArray<CleverTapInboxMessage *> *` for iOS), NOT the Dart types.
+
 ```markdown
 ## Wrapper Implementation Plan
 
 ### APIs Requiring Implementation
 
-| # | API Name | Return Type | Parameters | Category | Platforms | Decision |
-|---|----------|-------------|------------|----------|-----------|----------|
-| 1 | `getAllInboxMessages()` | `List<dynamic>` | none | NEW_API | Android 5.0.0+, iOS 4.2.0+ | NEW_IMPLEMENTATION |
-| 2 | `setOptOut(enabled)` | `void` | enabled: bool | NEW_API | Android 4.5.0+, iOS 4.5.0+ | NEW_IMPLEMENTATION |
+| # | API Name | Android Return Type | iOS Return Type | Dart Return Type | Parameters | Category | Platforms | Decision |
+|---|----------|---------------------|-----------------|------------------|------------|----------|-----------|----------|
+| 1 | `getAllInboxMessages()` | `ArrayList<CTInboxMessage>` | `NSArray<CleverTapInboxMessage *> *` | `List<dynamic>` | none | NEW_API | Android 5.0.0+, iOS 4.2.0+ | NEW_IMPLEMENTATION |
+| 2 | `setOptOut(enabled)` | `void` | `void` | `void` | enabled: bool | NEW_API | Android 4.5.0+, iOS 4.5.0+ | NEW_IMPLEMENTATION |
+| 3 | `getFeatureFlag(name, default)` | `boolean` | `BOOL` | `bool` | name: String, default: bool | NEW_API | Android 5.1.0+, iOS 5.1.0+ | NEW_IMPLEMENTATION |
 
 ### Breaking Changes (Immediate Attention)
 
@@ -213,10 +297,12 @@ Is this API already exposed in Flutter?
 
 Before outputting implementation plan:
 
-- ✅ All NEW_API entries have verified return types from source code
+- ✅ All NEW_API entries have verified native return types from source code
+- ✅ Native return types were found by reading ONLY the two main files (CleverTap.h and CleverTapAPI.java)
+- ✅ Native return types shown in output table (Android and iOS columns separate)
 - ✅ Platform versions correctly noted (Android X.Y.Z+, iOS X.Y.Z+)
 - ✅ Method signatures include full parameter details
-- ✅ Cross-platform consistency checked (iOS ↔ Android types match)
+- ✅ Cross-platform consistency checked (iOS ↔ Android types are equivalent)
 
 ## Usage Examples
 
@@ -232,14 +318,15 @@ Process:
 1. Fetch Android changelog
 2. Extract entries between 5.0.0 and 5.1.0
 3. Find NEW_API: getFeatureFlag(String flagName, boolean defaultValue)
-4. Verify signature from CleverTapAPI.java:
+4. Fetch CleverTapAPI.java using web_fetch
+5. Search in file content and find signature:
    public boolean getFeatureFlag(String flagName, boolean defaultValue)
-5. Categorize as NEW_IMPLEMENTATION
+6. Categorize as NEW_IMPLEMENTATION
 
 Output:
-| # | API Name | Return Type | Parameters | Category | Decision |
-|---|----------|-------------|------------|----------|----------|
-| 1 | `getFeatureFlag()` | `bool` | flagName: String, defaultValue: bool | NEW_API | NEW_IMPLEMENTATION |
+| # | API Name | Android Return Type | iOS Return Type | Dart Return Type | Parameters | Category | Decision |
+|---|----------|---------------------|-----------------|------------------|------------|----------|----------|
+| 1 | `getFeatureFlag()` | `boolean` | N/A (Android only) | `bool` | flagName: String, defaultValue: bool | NEW_API | NEW_IMPLEMENTATION |
 ```
 
 ### Example 2: Cross-Platform Analysis
@@ -252,23 +339,53 @@ Input:
 
 Process:
 1. Analyze Android changelog → Find suspendInAppNotifications()
-2. Analyze iOS changelog → Find suspendInAppNotifications()
-3. Verify signatures match:
-   - Android: void suspendInAppNotifications()
-   - iOS: - (void)suspendInAppNotifications
-   - Dart equivalent: void (Future<void>)
-4. Confirm NEW_IMPLEMENTATION needed for both
+2. Fetch CleverTapAPI.java using web_fetch
+3. Search in file and find:
+   public void suspendInAppNotifications()
+4. Analyze iOS changelog → Find suspendInAppNotifications()
+5. Fetch CleverTap.h using web_fetch
+6. Search in file and find:
+   - (void)suspendInAppNotifications
+7. Confirm types match (both void)
+8. Confirm NEW_IMPLEMENTATION needed for both
 
 Output:
-| # | API Name | Return Type | Platforms | Decision |
-|---|----------|-------------|-----------|----------|
-| 1 | `suspendInAppNotifications()` | `void` | Android 5.1.0+, iOS 5.1.0+ | NEW_IMPLEMENTATION |
+| # | API Name | Android Return Type | iOS Return Type | Dart Return Type | Platforms | Decision |
+|---|----------|---------------------|-----------------|------------------|-----------|----------|
+| 1 | `suspendInAppNotifications()` | `void` | `void` | `void` | Android 5.1.0+, iOS 5.1.0+ | NEW_IMPLEMENTATION |
+```
+
+### Example 3: Complex Return Types
+
+```
+Input:
+- Platform: both
+- Old Version: 4.1.0
+- New Version: 4.2.0
+
+Process:
+1. Find NEW_API: getAllInboxMessages()
+2. Fetch CleverTapAPI.java using web_fetch
+3. Search in file and extract full signature:
+   public ArrayList<CTInboxMessage> getAllInboxMessages()
+4. Fetch CleverTap.h using web_fetch
+5. Search in file and extract full signature:
+   - (NSArray<CleverTapInboxMessage *> * _Nullable)getAllInboxMessages
+6. Note full native types with generics
+7. Map to Dart: List<dynamic> (since we convert messages to Maps)
+
+Output:
+| # | API Name | Android Return Type | iOS Return Type | Dart Return Type | Decision |
+|---|----------|---------------------|-----------------|------------------|----------|
+| 1 | `getAllInboxMessages()` | `ArrayList<CTInboxMessage>` | `NSArray<CleverTapInboxMessage *> *` | `List<dynamic>` | NEW_IMPLEMENTATION |
 ```
 
 ## Success Criteria
 
 Task complete when:
 - ✅ All changes between versions extracted and categorized
-- ✅ All NEW_API and BREAKING changes have verified signatures from source code
+- ✅ All NEW_API and BREAKING changes have verified native return types from source code
+- ✅ Return types were determined by reading ONLY the two main files (no other files were fetched)
+- ✅ Implementation plan table shows separate columns for Android and iOS native return types
 - ✅ Implementation plan table generated with complete details
 - ✅ User has acknowledged the plan before proceeding
