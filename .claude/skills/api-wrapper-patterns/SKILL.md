@@ -225,7 +225,7 @@ Every public Dart method must have:
 | Dart | Kotlin | Objective-C |
 |------|--------|-------------|
 | `Map<String, dynamic>` | `Map<String, Any>` | `NSDictionary` |
-| `List<dynamic>` | `List<Any>` | `NSArray` |
+| `List<dynamic>` | `List` | `NSArray` |
 | `String` | `String` | `NSString` |
 | `int` | `Int`, `Long` | `NSNumber` |
 | `double` | `Double` | `NSNumber` |

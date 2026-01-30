@@ -115,6 +115,9 @@ END IF
 - ✅ Code examples showing the return type
 - ✅ Usage examples demonstrating the return type
 
+**🚨 CRITICAL - Be Strict**:
+Only consider the type "explicit" if you can extract the **complete native type signature**
+
 **Decision**:
 ```
 IF explicit type found in changelog THEN
@@ -198,15 +201,15 @@ END IF
 
 | iOS Type | Android Type | Flutter/Dart Type | Notes |
 |----------|--------------|-------------------|-------|
-| `NSArray<T *> *` | `ArrayList<T>`, `List<T>` | `List<T>` | Ordered collection |
-| `NSDictionary<K, V> *` | `Map<K, V>`, `HashMap<K, V>` | `Map<K, V>` | Key-value pairs |
-| `NSString *` | `String` | `String` | Text |
-| `NSNumber *` | `Integer`, `Long`, `Double` | `int`, `double` | Numeric values |
-| `int`, `NSInteger` | `int`, `Integer` | `int` | Integers |
-| `BOOL` | `boolean` | `bool` | Boolean |
-| `void` | `void` | `void` | No return |
-| `id` | `Object` | `dynamic` | Any type |
-| `NSArray<NSDictionary *> *` | `ArrayList<HashMap>`, `List<Map>` | `List<Map<String, dynamic>>` | List of maps |
+| `NSArray<T *> *` | `ArrayList<T>`, `List<T>` | `List<T>`         | Ordered collection |
+| `NSDictionary<K, V> *` | `Map<K, V>`, `HashMap<K, V>` | `Map<K, V>`       | Key-value pairs |
+| `NSString *` | `String` | `String`          | Text |
+| `NSNumber *` | `Integer`, `Long`, `Double` | `int`, `double`   | Numeric values |
+| `int`, `NSInteger` | `int`, `Integer` | `int`             | Integers |
+| `BOOL` | `boolean` | `bool`            | Boolean |
+| `void` | `void` | `void`            | No return |
+| `id` | `Object` | `dynamic`         | Any type |
+| `NSArray<NSDictionary *> *` | `ArrayList<HashMap>`, `List<Map>` | `List?`           | List of maps |
 
 **Process**:
 ```

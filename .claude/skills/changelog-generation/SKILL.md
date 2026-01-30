@@ -78,7 +78,8 @@ Version 3.7.0 *(23 January 2026)*
 
 * **[Android Platform]**
   * Supports [CleverTap Android SDK v7.7.1](https://github.com/CleverTap/clevertap-android-sdk/blob/master/docs/CTCORECHANGELOG.md#version-771-december-2-2025).
-
+  * Adds support for XYZ
+    
 * **[iOS Platform]**
   * Supports [CleverTap iOS SDK v7.4.2](https://github.com/CleverTap/clevertap-ios-sdk/blob/master/CHANGELOG.md#version-742-january-14-2026).
 ```
@@ -113,7 +114,7 @@ Version 4.0.0 *(1 March 2026)*
 
 **Breaking Changes**
 * **[Android and iOS Platform]**
-  * Removed: `recordEvent(String eventName, Map<String, dynamic> properties)` signature deprecated in v3.5.0
+  * Removes: `recordEvent(String eventName, Map<String, dynamic> properties)` signature deprecated in v3.5.0
   * Migration: Use `recordEvent(String eventName, {Map<String, dynamic>? properties})` instead
 ```
 
@@ -127,11 +128,11 @@ Format: `DD Month YYYY`
 - Year: 4 digits (`2026` not `26`)
 
 ## Content Guidelines
+**Important** : Use active voice: "Adds support for..." not "Support was added"
 
 ### "What's new"
 - Start with native SDK support line
 - Add bullet points for major features
-- Use active voice: "Adds support for..." not "Support was added"
 
 ### "API changes"
 - List new public methods/classes
