@@ -125,10 +125,55 @@ ELSE IF only bug fixes THEN
     NEW_FLUTTER_VERSION = Increment PATCH (x.y.Z)
 END IF
 ```
+---
+
+## Phase 2: Update Version Files
+
+**Use version-detection skill** to know which files to update.
+
+Update all 6 locations:
+
+### 2.1 pubspec.yaml
+```yaml
+version: {NEW_FLUTTER_VERSION}
+```
+
+### 2.2 android/build.gradle (Line 2)
+```gradle
+version = '{NEW_FLUTTER_VERSION}'
+```
+
+### 2.3 android/build.gradle (Dependency)
+```gradle
+api 'com.clevertap.android:clevertap-android-sdk:{NEW_ANDROID_VERSION}'
+```
+
+### 2.4 ios/clevertap_plugin.podspec (Version)
+```ruby
+s.version = '{NEW_FLUTTER_VERSION}'
+```
+
+### 2.5 ios/clevertap_plugin.podspec (Dependency)
+```ruby
+s.dependency 'CleverTap-iOS-SDK', '{NEW_IOS_VERSION}'
+```
+
+### 2.6 lib/clevertap_plugin.dart (Constant)
+```dart
+static const libVersion = {NEW_FLUTTER_VERSION_AS_INT};
+```
+Convert: 3.7.0 → 30700
+
+### 2.7 README.md
+```yaml
+clevertap_plugin: {NEW_FLUTTER_VERSION}
+```
+
+**Verification**: Read back each file to confirm changes applied correctly.
 
 ---
 
-## Phase 2: Analyze Native SDK Changes
+## Phase 3: Analyze Native SDK Changes
 
 **Use the native-sdk-changelog-analysis skill** to:
 
@@ -145,69 +190,22 @@ END IF
 5. Present the plan to user and **wait for acknowledgment** before proceeding to Phase 3
 
 **Output**: Structured implementation plan with:
-- APIs requiring implementation (with verified signatures)
+- APIs requiring implementation (with verified signatures and return types)
 - Breaking changes requiring immediate attention
 - Deprecated APIs with migration paths
 - Items requiring no action
 
 ---
 
-## Phase 3: Implement API Wrappers
+## Phase 4: Implement API Wrappers
 
 **MANDATORY**: Implement ALL items in wrapper implementation plan marked NEW_IMPLEMENTATION or UPDATE.
 
-**For each API**:
+**Only if there is a need to implement/update a new API. **Do NOT skip this phase** without explicit user approval.**:
+For each API:
 
 1. **Use api-wrapper-patterns skill** for updating
 2. **Update example app** using **example-app-patterns skill** (`example/lib/main.dart`)
-
-**Do NOT skip this phase** without explicit user approval.
-
----
-
-## Phase 4: Update Version Files
-
-**Use version-detection skill** to know which files to update.
-
-Update all 6 locations:
-
-### 3.1 pubspec.yaml
-```yaml
-version: {NEW_FLUTTER_VERSION}
-```
-
-### 3.2 android/build.gradle (Line 2)
-```gradle
-version = '{NEW_FLUTTER_VERSION}'
-```
-
-### 3.3 android/build.gradle (Dependency)
-```gradle
-api 'com.clevertap.android:clevertap-android-sdk:{NEW_ANDROID_VERSION}'
-```
-
-### 3.4 ios/clevertap_plugin.podspec (Version)
-```ruby
-s.version = '{NEW_FLUTTER_VERSION}'
-```
-
-### 3.5 ios/clevertap_plugin.podspec (Dependency)
-```ruby
-s.dependency 'CleverTap-iOS-SDK', '{NEW_IOS_VERSION}'
-```
-
-### 3.6 lib/clevertap_plugin.dart (Constant)
-```dart
-static const libVersion = {NEW_FLUTTER_VERSION_AS_INT};
-```
-Convert: 3.7.0 → 30700
-
-### 3.7 README.md
-```yaml
-clevertap_plugin: {NEW_FLUTTER_VERSION}
-```
-
-**Verification**: Read back each file to confirm changes applied correctly.
 
 ---
 
