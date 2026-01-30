@@ -32,11 +32,11 @@ Extract and categorize changes from native Android and iOS SDK changelogs, verif
 ├─────────────────────────────────────────────────────────────┤
 │ Step 3: Extract Method Information                         │
 ├─────────────────────────────────────────────────────────────┤
-│ Step 4: Determine Return Types (Priority Order)            │
-│   → Priority 1: Extract from Changelog                     │
-│   → Priority 2: Fetch Native SDK Files                     │
-│   → Priority 3: Cross-Platform Inference                   │
-│   → Priority 4: Verification Required                      │
+│ Step 4: Determine Return Types                             │
+│   → Priority 1: Changelog as hint (NOT authoritative)      │
+│   → Priority 2: Fetch Native SDK Files ⚠️ MANDATORY        │
+│   → Priority 3: Cross-Platform Inference (if one missing)  │
+│   → Priority 4: Ask user (if method not found)             │
 ├─────────────────────────────────────────────────────────────┤
 │ Step 5: Determine Wrapper Requirements                     │
 ├─────────────────────────────────────────────────────────────┤
@@ -44,6 +44,8 @@ Extract and categorize changes from native Android and iOS SDK changelogs, verif
 │   → Wait for user acknowledgment                           │
 └─────────────────────────────────────────────────────────────┘
 ```
+
+**⚠️ KEY RULE**: For ALL `NEW_API` items, you MUST fetch and verify return types from `CleverTapAPI.java` (Android) and/or `CleverTap.h` (iOS). NEVER assume types from changelog descriptions alone.
 
 ## Detailed Steps
 
@@ -103,37 +105,37 @@ END IF
 
 ### Step 4: Determine Return Types
 
-**⚠️ CRITICAL**: Follow this **priority order** to find return types efficiently. Do NOT skip steps or guess.
+**⚠️ CRITICAL**: For ALL `NEW_API` and `BREAKING` changes, you MUST verify return types from native source code. Do NOT rely solely on changelog descriptions.
 
-#### Priority 1: Extract from Changelog
+#### Priority 1: Changelog as Initial Reference (NOT Authoritative)
 
-**Check if the changelog entry contains explicit type information.**
+**Check if the changelog entry contains type hints** - but treat these as HINTS only, not authoritative sources.
 
-**Look for**:
-- ✅ Direct type mentions: `"returns ArrayList<String>"`, `"returns NSArray<NSDictionary *> *"`
-- ✅ Method signature in code blocks showing the complete signature
-- ✅ Code examples showing the return type
-- ✅ Usage examples demonstrating the return type
+**Look for hints like**:
+- Direct type mentions: `"returns ArrayList<String>"`, `"returns NSArray<NSDictionary *> *"`
+- Method signature in code blocks
+- Code examples showing the return type
 
-**🚨 CRITICAL - Be Strict**:
-Only consider the type "explicit" if you can extract the **complete native type signature**
+**🚨 CRITICAL - Changelog is NOT Sufficient**:
+Even if the changelog appears to have complete type information:
+- Changelog descriptions can be ambiguous (e.g., "returns variant data" could be `Map`, `List`, or custom object)
+- Types may be simplified or abbreviated in changelogs
+- The ONLY authoritative source is the native SDK source code
 
 **Decision**:
 ```
-IF explicit type found in changelog THEN
-    Use the explicit type
-    Document source: "Type found in changelog entry"
-    SKIP to Step 5
-ELSE IF vague description (e.g., "returns variant data", "gets messages") THEN
-    Proceed to Priority 2
-END IF
+ALWAYS proceed to Priority 2 for verification
+Changelog type hints are useful for knowing WHAT to search for
+But NEVER skip source code verification
 ```
 
 ---
 
-#### Priority 2: Fetch Native SDK Files
+#### Priority 2: Fetch Native SDK Files (MANDATORY)
 
-**⚠️ MANDATORY**: Fetch and search **ONLY** the files listed below. Do NOT fetch or read any other `.h`, `.m`, `.java`, or `.kt` files.
+**⚠️ MANDATORY FOR ALL NEW_API ITEMS**: You MUST fetch and verify return types from native source code. Skipping this step leads to incorrect type assumptions.
+
+Fetch and search **ONLY** the files listed below. Do NOT fetch or read any other `.h`, `.m`, `.java`, or `.kt` files.
 
 ##### For Android APIs
 
@@ -518,6 +520,75 @@ Please confirm before I proceed with the implementation.
 
 **Wait for user confirmation before continuing.**
 
+## Common Mistakes to Avoid
+
+### ❌ Mistake 1: Assuming Return Types from Changelog Descriptions
+
+**Real-world example that caused a bug**:
+```
+Changelog says: "Added variants() method to retrieve A/B experiment variants"
+Wrong assumption: "variants" sounds like key-value data → Map<String, dynamic>
+```
+
+**What actually happened**:
+- Implemented wrapper returning `Map<String, dynamic>`
+- Fetched iOS source code AFTER implementation
+- Found actual signature: `- (NSArray<NSDictionary<NSString *, id> *> *)variants`
+- Actual return type: `List<Map<String, dynamic>>` (List of Maps, NOT a single Map)
+- Had to fix the incorrect implementation
+
+**Correct approach**:
+```
+1. Read changelog to identify NEW_API: variants()
+2. IMMEDIATELY fetch CleverTap.h (iOS) and CleverTapAPI.java (Android)
+3. Search for "variants" method
+4. Find actual iOS signature: NSArray<NSDictionary<NSString *, id> *> *
+5. Map to Dart: List<Map<String, dynamic>> or List?
+6. THEN implement with verified type
+```
+
+**Why this matters**: Changelog descriptions are often vague. "Retrieve variants" could mean:
+- `Map<String, Object>` (single key-value object) ← WRONG assumption
+- `List<Map>` (list of variant objects) ← ACTUAL type
+- `JSONObject` (raw JSON)
+- `String` (serialized data)
+
+Only the source code tells you the truth.
+
+### ❌ Mistake 2: Skipping Source Code Verification
+
+**Wrong approach**:
+```
+"The changelog mentions the method, that's enough information"
+→ Implement wrapper with guessed types
+```
+
+**Correct approach**:
+```
+ALWAYS fetch CleverTapAPI.java (Android) and CleverTap.h (iOS)
+ALWAYS search for the exact method signature
+NEVER implement without verified return types
+```
+
+### ❌ Mistake 3: Inferring Types from Method Names
+
+**Wrong approach**:
+```
+Method: getUserData()
+Assumption: "Data" usually means Map → Map<String, dynamic>
+```
+
+**Correct approach**:
+```
+Fetch source code, find actual signature:
+- Could be: Map<String, Object> getUserData()
+- Could be: UserData getUserData()
+- Could be: String getUserData()
+- Could be: JSONArray getUserData()
+```
+
+---
+
 ## Success Criteria
 
 Task is complete when:
@@ -525,6 +596,7 @@ Task is complete when:
 **Content Verification**:
 - ✅ All changes between versions extracted and categorized
 - ✅ All NEW_API and BREAKING changes have verified native return types
+- ✅ Return types verified by fetching CleverTapAPI.java and/or CleverTap.h (NOT assumed from changelog)
 
 **Output Quality**:
 - ✅ Implementation plan table generated with complete details
