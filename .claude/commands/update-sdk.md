@@ -176,25 +176,18 @@ clevertap_plugin: {NEW_FLUTTER_VERSION}
 
 ## Phase 3: Analyze Native SDK Changes
 
-**Use the native-sdk-changelog-analysis skill** to:
+**Use the native-sdk-changelog-analysis skill** with parameters:
+- `platform`: `"both"`
+- `old_version`: `OLD_ANDROID_VERSION` / `OLD_IOS_VERSION`
+- `new_version`: `NEW_ANDROID_VERSION` / `NEW_IOS_VERSION`
 
-1. Extract changelog entries for both Android and iOS between version ranges:
-   - Android: `OLD_ANDROID_VERSION` to `NEW_ANDROID_VERSION`
-   - iOS: `OLD_IOS_VERSION` to `NEW_IOS_VERSION`
+The skill will:
+1. Extract and categorize all changelog entries
+2. Verify method signatures from native source code
+3. Generate a unified implementation plan table
+4. **Wait for user acknowledgment** before proceeding
 
-2. Categorize all changes (NEW_API, BREAKING, DEPRECATED, BUG_FIX, INTERNAL)
-
-3. Verify method signatures from source code for all NEW_API and BREAKING changes
-
-4. Generate wrapper implementation plan table
-
-5. Present the plan to user and **wait for acknowledgment** before proceeding to Phase 3
-
-**Output**: Structured implementation plan with:
-- APIs requiring implementation (with verified signatures and return types)
-- Breaking changes requiring immediate attention
-- Deprecated APIs with migration paths
-- Items requiring no action
+See the **native-sdk-changelog-analysis** skill for detailed process and output format.
 
 ---
 
