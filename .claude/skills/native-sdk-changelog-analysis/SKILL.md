@@ -32,7 +32,7 @@ Extract and categorize changes from native Android and iOS SDK changelogs, verif
 ├─────────────────────────────────────────────────────────────┤
 │ Step 3: Extract Method Information                         │
 ├─────────────────────────────────────────────────────────────┤
-│ Step 4: Determine Return Types                             │
+│ Step 4: Determine Return Types (Priority Order)            │
 │   → Priority 1: Changelog as hint (NOT authoritative)      │
 │   → Priority 2: Fetch Native SDK Files ⚠️ MANDATORY        │
 │   → Priority 3: Cross-Platform Inference (if one missing)  │
@@ -40,7 +40,7 @@ Extract and categorize changes from native Android and iOS SDK changelogs, verif
 ├─────────────────────────────────────────────────────────────┤
 │ Step 5: Determine Wrapper Requirements                     │
 ├─────────────────────────────────────────────────────────────┤
-│ Step 6: Generate Implementation Plan                       │
+│ Step 6: Generate Implementation Plan (SINGLE TABLE)        │
 │   → Wait for user acknowledgment                           │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -105,31 +105,48 @@ END IF
 
 ### Step 4: Determine Return Types
 
-**⚠️ CRITICAL**: For ALL `NEW_API` and `BREAKING` changes, you MUST verify return types from native source code. Do NOT rely solely on changelog descriptions.
+**⚠️ CRITICAL**: For ALL `NEW_API` and `BREAKING` changes, you MUST determine return types from native source code. Do NOT rely solely on changelog descriptions.
 
-#### Priority 1: Changelog as Initial Reference (NOT Authoritative)
+#### Priority 1: Changelog as Initial Hint (NOT Authoritative)
 
 **Check if the changelog entry contains type hints** - but treat these as HINTS only, not authoritative sources.
 
 **Look for hints like**:
-- Direct type mentions: `"returns ArrayList<String>"`, `"returns NSArray<NSDictionary *> *"`
-- Method signature in code blocks
-- Code examples showing the return type
+- ✅ Direct type mentions: `"returns ArrayList<String>"`, `"returns NSArray<NSDictionary *> *"`
+- ✅ Complete method signatures in code blocks:
+  ```java
+  public ArrayList<CTInboxMessage> getAllInboxMessages()
+  ```
+  ```objc
+  - (NSArray<CleverTapInboxMessage *> * _Nullable)getAllInboxMessages;
+  ```
+- ✅ Code snippets with explicit return type declarations
+- ✅ Usage examples that clearly demonstrate the return type
 
-**🚨 CRITICAL - Changelog is NOT Sufficient**:
-Even if the changelog appears to have complete type information:
-- Changelog descriptions can be ambiguous (e.g., "returns variant data" could be `Map`, `List`, or custom object)
-- Types may be simplified or abbreviated in changelogs
-- The ONLY authoritative source is the native SDK source code
+**🚨 CRITICAL - Be Strict**:
+Only consider the type "explicit" if you can extract the **complete native type signature** including:
+- Full type name (not just generic descriptions like "array" or "map")
+- Generics/type parameters (e.g., `ArrayList<CTInboxMessage>` not just `ArrayList`)
+- Nullability annotations if present
 
-**Decision**:
+**Vague descriptions that require Priority 2**:
+- ❌ "returns variant data" → Too vague
+- ❌ "returns user profile information" → No concrete type
+- ❌ "returns inbox messages" → Need exact type (Array? List? What element type?)
+- ❌ "returns a map of variants" → What kind of Map? What are the key/value types?
+- ❌ "gets feature flag value" → What type? boolean? String? Object?
+
+**Decision Rule**:
 ```
-ALWAYS proceed to Priority 2 for verification
-Changelog type hints are useful for knowing WHAT to search for
-But NEVER skip source code verification
+IF changelog contains complete native type signature with generics THEN
+    Use it and document: "Type from changelog: <signature>"
+    SKIP to Step 5
+ELSE
+    Proceed to Priority 2 (fetch native files)
+END IF
 ```
 
----
+**When in doubt**: Always proceed to Priority 2. It's better to verify than to guess.
 
 #### Priority 2: Fetch Native SDK Files (MANDATORY)
 
@@ -201,17 +218,17 @@ END IF
 
 ##### Type Mapping Table
 
-| iOS Type | Android Type | Flutter/Dart Type | Notes |
-|----------|--------------|-------------------|-------|
-| `NSArray<T *> *` | `ArrayList<T>`, `List<T>` | `List<T>`         | Ordered collection |
-| `NSDictionary<K, V> *` | `Map<K, V>`, `HashMap<K, V>` | `Map<K, V>`       | Key-value pairs |
-| `NSString *` | `String` | `String`          | Text |
-| `NSNumber *` | `Integer`, `Long`, `Double` | `int`, `double`   | Numeric values |
-| `int`, `NSInteger` | `int`, `Integer` | `int`             | Integers |
-| `BOOL` | `boolean` | `bool`            | Boolean |
-| `void` | `void` | `void`            | No return |
-| `id` | `Object` | `dynamic`         | Any type |
-| `NSArray<NSDictionary *> *` | `ArrayList<HashMap>`, `List<Map>` | `List?`           | List of maps |
+| Android Type | iOS Type | Dart Type   | Notes |
+|--------------|----------|-------------|-------|
+| `ArrayList<T>`, `List<T>` | `NSArray<T *> *` | `List<T>`   | Ordered collection |
+| `Map<K, V>`, `HashMap<K, V>` | `NSDictionary<K, V> *` | `Map<K, V>` | Key-value pairs |
+| `String` | `NSString *` | `String`    | Text |
+| `Integer`, `Long` | `NSNumber *`, `NSInteger` | `int`       | Integers |
+| `Double` | `NSNumber *` | `double`    | Floating point |
+| `boolean` | `BOOL` | `bool`      | Boolean |
+| `void` | `void` | `void`      | No return |
+| `Object` | `id` | `dynamic`   | Any type |
+| `ArrayList<HashMap>` | `NSArray<NSDictionary *> *` | `List?`     | List of maps |
 
 **Process**:
 ```
@@ -302,9 +319,9 @@ Is this API already exposed in Flutter wrapper?
 
 ---
 
-### Step 6: Generate Implementation Plan
+### Step 6: Generate Implementation Plan (SINGLE TABLE OUTPUT)
 
-**⚠️ CRITICAL**: The output table MUST show **native platform return types** (Android and iOS columns separate), NOT Dart types in those columns.
+**⚠️ CRITICAL**: The table MUST show **native platform return types** (Android and iOS columns separate) as determined in Step 4
 
 **Output Format**:
 
@@ -323,57 +340,25 @@ Is this API already exposed in Flutter wrapper?
 
 ---
 
-### 🟢 APIs Requiring Implementation (NEW_API)
+### All Changes (Single Unified Table)
 
-| # | API Name | Android Return Type | iOS Return Type | Dart Return Type | Parameters | Platforms | Decision |
-|---|----------|---------------------|-----------------|------------------|------------|-----------|----------|
-| 1 | `getAllInboxMessages()` | `ArrayList<CTInboxMessage>` | `NSArray<CleverTapInboxMessage *> *` | `List<dynamic>` | none | Android 5.0.0+<br>iOS 4.2.0+ | NEW_IMPLEMENTATION |
-| 2 | `setOptOut(enabled)` | `void` | `void` | `void` | `enabled: bool` | Android 4.5.0+<br>iOS 4.5.0+ | NEW_IMPLEMENTATION |
-| 3 | `getFeatureFlag(name, default)` | `boolean` | `BOOL` | `bool` | `name: String`<br>`defaultValue: bool` | Android 5.1.0+ (only) | NEW_IMPLEMENTATION |
+| # | Category | API Name | Android Type | iOS Type | Dart Type | Parameters | Platforms | Decision | Notes |
+|---|----------|----------|--------------|----------|-----------|------------|-----------|----------|-------|
+| 1 | 🟢 NEW_API | `getAllInboxMessages()` | `ArrayList<CTInboxMessage>` | `NSArray<CleverTapInboxMessage *> *` | `List<dynamic>` | none | Android 5.0.0+<br>iOS 4.2.0+ | NEW_IMPLEMENTATION | Type verified from both native files |
+| 2 | 🟢 NEW_API | `setOptOut(enabled)` | `void` | `void` | `void` | `enabled: bool` | Android 4.5.0+<br>iOS 4.5.0+ | NEW_IMPLEMENTATION | |
+| 3 | 🟢 NEW_API | `getFeatureFlag(name, default)` | `boolean` | N/A | `bool` | `name: String`<br>`defaultValue: bool` | Android 5.1.0+ | NEW_IMPLEMENTATION | Android-only API |
+| 4 | 🔴 BREAKING | `oldMethod()` | N/A | N/A | N/A | none | Android 7.1.0+ | UPDATE | Removed - use `newMethod()` instead. Update wrapper. |
+| 5 | 🟡 DEPRECATED | `legacyMethod()` | `String` | `NSString *` | `String` | none | Android 7.1.0+<br>iOS 7.1.0+ | UPDATE | Add `@deprecated`, document replacement: `modernMethod()` |
+| 6 | 🔵 BUG_FIX | Push notification crash | - | - | - | - | Android 14+ | NO_ACTION | Fixed crash in rendering |
+| 7 | 🔵 BUG_FIX | InApp memory leak | - | - | - | - | Android, iOS | NO_ACTION | Fixed memory leak in caching |
+| 8 | ⚪ INTERNAL | Network layer refactor | - | - | - | - | Android, iOS | NO_ACTION | Internal optimization |
 
-**Notes**:
-- API #1: Type verified from both CleverTapAPI.java and CleverTap.h
-- API #2: Type verified from both native files
-- API #3: Android-only API, no iOS equivalent
-
----
-
-### 🔴 Breaking Changes (Immediate Attention Required)
-
-| # | API Name | Change Description | Impact | Platforms | Decision |
-|---|----------|-------------------|--------|-----------|----------|
-| 1 | `oldMethod()` | **Removed** in favor of `newMethod()` | Existing Flutter wrapper will break | Android 7.1.0+ | UPDATE |
-
-**Migration Required**:
-- Update Flutter wrapper to use `newMethod()` instead
-- Update example app and documentation
-
----
-
-### 🟡 Deprecated APIs (Future Removal)
-
-| # | API Name | Replacement | Estimated Removal | Platforms | Decision |
-|---|----------|-------------|-------------------|-----------|----------|
-| 1 | `legacyMethod()` | Use `modernMethod()` instead | 8.0.0 | Android 7.1.0+<br>iOS 7.1.0+ | UPDATE |
-
-**Action Required**:
-- Add `@deprecated` annotation to Flutter wrapper method
-- Update documentation with migration path
-- No immediate code changes needed
-
----
-
-### 🔵 Bug Fixes (No Wrapper Changes)
-
-- Fixed: Crash in push notification rendering on Android 14
-- Fixed: Memory leak in InApp message caching
-
----
-
-### ⚪ Internal Changes (No Action Required)
-
-- Refactored network layer implementation
-- Optimized JSON parsing performance
+**Legend**:
+- 🟢 NEW_API: New functionality requiring implementation
+- 🔴 BREAKING: Breaking change requiring immediate wrapper update
+- 🟡 DEPRECATED: Deprecated but functional, needs documentation
+- 🔵 BUG_FIX: Bug fix, usually no wrapper changes
+- ⚪ INTERNAL: Internal change, no action needed
 
 ---
 
@@ -387,13 +372,14 @@ Reply with:
 - ❌ "Hold" - if you need to review further
 
 Once approved, I will:
-1. Implement each NEW_IMPLEMENTATION item
-2. Update affected wrapper methods for UPDATE items
-3. Add deprecation notices for DEPRECATED items
-4. Update documentation and tests
+1. Implement each item marked `NEW_IMPLEMENTATION`
+2. Update items marked `UPDATE`
+3. Update documentation and tests for all changes
 ```
 
 **⚠️ CRITICAL**: Wait for user acknowledgment before proceeding with any implementation.
+
+---
 
 ## Usage Examples
 
@@ -418,10 +404,10 @@ New Version: 5.1.0
    ```
 6. Categorize as `NEW_IMPLEMENTATION`
 
-**Output**:
-| # | API Name | Android Return Type | iOS Return Type | Dart Return Type | Parameters | Decision |
-|---|----------|---------------------|-----------------|------------------|------------|----------|
-| 1 | `getFeatureFlag()` | `boolean` | N/A (Android only) | `bool` | `flagName: String`<br>`defaultValue: bool` | NEW_IMPLEMENTATION |
+**Output (Single Table)**:
+| # | Category | API Name | Android Type | iOS Type | Dart Type | Parameters | Decision | Notes |
+|---|----------|----------|--------------|----------|-----------|------------|----------|-------|
+| 1 | 🟢 NEW_API | `getFeatureFlag()` | `boolean` | N/A | `bool` | `flagName: String`<br>`defaultValue: bool` | NEW_IMPLEMENTATION | Android-only API |
 
 ---
 
@@ -437,155 +423,37 @@ New Version: 5.1.0
 **Process**:
 1. Analyze Android changelog → Find `suspendInAppNotifications()`
 2. Fetch `CleverTapAPI.java`
-3. Find signature:
-   ```java
-   public void suspendInAppNotifications()
-   ```
+3. Find signature: `public void suspendInAppNotifications()`
 4. Analyze iOS changelog → Find `suspendInAppNotifications`
 5. Fetch `CleverTap.h`
-6. Find signature:
-   ```objc
-   - (void)suspendInAppNotifications;
-   ```
+6. Find signature: `- (void)suspendInAppNotifications;`
 7. Confirm types match (both `void`)
 8. Categorize as `NEW_IMPLEMENTATION` for both platforms
 
-**Output**:
-| # | API Name | Android Return Type | iOS Return Type | Dart Return Type | Platforms | Decision |
-|---|----------|---------------------|-----------------|------------------|-----------|----------|
-| 1 | `suspendInAppNotifications()` | `void` | `void` | `void` | Android 5.1.0+<br>iOS 5.1.0+ | NEW_IMPLEMENTATION |
+**Output (Single Table)**:
+| # | Category | API Name | Android Type | iOS Type | Dart Type | Platforms | Decision | Notes |
+|---|----------|----------|--------------|----------|-----------|-----------|----------|-------|
+| 1 | 🟢 NEW_API | `suspendInAppNotifications()` | `void` | `void` | `void` | Android 5.1.0+<br>iOS 5.1.0+ | NEW_IMPLEMENTATION | |
 
 ---
 
-### Example 3: Complex Return Types with Generics
+### Example 3: Mixed Categories
 
 **Input**:
 ```
 Platform: both
-Old Version: 4.1.0
-New Version: 4.2.0
-```
-
-**Process**:
-1. Find NEW_API: `getAllInboxMessages()`
-2. Fetch `CleverTapAPI.java`
-3. Extract full signature:
-   ```java
-   @NonNull
-   public ArrayList<CTInboxMessage> getAllInboxMessages()
-   ```
-4. Fetch `CleverTap.h`
-5. Extract full signature:
-   ```objc
-   - (NSArray<CleverTapInboxMessage *> * _Nullable)getAllInboxMessages;
-   ```
-6. Note full native types with generics and nullability
-7. Map to Dart: `List<dynamic>` (messages converted to Maps in platform channel)
-
-**Output**:
-| # | API Name | Android Return Type | iOS Return Type | Dart Return Type | Decision |
-|---|----------|---------------------|-----------------|------------------|----------|
-| 1 | `getAllInboxMessages()` | `ArrayList<CTInboxMessage>` | `NSArray<CleverTapInboxMessage *> *` | `List<dynamic>` | NEW_IMPLEMENTATION |
-
-**Note**: Output table correctly shows **native platform types** in Android/iOS columns, NOT the Dart type.
-
-### Example 4: Method Not Found - Verification Required
-
-**Input**:
-```
-Platform: android
 Old Version: 6.0.0
-New Version: 6.1.0
+New Version: 6.2.0
 ```
 
-**Process**:
-1. Changelog mentions: "Added getVariants() method"
-2. Fetch `CleverTapAPI.java`
-3. Search for "getVariants" → NOT FOUND
-4. Search for "variant" → Found `getProductConfigVariants()` instead
-
-**Output to User**:
-```
-I couldn't find `getVariants()` in CleverTapAPI.java.
-
-However, I found a similar method: `getProductConfigVariants()`
-
-Could you verify:
-1. Is the correct method name `getVariants()` or `getProductConfigVariants()`?
-2. Could this be in a different class (e.g., ProductConfig.java)?
-3. Is this method public-facing?
-
-Please confirm before I proceed with the implementation.
-```
-
-**Wait for user confirmation before continuing.**
-
-## Common Mistakes to Avoid
-
-### ❌ Mistake 1: Assuming Return Types from Changelog Descriptions
-
-**Real-world example that caused a bug**:
-```
-Changelog says: "Added variants() method to retrieve A/B experiment variants"
-Wrong assumption: "variants" sounds like key-value data → Map<String, dynamic>
-```
-
-**What actually happened**:
-- Implemented wrapper returning `Map<String, dynamic>`
-- Fetched iOS source code AFTER implementation
-- Found actual signature: `- (NSArray<NSDictionary<NSString *, id> *> *)variants`
-- Actual return type: `List<Map<String, dynamic>>` (List of Maps, NOT a single Map)
-- Had to fix the incorrect implementation
-
-**Correct approach**:
-```
-1. Read changelog to identify NEW_API: variants()
-2. IMMEDIATELY fetch CleverTap.h (iOS) and CleverTapAPI.java (Android)
-3. Search for "variants" method
-4. Find actual iOS signature: NSArray<NSDictionary<NSString *, id> *> *
-5. Map to Dart: List<Map<String, dynamic>> or List?
-6. THEN implement with verified type
-```
-
-**Why this matters**: Changelog descriptions are often vague. "Retrieve variants" could mean:
-- `Map<String, Object>` (single key-value object) ← WRONG assumption
-- `List<Map>` (list of variant objects) ← ACTUAL type
-- `JSONObject` (raw JSON)
-- `String` (serialized data)
-
-Only the source code tells you the truth.
-
-### ❌ Mistake 2: Skipping Source Code Verification
-
-**Wrong approach**:
-```
-"The changelog mentions the method, that's enough information"
-→ Implement wrapper with guessed types
-```
-
-**Correct approach**:
-```
-ALWAYS fetch CleverTapAPI.java (Android) and CleverTap.h (iOS)
-ALWAYS search for the exact method signature
-NEVER implement without verified return types
-```
-
-### ❌ Mistake 3: Inferring Types from Method Names
-
-**Wrong approach**:
-```
-Method: getUserData()
-Assumption: "Data" usually means Map → Map<String, dynamic>
-```
-
-**Correct approach**:
-```
-Fetch source code, find actual signature:
-- Could be: Map<String, Object> getUserData()
-- Could be: UserData getUserData()
-- Could be: String getUserData()
-- Could be: JSONArray getUserData()
-```
+**Output (Single Table showing all categories)**:
+| # | Category | API Name | Android Type | iOS Type | Dart Type | Platforms | Decision | Notes |
+|---|----------|----------|--------------|----------|-----------|-----------|----------|-------|
+| 1 | 🟢 NEW_API | `getVariants()` | `Map<String, Object>` | `NSDictionary<NSString *, id> *` | `Map<String, dynamic>` | Android 6.1.0+<br>iOS 6.1.0+ | NEW_IMPLEMENTATION | |
+| 2 | 🔴 BREAKING | `pushEvent()` | Signature changed | Signature changed | Signature changed | Both | UPDATE | Added required parameter |
+| 3 | 🟡 DEPRECATED | `getLocation()` | `String` | `NSString *` | `String` | Both | UPDATE | Use `getCurrentLocation()` |
+| 4 | 🔵 BUG_FIX | Image caching | - | - | - | iOS 15+ | NO_ACTION | Fixed memory issue |
+| 5 | ⚪ INTERNAL | Database upgrade | - | - | - | Both | NO_ACTION | Performance improvement |
 
 ---
 
@@ -599,10 +467,11 @@ Task is complete when:
 - ✅ Return types verified by fetching CleverTapAPI.java and/or CleverTap.h (NOT assumed from changelog)
 
 **Output Quality**:
-- ✅ Implementation plan table generated with complete details
+- ✅ **SINGLE table** generated showing all changes
 - ✅ Table shows separate columns for Android and iOS **native return types**
 - ✅ Dart return types in separate column (not mixed with native types)
 - ✅ All parameters documented with types and nullability
+- ✅ Category clearly indicated with emoji and text
 
 **User Communication**:
 - ✅ Implementation plan presented clearly

@@ -14,8 +14,9 @@ This command orchestrates the complete SDK update workflow by:
 3. Analyzing native SDK changelogs for API changes  
 4. Updating all version files consistently
 5. Implementing new API wrappers using **api-wrapper-patterns** skill
-6. Generating changelog entry using **changelog-generation** skill
-7. Validating builds
+6. Update Example app using **example-app-patterns** skill
+7. Generating changelog entry using **changelog-generation** skill
+8. Validating builds
 
 ---
 
@@ -205,9 +206,13 @@ clevertap_plugin: {NEW_FLUTTER_VERSION}
 For each API:
 
 1. **Use api-wrapper-patterns skill** for updating
-2. **Update example app** using **example-app-patterns skill** (`example/lib/main.dart`)
 
----
+## Phase 5: Update Example App
+
+**MANDATORY**: Add ALL items sample usage which are marked as `NEW_IMPLEMENTATION` or `UPDATE` from the wrapper implementation plan.
+
+- Use the **example-app-patterns** skill
+- Update `example/lib/main.dart` with working examples
 
 ## Phase 5: Generate Changelog
 

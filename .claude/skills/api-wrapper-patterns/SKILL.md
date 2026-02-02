@@ -192,6 +192,7 @@ static ArrayList<Map<String, Object>> inboxMessageListToArrayList(
 
 ### Dart
 - Use `static Future<ReturnType>` for all public methods
+- Keep it simple - don't perform extra mapping in the Dart layer
 - Named optional parameters: `{Type? param}`
 - 2-space indentation
 
@@ -222,14 +223,14 @@ Every public Dart method must have:
 
 ## Type Mapping
 
-| Dart | Kotlin | Objective-C |
-|------|--------|-------------|
-| `Map<String, dynamic>` | `Map<String, Any>` | `NSDictionary` |
-| `List<dynamic>` | `List` | `NSArray` |
-| `String` | `String` | `NSString` |
-| `int` | `Int`, `Long` | `NSNumber` |
-| `double` | `Double` | `NSNumber` |
-| `bool` | `Boolean` | `BOOL` |
+| Kotlin | Objective-C | Dart                   |
+|--------|-------------|------------------------|
+| `Map<String, Any>` | `NSDictionary` | `Map<String, dynamic>` |
+| `List` | `NSArray` | `List?`                |
+| `String` | `NSString` | `String`               |
+| `Int`, `Long` | `NSNumber` | `int`                  |
+| `Double` | `NSNumber` | `double`               |
+| `Boolean` | `BOOL` | `bool`                 |
 
 ## Common Issues
 
