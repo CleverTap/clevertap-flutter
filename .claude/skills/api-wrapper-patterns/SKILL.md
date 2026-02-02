@@ -7,6 +7,16 @@ description: Standard patterns for wrapping native CleverTap Android/iOS SDK API
 
 Standard patterns for wrapping native CleverTap Android/iOS SDK APIs in Flutter with proper method channels, error handling, and type conversions.
 
+## Core Principle: Keep Dart Simple
+
+The Dart layer should be a **thin pass-through**. All data transformation, type conversion, and complex logic should happen in the native layers (Android/iOS), not in Dart.
+
+**Why?**
+- Native layers have direct access to SDK types and utilities
+- Reduces code duplication between Dart type handling
+- Keeps the public API surface clean and predictable
+- Avoids runtime type casting errors in Dart
+
 ## Decision Tree
 
 ```
@@ -32,6 +42,9 @@ Is this a public API that apps call directly?
 | `Int`, `Long`           | `NSNumber` | `int`                  |
 | `Double`                | `NSNumber` | `double`               |
 | `Boolean`               | `BOOL` | `bool`                 |
+
+**Key Rule**: For complex return types like arrays of objects, always use `List?` in Dart. Don't attempt to cast or transform the data in the Dart layer.
+
 
 ## Pattern 1: Simple Method (No Return Value)
 
@@ -202,11 +215,29 @@ static ArrayList<Map<String, Object>> inboxMessageListToArrayList(
 
 ## Code Style Guidelines
 
-### Dart
+### Dart (IMPORTANT: Keep It Simple)
 - Use `static Future<ReturnType>` for all public methods
-- Keep it simple - don't perform extra mapping in the Dart layer
+- **AVOID transformations** - pass data directly to/from native without mapping
+- **Use simple types** - prefer `List?` over `List<Map<String, dynamic>>` for complex returns
+- Let native layers handle all data conversion and formatting
 - Named optional parameters: `{Type? param}`
 - 2-space indentation
+
+**DO:**
+```dart
+static Future<List?> getAllInboxMessages() async {
+  return await _dartToNativeMethodChannel.invokeMethod('getAllInboxMessages', {});
+}
+```
+
+**DON'T:**
+```dart
+static Future<List<Map<String, dynamic>>> getAllInboxMessages() async {
+  final List<dynamic>? result = await _dartToNativeMethodChannel.invokeMethod('getAllInboxMessages', {});
+  if (result == null) return [];
+  return result.map((e) => Map<String, dynamic>.from(e as Map)).toList();  // Avoid this!
+}
+```
 
 ### Naming
 - **Dart**: camelCase (`recordEvent`, `getCleverTapID`)

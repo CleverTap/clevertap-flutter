@@ -33,10 +33,9 @@ Extract and categorize changes from native Android and iOS SDK changelogs, verif
 │ Step 3: Extract Method Information                         │
 ├─────────────────────────────────────────────────────────────┤
 │ Step 4: Determine Return Types (Priority Order)            │
-│   → Priority 1: Changelog as hint (NOT authoritative)      │
-│   → Priority 2: Fetch Native SDK Files ⚠️ MANDATORY        │
-│   → Priority 3: Cross-Platform Inference (if one missing)  │
-│   → Priority 4: Ask user (if method not found)             │
+│   → Priority 1: Fetch Native SDK Files ⚠️ MANDATORY        │
+│   → Priority 2: Cross-Platform Inference (if one missing)  │
+│   → Priority 3: Ask user (if method not found)             │
 ├─────────────────────────────────────────────────────────────┤
 │ Step 5: Determine Wrapper Requirements                     │
 ├─────────────────────────────────────────────────────────────┤
@@ -107,50 +106,9 @@ END IF
 
 **⚠️ CRITICAL**: For ALL `NEW_API` and `BREAKING` changes, you MUST determine return types from native source code. Do NOT rely solely on changelog descriptions.
 
-#### Priority 1: Changelog as Initial Hint (NOT Authoritative)
+#### Priority 1: Fetch Native SDK Files (MANDATORY)
 
-**Check if the changelog entry contains type hints** - but treat these as HINTS only, not authoritative sources.
-
-**Look for hints like**:
-- ✅ Direct type mentions: `"returns ArrayList<String>"`, `"returns NSArray<NSDictionary *> *"`
-- ✅ Complete method signatures in code blocks:
-  ```java
-  public ArrayList<CTInboxMessage> getAllInboxMessages()
-  ```
-  ```objc
-  - (NSArray<CleverTapInboxMessage *> * _Nullable)getAllInboxMessages;
-  ```
-- ✅ Code snippets with explicit return type declarations
-- ✅ Usage examples that clearly demonstrate the return type
-
-**🚨 CRITICAL - Be Strict**:
-Only consider the type "explicit" if you can extract the **complete native type signature** including:
-- Full type name (not just generic descriptions like "array" or "map")
-- Generics/type parameters (e.g., `ArrayList<CTInboxMessage>` not just `ArrayList`)
-- Nullability annotations if present
-
-**Vague descriptions that require Priority 2**:
-- ❌ "returns variant data" → Too vague
-- ❌ "returns user profile information" → No concrete type
-- ❌ "returns inbox messages" → Need exact type (Array? List? What element type?)
-- ❌ "returns a map of variants" → What kind of Map? What are the key/value types?
-- ❌ "gets feature flag value" → What type? boolean? String? Object?
-
-**Decision Rule**:
-```
-IF changelog contains complete native type signature with generics THEN
-    Use it and document: "Type from changelog: <signature>"
-    SKIP to Step 5
-ELSE
-    Proceed to Priority 2 (fetch native files)
-END IF
-```
-
-**When in doubt**: Always proceed to Priority 2. It's better to verify than to guess.
-
-#### Priority 2: Fetch Native SDK Files (MANDATORY)
-
-**⚠️ MANDATORY FOR ALL NEW_API ITEMS**: You MUST fetch and verify return types from native source code. Skipping this step leads to incorrect type assumptions.
+**⚠️ MANDATORY FOR ALL NEW_API ITEMS**: You MUST fetch and determine return types from native source code. Skipping this step leads to incorrect type assumptions.
 
 Fetch and search **ONLY** the files listed below. Do NOT fetch or read any other `.h`, `.m`, `.java`, or `.kt` files.
 
@@ -203,11 +161,11 @@ IF method found in primary file THEN
     Document source: "Type verified from CleverTapAPI.java" or "Type verified from CleverTap.h"
     Proceed to Step 5
 ELSE IF method NOT found THEN
-    Proceed to Priority 3
+    Proceed to Priority 2
 END IF
 ```
 
-#### Priority 3: Cross-Platform Inference
+#### Priority 2: Cross-Platform Inference
 
 **Use ONLY when**:
 - API exists in BOTH platforms
@@ -239,11 +197,11 @@ ELSE IF iOS signature found BUT Android missing THEN
     Document: "// Inferred from iOS: NSArray<CleverTapInboxMessage *> * → ArrayList<CTInboxMessage>"
     Proceed to Step 5
 ELSE
-    Proceed to Priority 4
+    Proceed to Priority 3
 END IF
 ```
 
-#### Priority 4: Method Not Found - Verification Required
+#### Priority 3: Method Not Found - Verification Required
 
 **When to use**: After all previous priorities exhausted without finding the signature.
 
