@@ -207,8 +207,6 @@ ELSE IF method NOT found THEN
 END IF
 ```
 
----
-
 #### Priority 3: Cross-Platform Inference
 
 **Use ONLY when**:
@@ -218,17 +216,17 @@ END IF
 
 ##### Type Mapping Table
 
-| Android Type | iOS Type | Dart Type   | Notes |
-|--------------|----------|-------------|-------|
-| `ArrayList<T>`, `List<T>` | `NSArray<T *> *` | `List<T>`   | Ordered collection |
-| `Map<K, V>`, `HashMap<K, V>` | `NSDictionary<K, V> *` | `Map<K, V>` | Key-value pairs |
-| `String` | `NSString *` | `String`    | Text |
-| `Integer`, `Long` | `NSNumber *`, `NSInteger` | `int`       | Integers |
-| `Double` | `NSNumber *` | `double`    | Floating point |
-| `boolean` | `BOOL` | `bool`      | Boolean |
-| `void` | `void` | `void`      | No return |
-| `Object` | `id` | `dynamic`   | Any type |
-| `ArrayList<HashMap>` | `NSArray<NSDictionary *> *` | `List?`     | List of maps |
+| Android Type | iOS Type | Notes |
+|--------------|----------|-------|
+| `ArrayList<T>`, `List<T>` | `NSArray<T *> *` | Ordered collection |
+| `Map<K, V>`, `HashMap<K, V>` | `NSDictionary<K, V> *` | Key-value pairs |
+| `String` | `NSString *` | Text |
+| `Integer`, `Long` | `NSNumber *`, `NSInteger` | Integers |
+| `Double` | `NSNumber *` | Floating point |
+| `boolean` | `BOOL` | Boolean |
+| `void` | `void` | No return |
+| `Object` | `id` | Any type |
+| `ArrayList<HashMap>` | `NSArray<NSDictionary *> *` | List of maps |
 
 **Process**:
 ```
@@ -244,13 +242,6 @@ ELSE
     Proceed to Priority 4
 END IF
 ```
-
-**Example Inference**:
-- **Found in Android**: `public Map<String, Object> getVariants()`
-- **Inferred for iOS**: `- (NSDictionary<NSString *, id> *)getVariants`
-- **Dart Type**: `Map<String, dynamic>`
-
----
 
 #### Priority 4: Method Not Found - Verification Required
 
@@ -317,8 +308,6 @@ Is this API already exposed in Flutter wrapper?
 | `NO_ACTION` | Already implemented, no changes | None |
 | `SKIP` | Not commonly used or internal | None |
 
----
-
 ### Step 6: Generate Implementation Plan (SINGLE TABLE OUTPUT)
 
 **⚠️ CRITICAL**: The table MUST show **native platform return types** (Android and iOS columns separate) as determined in Step 4
@@ -337,21 +326,19 @@ Is this API already exposed in Flutter wrapper?
   - DEPRECATED: 1
   - BUG_FIX: 2
   - INTERNAL: 1
-
----
-
+   
 ### All Changes (Single Unified Table)
 
-| # | Category | API Name | Android Type | iOS Type | Dart Type | Parameters | Platforms | Decision | Notes |
-|---|----------|----------|--------------|----------|-----------|------------|-----------|----------|-------|
-| 1 | 🟢 NEW_API | `getAllInboxMessages()` | `ArrayList<CTInboxMessage>` | `NSArray<CleverTapInboxMessage *> *` | `List<dynamic>` | none | Android 5.0.0+<br>iOS 4.2.0+ | NEW_IMPLEMENTATION | Type verified from both native files |
-| 2 | 🟢 NEW_API | `setOptOut(enabled)` | `void` | `void` | `void` | `enabled: bool` | Android 4.5.0+<br>iOS 4.5.0+ | NEW_IMPLEMENTATION | |
-| 3 | 🟢 NEW_API | `getFeatureFlag(name, default)` | `boolean` | N/A | `bool` | `name: String`<br>`defaultValue: bool` | Android 5.1.0+ | NEW_IMPLEMENTATION | Android-only API |
-| 4 | 🔴 BREAKING | `oldMethod()` | N/A | N/A | N/A | none | Android 7.1.0+ | UPDATE | Removed - use `newMethod()` instead. Update wrapper. |
-| 5 | 🟡 DEPRECATED | `legacyMethod()` | `String` | `NSString *` | `String` | none | Android 7.1.0+<br>iOS 7.1.0+ | UPDATE | Add `@deprecated`, document replacement: `modernMethod()` |
-| 6 | 🔵 BUG_FIX | Push notification crash | - | - | - | - | Android 14+ | NO_ACTION | Fixed crash in rendering |
-| 7 | 🔵 BUG_FIX | InApp memory leak | - | - | - | - | Android, iOS | NO_ACTION | Fixed memory leak in caching |
-| 8 | ⚪ INTERNAL | Network layer refactor | - | - | - | - | Android, iOS | NO_ACTION | Internal optimization |
+| # | Category | API Name | Android Type | iOS Type | Parameters | Platforms | Decision | Notes |
+|---|----------|----------|--------------|----------|------------|-----------|----------|-------|
+| 1 | 🟢 NEW_API | `getAllInboxMessages()` | `ArrayList<CTInboxMessage>` | `NSArray<CleverTapInboxMessage *> *` | none | Android 5.0.0+<br>iOS 4.2.0+ | NEW_IMPLEMENTATION | Type verified from both native files |
+| 2 | 🟢 NEW_API | `setOptOut(enabled)` | `void` | `void` | `enabled: bool` | Android 4.5.0+<br>iOS 4.5.0+ | NEW_IMPLEMENTATION | |
+| 3 | 🟢 NEW_API | `getFeatureFlag(name, default)` | `boolean` | N/A | `name: String`<br>`defaultValue: bool` | Android 5.1.0+ | NEW_IMPLEMENTATION | Android-only API |
+| 4 | 🔴 BREAKING | `oldMethod()` | N/A | N/A | none | Android 7.1.0+ | UPDATE | Removed – use `newMethod()` instead. Update wrapper. |
+| 5 | 🟡 DEPRECATED | `legacyMethod()` | `String` | `NSString *` | none | Android 7.1.0+<br>iOS 7.1.0+ | UPDATE | Add `@deprecated`, document replacement: `modernMethod()` |
+| 6 | 🔵 BUG_FIX | Push notification crash | - | - | - | Android 14+ | NO_ACTION | Fixed crash in rendering |
+| 7 | 🔵 BUG_FIX | InApp memory leak | - | - | - | Android, iOS | NO_ACTION | Fixed memory leak in caching |
+| 8 | ⚪ INTERNAL | Network layer refactor | - | - | - | Android, iOS | NO_ACTION | Internal optimization |
 
 **Legend**:
 - 🟢 NEW_API: New functionality requiring implementation
@@ -359,8 +346,6 @@ Is this API already exposed in Flutter wrapper?
 - 🟡 DEPRECATED: Deprecated but functional, needs documentation
 - 🔵 BUG_FIX: Bug fix, usually no wrapper changes
 - ⚪ INTERNAL: Internal change, no action needed
-
----
 
 ## Next Steps
 
@@ -378,8 +363,6 @@ Once approved, I will:
 ```
 
 **⚠️ CRITICAL**: Wait for user acknowledgment before proceeding with any implementation.
-
----
 
 ## Usage Examples
 
@@ -405,11 +388,9 @@ New Version: 5.1.0
 6. Categorize as `NEW_IMPLEMENTATION`
 
 **Output (Single Table)**:
-| # | Category | API Name | Android Type | iOS Type | Dart Type | Parameters | Decision | Notes |
-|---|----------|----------|--------------|----------|-----------|------------|----------|-------|
-| 1 | 🟢 NEW_API | `getFeatureFlag()` | `boolean` | N/A | `bool` | `flagName: String`<br>`defaultValue: bool` | NEW_IMPLEMENTATION | Android-only API |
-
----
+| # | Category | API Name | Android Type | iOS Type | Parameters | Decision | Notes |
+|---|----------|----------|--------------|----------|------------|----------|-------|
+| 1 | 🟢 NEW_API | `getFeatureFlag()` | `boolean` | N/A | `flagName: String`<br>`defaultValue: bool` | NEW_IMPLEMENTATION | Android-only API
 
 ### Example 2: Cross-Platform Analysis
 
@@ -431,11 +412,9 @@ New Version: 5.1.0
 8. Categorize as `NEW_IMPLEMENTATION` for both platforms
 
 **Output (Single Table)**:
-| # | Category | API Name | Android Type | iOS Type | Dart Type | Platforms | Decision | Notes |
-|---|----------|----------|--------------|----------|-----------|-----------|----------|-------|
-| 1 | 🟢 NEW_API | `suspendInAppNotifications()` | `void` | `void` | `void` | Android 5.1.0+<br>iOS 5.1.0+ | NEW_IMPLEMENTATION | |
-
----
+| # | Category | API Name | Android Type | iOS Type | Parameters | Decision | Notes |
+|---|----------|----------|--------------|----------|------------|----------|-------|
+| 1 | 🟢 NEW_API | `getFeatureFlag()` | `boolean` | N/A | `flagName: String`<br>`defaultValue: bool` | NEW_IMPLEMENTATION | Android-only API |
 
 ### Example 3: Mixed Categories
 
@@ -447,15 +426,13 @@ New Version: 6.2.0
 ```
 
 **Output (Single Table showing all categories)**:
-| # | Category | API Name | Android Type | iOS Type | Dart Type | Platforms | Decision | Notes |
-|---|----------|----------|--------------|----------|-----------|-----------|----------|-------|
-| 1 | 🟢 NEW_API | `getVariants()` | `Map<String, Object>` | `NSDictionary<NSString *, id> *` | `Map<String, dynamic>` | Android 6.1.0+<br>iOS 6.1.0+ | NEW_IMPLEMENTATION | |
-| 2 | 🔴 BREAKING | `pushEvent()` | Signature changed | Signature changed | Signature changed | Both | UPDATE | Added required parameter |
-| 3 | 🟡 DEPRECATED | `getLocation()` | `String` | `NSString *` | `String` | Both | UPDATE | Use `getCurrentLocation()` |
-| 4 | 🔵 BUG_FIX | Image caching | - | - | - | iOS 15+ | NO_ACTION | Fixed memory issue |
-| 5 | ⚪ INTERNAL | Database upgrade | - | - | - | Both | NO_ACTION | Performance improvement |
-
----
+| # | Category | API Name | Android Type | iOS Type | Platforms | Decision | Notes |
+|---|----------|----------|--------------|----------|-----------|----------|-------|
+| 1 | 🟢 NEW_API | `getVariants()` | `Map<String, Object>` | `NSDictionary<NSString *, id> *` | Android 6.1.0+<br>iOS 6.1.0+ | NEW_IMPLEMENTATION | |
+| 2 | 🔴 BREAKING | `pushEvent()` | Signature changed | Signature changed | Both | UPDATE | Added required parameter |
+| 3 | 🟡 DEPRECATED | `getLocation()` | `String` | `NSString *` | Both | UPDATE | Use `getCurrentLocation()` |
+| 4 | 🔵 BUG_FIX | Image caching | - | - | iOS 15+ | NO_ACTION | Fixed memory issue |
+| 5 | ⚪ INTERNAL | Database upgrade | - | - | Both | NO_ACTION | Performance improvement |
 
 ## Success Criteria
 
@@ -469,7 +446,6 @@ Task is complete when:
 **Output Quality**:
 - ✅ **SINGLE table** generated showing all changes
 - ✅ Table shows separate columns for Android and iOS **native return types**
-- ✅ Dart return types in separate column (not mixed with native types)
 - ✅ All parameters documented with types and nullability
 - ✅ Category clearly indicated with emoji and text
 
