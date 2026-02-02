@@ -216,29 +216,10 @@ END IF
    Could you verify:
    1. The exact method name from the changelog?
    2. Is this a public-facing API or internal/private?
-   3. Could it be in a different class or module?
-   4. Is the SDK version correct?
+   3. Is the SDK version correct?
    ```
 
 2. **Do NOT proceed** with implementation until confirmed
-
-3. **Suggest alternatives**:
-   - Search for similar method names in the files
-   - Check if it's a property instead of a method
-   - Verify the SDK version supports this API
-   - Check if method is in a category/extension file
-
-**Decision**:
-```
-IF user confirms method name and location THEN
-    Re-fetch appropriate file and search again
-ELSE IF user provides clarification THEN
-    Adjust search and retry
-ELSE
-    Mark as "VERIFICATION_REQUIRED" in output
-    Do NOT implement without confirmation
-END IF
-```
 
 ### Step 5: Determine Wrapper Requirements
 

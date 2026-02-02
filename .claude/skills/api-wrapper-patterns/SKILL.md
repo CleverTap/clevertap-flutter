@@ -5,6 +5,8 @@ description: Standard patterns for wrapping native CleverTap Android/iOS SDK API
 
 # API Wrapper Patterns
 
+> **⚠️ MANDATORY READING**: This skill document MUST be read in full BEFORE implementing any API wrapper. Do NOT infer patterns from existing code - follow THIS document exactly. Violations lead to inconsistent code (e.g., using `List<Map<String, dynamic>>` instead of `List?`).
+
 Standard patterns for wrapping native CleverTap Android/iOS SDK APIs in Flutter with proper method channels, error handling, and type conversions.
 
 ## Core Principle: Keep Dart Simple
@@ -45,6 +47,56 @@ Is this a public API that apps call directly?
 
 **Key Rule**: For complex return types like arrays of objects, always use `List?` in Dart. Don't attempt to cast or transform the data in the Dart layer.
 
+## Code Style Guidelines
+
+### Dart Layer (IMPORTANT: Keep It Simple)
+- Use `static Future<ReturnType>` for all public methods
+- **AVOID transformations** - pass data directly to/from native without mapping
+- **Use simple types** - prefer `List?` over `List<Map<String, dynamic>>` for complex returns
+- Let native layers handle all data conversion and formatting
+- Named optional parameters: `{Type? param}`
+- 2-space indentation
+
+**DO:**
+```dart
+static Future<List?> getAllInboxMessages() async {
+  return await _dartToNativeMethodChannel.invokeMethod('getAllInboxMessages', {});
+}
+```
+
+**DON'T:**
+```dart
+static Future<List<Map<String, dynamic>>> getAllInboxMessages() async {
+  final List<dynamic>? result = await _dartToNativeMethodChannel.invokeMethod('getAllInboxMessages', {});
+  if (result == null) return [];
+  return result.map((e) => Map<String, dynamic>.from(e as Map)).toList();  // Avoid this!
+}
+```
+
+### Naming
+- **Dart**: camelCase (`recordEvent`, `getCleverTapID`)
+- **Android**: camelCase for methods, UPPER_SNAKE_CASE for constants
+- **iOS**: camelCase for methods
+
+### Error Handling
+
+Always include:
+1. Null checks for required parameters
+2. CleverTap API instance null check
+3. Descriptive error messages
+
+### Documentation
+
+Every public Dart method must have:
+```dart
+/// [Brief description]
+///
+/// Parameters:
+/// - [param1]: Description
+/// - [param2]: Description (optional)
+///
+/// Returns: Description of return value
+```
 
 ## Pattern 1: Simple Method (No Return Value)
 
@@ -211,57 +263,6 @@ static ArrayList<Map<String, Object>> inboxMessageListToArrayList(
     NSArray *results = [self _cleverTapInboxMessagesToArray:messages];
     result(results);
 }
-```
-
-## Code Style Guidelines
-
-### Dart (IMPORTANT: Keep It Simple)
-- Use `static Future<ReturnType>` for all public methods
-- **AVOID transformations** - pass data directly to/from native without mapping
-- **Use simple types** - prefer `List?` over `List<Map<String, dynamic>>` for complex returns
-- Let native layers handle all data conversion and formatting
-- Named optional parameters: `{Type? param}`
-- 2-space indentation
-
-**DO:**
-```dart
-static Future<List?> getAllInboxMessages() async {
-  return await _dartToNativeMethodChannel.invokeMethod('getAllInboxMessages', {});
-}
-```
-
-**DON'T:**
-```dart
-static Future<List<Map<String, dynamic>>> getAllInboxMessages() async {
-  final List<dynamic>? result = await _dartToNativeMethodChannel.invokeMethod('getAllInboxMessages', {});
-  if (result == null) return [];
-  return result.map((e) => Map<String, dynamic>.from(e as Map)).toList();  // Avoid this!
-}
-```
-
-### Naming
-- **Dart**: camelCase (`recordEvent`, `getCleverTapID`)
-- **Android**: camelCase for methods, UPPER_SNAKE_CASE for constants
-- **iOS**: camelCase for methods
-
-### Error Handling
-
-Always include:
-1. Null checks for required parameters
-2. CleverTap API instance null check
-3. Descriptive error messages
-
-### Documentation
-
-Every public Dart method must have:
-```dart
-/// [Brief description]
-///
-/// Parameters:
-/// - [param1]: Description
-/// - [param2]: Description (optional)
-///
-/// Returns: Description of return value
 ```
 
 ## Common Issues

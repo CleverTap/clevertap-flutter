@@ -5,6 +5,8 @@ description: Generate properly formatted changelog entries for CleverTap Flutter
 
 # Changelog Generation
 
+> **⚠️ MANDATORY READING**: This skill document MUST be read in full BEFORE writing any changelog entry. The format is strict and parsed by automation tools. Follow the patterns exactly.
+
 Generate properly formatted changelog entries for CleverTap Flutter SDK releases with correct dates, platform tags, and native SDK changelog links.
 
 ## Critical Rules
@@ -120,19 +122,20 @@ Version 4.0.0 *(1 March 2026)*
 
 ## Release Date Calculation
 
-**Default**: Current date + 3 days
+**Default**: Calculate the date 3 days from the current date
 
-Format: `DD Month YYYY`
-- Day: No leading zero (`5` not `05`)
-- Month: Full name (`January` not `Jan`)
-- Year: 4 digits (`2026` not `26`)
+Format: DD Month YYYY
+- Day: No leading zero (5 not 05)
+- Month: Full name (January not Jan)
+- Year: 4 digits (2026 not 26)
+
+Example: If today is 2 February 2026, use 5 February 2026
 
 ## Content Guidelines
 **Important** : Use active voice: "Adds support for..." not "Support was added"
 
 ### "What's new"
 - Start with native SDK support line
-- Add bullet points for major features
 
 ### "API changes"
 - List new public methods/classes

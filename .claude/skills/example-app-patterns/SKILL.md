@@ -5,6 +5,8 @@ description: Standard patterns for demonstrating new APIs in the Flutter example
 
 # Example App Update Patterns
 
+> **⚠️ MANDATORY READING**: This skill document MUST be read in full BEFORE modifying the example app. Follow the patterns exactly as documented.
+
 Standard patterns for demonstrating CleverTap Flutter SDK APIs in the example app with proper UI organization, implementation methods, and user feedback.
 
 ## Overview

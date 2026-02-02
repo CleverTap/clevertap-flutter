@@ -195,10 +195,21 @@ See the **native-sdk-changelog-analysis** skill for detailed process and output 
 
 **MANDATORY**: Implement ALL items in wrapper implementation plan marked NEW_IMPLEMENTATION or UPDATE.
 
-**Only if there is a need to implement/update a new API. **Do NOT skip this phase** without explicit user approval.**:
-For each API:
+**Do NOT skip this phase** without explicit user approval.
 
-1. **Use api-wrapper-patterns skill** for updating
+### ⚠️ CRITICAL: Pre-Implementation Checklist
+
+**BEFORE writing ANY wrapper code, you MUST:**
+
+```
+□ Step 1: READ `.claude/skills/api-wrapper-patterns/SKILL.md` in full
+□ Step 4: CHECK the examples for the pattern you're implementing
+□ Step 5: Only THEN proceed to write code
+```
+
+### Implementation Process
+
+For each API:
 
 ## Phase 5: Update Example App
 
@@ -207,20 +218,20 @@ For each API:
 - Use the **example-app-patterns** skill
 - Update `example/lib/main.dart` with working examples
 
-## Phase 5: Generate Changelog
+## Phase 6: Generate Changelog
 
 **Use changelog-generation skill** for formatting rules.
 
 ---
 
-## Phase 6: Build Validation
+## Phase 7: Build Validation
 
-### 6.1 Flutter Dependencies
+### 7.1 Flutter Dependencies
 ```bash
 flutter pub get
 ```
 
-### 6.2 Build Test
+### 7.2 Build Test
 ```bash
 cd example
 flutter build apk --debug --no-pub
