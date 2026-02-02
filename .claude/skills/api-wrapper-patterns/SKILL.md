@@ -21,6 +21,18 @@ Is this a public API that apps call directly?
 └─ NO (internal/config/payload) → NO wrapper needed
 ```
 
+## Type Mapping
+
+| Kotlin                  | Objective-C | Dart                   |
+|-------------------------|-------------|------------------------|
+| `Map<String, Any>`      | `NSDictionary` | `Map<String, dynamic>` |
+| `List`                  | `NSArray` | `List?`                |
+| `List<Map<String, Any>>` | `NSArray<NSDictionary *> *` | `List?`                |
+| `String`                | `NSString` | `String`               |
+| `Int`, `Long`           | `NSNumber` | `int`                  |
+| `Double`                | `NSNumber` | `double`               |
+| `Boolean`               | `BOOL` | `bool`                 |
+
 ## Pattern 1: Simple Method (No Return Value)
 
 **Use case**: Method that triggers an action but doesn't return data.
@@ -220,17 +232,6 @@ Every public Dart method must have:
 ///
 /// Returns: Description of return value
 ```
-
-## Type Mapping
-
-| Kotlin | Objective-C | Dart                   |
-|--------|-------------|------------------------|
-| `Map<String, Any>` | `NSDictionary` | `Map<String, dynamic>` |
-| `List` | `NSArray` | `List?`                |
-| `String` | `NSString` | `String`               |
-| `Int`, `Long` | `NSNumber` | `int`                  |
-| `Double` | `NSNumber` | `double`               |
-| `Boolean` | `BOOL` | `bool`                 |
 
 ## Common Issues
 
