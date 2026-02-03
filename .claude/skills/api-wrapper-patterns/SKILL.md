@@ -98,6 +98,24 @@ Every public Dart method must have:
 /// Returns: Description of return value
 ```
 
+---
+
+## Implementation Rules
+
+> **⚠️ CRITICAL**: Read and follow these rules BEFORE writing any code.
+
+### Rule 1: Optional Parameters - Extend Existing APIs
+
+**When a native SDK adds an optional parameter to an existing API, add the same optional parameter to the existing Dart method instead of creating a new method.**
+
+### Rule 2: Platform-Specific APIs
+
+**When an API exists only on one platform:**
+- Still implement the Dart method
+- Add platform check in Dart OR have native side return gracefully
+- Document the platform limitation in the method comment
+
+
 ## Pattern 1: Simple Method (No Return Value)
 
 **Use case**: Method that triggers an action but doesn't return data.

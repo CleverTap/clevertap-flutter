@@ -105,7 +105,7 @@ END IF
 ### Step 4: Determine Return Types
 
 **⚠️ CRITICAL**: For ALL `NEW_API` and `BREAKING` changes, you MUST determine return types from native source code. Do NOT rely solely on changelog descriptions. 
-Make sure this SKILL doesn't determine the return type for the Dart layer
+Make sure this SKILL doesn't determine the return type for the Dart layer. Follow the priorities strictly
 
 #### Priority 1: Fetch Native SDK Files (MANDATORY)
 
@@ -141,7 +141,7 @@ https://raw.githubusercontent.com/CleverTap/clevertap-android-sdk/master/clevert
 ```
 
 **Process**:
-1. Use `web_fetch` to fetch `CleverTapAPI.java`
+1. Use `web_fetch` to fetch `CleverTapAPI.java` and read from the bottom
 2. Search the file content for the method name (case-insensitive, allow partial matches)
 3. Extract the **complete** Java signature including:
    - Access modifier (`public`, `private`, `protected`)
@@ -168,9 +168,9 @@ END IF
 
 #### Priority 2: Cross-Platform Inference
 
-**Use ONLY when**:
-- API exists in BOTH platforms from the Changelog
-- Signature found for ONE platform but NOT the other
+**Use when**:
+- API exists in BOTH platforms as deduced from the Changelog URLs
+- Signature found for ONE platform in the primary file but NOT the other
 - Types can be reasonably mapped using the table below
 
 ##### Type Mapping Table
