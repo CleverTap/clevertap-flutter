@@ -34,7 +34,7 @@ Native Web Layer (lib/)              ←→  CleverTap Web SDK (via JS interop)
 ## Version Update Workflow
 
 **⚠️ IMPORTANT**: For AI-assisted version updates, see the detailed task document:
-**`.claude/flutter_release_changes.md`**
+**`.claude/update-sdk.md`**
 
 That document contains the complete automation workflow for Claude Code to:
 - Fetch and analyze native SDK changelogs
