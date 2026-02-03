@@ -104,13 +104,34 @@ END IF
 
 ### Step 4: Determine Return Types
 
-**⚠️ CRITICAL**: For ALL `NEW_API` and `BREAKING` changes, you MUST determine return types from native source code. Do NOT rely solely on changelog descriptions.
+**⚠️ CRITICAL**: For ALL `NEW_API` and `BREAKING` changes, you MUST determine return types from native source code. Do NOT rely solely on changelog descriptions. 
+Make sure this SKILL doesn't determine the return type for the Dart layer
 
 #### Priority 1: Fetch Native SDK Files (MANDATORY)
 
 **⚠️ MANDATORY FOR ALL NEW_API ITEMS**: You MUST fetch and determine return types from native source code. Skipping this step leads to incorrect type assumptions.
 
 Fetch and search **ONLY** the files listed below. Do NOT fetch or read any other `.h`, `.m`, `.java`, or `.kt` files.
+
+##### For iOS APIs
+
+**Single file to fetch**:
+```
+https://raw.githubusercontent.com/CleverTap/clevertap-ios-sdk/master/CleverTapSDK/CleverTap.h
+```
+
+**Process**:
+1. Use `web_fetch` to fetch `CleverTap.h`
+2. Search the file content for the method name (case-insensitive, allow partial matches)
+3. Extract the **complete** Objective-C signature including:
+   - Return type with generics (e.g., `NSArray<CleverTapInboxMessage *> *`)
+   - Nullability annotations (`_Nullable`, `_Nonnull`)
+   - Method name and parameters
+
+**Example signature**:
+```objc
+- (NSArray<CleverTapInboxMessage *> * _Nullable)getAllInboxMessages;
+```
 
 ##### For Android APIs
 
@@ -134,26 +155,6 @@ https://raw.githubusercontent.com/CleverTap/clevertap-android-sdk/master/clevert
 public ArrayList<CTInboxMessage> getAllInboxMessages();
 ```
 
-##### For iOS APIs
-
-**Single file to fetch**:
-```
-https://raw.githubusercontent.com/CleverTap/clevertap-ios-sdk/master/CleverTapSDK/CleverTap.h
-```
-
-**Process**:
-1. Use `web_fetch` to fetch `CleverTap.h`
-2. Search the file content for the method name (case-insensitive, allow partial matches)
-3. Extract the **complete** Objective-C signature including:
-   - Return type with generics (e.g., `NSArray<CleverTapInboxMessage *> *`)
-   - Nullability annotations (`_Nullable`, `_Nonnull`)
-   - Method name and parameters
-
-**Example signature**:
-```objc
-- (NSArray<CleverTapInboxMessage *> * _Nullable)getAllInboxMessages;
-```
-
 **Decision**:
 ```
 IF method found in primary file THEN
@@ -168,23 +169,23 @@ END IF
 #### Priority 2: Cross-Platform Inference
 
 **Use ONLY when**:
-- API exists in BOTH platforms
+- API exists in BOTH platforms from the Changelog
 - Signature found for ONE platform but NOT the other
 - Types can be reasonably mapped using the table below
 
 ##### Type Mapping Table
 
-| Android Type | iOS Type | Notes |
-|--------------|----------|-------|
-| `ArrayList<T>`, `List<T>` | `NSArray<T *> *` | Ordered collection |
-| `Map<K, V>`, `HashMap<K, V>` | `NSDictionary<K, V> *` | Key-value pairs |
-| `String` | `NSString *` | Text |
-| `Integer`, `Long` | `NSNumber *`, `NSInteger` | Integers |
-| `Double` | `NSNumber *` | Floating point |
-| `boolean` | `BOOL` | Boolean |
-| `void` | `void` | No return |
-| `Object` | `id` | Any type |
-| `ArrayList<HashMap>` | `NSArray<NSDictionary *> *` | List of maps |
+| Android Type | iOS Type | Notes                    |
+|--------------|----------|--------------------------|
+| `ArrayList<T>`, `List<T>` | `NSArray<T *> *` | Ordered collection       |
+| `Map<K, V>`, `HashMap<K, V>` | `NSDictionary<K, V> *` | Key-value pairs          |
+| `String` | `NSString *` | Text                     |
+| `Integer`, `Long` | `NSNumber *`, `NSInteger` | Integers                 |
+| `Double` | `NSNumber *` | Floating point           |
+| `boolean` | `BOOL` | Boolean                  |
+| `void` | `void` | No return                |
+| `Object` | `id` | Any type                 |
+| `ArrayList<HashMap>` | `NSArray<NSDictionary *> *` | List of maps of any type |
 
 **Process**:
 ```
