@@ -1,5 +1,19 @@
 ## CHANGE LOG
 
+Version 3.7.0 *(6 February 2026)*
+-------------------------------------------
+**What's new**
+* **[Android Platform]**
+  * Supports [CleverTap Android SDK v7.7.1](https://github.com/CleverTap/clevertap-android-sdk/blob/master/docs/CTCORECHANGELOG.md#version-771-december-2-2025).
+
+* **[iOS Platform]**
+  * Supports [CleverTap iOS SDK v7.4.2](https://github.com/CleverTap/clevertap-ios-sdk/blob/master/CHANGELOG.md#version-742-january-14-2026).
+
+**API changes**
+* **[Android and iOS Platform]**
+  * New API: `getVariants()` - Returns experiment variant information for the current user for A/B testing.
+  * Updates `discardInAppNotifications({bool? dismissInAppIfVisible})` - Adds optional parameter to dismiss any currently visible In-App notification in addition to discarding queued notifications.
+
 Version 3.6.0 *(3 November 2025)*
 -------------------------------------------
 **What's new**
