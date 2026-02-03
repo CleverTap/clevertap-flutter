@@ -361,7 +361,11 @@ class DartToNativePlatformCommunicator(
             }
 
             "discardInAppNotifications" -> {
-                discardInAppNotifications(result)
+                discardInAppNotifications(call, result)
+            }
+
+            "getVariants" -> {
+                getVariants(result)
             }
 
             "resumeInAppNotifications" -> {
@@ -1483,10 +1487,19 @@ class DartToNativePlatformCommunicator(
         }
     }
 
-    private fun discardInAppNotifications(result: MethodChannel.Result) {
+    private fun discardInAppNotifications(call: MethodCall, result: MethodChannel.Result) {
         if (cleverTapAPI != null) {
-            cleverTapAPI.discardInAppNotifications()
+            val dismissInAppIfVisible = call.argument<Boolean>("dismissInAppIfVisible") ?: false
+            cleverTapAPI.discardInAppNotifications(dismissInAppIfVisible)
             result.success(null)
+        } else {
+            result.error(TAG, ERROR_MSG, null)
+        }
+    }
+
+    private fun getVariants(result: MethodChannel.Result) {
+        if (cleverTapAPI != null) {
+            result.success(cleverTapAPI.variants())
         } else {
             result.error(TAG, ERROR_MSG, null)
         }

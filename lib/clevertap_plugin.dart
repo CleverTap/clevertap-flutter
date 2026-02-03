@@ -80,7 +80,7 @@ class CleverTapPlugin {
   static const libName = 'Flutter';
 
   static const libVersion =
-      30503; // If the current version is X.X.X then pass as X0X0X
+      30600; // If the current version is X.X.X then pass as X0X0X
 
   CleverTapPlugin._internal() {
     /// Set the CleverTap Flutter library name and the current version for version tracking
@@ -1014,9 +1014,14 @@ class CleverTapPlugin {
   /// Suspends the display of InApp Notifications and discards any new InApp Notifications to be shown
   /// after this method is called.
   /// The InApp Notifications will be displayed only once resumeInAppNotifications() is called.
-  static Future<void> discardInAppNotifications() async {
-    return await _dartToNativeMethodChannel
-        .invokeMethod('discardInAppNotifications', {});
+  ///
+  /// [dismissInAppIfVisible] - If true, any currently visible InApp notification will be
+  /// immediately dismissed in addition to discarding queued notifications. Defaults to false.
+  static Future<void> discardInAppNotifications(
+      {bool dismissInAppIfVisible = false}) async {
+    return await _dartToNativeMethodChannel.invokeMethod(
+        'discardInAppNotifications',
+        {'dismissInAppIfVisible': dismissInAppIfVisible});
   }
 
   /// Resumes display of InApp Notifications.
@@ -1028,6 +1033,14 @@ class CleverTapPlugin {
   static Future<void> resumeInAppNotifications() async {
     return await _dartToNativeMethodChannel
         .invokeMethod('resumeInAppNotifications', {});
+  }
+
+  /// Returns the list of A/B experiment variants for the current user.
+  ///
+  /// Each variant is a map containing at minimum an 'id' key with the variant's numeric ID.
+  /// Returns an empty list if no variants are active for the current user.
+  static Future<List?> getVariants() async {
+    return await _dartToNativeMethodChannel.invokeMethod('getVariants', {});
   }
 
   /// Initializes the inbox controller and sends a callback

@@ -164,7 +164,9 @@ static NSDateFormatter *dateFormatter;
     else if ([@"suspendInAppNotifications" isEqualToString:call.method])
         [self suspendInAppNotifications];
     else if ([@"discardInAppNotifications" isEqualToString:call.method])
-        [self discardInAppNotifications];
+        [self discardInAppNotifications:call withResult:result];
+    else if ([@"getVariants" isEqualToString:call.method])
+        [self getVariants:call withResult:result];
     else if ([@"resumeInAppNotifications" isEqualToString:call.method])
         [self resumeInAppNotifications];
     else if ([@"getInboxMessageCount" isEqualToString:call.method])
@@ -645,9 +647,14 @@ static NSDateFormatter *dateFormatter;
     [[CleverTap sharedInstance] suspendInAppNotifications];
 }
 
-- (void)discardInAppNotifications {
-    
-    [[CleverTap sharedInstance] discardInAppNotifications];
+- (void)discardInAppNotifications:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    BOOL dismissInAppIfVisible = [call.arguments[@"dismissInAppIfVisible"] boolValue];
+    [[CleverTap sharedInstance] discardInAppNotifications:dismissInAppIfVisible];
+    result(nil);
+}
+
+- (void)getVariants:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    result([[CleverTap sharedInstance] variants]);
 }
 
 - (void)resumeInAppNotifications {

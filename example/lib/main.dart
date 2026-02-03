@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io' show Platform, sleep;
+import 'dart:io' show Platform;
 import 'dart:math';
 import 'package:example/notification_button.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -739,9 +739,20 @@ class _MyAppState extends State<MyApp> {
                         discardInAppNotifications,
                         "Suspends the display of InApp Notifications and discards any new InApp Notifications to be shown after this method is called."),
                     _buildListTile(
+                        "Discard InApp (dismiss visible)",
+                        discardInAppNotificationsDismissVisible,
+                        "Discards InApp Notifications and immediately dismisses any currently visible one."),
+                    _buildListTile(
                         "Resume InApp notifications",
                         resumeInAppNotifications,
                         "Resumes display of InApp Notifications."),
+                  ]),
+                if (!kIsWeb)
+                  _buildExpansionTile("A/B Testing", [
+                    _buildListTile(
+                        "Get Variants",
+                        getVariants,
+                        "Returns the list of A/B experiment variants for the current user."),
                   ]),
                 if (!kIsWeb)
                   _buildExpansionTile("Event History", [
@@ -1678,6 +1689,24 @@ class _MyAppState extends State<MyApp> {
   void discardInAppNotifications() {
     CleverTapPlugin.discardInAppNotifications();
     showToast("InApp notification is discarded");
+  }
+
+  void discardInAppNotificationsDismissVisible() {
+    CleverTapPlugin.discardInAppNotifications(dismissInAppIfVisible: true);
+    showToast("InApp notification is discarded (visible dismissed)");
+  }
+
+  void getVariants() {
+    CleverTapPlugin.getVariants().then((variants) {
+      setState((() {
+        showToast("Variants = " + variants.toString());
+        print("Variants = " + variants.toString());
+      }));
+    }).catchError((error) {
+      setState(() {
+        print("$error");
+      });
+    });
   }
 
   void resumeInAppNotifications() {
