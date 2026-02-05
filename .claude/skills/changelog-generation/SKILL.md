@@ -20,7 +20,7 @@ Generate properly formatted changelog entries for CleverTap Flutter SDK releases
 ## Entry Template
 
 ```markdown
-Version X.X.X *(DD Month YYYY)*
+### Version X.X.X *(DD Month YYYY)*
 -------------------------------------------
 **What's new**
 * **[Platform Name]**
