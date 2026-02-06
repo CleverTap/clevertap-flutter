@@ -1,12 +1,26 @@
 ## CHANGE LOG
 
-Version 3.6.0 *(3 November 2025)*
+### Version 3.7.0 *(6 February 2026)*
+-------------------------------------------
+**What's new**
+* **[Android Platform]**
+  * Supports [CleverTap Android SDK v7.7.1](https://github.com/CleverTap/clevertap-android-sdk/blob/master/docs/CTCORECHANGELOG.md#version-771-december-2-2025).
+
+* **[iOS Platform]**
+  * Supports [CleverTap iOS SDK v7.4.2](https://github.com/CleverTap/clevertap-ios-sdk/blob/master/CHANGELOG.md#version-742-january-14-2026).
+
+**API changes**
+* **[Android and iOS Platform]**
+  * New API: `getVariants()` - Returns experiment variant information for the current user for A/B testing.
+  * Updates `discardInAppNotifications({bool? dismissInAppIfVisible})` - Adds optional parameter to dismiss any currently visible In-App notification in addition to discarding queued notifications.
+
+### Version 3.6.0 *(3 November 2025)*
 -------------------------------------------
 **What's new**
 * **[Android Platform]**
   * Supports [CleverTap Android SDK v7.6.0](https://github.com/CleverTap/clevertap-android-sdk/blob/master/docs/CTCORECHANGELOG.md#version-760-october-17-2025).
 
-Version 3.5.3 *(22 September 2025)*
+### Version 3.5.3 *(22 September 2025)*
 -------------------------------------------
 **What's new**
 * **[Web Platform]**
@@ -19,13 +33,13 @@ Version 3.5.3 *(22 September 2025)*
 * **[iOS Platform]**
   * Supports [CleverTap iOS SDK v7.3.3](https://github.com/CleverTap/clevertap-ios-sdk/blob/master/CHANGELOG.md#version-733-september-11-2025).
 
-Version 3.5.2 *(28 August 2025)*
+### Version 3.5.2 *(28 August 2025)*
 -------------------------------------------
 **What's new**
 * **[Android Platform]**
   * Supports [CleverTap Android SDK v7.5.1](https://github.com/CleverTap/clevertap-android-sdk/blob/master/docs/CTCORECHANGELOG.md#version-751-august-28-2025).
 
-Version 3.5.1 *(22 August 2025)*
+### Version 3.5.1 *(22 August 2025)*
 -------------------------------------------
 **What's new**
 * **[Web Platform]**
@@ -34,7 +48,7 @@ Version 3.5.1 *(22 August 2025)*
 * **[iOS Platform]**
   * Supports [CleverTap iOS SDK v7.3.2](https://github.com/CleverTap/clevertap-ios-sdk/blob/master/CHANGELOG.md#version-732-august-08-2025).
 
-Version 3.5.0 *(21 July 2025)*
+### Version 3.5.0 *(21 July 2025)*
 -------------------------------------------
 * **[Android Platform]**
   * Supports [CleverTap Android SDK v7.5.0](https://github.com/CleverTap/clevertap-android-sdk/blob/master/docs/CTCORECHANGELOG.md#version-750-july-11-2025).
@@ -58,7 +72,7 @@ Version 3.5.0 *(21 July 2025)*
   * Fixes a `No new templates are synced` error while syncing new custom templates.
   * Fixes a Local Push Primer crash when asking for push permission using promptForPushPermission.
 
-Version 3.4.0 *(27 June 2025)*
+### Version 3.4.0 *(27 June 2025)*
 -------------------------------------------
 **What's new**
 * **[Android Platform]**
@@ -67,7 +81,7 @@ Version 3.4.0 *(27 June 2025)*
 * **[iOS Platform]**
   * Supports [CleverTap iOS SDK v7.2.1](https://github.com/CleverTap/clevertap-ios-sdk/blob/master/CHANGELOG.md#version-721-june-27-2025).
 
-Version 3.3.1 *(18 April 2025)*
+### Version 3.3.1 *(18 April 2025)*
 -------------------------------------------
 **What's new**
 * **[iOS Platform]**
@@ -82,7 +96,7 @@ Version 3.3.1 *(18 April 2025)*
   * Fixes app freezing issue when using await with `defineVariables()`.
   * Fixes custom in-app device orientation check.
 
-Version 3.3.0 *(28 March 2025)*
+### Version 3.3.0 *(28 March 2025)*
 -------------------------------------------
 > ⚠️ **NOTE**  
 > Please refer to [this guide](https://developer.clevertap.com/docs/clevertap-huawei-push-integration) for changed integration steps for Huawei PushProvider.
@@ -100,7 +114,7 @@ Version 3.3.0 *(28 March 2025)*
     - `setHuaweiPushToken(String value)`
   
 
-Version 3.2.0 *(3 March 2025)*
+### Version 3.2.0 *(3 March 2025)*
 -------------------------------------------
 > ⚠️ **NOTE**
 After upgrading the SDK to v3.2.0, don't downgrade in subsequent app releases. If you encounter any issues, please contact the CleverTap support team for assistance. 
@@ -114,7 +128,7 @@ After upgrading the SDK to v3.2.0, don't downgrade in subsequent app releases. I
   * Upgrades `Android Gradle Plugin (A.G.P)` to 8.6.1 as [recommended for Android 15](https://developer.android.com/about/versions/15/setup-sdk#:~:text=Update%20your%20app's%20build%20configuration,-Warning%3A%20If%20your&text=1%20or%20higher%2C%20first%20run,1.)
 
 
-Version 3.1.0 *(3 March 2025)*
+### Version 3.1.0 *(3 March 2025)*
 -------------------------------------------
 **What's new**
 * **[Android Platform]**
@@ -144,7 +158,7 @@ Version 3.1.0 *(3 March 2025)*
       - `sessionGetTotalVisits()`: Use `getUserAppLaunchCount()` instead for user-specific app launch count
       - `getEventHistory()`: Use `getUserEventLogHistory()` instead for user-specific event history
 
-Version 3.0.0 *(19 December 2024)*
+### Version 3.0.0 *(19 December 2024)*
 -------------------------------------------
 **What's new**
 * **[Android Platform]**

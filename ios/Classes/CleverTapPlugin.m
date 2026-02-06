@@ -164,7 +164,7 @@ static NSDateFormatter *dateFormatter;
     else if ([@"suspendInAppNotifications" isEqualToString:call.method])
         [self suspendInAppNotifications];
     else if ([@"discardInAppNotifications" isEqualToString:call.method])
-        [self discardInAppNotifications];
+        [self discardInAppNotifications:call withResult:result];
     else if ([@"resumeInAppNotifications" isEqualToString:call.method])
         [self resumeInAppNotifications];
     else if ([@"getInboxMessageCount" isEqualToString:call.method])
@@ -287,6 +287,8 @@ static NSDateFormatter *dateFormatter;
         [self onValueChanged:call withResult:result];
     else if ([@"setLocale" isEqualToString:call.method])
         [self setLocale:call withResult:result];
+    else if ([@"getVariants" isEqualToString:call.method])
+        [self getVariants:call withResult:result];
     else if ([@"syncCustomTemplates" isEqualToString:call.method])
         [self syncCustomTemplates:call withResult:result];
     else if ([@"syncCustomTemplatesInProd" isEqualToString:call.method])
@@ -645,9 +647,14 @@ static NSDateFormatter *dateFormatter;
     [[CleverTap sharedInstance] suspendInAppNotifications];
 }
 
-- (void)discardInAppNotifications {
-    
-    [[CleverTap sharedInstance] discardInAppNotifications];
+- (void)discardInAppNotifications:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    NSNumber *dismissInAppIfVisible = call.arguments[@"dismissInAppIfVisible"];
+    if (dismissInAppIfVisible != nil) {
+        [[CleverTap sharedInstance] discardInAppNotifications:[dismissInAppIfVisible boolValue]];
+    } else {
+        [[CleverTap sharedInstance] discardInAppNotifications];
+    }
+    result(nil);
 }
 
 - (void)resumeInAppNotifications {
@@ -1569,6 +1576,11 @@ static NSDateFormatter *dateFormatter;
     NSLocale *locale = [[NSLocale alloc] initWithLocaleIdentifier:call.arguments];
     [[CleverTap sharedInstance] setLocale:locale];
     result(nil);
+}
+
+- (void)getVariants:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    NSArray<NSDictionary<NSString *, id> *> *variants = [[CleverTap sharedInstance] variants];
+    result(variants);
 }
 
 #pragma mark - Custom Code Templates
