@@ -1580,7 +1580,7 @@ static NSDateFormatter *dateFormatter;
 
 - (void)getVariants:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     NSArray<NSDictionary<NSString *, id> *> *variants = [[CleverTap sharedInstance] variants];
-    result(variants ? variants : @[]);
+    result(variants);
 }
 
 #pragma mark - Custom Code Templates
