@@ -114,6 +114,10 @@ class DartToNativePlatformCommunicator(
                 setLocale(call, result)
             }
 
+            "getVariants" -> {
+                getVariants(result)
+            }
+
             "setPushToken" -> {
                 setFCMPushToken(call, result)
             }
@@ -361,7 +365,7 @@ class DartToNativePlatformCommunicator(
             }
 
             "discardInAppNotifications" -> {
-                discardInAppNotifications(result)
+                discardInAppNotifications(call, result)
             }
 
             "resumeInAppNotifications" -> {
@@ -671,6 +675,15 @@ class DartToNativePlatformCommunicator(
         if (cleverTapAPI != null) {
             cleverTapAPI.setLocale(locale)
             result.success(null)
+        } else {
+            result.error(TAG, ERROR_MSG, null)
+        }
+    }
+
+    private fun getVariants(result: MethodChannel.Result) {
+        if (cleverTapAPI != null) {
+            val variants = cleverTapAPI.variants()
+            result.success(variants)
         } else {
             result.error(TAG, ERROR_MSG, null)
         }
@@ -1483,9 +1496,14 @@ class DartToNativePlatformCommunicator(
         }
     }
 
-    private fun discardInAppNotifications(result: MethodChannel.Result) {
+    private fun discardInAppNotifications(call: MethodCall, result: MethodChannel.Result) {
         if (cleverTapAPI != null) {
-            cleverTapAPI.discardInAppNotifications()
+            val dismissInAppIfVisible = call.argument<Boolean>("dismissInAppIfVisible")
+            if (dismissInAppIfVisible != null) {
+                cleverTapAPI.discardInAppNotifications(dismissInAppIfVisible)
+            } else {
+                cleverTapAPI.discardInAppNotifications()
+            }
             result.success(null)
         } else {
             result.error(TAG, ERROR_MSG, null)

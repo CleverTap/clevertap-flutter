@@ -627,6 +627,9 @@ class _MyAppState extends State<MyApp> {
                   _buildListTile(
                       'Add \'OnFileChanged\' listener for name \'folder1.fileVariable\'',
                       onFileChanged),
+                  if (!kIsWeb)
+                    _buildListTile('Get A/B Test Variants', getVariants,
+                        'Returns experiment variant information for the current user.'),
                 ]),
                 _buildExpansionTile("User Profiles", [
                   _buildListTile(
@@ -738,6 +741,10 @@ class _MyAppState extends State<MyApp> {
                         "Discard InApp notifications",
                         discardInAppNotifications,
                         "Suspends the display of InApp Notifications and discards any new InApp Notifications to be shown after this method is called."),
+                    _buildListTile(
+                        "Discard InApp (Dismiss Visible)",
+                        discardInAppNotificationsWithDismiss,
+                        "Also dismisses any currently visible InApp notification."),
                     _buildListTile(
                         "Resume InApp notifications",
                         resumeInAppNotifications,
@@ -1680,6 +1687,12 @@ class _MyAppState extends State<MyApp> {
     showToast("InApp notification is discarded");
   }
 
+  void discardInAppNotificationsWithDismiss() {
+    CleverTapPlugin.discardInAppNotifications(dismissInAppIfVisible: true);
+    showToast("InApp notification discarded (with visible InApp dismissed)");
+    print("InApp -> discardInAppNotifications called with dismissInAppIfVisible: true");
+  }
+
   void resumeInAppNotifications() {
     CleverTapPlugin.resumeInAppNotifications();
     showToast("InApp notification is resumed");
@@ -1873,6 +1886,17 @@ class _MyAppState extends State<MyApp> {
     CleverTapPlugin.onFileValueChanged('folder1.fileVariable', (variable) {
       print("PE -> onFileValueChanged: " + variable.toString());
     });
+  }
+
+  void getVariants() async {
+    List? variants = await CleverTapPlugin.getVariants();
+    if (variants == null || variants.isEmpty) {
+      showToast("No A/B test variants found");
+      print("PE -> getVariants: No variants assigned");
+    } else {
+      showToast("${variants.length} variant(s) found, check console");
+      print("PE -> getVariants: " + variants.toString());
+    }
   }
 
   void handleDeeplink(Map<String, dynamic> notificationPayload) {

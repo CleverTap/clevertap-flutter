@@ -80,7 +80,7 @@ class CleverTapPlugin {
   static const libName = 'Flutter';
 
   static const libVersion =
-      30600; // If the current version is X.X.X then pass as X0X0X
+      30700; // If the current version is X.X.X then pass as X0X0X
 
   CleverTapPlugin._internal() {
     /// Set the CleverTap Flutter library name and the current version for version tracking
@@ -1014,9 +1014,18 @@ class CleverTapPlugin {
   /// Suspends the display of InApp Notifications and discards any new InApp Notifications to be shown
   /// after this method is called.
   /// The InApp Notifications will be displayed only once resumeInAppNotifications() is called.
-  static Future<void> discardInAppNotifications() async {
+  ///
+  /// Parameters:
+  /// - [dismissInAppIfVisible]: If true, also dismisses any currently visible InApp notification.
+  ///   If false or not provided, only queued/future InApps are discarded.
+  static Future<void> discardInAppNotifications(
+      {bool? dismissInAppIfVisible}) async {
+    final Map<String, dynamic> args = {};
+    if (dismissInAppIfVisible != null) {
+      args['dismissInAppIfVisible'] = dismissInAppIfVisible;
+    }
     return await _dartToNativeMethodChannel
-        .invokeMethod('discardInAppNotifications', {});
+        .invokeMethod('discardInAppNotifications', args);
   }
 
   /// Resumes display of InApp Notifications.
@@ -1395,6 +1404,16 @@ class CleverTapPlugin {
     String localeString = locale.toString();
     return await _dartToNativeMethodChannel.invokeMethod(
         'setLocale', localeString);
+  }
+
+  /// Returns experiment variant information for the current user.
+  ///
+  /// Each dictionary in the returned list contains details about an assigned A/B test variant,
+  /// with common keys like "name", "abTestId", and "abTestName".
+  ///
+  /// Returns: A list of variant dictionaries, or empty list if no variants are assigned.
+  static Future<List?> getVariants() async {
+    return await _dartToNativeMethodChannel.invokeMethod('getVariants', {});
   }
 
   ///Fetch Client Side In-Apps
