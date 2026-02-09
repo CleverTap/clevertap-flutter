@@ -187,8 +187,6 @@ The skill will:
 3. Generate a unified implementation plan table
 4. **Wait for user acknowledgment** before proceeding
 
-See the **native-sdk-changelog-analysis** skill for detailed process and output format.
-
 ---
 
 ## Phase 4: Implement API Wrappers
@@ -197,7 +195,7 @@ See the **native-sdk-changelog-analysis** skill for detailed process and output 
 
 **Do NOT skip this phase** without explicit user approval.
 
-### ⚠️ CRITICAL: Pre-Implementation Checklist
+### CRITICAL: Pre-Implementation Checklist
 
 **BEFORE writing ANY wrapper code, you MUST:**
 
@@ -206,10 +204,6 @@ See the **native-sdk-changelog-analysis** skill for detailed process and output 
 □ Step 4: CHECK the examples for the pattern you're implementing
 □ Step 5: Only THEN proceed to write code
 ```
-
-### Implementation Process
-
-For each API:
 
 ## Phase 5: Update Example App
 
