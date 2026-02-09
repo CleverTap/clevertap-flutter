@@ -111,13 +111,12 @@ The `CHANGELOG.md` has a **strict format** that must be preserved. It's parsed b
    - `[Web Platform]`
    - `[Android and iOS Platform]` (when both affected)
 4. ✅ **Link to native SDK changelogs with version anchors**
-5. ✅ **Use issue links** for bug fixes: `Fixes [#123](url)`
-6. ✅ **Maintain indentation**: 2 spaces for nested bullets
+5. ✅ **Maintain indentation**: 2 spaces for nested bullets
 
 ### Format Template
 
 ```markdown
-Version X.X.X *(DD Month YYYY)*
+## Version X.X.X *(DD Month YYYY)*
 -------------------------------------------
 **What's new**
 * **[Platform Name]**
@@ -135,7 +134,7 @@ Version X.X.X *(DD Month YYYY)*
 
 **Bug Fixes** (if applicable)
 * **[Platform Name]**
-  * Fixes [#123](issue-link) - Description of fix
+  * Fixes - description of fix
 ```
 
 ---
