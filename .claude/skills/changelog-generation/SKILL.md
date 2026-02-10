@@ -16,6 +16,7 @@ Generate properly formatted changelog entries for CleverTap Flutter SDK releases
 3. **Platform tags** - Use exactly: `[Android Platform]`, `[iOS Platform]`, `[Web Platform]`, `[Android and iOS Platform]`
 4. **Link native changelogs** - Always include version anchor links
 5. **2-space indentation** - Use 2 spaces for nested bullets
+6. **Inline code** - Wrap code-related words in backticks: class names (`AbstractMethodError`), method names (`setTheme`), parameter names, types, etc.
 
 ## Entry Template
 
@@ -38,7 +39,7 @@ Generate properly formatted changelog entries for CleverTap Flutter SDK releases
 
 **Bug Fixes** (if applicable)
 * **[Platform Name]**
-  * Fixes description
+  * Fixes `ClassName` or `methodName` related issue description
 ```
 
 ## Version Anchor Format
@@ -178,5 +179,8 @@ Version 3.6.0 *(15 December 2025)*    # ← EXISTING ENTRIES
 ❌ Link without anchor: `...CHANGELOG.md`  
 ✅ Correct: `...CHANGELOG.md#version-742-january-14-2026`
 
-❌ Entry at bottom of file  
+❌ Entry at bottom of file
 ✅ Entry at TOP of file
+
+❌ Plain text for code: `Fixes AbstractMethodError in setTheme`
+✅ Backticks: `` Fixes `AbstractMethodError` in `setTheme` ``

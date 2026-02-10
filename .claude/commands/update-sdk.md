@@ -28,7 +28,7 @@ Spawn a Task sub-agent (`version-gather`):
 
 ## Phase 2: Update Versions + Analyze Changes (parallel)
 
-Spawn **both** Task sub-agents in a **single message** so they run concurrently:
+Spawn **both** Task sub-agents so that they run concurrently:
 
 **Agent A** — `version-update`:
 - Input: confirmed `NEW_FLUTTER_VERSION`, `NEW_ANDROID_VERSION`, `NEW_IOS_VERSION`
@@ -67,7 +67,7 @@ Spawn a Task sub-agent (`example-app-update`):
 
 ## Phase 5: Generate Changelog + Build Validation (parallel)
 
-Spawn **both** Task sub-agents in a **single message** so they run concurrently:
+Spawn **both** Task sub-agents so that they run concurrently:
 
 **Agent A** — `changelog-generate`:
 - Input: `NEW_FLUTTER_VERSION`, `NEW_ANDROID_VERSION`, `NEW_IOS_VERSION`, `IMPLEMENTATION_PLAN`, `APIS_IMPLEMENTED`
