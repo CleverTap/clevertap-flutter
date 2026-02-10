@@ -1,15 +1,15 @@
 ---
 name: version-detection
-description: Extract current version numbers from CleverTap Flutter SDK files. Use when checking version consistency across files, preparing for SDK updates, or generating version reports. Handles all version locations including pubspec.yaml, build.gradle files, podspec, Dart constants, and README.
+description: Version locations, patterns, and conversion logic for the CleverTap Flutter SDK. Single source of truth for all 7 version file locations. Used by version-gather (read) and version-update (write) agents.
 ---
 
 # Version Detection
 
-Extract current version numbers from CleverTap Flutter SDK files to ensure consistency and prepare for updates.
+Version locations, extraction patterns, and conversion logic for the CleverTap Flutter SDK.
 
 ## Version Locations
 
-The CleverTap Flutter SDK maintains version numbers in 6 locations that must stay synchronized:
+The CleverTap Flutter SDK maintains version numbers in 7 locations that must stay synchronized:
 
 | # | File | Location       | Pattern |
 |---|------|----------------|---------|
