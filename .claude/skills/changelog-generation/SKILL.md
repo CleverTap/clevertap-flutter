@@ -183,4 +183,4 @@ Version 3.6.0 *(15 December 2025)*    # ← EXISTING ENTRIES
 ✅ Entry at TOP of file
 
 ❌ Plain text for code: `Fixes AbstractMethodError in setTheme`
-✅ Backticks: `` Fixes `AbstractMethodError` in `setTheme` ``
+✅ Backticks: `` Fixes `AbstractMethodError` in `setTheme`
