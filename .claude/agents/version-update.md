@@ -24,11 +24,10 @@ skills: version-detection
 
 ### Step 1: Update All 7 Locations
 
-For each row in the skill's **Version Locations** table, find the current pattern in the file and replace with the new version:
-- Locations 1, 2, 4, 7 (Flutter plugin version) → use `NEW_FLUTTER_VERSION`
-- Location 3 (Android SDK dependency) → use `NEW_ANDROID_VERSION`
-- Location 5 (iOS SDK dependency) → use `NEW_IOS_VERSION`
-- Location 6 (Dart constant) → convert using the skill's **Dart Version Constant** formula
+For each row in the skill's **Version Locations** table, replace the current pattern with the appropriate new version:
+- Flutter plugin locations (1, 2, 4, 7) → `NEW_FLUTTER_VERSION`
+- Android SDK (3) → `NEW_ANDROID_VERSION`, iOS SDK (5) → `NEW_IOS_VERSION`
+- Dart constant (6) → convert using the skill's **Dart Version Constant** formula
 
 ### Step 2: Verify All Changes
 

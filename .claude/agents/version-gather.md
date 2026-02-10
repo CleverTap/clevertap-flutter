@@ -28,12 +28,9 @@ Check if `CLAUDE_AUTO_CONFIRM` environment variable is set:
 
 ### Step 2: Read Current Versions
 
-Using the skill's **Version Locations** table, extract:
-- `OLD_FLUTTER_VERSION` from location 1 (pubspec.yaml)
-- `OLD_ANDROID_VERSION` from location 3 (Android SDK dependency)
-- `OLD_IOS_VERSION` from location 5 (iOS SDK dependency)
-
-Also verify consistency across all Flutter plugin locations (1, 2, 4, 6, 7) using the skill's **Version Consistency Check**.
+Using the skill's **Version Locations** table:
+- Extract `OLD_FLUTTER_VERSION` (location 1), `OLD_ANDROID_VERSION` (location 3), `OLD_IOS_VERSION` (location 5)
+- Verify consistency across all Flutter plugin locations using the skill's **Version Consistency Check**
 
 ### Step 3: Fetch Latest Native SDK Versions
 

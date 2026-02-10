@@ -135,7 +135,7 @@ Example: If today is 2 February 2026, use 5 February 2026
 **Important** : Use active voice: "Adds support for..." not "Support was added"
 
 ### "What's new"
-- Start with native SDK support line
+- Start with a native SDK support line for each platform whose version was updated. Omit platforms with no version change
 
 ### "API changes"
 - List new public methods/classes

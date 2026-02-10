@@ -11,8 +11,6 @@ skills: changelog-generation
 
 **Purpose**: Generate a properly formatted changelog entry for the Flutter SDK release.
 
-**Note**: This agent exists for standalone use. During the update-sdk workflow, the orchestrator invokes this phase directly in main context (not via Task sub-agent) because the changelog output needs user review.
-
 ## Input
 | Variable | Required | Description | Example |
 |----------|----------|-------------|---------|
@@ -28,17 +26,11 @@ skills: changelog-generation
 
 ### Step 1: Fetch Changelog Dates
 
-Fetch the native SDK changelogs to extract release dates for version anchor generation:
-- Android: `https://github.com/CleverTap/clevertap-android-sdk/blob/master/docs/CTCORECHANGELOG.md`
-- iOS: `https://github.com/CleverTap/clevertap-ios-sdk/blob/master/CHANGELOG.md`
+Fetch both native SDK changelogs (URLs in the skill's examples) to extract release dates for version anchor generation.
 
 ### Step 2: Compose and Insert Changelog Entry
 
-Using the skill's entry template and anchor format rules:
-1. Generate version anchors for both native SDK links
-2. Compose the entry with applicable sections ("What's new", "API changes", "Breaking Changes", "Bug Fixes")
-3. Insert new entry at the TOP (after the `# Change Log` header)
-4. Write back to file
+Follow the skill's entry template, anchor format rules, and insertion process.
 
 ## Output Format
 

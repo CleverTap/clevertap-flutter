@@ -34,34 +34,12 @@ Follow the skill's process end-to-end using the input version ranges. Key points
 
 ## Output Format
 
-Return the complete implementation plan as a markdown table:
-
-```markdown
-## Wrapper Implementation Plan
-
-### Summary
-- Platform(s): Android and iOS
-- Version Range: Android {OLD}→{NEW}, iOS {OLD}→{NEW}
-- Total Changes: X NEW_API, Y BREAKING, Z DEPRECATED, W BUG_FIX, V INTERNAL
-
-### All Changes
-
-| # | Category | API Name | Android Type | iOS Type | Parameters | Platforms | Decision | Notes |
-|---|----------|----------|--------------|----------|------------|-----------|----------|-------|
-| ... | ... | ... | ... | ... | ... | ... | ... | ... |
-```
-
-**IMPORTANT**: Do NOT prompt the user for approval. Return the implementation plan — the orchestrator handles user interaction.
+Return the implementation plan using the skill's **Step 6** table format exactly. Do NOT prompt the user — the orchestrator handles interaction.
 
 ## Success Criteria
-- [ ] All changes between version ranges extracted and categorized per the skill's rules
-- [ ] All NEW_API/BREAKING changes have return types determined (verified or inferred)
-- [ ] APIs in changelog are NEVER skipped due to failed signature lookup
-- [ ] Single unified table with separate Android/iOS type columns (per skill's Step 6 format)
-- [ ] Implementation plan returned in full markdown format
+
+Per the skill's success criteria. Additionally: implementation plan returned in full markdown format.
 
 ## Error Handling
-- Retry GitHub fetches up to 3 times
-- If changelog cannot be fetched, STOP and report error
-- If method signature not found in source, use inference (never skip the API)
-- Mark inferred types with `(inferred)` in the table
+- If changelog fetch fails after 3 retries, STOP and report error
+- If method signature not found in source, use inference — never skip the API

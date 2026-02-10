@@ -31,11 +31,7 @@ Skip items marked `NO_ACTION`, `SKIP`, or `DISCUSS` (unless user overrode during
 
 ### Step 2: Implement Each Wrapper
 
-For each actionable item, implement across all 3 layers following the skill's patterns:
-
-- **Dart** (`lib/clevertap_plugin.dart`) — Match the appropriate skill pattern (Simple Method, Method with Return Value, or Complex Data)
-- **Android** (`android/src/main/java/com/clevertap/clevertap_plugin/DartToNativePlatformCommunicator.kt`) — Add onMethodCall case + implementation method
-- **iOS** (`ios/Classes/CleverTapPlugin.m`) — Add handleMethodCall case + implementation method
+For each actionable item, implement across all 3 layers (Dart, Android, iOS) following the skill's Pattern 1/2/3 sections — each pattern specifies the exact file path and code structure.
 
 ### Step 3: Verify Consistency
 

@@ -23,16 +23,11 @@ skills: example-app-patterns
 
 ### Step 1: Read Current Example App
 
-Read `example/lib/main.dart` to understand:
-- Existing sections and feature categories
-- Existing method naming conventions
-- Where new entries should be added
+Read `example/lib/main.dart` to understand existing sections, naming conventions, and insertion points.
 
 ### Step 2: Add UI Entry Points and Implementation Methods
 
-For each implemented API, following the skill's patterns:
-- **UI**: Add a `_buildListTile` in the appropriate `_buildExpansionTile` section (create new section if needed)
-- **Implementation**: Add a method inside `_MyAppState` matching the appropriate skill pattern (Simple Getter, List Fetcher, Action Trigger, Complex Operation, or Platform-Specific)
+For each implemented API, follow the skill's "Adding New APIs" section — it specifies exact UI structure (`_buildListTile` / `_buildExpansionTile`) and implementation patterns (Simple Getter, List Fetcher, Action Trigger, Complex Operation, Platform-Specific).
 
 ### Step 3: Handle Signature Updates
 
