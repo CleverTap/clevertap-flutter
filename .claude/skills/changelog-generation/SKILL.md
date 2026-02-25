@@ -81,10 +81,12 @@ Version 3.7.0 *(23 January 2026)*
 
 * **[Android Platform]**
   * Supports [CleverTap Android SDK v7.7.1](https://github.com/CleverTap/clevertap-android-sdk/blob/master/docs/CTCORECHANGELOG.md#version-771-december-2-2025).
-  * Adds support for XYZ
     
 * **[iOS Platform]**
   * Supports [CleverTap iOS SDK v7.4.2](https://github.com/CleverTap/clevertap-ios-sdk/blob/master/CHANGELOG.md#version-742-january-14-2026).
+    
+* **[Android and iOS Platform]**
+  * Adds suuport for XYZ
 ```
 
 ### With New API

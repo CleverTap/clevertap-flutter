@@ -59,7 +59,7 @@ For each `NEW_API` or `BREAKING` change, extract:
 - Parameters (name, type, nullability)
 - Platform version where introduced
 
-### Step 4: Determine Return Types
+### Step 4a: Determine Return Types
 
 For ALL `NEW_API` and `BREAKING` changes items, attempt to fetch and verify return types from native source code.
 
@@ -85,6 +85,37 @@ APIs mentioned in changelogs MUST still be implemented even if return type verif
 4. **Mark as "inferred"**: In the implementation plan table, note `(inferred)` next to the type
 
 **DO NOT skip implementation** just because the exact signature couldn't be verified from source. The changelog is the authoritative source for what APIs exist.
+
+### Step 4b: Verify Type Compatibility Through the Bridge
+
+For each change (including BUG_FIX and INTERNAL that mention data handling), verify that the Flutter MethodChannel bridge layer correctly supports the types involved. This catches cases where a native SDK change affects existing wrappers without adding a new API.
+
+**When to check:**
+- Changelog mentions new data shapes (e.g., "nested objects", "nested maps", "deep properties")
+- Changelog mentions expanded type support (e.g., "now accepts arrays", "supports null values")
+- Changelog mentions serialization/encoding changes
+- Changelog mentions changes to event, profile, or user property handling
+
+**How to check:**
+1. Identify which existing Flutter wrapper method(s) are affected by the change
+2. Read the current wrapper implementation to see how data flows through the MethodChannel
+3. Verify the MethodChannel types can handle the new data shapes:
+    - `Map<String, dynamic>` supports nested maps natively — nested objects pass through
+    - `List<dynamic>` supports mixed types and nested lists/maps — nested arrays pass through
+    - `HashMap` on Android and `NSDictionary`/`NSArray` on iOS handle nesting natively — nested objects pass through
+    - Dart primitives (`String`, `int`, `bool`, `double`) map directly to platform equivalents via StandardMessageCodec
+4. Check if any manual type conversion in the wrapper (e.g., `CleverTapTypeUtils.toHashMap()` on Android, manual `NSDictionary` construction on iOS) would strip or flatten the new data
+
+**What to flag:**
+- If the wrapper manually flattens or transforms data before passing to the native SDK, and the changelog change relies on that structure being preserved
+- If the wrapper uses a restrictive type (e.g., `String` parameter) but the native SDK now accepts a richer type (e.g., `Map`)
+- If new value types are supported that the MethodChannel's StandardMessageCodec does not auto-convert (e.g., custom objects, dates, byte arrays)
+- If new value types are supported that doesn't need any update in the wrapper but should be implemented in the sample app.
+
+**Output:** Add a "Type Compatibility" column to the implementation plan table with one of:
+- `OK` — bridge types already support the change, no wrapper update needed
+- `VERIFY` — likely compatible but should be tested; note what to verify
+- `UPDATE` — wrapper needs changes to support the new types; describe what
 
 ### Step 5: Determine Wrapper Requirements
 
