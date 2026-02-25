@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io' show Platform, sleep;
+import 'dart:io' show Platform;
 import 'dart:math';
 import 'package:example/notification_button.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -640,6 +640,10 @@ class _MyAppState extends State<MyApp> {
                           ["Enter Attribute Name", "Enter Attribute Value"]),
                       "Pushes/Records a user"),
                   _buildListTile(
+                      "Push User with Nested Objects",
+                      profilePushWithNestedObjects,
+                      "Sets profile properties with nested Map values (requires Android SDK 7.8.0+ / iOS SDK 7.5.0+)."),
+                  _buildListTile(
                       "Set Profile Multi Values",
                       setProfileMultiValue,
                       "Sets a multi valued user property"),
@@ -682,6 +686,10 @@ class _MyAppState extends State<MyApp> {
                       "Pushes/Records a custom event"),
                   _buildListTile("Push Charged Event", recordChargedEvent,
                       "Pushes/Records a Charged event"),
+                  _buildListTile(
+                      "Push Event with Nested Objects",
+                      recordEventWithNestedObjects,
+                      "Records an event with nested Map properties (requires Android SDK 7.8.0+ / iOS SDK 7.5.0+)."),
                 ]),
                 _buildExpansionTile("App Inbox", [
                   if (!kIsWeb)
@@ -1124,6 +1132,32 @@ class _MyAppState extends State<MyApp> {
     showToast("Raised event - Charged");
   }
 
+  void recordEventWithNestedObjects() {
+    var now = new DateTime.now();
+    var eventData = {
+      'Product Name': 'Casio Chronograph Watch',
+      'Category': 'Mens Watch',
+      'Price': 59.99,
+      'Specifications': {
+        'display': 'Analog',
+        'water_resistance': '100m',
+        'features': ['chronograph', 'alarm', 'backlight'],
+        'manufacturing_date': CleverTapPlugin.getCleverTapDate(now),
+      },
+      'Seller': {
+        'name': 'Watch World',
+        'rating': 4.5,
+        'location': {
+          'city': 'New York',
+          'country': 'US',
+        },
+      },
+    };
+    CleverTapPlugin.recordEvent("Product Viewed With Nested", eventData);
+    showToast("Raised event with nested objects, check console");
+    print("Nested Event -> Product Viewed With Nested: " + eventData.toString());
+  }
+
   void recordCustomUser(String attributeKey, String attributeValue) {
     var profile = {
       attributeKey: attributeValue,
@@ -1146,6 +1180,30 @@ class _MyAppState extends State<MyApp> {
     };
     CleverTapPlugin.profileSet(profile);
     showToast("Pushed profile " + profile.toString());
+  }
+
+  void profilePushWithNestedObjects() {
+    var now = new DateTime.now();
+    var profile = {
+      'Name': 'Jane Doe',
+      'Identity': '200',
+      'Email': 'jane@example.com',
+      'Preferences': {
+        'notifications': true,
+        'language': 'en',
+        'categories': ['sports', 'technology', 'travel'],
+        'lastUpdated': CleverTapPlugin.getCleverTapDate(now),
+      },
+      'Address': {
+        'street': '123 Main St',
+        'city': 'Austin',
+        'state': 'TX',
+        'country': 'US',
+      },
+    };
+    CleverTapPlugin.profileSet(profile);
+    showToast("Pushed profile with nested objects, check console");
+    print("Nested Profile -> profileSet: " + profile.toString());
   }
 
   void showInbox() {
