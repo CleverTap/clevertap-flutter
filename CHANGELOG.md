@@ -1,5 +1,18 @@
 ## CHANGE LOG
 
+### Version 3.8.0 *(2 March 2026)*
+-------------------------------------------
+**What's new**
+* **[Android Platform]**
+  * Supports [CleverTap Android SDK v7.8.0](https://github.com/CleverTap/clevertap-android-sdk/blob/master/docs/CTCORECHANGELOG.md#version-780-january-22-2026).
+
+* **[iOS Platform]**
+  * Supports [CleverTap iOS SDK v7.5.0](https://github.com/CleverTap/clevertap-ios-sdk/blob/master/CHANGELOG.md#version-750-february-9-2026).
+
+* **[Android and iOS Platform]**
+  * Adds support for inaction in-app notifications. This server-side feature allows triggering in-app notifications when users do not perform specific actions within a defined timeframe.
+  * Adds support for nested objects ingestion in event and profile properties, enabling more complex data structures for richer user profiling and event tracking.
+
 ### Version 3.7.0 *(6 February 2026)*
 -------------------------------------------
 **What's new**
