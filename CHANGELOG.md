@@ -1,6 +1,6 @@
 ## CHANGE LOG
 
-### Version 3.8.0 *(28 February 2026)*
+### Version 3.8.0 *(2 March 2026)*
 -------------------------------------------
 **What's new**
 * **[Android Platform]**
