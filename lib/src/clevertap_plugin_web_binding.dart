@@ -3,7 +3,7 @@ import 'dart:js_interop';
 // Direct external function declarations for CleverTap JavaScript API
 @JS('clevertap.init')
 external void init(
-    String accountId, String? region, String? targetDomain, String? token);
+    String accountId, String? region, String? targetDomain, String? token, [JSAny? options]);
 
 @JS('clevertap.setLibrary')
 external void setLibrary(String libName, int libVersion);

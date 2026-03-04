@@ -221,9 +221,14 @@
   const WEB_POPUP_PREVIEW = 'ctWebPopupPreview';
   const QUALIFIED_CAMPAIGNS = 'WZRK_QC';
   const CUSTOM_CT_ID_PREFIX = '_w_';
-  const BLOCK_REQUEST_COOKIE = 'WZRK_BLOCK'; // Flag key for optional sub-domain profile isolation
+  const BLOCK_REQUEST_COOKIE = 'WZRK_BLOCK';
+  const ENABLE_TV_CONTROLS = 'WZRK_TV_CONTROLS';
 
-  const ISOLATE_COOKIE = 'WZRK_ISOLATE_SD';
+  const ISOLATE_COOKIE = 'WZRK_ISOLATE_SD'; // Flag key for Encryption in Transit JSONP fallback (session-level)
+
+  const CT_EIT_FALLBACK = 'CT_EIT_FALLBACK'; // Geolocation prompt cache key
+
+  const WZRK_GEO = 'WZRK_GEO';
   const WEB_NATIVE_TEMPLATES = {
     KV_PAIR: 1,
     BANNER: 2,
@@ -265,7 +270,44 @@
     OPEN_WEB_URL: 'open-web-url',
     SOFT_PROMPT: 'soft-prompt',
     RUN_JS: 'js'
-  };
+  }; // Nested object errors
+
+  const NESTED_OBJECT_ERRORS = {
+    DEPTH_LIMIT_EXCEEDED: {
+      code: 541,
+      message: 'Event data exceeded maximum nesting depth. Depth: %s, Limit: %s'
+    },
+    ARRAY_KEY_COUNT_LIMIT_EXCEEDED: {
+      code: 542,
+      message: 'Event data exceeded maximum array key count. Count: %s, Limit: %s'
+    },
+    OBJECT_KEY_COUNT_LIMIT_EXCEEDED: {
+      code: 543,
+      message: 'Event data exceeded maximum object key count. Count: %s, Limit: %s'
+    },
+    ARRAY_LENGTH_LIMIT_EXCEEDED: {
+      code: 543,
+      message: 'Event data exceeded maximum array length. Length: %s, Limit: %s'
+    },
+    KV_PAIR_COUNT_LIMIT_EXCEEDED: {
+      code: 544,
+      message: 'Event data exceeded maximum key-value pair count. Count: %s, Limit: %s'
+    },
+    NULL_VALUE_REMOVED: {
+      code: 545,
+      message: "Null value for key '%s' was removed"
+    },
+    EMPTY_VALUE_REMOVED: {
+      code: 545,
+      message: "Empty value for key '%s' was removed"
+    },
+    RESTRICTED_PROFILE_PROPERTY: {
+      code: 513,
+      message: "'%s' is a restricted profile property and cannot have nested values (objects or arrays). This property was skipped."
+    }
+  }; // Restricted profile keys that cannot be at root level (0th level)
+
+  const PROFILE_RESTRICTED_ROOT_KEYS = ['Name', 'Email', 'Education', 'Married', 'DOB', 'Gender', 'Phone', 'Age', 'FBID', 'GPID', 'Birthday', 'Identity'];
 
   const isString = input => {
     return typeof input === 'string' || input instanceof String;
@@ -338,6 +380,48 @@
   };
   const sanitize = (input, regex) => {
     return input.replace(regex, '');
+  };
+  /**
+   * Safely parses JSON from potentially untrusted sources (like cookies)
+   *
+   * Protects against DOM-based JSON injection by pre-filtering malicious patterns
+   * identified in security scans (Burp Suite) before passing to JSON.parse().
+   *
+  */
+
+  const safeJSONParse = function (jsonString) {
+    let defaultValue = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
+
+    // Validate input is a non-empty string
+    if (!jsonString || typeof jsonString !== 'string' || jsonString.trim() === '') {
+      return defaultValue;
+    }
+
+    const trimmed = jsonString.trim();
+    const maliciousPatterns = [// Block specific dangerous URL-encoded characters (not all % signs)
+    /%27/i, // URL-encoded single quote (') - used in SQL/JS injection
+    /%22/i, // URL-encoded double quote (") - used in string breaking
+    /%3C/i, // URL-encoded < - XSS/HTML injection attempts
+    /%3E/i, // URL-encoded > - XSS/HTML injection attempts
+    /%60/i, // URL-encoded backtick (`) - template literal injection
+    /</, // HTML/script tag start - XSS/injection attempts
+    />/, // HTML/script tag end - XSS/injection attempts
+    /`/ // Template literal/backtick injection
+    ]; // Check for any malicious pattern - reject BEFORE calling JSON.parse
+
+    for (const pattern of maliciousPatterns) {
+      if (pattern.test(trimmed)) {
+        return defaultValue; // Malicious pattern detected
+      }
+    } // Input passed pre-filter - attempt to parse with error handling
+
+
+    try {
+      return JSON.parse(trimmed);
+    } catch (e) {
+      // JSON.parse failed (malformed JSON) - return safe default
+      return defaultValue;
+    }
   };
 
   const getToday = () => {
@@ -7252,7 +7336,11 @@
 
 
         if (c.indexOf(nameEQ) == 0) {
-          return decodeURIComponent(c.substring(nameEQ.length, c.length));
+          try {
+            return decodeURIComponent(c.substring(nameEQ.length, c.length));
+          } catch (e) {
+            return null;
+          }
         }
       }
 
@@ -7311,12 +7399,43 @@
     }
 
     static createBroadCookie(name, value, seconds, domain) {
+      let domainSpecification = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : null;
+
+      if (domainSpecification) {
+        const hostnameParts = window.location.hostname.split('.');
+        const level = domainSpecification;
+        let calculatedDomain = '';
+
+        if (level <= hostnameParts.length) {
+          const domainParts = hostnameParts.slice(-level);
+          calculatedDomain = '.' + domainParts.join('.');
+        } else {
+          // If level is greater than available parts, use the full hostname
+          calculatedDomain = '.' + window.location.hostname;
+        }
+
+        let cookieValue = value;
+
+        if (name === GCOOKIE_NAME && this.readCookie(name)) {
+          // remove duplicate cookies if they exist
+          // removing .bank.in because it is a protected domain
+          cookieValue = this.readCookie(name);
+          this.removeCookie(name, $ct.broadDomain);
+          this.removeCookie(name, calculatedDomain);
+          this.removeCookie(name, '.bank.in');
+        }
+
+        this.createCookie(name, cookieValue, seconds, calculatedDomain);
+        return;
+      }
       /* -------------------------------------------------------------
        * Sub-domain isolation: when the global flag is set, skip the
        * broad-domain logic and write a cookie scoped to the current
        * host only.  Also remove any legacy broad-domain copy so that
        * the host-level cookie has precedence.
        * ----------------------------------------------------------- */
+
+
       const isolate = !!this.readFromLSorCookie(ISOLATE_COOKIE);
 
       if (isolate) {
@@ -7510,7 +7629,8 @@
     variableStore: {},
     pushConfig: null,
     delayEvents: false,
-    intervalArray: [] // domain: window.location.hostname, url -> getHostName()
+    intervalArray: [],
+    enableTVNavigation: false // domain: window.location.hostname, url -> getHostName()
     // gcookie: -> device
 
   };
@@ -7670,13 +7790,16 @@
 
   var _session$3 = _classPrivateFieldLooseKey("session");
 
+  var _domainSpecification$3 = _classPrivateFieldLooseKey("domainSpecification");
+
   class CleverTapAPI {
     constructor(_ref) {
       let {
         logger,
         request,
         device,
-        session
+        session,
+        domainSpecification
       } = _ref;
       Object.defineProperty(this, _logger$a, {
         writable: true,
@@ -7694,10 +7817,23 @@
         writable: true,
         value: void 0
       });
+      Object.defineProperty(this, _domainSpecification$3, {
+        writable: true,
+        value: void 0
+      });
+      this.domainSpecification = domainSpecification;
       _classPrivateFieldLooseBase(this, _logger$a)[_logger$a] = logger;
       _classPrivateFieldLooseBase(this, _request$7)[_request$7] = request;
       _classPrivateFieldLooseBase(this, _device$3)[_device$3] = device;
       _classPrivateFieldLooseBase(this, _session$3)[_session$3] = session;
+    }
+
+    get domainSpecification() {
+      return _classPrivateFieldLooseBase(this, _domainSpecification$3)[_domainSpecification$3];
+    }
+
+    set domainSpecification(domainSpecification) {
+      _classPrivateFieldLooseBase(this, _domainSpecification$3)[_domainSpecification$3] = domainSpecification;
     }
     /**
      *
@@ -7795,7 +7931,7 @@
           }
         }
 
-        StorageManager.createBroadCookie(GCOOKIE_NAME, global, COOKIE_EXPIRY, window.location.hostname);
+        StorageManager.createBroadCookie(GCOOKIE_NAME, global, COOKIE_EXPIRY, window.location.hostname, this.domainSpecification);
         StorageManager.saveToLSorCookie(GCOOKIE_NAME, global);
       }
 
@@ -7831,19 +7967,35 @@
 
   var _logger$9 = _classPrivateFieldLooseKey("logger");
 
+  var _domainSpecification$2 = _classPrivateFieldLooseKey("domainSpecification");
+
   class DeviceManager {
     constructor(_ref) {
       let {
         logger,
-        customId
+        customId,
+        domainSpecification
       } = _ref;
       Object.defineProperty(this, _logger$9, {
         writable: true,
         value: void 0
       });
       this.gcookie = void 0;
+      Object.defineProperty(this, _domainSpecification$2, {
+        writable: true,
+        value: void 0
+      });
       _classPrivateFieldLooseBase(this, _logger$9)[_logger$9] = logger;
+      this.domainSpecification = domainSpecification;
       this.gcookie = this.getGuid() || customId;
+    }
+
+    get domainSpecification() {
+      return _classPrivateFieldLooseBase(this, _domainSpecification$2)[_domainSpecification$2];
+    }
+
+    set domainSpecification(domainSpecification) {
+      _classPrivateFieldLooseBase(this, _domainSpecification$2)[_domainSpecification$2] = domainSpecification;
     }
 
     getGuid() {
@@ -7858,7 +8010,7 @@
 
         if (isValueValid(value)) {
           try {
-            guid = JSON.parse(decodeURIComponent(value));
+            guid = safeJSONParse(decodeURIComponent(value), null);
           } catch (e) {
             _classPrivateFieldLooseBase(this, _logger$9)[_logger$9].debug('Cannot parse Gcookie from localstorage - must be encoded ' + value); // assumming guids are of size 32. supporting both formats.
             // guid can have encodedURIComponent or be without it.
@@ -7876,7 +8028,7 @@
 
 
           if (isValueValid(guid)) {
-            StorageManager.createBroadCookie(GCOOKIE_NAME, guid, COOKIE_EXPIRY, window.location.hostname);
+            StorageManager.createBroadCookie(GCOOKIE_NAME, guid, COOKIE_EXPIRY, window.location.hostname, this.domainSpecification);
           }
         }
       }
@@ -7901,6 +8053,7 @@
   const DATA_NOT_SENT_TEXT = 'This property has been ignored.';
   const CLEVERTAP_ERROR_PREFIX = 'CleverTap error:'; // Formerly wzrk_error_txt
 
+  const CLEVERTAP_INFO_PREFIX = 'CleverTap info:';
   const EMBED_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Incorrect embed script.");
   const EVENT_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Event structure not valid. ").concat(DATA_NOT_SENT_TEXT);
   const GENDER_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Gender value should one of the following: m,f,o,u,male,female,unknown,others (case insensitive). ").concat(DATA_NOT_SENT_TEXT);
@@ -7911,6 +8064,16 @@
   const DOB_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " DOB value should be a Date Object");
   const ENUM_FORMAT_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " setEnum(value). value should be a string or a number");
   const PHONE_FORMAT_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Phone number should be formatted as +[country code][number]");
+
+  const {
+    DEPTH_LIMIT_EXCEEDED,
+    ARRAY_KEY_COUNT_LIMIT_EXCEEDED,
+    OBJECT_KEY_COUNT_LIMIT_EXCEEDED,
+    ARRAY_LENGTH_LIMIT_EXCEEDED,
+    KV_PAIR_COUNT_LIMIT_EXCEEDED,
+    NULL_VALUE_REMOVED,
+    EMPTY_VALUE_REMOVED
+  } = NESTED_OBJECT_ERRORS;
 
   let _globalChargedId;
 
@@ -7986,6 +8149,275 @@
 
 
     return false;
+  }; // Validation results structure
+
+  const createValidationResult = function (isValid) {
+    let errorMessage = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
+    let processedObj = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : null;
+    return {
+      isValid,
+      errorMessage,
+      processedObj
+    };
+  }; // Helper function to check if object/array is null or empty
+
+
+  const isNullOrEmpty = obj => {
+    if (obj === null || obj === undefined) return true;
+    if (Array.isArray(obj)) return obj.length === 0;
+    if (isObject(obj)) return Object.keys(obj).length === 0;
+    return false;
+  }; // Helper function to clean null/empty objects and arrays
+  // Expected behavior:
+  // - Removes null, undefined values
+  // - Removes empty objects {} and empty arrays []
+  // - If part of an array, drops that element entirely
+  // - Recursively cleans nested structures
+
+
+  const cleanNullEmptyValues = function (obj) {
+    let logger = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
+    let currentDepth = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
+    let maxDepth = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 3;
+    let keyPath = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : '';
+    if (currentDepth > maxDepth) return obj;
+
+    if (Array.isArray(obj)) {
+      const cleanedArray = [];
+      obj.forEach((item, index) => {
+        if (isNullOrEmpty(item)) {
+          if (logger) {
+            const currentKeyPath = keyPath ? "".concat(keyPath, "[").concat(index, "]") : "[".concat(index, "]");
+
+            if (item === null || item === undefined) {
+              logger.reportInfo(NULL_VALUE_REMOVED.code, NULL_VALUE_REMOVED.message.replace('%s', currentKeyPath));
+            } else {
+              logger.reportInfo(EMPTY_VALUE_REMOVED.code, EMPTY_VALUE_REMOVED.message.replace('%s', currentKeyPath));
+            }
+          }
+
+          return;
+        }
+
+        let cleanedItem = item;
+
+        if (isObject(item) || Array.isArray(item)) {
+          const currentKeyPath = keyPath ? "".concat(keyPath, "[").concat(index, "]") : "[".concat(index, "]");
+          cleanedItem = cleanNullEmptyValues(item, logger, currentDepth + 1, maxDepth, currentKeyPath);
+        }
+
+        if (!isNullOrEmpty(cleanedItem)) {
+          cleanedArray.push(cleanedItem);
+        } else if (logger) {
+          const currentKeyPath = keyPath ? "".concat(keyPath, "[").concat(index, "]") : "[".concat(index, "]");
+          logger.reportInfo(EMPTY_VALUE_REMOVED.code, EMPTY_VALUE_REMOVED.message.replace('%s', currentKeyPath));
+        }
+      });
+      return cleanedArray.length > 0 ? cleanedArray : undefined;
+    }
+
+    if (isObject(obj)) {
+      const cleanedObj = {};
+
+      for (const key in obj) {
+        if (obj.hasOwnProperty(key)) {
+          let value = obj[key];
+          const currentKeyPath = keyPath ? "".concat(keyPath, ".").concat(key) : key;
+
+          if (isDateObject(value)) {
+            value = convertToWZRKDate(value);
+          } else if (isObject(value) || Array.isArray(value)) {
+            value = cleanNullEmptyValues(value, logger, currentDepth + 1, maxDepth, currentKeyPath);
+          }
+
+          if (!isNullOrEmpty(value)) {
+            cleanedObj[key] = value;
+          } else if (logger) {
+            if (value === null || value === undefined) {
+              logger.reportInfo(NULL_VALUE_REMOVED.code, NULL_VALUE_REMOVED.message.replace('%s', currentKeyPath));
+            } else {
+              logger.reportInfo(EMPTY_VALUE_REMOVED.code, EMPTY_VALUE_REMOVED.message.replace('%s', currentKeyPath));
+            }
+          }
+        }
+      }
+
+      return Object.keys(cleanedObj).length > 0 ? cleanedObj : undefined;
+    }
+
+    return obj;
+  }; // Validate 3-level nested event structure
+
+
+  const isObjStructureValid = function (eventObj, logger) {
+    let maxDepth = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 3;
+
+    if (!isObject(eventObj)) {
+      return createValidationResult(false, 'Event data must be an object');
+    } // Clean null/empty values first
+
+
+    const cleanedObj = cleanNullEmptyValues(eventObj, logger, 0, maxDepth);
+
+    if (isNullOrEmpty(cleanedObj)) {
+      return createValidationResult(false, 'Event object is empty after cleaning null/empty values');
+    } // Validate nesting depth
+
+
+    let maxDepthFound = 0;
+
+    const validateDepth = function (obj) {
+      let currentDepth = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
+
+      if (currentDepth > maxDepth) {
+        maxDepthFound = currentDepth;
+        return false;
+      }
+
+      if (isObject(obj)) {
+        for (const key in obj) {
+          if (obj.hasOwnProperty(key)) {
+            if (Array.isArray(obj[key])) {
+              for (const item of obj[key]) {
+                if (isObject(item) && !validateDepth(item, currentDepth + 1)) {
+                  return false;
+                }
+              }
+            } else if (isObject(obj[key])) {
+              if (!validateDepth(obj[key], currentDepth + 1)) {
+                return false;
+              }
+            }
+          }
+        }
+      }
+
+      return true;
+    };
+
+    if (!validateDepth(cleanedObj)) {
+      const depthMessage = DEPTH_LIMIT_EXCEEDED.message.replace('%s', maxDepthFound).replace('%s', maxDepth);
+      logger.reportError(DEPTH_LIMIT_EXCEEDED.code, depthMessage);
+      return createValidationResult(false, "Maximum nesting depth of ".concat(maxDepth, " levels exceeded"), cleanedObj);
+    } // Helper function to count object/array keys at a specific level
+
+
+    const countObjectArrayKeys = obj => {
+      if (!isObject(obj)) return 0;
+      let count = 0;
+
+      for (const key in obj) {
+        if (obj.hasOwnProperty(key)) {
+          if (isObject(obj[key]) || Array.isArray(obj[key])) {
+            count++;
+          }
+        }
+      }
+
+      return count;
+    }; // Count object/array keys at root level (0th level)
+
+
+    const rootObjectArrayCount = countObjectArrayKeys(cleanedObj);
+
+    if (rootObjectArrayCount > 5) {
+      const objectKeyMessage = OBJECT_KEY_COUNT_LIMIT_EXCEEDED.message.replace('%s', rootObjectArrayCount).replace('%s', 5);
+      logger.reportError(OBJECT_KEY_COUNT_LIMIT_EXCEEDED.code, objectKeyMessage);
+      return createValidationResult(false, "Maximum 5 object/array keys allowed at root level. Found: ".concat(rootObjectArrayCount), cleanedObj);
+    } // Validate object/array count at each nested level
+
+
+    const validateObjectArrayCount = function (obj) {
+      let currentDepth = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
+      if (!isObject(obj) || currentDepth > maxDepth) return true;
+
+      for (const key in obj) {
+        if (obj.hasOwnProperty(key)) {
+          if (Array.isArray(obj[key])) {
+            // Check array length limit
+            if (obj[key].length > 100) {
+              const arrayLengthMessage = ARRAY_LENGTH_LIMIT_EXCEEDED.message.replace('%s', obj[key].length).replace('%s', 100);
+              logger.reportError(ARRAY_LENGTH_LIMIT_EXCEEDED.code, arrayLengthMessage);
+              return false;
+            } // Validate each array element
+
+
+            for (const item of obj[key]) {
+              if (isObject(item)) {
+                const itemObjectArrayCount = countObjectArrayKeys(item);
+
+                if (itemObjectArrayCount > 5) {
+                  const arrayKeyMessage = ARRAY_KEY_COUNT_LIMIT_EXCEEDED.message.replace('%s', itemObjectArrayCount).replace('%s', 5);
+                  logger.reportError(ARRAY_KEY_COUNT_LIMIT_EXCEEDED.code, arrayKeyMessage);
+                  return false;
+                }
+
+                if (!validateObjectArrayCount(item, currentDepth + 1)) {
+                  return false;
+                }
+              }
+            }
+          } else if (isObject(obj[key])) {
+            const nestedObjectArrayCount = countObjectArrayKeys(obj[key]);
+
+            if (nestedObjectArrayCount > 5) {
+              const nestedObjectKeyMessage = OBJECT_KEY_COUNT_LIMIT_EXCEEDED.message.replace('%s', nestedObjectArrayCount).replace('%s', 5);
+              logger.reportError(OBJECT_KEY_COUNT_LIMIT_EXCEEDED.code, nestedObjectKeyMessage);
+              return false;
+            }
+
+            if (!validateObjectArrayCount(obj[key], currentDepth + 1)) {
+              return false;
+            }
+          }
+        }
+      }
+
+      return true;
+    }; // Helper function to count total attribute keys recursively
+
+
+    const countTotalKeys = function (obj) {
+      let currentDepth = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
+      let maxDepth = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 3;
+      if (!isObject(obj) || currentDepth > maxDepth) return 0;
+      let count = 0;
+
+      for (const key in obj) {
+        if (obj.hasOwnProperty(key)) {
+          count++; // Count this key
+
+          if (Array.isArray(obj[key])) {
+            // Count keys in array elements
+            for (const item of obj[key]) {
+              if (isObject(item)) {
+                count += countTotalKeys(item, currentDepth + 1, maxDepth);
+              }
+            }
+          } else if (isObject(obj[key])) {
+            // Count keys in nested object
+            count += countTotalKeys(obj[key], currentDepth + 1, maxDepth);
+          }
+        }
+      }
+
+      return count;
+    };
+
+    if (!validateObjectArrayCount(cleanedObj)) {
+      return createValidationResult(false, 'Nested object/array count validation failed', cleanedObj);
+    } // Count total attribute keys
+
+
+    const totalKeyCount = countTotalKeys(cleanedObj);
+
+    if (totalKeyCount > 100) {
+      const kvPairMessage = KV_PAIR_COUNT_LIMIT_EXCEEDED.message.replace('%s', totalKeyCount).replace('%s', 100);
+      logger.reportError(KV_PAIR_COUNT_LIMIT_EXCEEDED.code, kvPairMessage);
+      return createValidationResult(false, "Maximum 100 attribute keys allowed. Found: ".concat(totalKeyCount), cleanedObj);
+    }
+
+    return createValidationResult(true, null, cleanedObj);
   };
 
   var _logger$8 = _classPrivateFieldLooseKey("logger");
@@ -8120,15 +8552,19 @@
 
                 continue;
               }
-            } else {
-              if (!isEventStructureFlat(eventObj)) {
-                _classPrivateFieldLooseBase(this, _logger$8)[_logger$8].reportError(512, eventName + ' event structure invalid. Not sent.');
 
-                continue;
+              data.evtData = eventObj;
+            } else {
+              const validationResult = isObjStructureValid(eventObj, _classPrivateFieldLooseBase(this, _logger$8)[_logger$8], 3); // Validation errors are already logged via logger.reportError in validator
+              // Use cleaned object if provided (even if validation failed)
+              // This removes null/empty values that were logged
+
+              if (validationResult.processedObj) {
+                data.evtData = validationResult.processedObj;
+              } else {
+                data.evtData = eventObj;
               }
             }
-
-            data.evtData = eventObj;
           }
         }
 
@@ -8520,6 +8956,279 @@
     return window.location.hostname;
   };
 
+  const logLevels = {
+    DISABLE: 0,
+    ERROR: 1,
+    INFO: 2,
+    DEBUG: 3,
+    DEBUG_PE: 4
+  };
+
+  var _logLevel = _classPrivateFieldLooseKey("logLevel");
+
+  var _log = _classPrivateFieldLooseKey("log");
+
+  var _isLegacyDebug = _classPrivateFieldLooseKey("isLegacyDebug");
+
+  class Logger {
+    constructor(logLevel) {
+      Object.defineProperty(this, _isLegacyDebug, {
+        get: _get_isLegacyDebug,
+        set: void 0
+      });
+      Object.defineProperty(this, _log, {
+        value: _log2
+      });
+      Object.defineProperty(this, _logLevel, {
+        writable: true,
+        value: void 0
+      });
+      this.wzrkError = {};
+
+      // Singleton pattern - return existing instance if it exists
+      if (Logger.instance) {
+        return Logger.instance;
+      }
+
+      _classPrivateFieldLooseBase(this, _logLevel)[_logLevel] = logLevel == null ? logLevels.INFO : logLevel;
+      this.wzrkError = {};
+      Logger.instance = this;
+    } // Static method for explicit singleton access
+
+
+    static getInstance(logLevel) {
+      if (!Logger.instance) {
+        Logger.instance = new Logger(logLevel);
+      }
+
+      return Logger.instance;
+    }
+
+    get logLevel() {
+      return _classPrivateFieldLooseBase(this, _logLevel)[_logLevel];
+    }
+
+    set logLevel(logLevel) {
+      _classPrivateFieldLooseBase(this, _logLevel)[_logLevel] = logLevel;
+    }
+
+    error(message) {
+      if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.ERROR) {
+        _classPrivateFieldLooseBase(this, _log)[_log]('error', message);
+      }
+    }
+
+    info(message) {
+      if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.INFO) {
+        _classPrivateFieldLooseBase(this, _log)[_log]('log', message);
+      }
+    }
+
+    debug(message) {
+      if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.DEBUG || _classPrivateFieldLooseBase(this, _isLegacyDebug)[_isLegacyDebug]) {
+        _classPrivateFieldLooseBase(this, _log)[_log]('debug', message);
+      }
+    }
+
+    debugPE(message) {
+      if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.DEBUG_PE) {
+        _classPrivateFieldLooseBase(this, _log)[_log]('debug_pe', message);
+      }
+    }
+
+    reportError(code, description) {
+      this.wzrkError.c = code;
+      this.wzrkError.d = description;
+      this.error("".concat(CLEVERTAP_ERROR_PREFIX, " ").concat(code, ": ").concat(description));
+    }
+
+    reportInfo(code, description) {
+      this.wzrkError.c = code;
+      this.wzrkError.d = description;
+      this.info("".concat(CLEVERTAP_INFO_PREFIX, " ").concat(code, ": ").concat(description));
+    }
+
+  }
+
+  var _log2 = function _log2(level, message) {
+    if (window.console) {
+      try {
+        const ts = new Date().getTime();
+        console[level]("CleverTap [".concat(ts, "]: ").concat(message));
+      } catch (e) {}
+    }
+  };
+
+  var _get_isLegacyDebug = function () {
+    return typeof sessionStorage !== 'undefined' && sessionStorage.WZRK_D === '';
+  };
+
+  /**
+   * EncryptionInTransit class for handling AES-GCM-256 encryption/decryption.
+   * Implemented as a singleton pattern.
+   */
+
+  class EncryptionInTransit {
+    constructor() {
+      this.encryptionKey = null;
+      this.utf8 = new TextEncoder();
+      this.logger = Logger.getInstance();
+    }
+    /**
+     * Converts Uint8Array to Base64 string
+     * @private
+     */
+
+
+    toB64(u8) {
+      return btoa(String.fromCharCode(...u8));
+    }
+    /**
+     * Converts Base64 string to Uint8Array
+     * @private
+     */
+
+
+    fromB64(b64) {
+      return Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+    }
+    /**
+     * Generates random bytes
+     * @private
+     */
+
+
+    rnd(n) {
+      return crypto.getRandomValues(new Uint8Array(n));
+    }
+    /**
+     * Generates a new symmetric key for encryption
+     * @returns {Uint8Array} - 256-bit (32 bytes) symmetric key
+     */
+
+
+    generateSymmetricKey() {
+      // Generate a random 256-bit key (32 bytes) to match backend AES-256
+      this.encryptionKey = this.rnd(32);
+      return this.encryptionKey;
+    }
+    /**
+     * Encrypts payload for backend transmission using AES-GCM-256.
+     *
+     * @param {string|Object} payload - The payload to encrypt (string or object to stringify)
+     * @param {Object} options - Options object
+     * @param {string} options.id - Optional identifier (defaults to 'ZWW-WWW-WWRZ')
+     * @returns {Promise<string>} - Base64 compressed encrypted envelope
+     */
+
+
+    encryptForBackend(payload) {
+      let {
+        id = 'ZWW-WWW-WWRZ'
+      } = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+
+      // Generate a new symmetric key for this encryption
+      if (!this.encryptionKey) {
+        this.generateSymmetricKey();
+      } // Generate a random 96-bit IV (12 bytes) for GCM
+
+
+      const iv = this.rnd(12); // Algorithm specification with tag length matching backend (128 bits)
+
+      const alg = {
+        name: 'AES-GCM',
+        iv,
+        tagLength: 128
+      }; // Convert payload to bytes
+
+      const plainBuf = this.utf8.encode(typeof payload === 'string' ? payload : JSON.stringify(payload)); // Import the raw key as a CryptoKey
+
+      return crypto.subtle.importKey('raw', this.encryptionKey, {
+        name: 'AES-GCM'
+      }, false, ['encrypt']).then(cryptoKey => {
+        // Encrypt the data
+        return crypto.subtle.encrypt(alg, cryptoKey, plainBuf);
+      }).then(cipherBuf => {
+        const cipher = new Uint8Array(cipherBuf);
+        const envelope = {
+          itp: this.toB64(cipher),
+          // payload - base64 encoded ciphertext (includes auth tag)
+          itk: this.toB64(this.encryptionKey),
+          // key - base64 encoded raw AES key
+          itv: this.toB64(iv),
+          // iv - base64 encoded IV
+          id,
+          encrypted: true
+        };
+        return compressData(JSON.stringify(envelope));
+      }).catch(error => {
+        throw new Error("Encryption failed: ".concat(error.message));
+      });
+    }
+    /**
+     * Decrypts response from backend using AES-GCM-256.
+     * This is a stub implementation for Phase 2.
+     *
+     * @param {string} envelope - encrypted envelope
+     * @returns {Promise<string>} - Decrypted plaintext
+     */
+
+
+    async decryptFromBackend(envelope) {
+      try {
+        // Parse the envelope from backend
+        const parsedEnvelope = JSON.parse(envelope);
+        const {
+          itp,
+          itv
+        } = parsedEnvelope;
+
+        if (!itp || !itv) {
+          return Promise.reject(new Error('Decryption failed: Invalid envelope format'));
+        } // Check if encryption key exists
+
+
+        if (!this.encryptionKey) {
+          return Promise.reject(new Error('Decryption failed: No encryption key available'));
+        }
+
+        const ciphertext = this.fromB64(itp);
+        const iv = this.fromB64(itv);
+        this.logger.debug("EIT decryption - ciphertext length: ".concat(ciphertext.length, ", iv length: ").concat(iv.length)); // Algorithm specification matching backend (tagLength 128 bits)
+
+        const alg = {
+          name: 'AES-GCM',
+          iv,
+          tagLength: 128
+        }; // Import the key and decrypt
+
+        return crypto.subtle.importKey('raw', this.encryptionKey, {
+          name: 'AES-GCM'
+        }, false, ['decrypt']).then(cryptoKey => {
+          this.logger.debug('EIT decryption - crypto key imported successfully');
+          return crypto.subtle.decrypt(alg, cryptoKey, ciphertext);
+        }).then(plainBuf => {
+          this.logger.debug("EIT decryption - decrypted payload size: ".concat(plainBuf.byteLength, " bytes"));
+          return new TextDecoder().decode(plainBuf);
+        }).catch(error => {
+          this.logger.error("EIT decryption error: ".concat(error.message));
+          throw new Error("Decryption failed: ".concat(error.message));
+        });
+      } catch (error) {
+        return Promise.reject(new Error("Decryption failed: ".concat(error.message)));
+      }
+    }
+
+  } // Create and export singleton instance
+
+
+  const encryptionInTransitInstance = new EncryptionInTransit();
+  window.encryptionInTransitInstance = encryptionInTransitInstance; // Export the singleton instance
+
+  var _retryViaJSONP = _classPrivateFieldLooseKey("retryViaJSONP");
+
+  var _prepareEncryptedRequest = _classPrivateFieldLooseKey("prepareEncryptedRequest");
+
   var _fireRequest = _classPrivateFieldLooseKey("fireRequest");
 
   var _dropRequestDueToOptOut = _classPrivateFieldLooseKey("dropRequestDueToOptOut");
@@ -8535,6 +9244,48 @@
     }
 
     /**
+     * Checks if the EIT fallback flag is set in local storage.
+     * When set, the SDK should bypass encryption and use JSONP for the session.
+     * @returns {boolean} - true if fallback is active
+     */
+    static isEITFallbackActive() {
+      if (!StorageManager._isLocalStorageSupported()) {
+        return false;
+      }
+
+      return StorageManager.read(CT_EIT_FALLBACK) === true;
+    }
+    /**
+     * Sets the EIT fallback flag in local storage.
+     * This will cause the SDK to bypass encryption and use JSONP for the session.
+     */
+
+
+    static setEITFallback() {
+      if (StorageManager._isLocalStorageSupported()) {
+        StorageManager.save(CT_EIT_FALLBACK, true);
+        this.logger.debug('EIT fallback flag set - subsequent requests will use JSONP');
+      }
+    }
+    /**
+     * Clears the EIT fallback flag from local storage.
+     * Called during clevertap.init() to reset for new session.
+     */
+
+
+    static clearEITFallback() {
+      if (StorageManager._isLocalStorageSupported()) {
+        StorageManager.remove(CT_EIT_FALLBACK);
+      }
+    }
+    /**
+     * Retries a request via JSONP (script tag injection).
+     * Used when EIT is rejected by the backend.
+     * @param {string} url - The URL to send via JSONP
+     */
+
+
+    /**
      *
      * @param {string} url
      * @param {*} skipARP
@@ -8542,6 +9293,135 @@
      */
     static fireRequest(url, skipARP, sendOULFlag, evtName) {
       _classPrivateFieldLooseBase(this, _fireRequest)[_fireRequest](url, 1, skipARP, sendOULFlag, evtName);
+    }
+
+    static handleFetchResponse(encryptedUrl, originalUrl) {
+      let retryCount = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
+      const fetchOptions = {
+        method: 'GET',
+        headers: {
+          Accept: 'application/json',
+          'X-CleverTap-Encryption-Enabled': 'true'
+        }
+      };
+      fetch(encryptedUrl, fetchOptions).then(response => {
+        if (!response.ok) {
+          // Handle 402 (Payment Required) or 419: Encryption not enabled for account
+          if (response.status === 402 || response.status === 419) {
+            this.logger.error('Encryption in Transit is disabled on server side'); // Set the fallback flag for this session
+
+            this.setEITFallback(); // Retry with JSONP using the original unencrypted URL
+
+            if (originalUrl && originalUrl !== encryptedUrl) {
+              this.logger.debug('Retrying request via JSONP without encryption');
+
+              _classPrivateFieldLooseBase(this, _retryViaJSONP)[_retryViaJSONP](originalUrl);
+
+              return null; // Signal that we've handled this via JSONP
+            }
+
+            throw new Error("Encryption not enabled for account: ".concat(response.statusText));
+          } // Handle 420: Failed to decrypt payload
+
+
+          if (response.status === 420) {
+            if (retryCount < 3) {
+              this.logger.debug("Retrying request due to 420 error, attempt ".concat(retryCount + 1, " of 3")); // Retry the same encrypted request
+
+              return this.handleFetchResponse(encryptedUrl, originalUrl, retryCount + 1);
+            } else {
+              this.logger.error('Failed to decrypt payload after 3 retries');
+              throw new Error('Failed to decrypt payload');
+            }
+          }
+
+          throw new Error("Network response was not ok: ".concat(response.statusText));
+        }
+
+        return response.text();
+      }).then(rawResponse => {
+        // Skip processing if this is a JSONP fallback (null response) or a retry promise
+        if (rawResponse === null || rawResponse instanceof Promise) {
+          return rawResponse;
+        } // Phase 2: Attempt to decrypt the response if it might be encrypted
+
+
+        const tryDecryption = () => {
+          if (rawResponse && rawResponse.length > 0 && this.enableEncryptionInTransit) {
+            return encryptionInTransitInstance.decryptFromBackend(rawResponse).then(decryptedResponse => {
+              this.logger.debug('Successfully decrypted response');
+              return decryptedResponse;
+            }).catch(decryptError => {
+              // If decryption fails, assume the response was not encrypted
+              this.logger.debug('Response decryption failed, assuming unencrypted:', decryptError.message);
+              return rawResponse;
+            });
+          }
+
+          return Promise.resolve(rawResponse);
+        };
+
+        return tryDecryption();
+      }).then(processedResponse => {
+        // Skip processing if this is a recursive promise
+        if (processedResponse instanceof Promise) {
+          return processedResponse;
+        } // Parse the final response as JSON
+
+
+        let jsonResponse;
+
+        try {
+          jsonResponse = JSON.parse(processedResponse);
+        } catch (parseError) {
+          this.logger.error('Failed to parse response as JSON:', parseError);
+          throw new Error('Invalid JSON response');
+        }
+
+        const {
+          tr,
+          meta,
+          wpe
+        } = jsonResponse;
+
+        if (tr) {
+          window.$WZRK_WR.tr(tr);
+        }
+
+        if (meta) {
+          const {
+            g,
+            sid,
+            rf,
+            rn,
+            optOut
+          } = meta;
+
+          if (g && sid !== undefined && rf !== undefined && rn !== undefined) {
+            const parsedRn = parseInt(rn); // Include optOut as 5th parameter if present
+
+            if (optOut !== undefined) {
+              window.$WZRK_WR.s(g, sid, rf, parsedRn, optOut);
+            } else {
+              window.$WZRK_WR.s(g, sid, rf, parsedRn);
+            }
+          }
+        }
+
+        if (wpe) {
+          window.$WZRK_WR.enableWebPush(wpe.enabled, wpe.key);
+        }
+
+        this.logger.debug('req snt -> url: ' + encryptedUrl);
+      }).catch(error => {
+        if (error.message && error.message.includes('EIT decryption failed')) {
+          this.logger.error('EIT decryption failed', error); // Safely ignore the response payload and proceed without applying server changes
+
+          return;
+        }
+
+        this.logger.error('Fetch error:', error);
+      });
     }
 
     getDelayFrequency() {
@@ -8681,14 +9561,107 @@
 
     if (url.indexOf('chrome-extension:') !== -1) {
       url = url.replace('chrome-extension:', 'https:');
-    } // TODO: Try using Function constructor instead of appending script.
+    } // Prepare request with optional encryption
 
 
+    _classPrivateFieldLooseBase(this, _prepareEncryptedRequest)[_prepareEncryptedRequest](url).then(requestConfig => {
+      // TODO: Try using Function constructor instead of appending script.
+      var ctCbScripts = document.getElementsByClassName('ct-jp-cb');
+
+      while (ctCbScripts[0] && ctCbScripts[0].parentNode) {
+        ctCbScripts[0].parentNode.removeChild(ctCbScripts[0]);
+      } // Use the static flag instead of the global $ct map
+      // When encryption is enabled (and not in fallback mode), always use Fetch API
+      // If fallback is active, use JSONP regardless of encryption setting
+
+
+      const shouldUseJSONP = !this.enableFetchApi && !this.enableEncryptionInTransit || requestConfig.useFallback;
+
+      if (shouldUseJSONP) {
+        const s = document.createElement('script');
+        s.setAttribute('type', 'text/javascript');
+        s.setAttribute('src', requestConfig.url);
+        s.setAttribute('class', 'ct-jp-cb');
+        s.setAttribute('rel', 'nofollow');
+        s.async = true;
+        document.getElementsByTagName('head')[0].appendChild(s);
+        this.logger.debug('req snt -> url: ' + requestConfig.url);
+      } else {
+        this.handleFetchResponse(requestConfig.url, requestConfig.originalUrl);
+      }
+    }).catch(error => {
+      this.logger.error('Request preparation failed:', error);
+    });
+  };
+
+  var _prepareEncryptedRequest2 = function _prepareEncryptedRequest2(url) {
+    // Check if encryption is disabled or fallback is active
+    if (!this.enableEncryptionInTransit || this.isEITFallbackActive()) {
+      if (this.isEITFallbackActive() && this.enableEncryptionInTransit) {
+        this.logger.debug('EIT fallback active - bypassing encryption for this session');
+      }
+
+      return Promise.resolve({
+        url,
+        method: 'GET',
+        useFallback: this.isEITFallbackActive()
+      });
+    } // Force Fetch API when encryption is enabled
+
+
+    this.enableFetchApi = true;
+
+    try {
+      // Extract query string from URL
+      const urlObj = new URL(url);
+      const searchParams = new URLSearchParams(urlObj.search); // Check if 'd' parameter exists
+
+      const dParam = searchParams.get('d');
+
+      if (!dParam) {
+        return Promise.resolve({
+          url,
+          method: 'GET'
+        });
+      } // Encrypt only the 'd' parameter value
+
+
+      return encryptionInTransitInstance.encryptForBackend(dParam, {
+        id: this.account.id
+      }).then(encryptedData => {
+        // Replace the 'd' parameter with encrypted data
+        searchParams.set('d', encryptedData); // Reconstruct the URL with encrypted 'd' parameter
+
+        const newUrl = "".concat(urlObj.protocol, "//").concat(urlObj.host).concat(urlObj.pathname, "?").concat(searchParams.toString());
+        return {
+          url: newUrl,
+          originalUrl: url,
+          method: 'GET'
+        };
+      }).catch(error => {
+        this.logger.error('Encryption failed, falling back to unencrypted request:', error);
+        return {
+          url,
+          method: 'GET'
+        };
+      });
+    } catch (error) {
+      this.logger.error('URL parsing failed, falling back to unencrypted request:', error);
+      return Promise.resolve({
+        url,
+        method: 'GET'
+      });
+    }
+  };
+
+  var _retryViaJSONP2 = function _retryViaJSONP2(url) {
+    // Clean up any existing callback scripts
     var ctCbScripts = document.getElementsByClassName('ct-jp-cb');
 
     while (ctCbScripts[0] && ctCbScripts[0].parentNode) {
       ctCbScripts[0].parentNode.removeChild(ctCbScripts[0]);
-    }
+    } // Create and inject script tag for JSONP
+
 
     const s = document.createElement('script');
     s.setAttribute('type', 'text/javascript');
@@ -8697,12 +9670,20 @@
     s.setAttribute('rel', 'nofollow');
     s.async = true;
     document.getElementsByTagName('head')[0].appendChild(s);
-    this.logger.debug('req snt -> url: ' + url);
+    this.logger.debug('EIT fallback: req snt via JSONP -> url: ' + url);
   };
 
   RequestDispatcher.logger = void 0;
   RequestDispatcher.device = void 0;
   RequestDispatcher.account = void 0;
+  RequestDispatcher.enableFetchApi = false;
+  RequestDispatcher.enableEncryptionInTransit = false;
+  Object.defineProperty(RequestDispatcher, _retryViaJSONP, {
+    value: _retryViaJSONP2
+  });
+  Object.defineProperty(RequestDispatcher, _prepareEncryptedRequest, {
+    value: _prepareEncryptedRequest2
+  });
   Object.defineProperty(RequestDispatcher, _fireRequest, {
     value: _fireRequest2
   });
@@ -8731,6 +9712,12 @@
     const script = "<script>\n      const ct__camapignId = '".concat(targetingMsgJson.wzrk_id, "';\n      const ct__formatVal = (v) => {\n          return v && v.trim().substring(0, 20);\n      }\n      const ct__parentOrigin =  window.parent.origin;\n      document.body.addEventListener('click', (event) => {\n        const elem = event.target.closest?.('a[wzrk_c2a], button[wzrk_c2a]');\n        if (elem) {\n            const {innerText, id, name, value, href} = elem;\n            const clickAttr = elem.getAttribute('onclick') || elem.getAttribute('click');\n            const onclickURL = clickAttr?.match(/(window.open)[(](\"|')(.*)(\"|',)/)?.[3] || clickAttr?.match(/(location.href *= *)(\"|')(.*)(\"|')/)?.[3];\n            const props = {innerText, id, name, value};\n            let msgCTkv = Object.keys(props).reduce((acc, c) => {\n                const formattedVal = ct__formatVal(props[c]);\n                formattedVal && (acc['wzrk_click_' + c] = formattedVal);\n                return acc;\n            }, {});\n            if(onclickURL) { msgCTkv['wzrk_click_' + 'url'] = onclickURL; }\n            if(href) { msgCTkv['wzrk_click_' + 'c2a'] = href; }\n            const notifData = { msgId: ct__camapignId, msgCTkv, pivotId: '").concat(targetingMsgJson.wzrk_pivot, "' };\n            window.parent.clevertap.renderNotificationClicked(notifData);\n        }\n      });\n      </script>\n    ");
     return html.replace(/(<\s*\/\s*body)/, "".concat(script, "\n$1"));
   };
+  const appendTVNavigationScript = (targetingMsgJson, html) => {
+    const script = "<script>\n      const ct__campaignId = '".concat(targetingMsgJson.wzrk_id, "';\n      const ct__formatVal_tv = (v) => v && v.trim().substring(0, 20);\n      \n      let focusableElements = [];\n      let currentFocusIndex = 0;\n      \n      function init() {\n          focusableElements = Array.from(document.querySelectorAll(\n              'button, a[href], a[wzrk_c2a], button[wzrk_c2a], input:not([type=\"hidden\"]), ' +\n              '.wzrkClose, .CT_InterstitialClose, .CT_InterstitialCTA, .jsCT_CTA'\n          )).filter(el => window.getComputedStyle(el).display !== 'none');\n          \n          // Ensure iframe has focus\n          window.focus();\n          if (focusableElements.length > 0) { focusElement(0); }\n      }\n      \n      function focusElement(index) {\n          focusableElements.forEach(el => el.classList.remove('ct-tv-focused'));\n          currentFocusIndex = index;\n          if (focusableElements[currentFocusIndex]) { focusableElements[currentFocusIndex].classList.add('ct-tv-focused'); focusableElements[currentFocusIndex].focus(); }\n      }\n      \n      function navigate(direction) {\n          if (focusableElements.length === 0) return;\n          let newIndex = direction === 'next' ? Math.min(focusableElements.length - 1, currentFocusIndex + 1) : Math.max(0, currentFocusIndex - 1);\n          if (newIndex !== currentFocusIndex) focusElement(newIndex);\n      }\n      \n      function activate() {\n          const element = focusableElements[currentFocusIndex];\n          if (element) {\n              if (element.hasAttribute('wzrk_c2a')) {\n                  const {innerText, id, name, value, href} = element;\n                  let msgCTkv = Object.keys({innerText, id, name, value}).reduce((acc, c) => { const formattedVal = ct__formatVal_tv(element[c]); formattedVal && (acc['wzrk_click_' + c] = formattedVal); return acc; }, {});\n                  if(href) msgCTkv['wzrk_click_c2a'] = href;\n                  window.parent.clevertap.renderNotificationClicked({ msgId: ct__campaignId, msgCTkv, pivotId: '").concat(targetingMsgJson.wzrk_pivot, "' });\n              }\n              element.click();\n          }\n      }\n      \n      document.addEventListener('keydown', function(event) { \n        event.preventDefault(); \n        switch (event.keyCode) { \n          case 37: case 38: \n            navigate('prev'); \n            break; \n          case 39: case 40: \n            navigate('next'); \n            break; \n          case 13: \n            activate(); \n            break; \n          case 10009: case 10182: \n          case 461: case 27: \n            const closeBtn = document.querySelector('.wzrkClose, .CT_InterstitialClose'); \n            if (closeBtn) closeBtn.click(); \n            break; \n        } \n      }, { passive: false });\n      \n      const style = document.createElement('style'); \n      style.textContent = '.ct-tv-focused { outline: 3px solid #00ff00 !important; color: white !important; transform: scale(1.05) !important; }'; \n      document.head.appendChild(style);\n      \n      document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', init) : init();\n      </script>"); // Since there's no </body> tag, append the script at the end of the HTML
+
+    const modifiedHtml = html + script;
+    return modifiedHtml;
+  };
   const staleDataUpdate = (staledata, campType) => {
     const campObj = getCampaignObject();
     const globalObj = campObj[campType].global;
@@ -8742,7 +9729,7 @@
 
           if (StorageManager.read(CAMP_COOKIE_G)) {
             const guidCampObj = JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)));
-            const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
+            const guid = safeJSONParse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)), null);
 
             if (guidCampObj[guid] && guidCampObj[guid][campType] && guidCampObj[guid][campType][staledata[idx]]) {
               delete guidCampObj[guid][campType][staledata[idx]];
@@ -9367,7 +10354,14 @@
       url: dashboardUrl
     };
     const storedData = StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS);
-    const existingCampaigns = storedData ? JSON.parse(decodeURIComponent(storedData)) : [];
+    let existingCampaigns = [];
+
+    try {
+      existingCampaigns = storedData ? JSON.parse(decodeURIComponent(storedData)) : [];
+    } catch (e) {
+      existingCampaigns = [];
+    }
+
     const isDuplicate = existingCampaigns.some(c => c.wzrk_id === campaign.wzrk_id);
 
     if (!isDuplicate) {
@@ -9384,8 +10378,12 @@
       let campObj = StorageManager.read(CAMP_COOKIE_NAME);
 
       if (campObj != null) {
-        campObj = JSON.parse(decodeURIComponent(campObj).replace(singleQuoteRegex, '\"'));
-        finalcampObj = campObj;
+        try {
+          campObj = JSON.parse(decodeURIComponent(campObj).replace(singleQuoteRegex, '\"'));
+          finalcampObj = campObj;
+        } catch (e) {
+          finalcampObj = {};
+        }
       } else {
         finalcampObj = {};
       }
@@ -9477,7 +10475,7 @@
 
       if (isValueValid(guid)) {
         try {
-          guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
+          guid = safeJSONParse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)), null);
           const guidCampObj = StorageManager.read(CAMP_COOKIE_G) ? JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G))) : {};
 
           if (guid && StorageManager._isLocalStorageSupported()) {
@@ -9546,7 +10544,7 @@
   };
   const getCampaignObjForLc = () => {
     // before preparing data to send to LC , check if the entry for the guid is already there in CAMP_COOKIE_G
-    const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
+    const guid = safeJSONParse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)), null);
     let campObj = {};
 
     if (StorageManager._isLocalStorageSupported()) {
@@ -9555,8 +10553,17 @@
       let resultObj = {};
       campObj = getCampaignObject();
       const storageValue = StorageManager.read(CAMP_COOKIE_G);
-      const decodedValue = storageValue ? decodeURIComponent(storageValue) : null;
-      const parsedValue = decodedValue ? JSON.parse(decodedValue) : null;
+      let decodedValue = null;
+      let parsedValue = null;
+
+      try {
+        decodedValue = storageValue ? decodeURIComponent(storageValue) : null;
+        parsedValue = decodedValue ? JSON.parse(decodedValue) : null;
+      } catch (e) {
+        decodedValue = null;
+        parsedValue = null;
+      }
+
       const resultObjWI = !!guid && storageValue !== undefined && storageValue !== null && parsedValue && parsedValue[guid] && parsedValue[guid].wi ? Object.values(parsedValue[guid].wi) : [];
       const webPopupDeliveryPreferenceDeatils = {
         wsc: (_campObj$wsc = (_campObj = campObj) === null || _campObj === void 0 ? void 0 : _campObj.wsc) !== null && _campObj$wsc !== void 0 ? _campObj$wsc : 0,
@@ -9861,6 +10868,205 @@
       StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap);
     }
   };
+  /**
+   * Parses a nested key path into segments
+   * Handles paths like "Policy[0].price", "Policy[0].Insured[0].policyValue", "InsuranceDetails.Policy[1].Premium"
+   * @param {string} path - The nested key path
+   * @returns {Array} Array of path segments with type 'key' or 'array'
+   */
+
+  const parseNestedPath = path => {
+    const segments = [];
+    let current = '';
+    let i = 0;
+
+    while (i < path.length) {
+      if (path[i] === '[') {
+        if (current) {
+          segments.push({
+            type: 'key',
+            value: current
+          });
+          current = '';
+        }
+
+        i++;
+        let index = '';
+
+        while (i < path.length && path[i] !== ']') {
+          index += path[i];
+          i++;
+        }
+
+        if (i < path.length && path[i] === ']') {
+          segments.push({
+            type: 'array',
+            index: parseInt(index, 10)
+          });
+          i++;
+        }
+      } else if (path[i] === '.') {
+        if (current) {
+          segments.push({
+            type: 'key',
+            value: current
+          });
+          current = '';
+        }
+
+        i++;
+      } else {
+        current += path[i];
+        i++;
+      }
+    }
+
+    if (current) {
+      segments.push({
+        type: 'key',
+        value: current
+      });
+    }
+
+    return segments;
+  };
+  /**
+   * Gets a value from a nested path in an object
+   * @param {Object} obj - The object to navigate
+   * @param {Array} segments - Parsed path segments
+   * @returns {any} The value at the path, or undefined if path doesn't exist
+   */
+
+  const getNestedValue = (obj, segments) => {
+    let current = obj;
+
+    for (const segment of segments) {
+      if (current == null) {
+        return undefined;
+      }
+
+      if (segment.type === 'key') {
+        current = current[segment.value];
+      } else if (segment.type === 'array') {
+        if (!Array.isArray(current)) {
+          return undefined;
+        }
+
+        current = current[segment.index];
+      }
+    }
+
+    return current;
+  };
+  /**
+   * Sets a value at a nested path in an object, creating intermediate objects/arrays as needed
+   * @param {Object} obj - The object to modify
+   * @param {Array} segments - Parsed path segments
+   * @param {any} value - The value to set
+   * @returns {boolean} True if successful, false otherwise
+   */
+
+  const setNestedValue = (obj, segments, value) => {
+    let current = obj;
+    const lastIndex = segments.length - 1;
+
+    for (let i = 0; i < lastIndex; i++) {
+      const segment = segments[i];
+      const nextSegment = segments[i + 1];
+
+      if (segment.type === 'key') {
+        if (current[segment.value] == null) {
+          current[segment.value] = (nextSegment === null || nextSegment === void 0 ? void 0 : nextSegment.type) === 'array' ? [] : {};
+        }
+
+        current = current[segment.value];
+      } else if (segment.type === 'array') {
+        if (!Array.isArray(current)) {
+          return false;
+        }
+
+        if (current[segment.index] == null) {
+          current[segment.index] = (nextSegment === null || nextSegment === void 0 ? void 0 : nextSegment.type) === 'array' ? [] : {};
+        }
+
+        current = current[segment.index];
+      }
+    }
+
+    const lastSegment = segments[lastIndex];
+
+    if (lastSegment.type === 'key') {
+      current[lastSegment.value] = value;
+    } else if (lastSegment.type === 'array') {
+      if (!Array.isArray(current)) {
+        return false;
+      }
+
+      current[lastSegment.index] = value;
+    }
+
+    return true;
+  };
+  /**
+   * Removes a value at a nested path in an object
+   * @param {Object} obj - The object to modify
+   * @param {Array} segments - Parsed path segments
+   * @returns {boolean} True if successful, false otherwise
+   */
+
+  const removeNestedValue = (obj, segments) => {
+    if (segments.length === 0) {
+      return false;
+    }
+
+    let current = obj;
+    const lastIndex = segments.length - 1; // Navigate to the parent of the target
+
+    for (let i = 0; i < lastIndex; i++) {
+      const segment = segments[i];
+
+      if (segment.type === 'key') {
+        if (current[segment.value] == null) {
+          return false;
+        }
+
+        current = current[segment.value];
+      } else if (segment.type === 'array') {
+        if (!Array.isArray(current)) {
+          return false;
+        }
+
+        if (current[segment.index] == null) {
+          return false;
+        }
+
+        current = current[segment.index];
+      }
+    } // Remove the target value
+
+
+    const lastSegment = segments[lastIndex];
+
+    if (lastSegment.type === 'key') {
+      if (current.hasOwnProperty(lastSegment.value)) {
+        delete current[lastSegment.value];
+        return true;
+      }
+    } else if (lastSegment.type === 'array') {
+      if (!Array.isArray(current)) {
+        return false;
+      }
+
+      if (current[lastSegment.index] != null) {
+        // For arrays, we can either delete the element or set it to undefined
+        // Using splice to remove the element completely
+        current.splice(lastSegment.index, 1);
+        return true;
+      }
+    }
+
+    return false;
+  };
   const closeIframe = (campaignId, divIdIgnored, currentSessionId) => {
     if (campaignId != null && campaignId !== '-1') {
       if (StorageManager._isLocalStorageSupported()) {
@@ -9995,6 +11201,10 @@
 
   var _processProfileArray = _classPrivateFieldLooseKey("processProfileArray");
 
+  var _filterRestrictedKeys = _classPrivateFieldLooseKey("filterRestrictedKeys");
+
+  var _validateAndSendProfile = _classPrivateFieldLooseKey("validateAndSendProfile");
+
   class ProfileHandler extends Array {
     constructor(_ref, values) {
       let {
@@ -10004,6 +11214,12 @@
         isPersonalisationActive
       } = _ref;
       super();
+      Object.defineProperty(this, _validateAndSendProfile, {
+        value: _validateAndSendProfile2
+      });
+      Object.defineProperty(this, _filterRestrictedKeys, {
+        value: _filterRestrictedKeys2
+      });
       Object.defineProperty(this, _processProfileArray, {
         value: _processProfileArray2
       });
@@ -10072,64 +11288,87 @@
 
     /**
      *
-     * @param {any} key
+     * @param {any} key - Can be a simple key or nested path like "Policy[0].price"
      * @param {number} value
      * @param {string} command
      * increases or decreases value of the number type properties in profile object
      */
     _handleIncrementDecrementValue(key, value, command) {
-      var _$ct$globalProfileMap;
-
-      // Check if the value is greater than 0
       if ($ct.globalProfileMap == null) {
         $ct.globalProfileMap = StorageManager.readFromLSorCookie(PR_COOKIE);
       }
 
-      if ($ct.globalProfileMap == null && !((_$ct$globalProfileMap = $ct.globalProfileMap) === null || _$ct$globalProfileMap === void 0 ? void 0 : _$ct$globalProfileMap.hasOwnProperty(key))) {
-        // Check if the profile map already has the propery defined
-        console.error('Kindly create profile with required proprty to increment/decrement.');
-      } else if (!value || typeof value !== 'number' || value <= 0) {
-        console.error('Value should be a number greater than 0');
-      } else {
-        // Update the profile property in local storage
-        if (command === COMMAND_INCREMENT) {
-          $ct.globalProfileMap[key] = $ct.globalProfileMap[key] + value;
-        } else {
-          $ct.globalProfileMap[key] = $ct.globalProfileMap[key] - value;
+      if ($ct.globalProfileMap == null) {
+        _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Profile map is not initialized. Please create a profile first.');
+
+        return;
+      }
+
+      if (!value || typeof value !== 'number' || value <= 0) {
+        _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Value should be a number greater than 0');
+
+        return;
+      }
+
+      const isNestedPath = key.includes('.') || key.includes('[');
+      const profileObj = {};
+
+      if (isNestedPath) {
+        const segments = parseNestedPath(key);
+
+        if (segments.length === 0) {
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Invalid nested path format.');
+
+          return;
         }
 
-        StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap); // Send the updated value to LC
+        const currentValue = getNestedValue($ct.globalProfileMap, segments);
 
-        let data = {};
-        const profileObj = {};
-        data.type = 'profile';
+        if (currentValue === undefined) {
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error("Path '".concat(key, "' does not exist in profile. Please create the profile structure first."));
+
+          return;
+        }
+
+        if (typeof currentValue !== 'number') {
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error("Value at path '".concat(key, "' is not a number. Cannot increment/decrement."));
+
+          return;
+        }
+
+        const newValue = command === COMMAND_INCREMENT ? currentValue + value : currentValue - value;
+
+        if (!setNestedValue($ct.globalProfileMap, segments, newValue)) {
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error("Failed to update value at path '".concat(key, "'."));
+
+          return;
+        }
+
+        StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap); // Use flat key notation (e.g., "Trip[0].Total Amount") instead of nested structure
+
         profileObj[key] = {
           [command]: value
         };
+      } else {
+        if (!$ct.globalProfileMap.hasOwnProperty(key)) {
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Kindly create profile with required property to increment/decrement.');
 
-        if (profileObj.tz == null) {
-          // try to auto capture user timezone if not present
-          profileObj.tz = new Date().toString().match(/([A-Z]+[\+-][0-9]+)/)[1];
+          return;
         }
 
-        data.profile = profileObj;
-        data = _classPrivateFieldLooseBase(this, _request$5)[_request$5].addSystemDataToObject(data, true);
-
-        _classPrivateFieldLooseBase(this, _request$5)[_request$5].addFlags(data);
-
-        const compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$7)[_logger$7]);
-
-        let pageLoadUrl = _classPrivateFieldLooseBase(this, _account$6)[_account$6].dataPostURL;
-
-        pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH);
-        pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
-
-        _classPrivateFieldLooseBase(this, _request$5)[_request$5].saveAndFireRequest(pageLoadUrl, $ct.blockRequest);
+        const currentValue = $ct.globalProfileMap[key] || 0;
+        $ct.globalProfileMap[key] = command === COMMAND_INCREMENT ? currentValue + value : currentValue - value;
+        StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap);
+        profileObj[key] = {
+          [command]: value
+        };
       }
+
+      _classPrivateFieldLooseBase(this, _validateAndSendProfile)[_validateAndSendProfile](profileObj);
     }
     /**
      *
-     * @param {any} key
+     * @param {any} key - the property name. Can be a simple key or nested path like "Trip[0].Emergency Contacts[0].Tags"
      * @param {array} arrayVal
      * @param {string} command
      * overwrites/sets new value(s) against a key/property in profile object
@@ -10137,6 +11376,13 @@
 
 
     _handleMultiValueSet(key, arrayVal, command) {
+      if ($ct.globalProfileMap == null) {
+        var _StorageManager$readF;
+
+        $ct.globalProfileMap = (_StorageManager$readF = StorageManager.readFromLSorCookie(PR_COOKIE)) !== null && _StorageManager$readF !== void 0 ? _StorageManager$readF : {};
+      } // Build the normalized array
+
+
       const array = [];
 
       for (let i = 0; i < arrayVal.length; i++) {
@@ -10144,24 +11390,68 @@
           array.push(arrayVal[i]);
         } else if (typeof arrayVal[i] === 'string' && !array.includes(arrayVal[i].toLowerCase())) {
           array.push(arrayVal[i].toLowerCase());
-        } else {
-          console.error('array supports only string or number type values');
+        } else if (typeof arrayVal[i] !== 'number' && typeof arrayVal[i] !== 'string') {
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Array supports only string or number type values');
         }
       }
 
-      if ($ct.globalProfileMap == null) {
-        var _StorageManager$readF;
+      const isNestedPath = key.includes('.') || key.includes('[');
 
-        $ct.globalProfileMap = (_StorageManager$readF = StorageManager.readFromLSorCookie(PR_COOKIE)) !== null && _StorageManager$readF !== void 0 ? _StorageManager$readF : {};
+      if (isNestedPath) {
+        const segments = parseNestedPath(key);
+
+        if (segments.length === 0) {
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Invalid nested path format.');
+
+          return;
+        } // Get the last segment (the property we want to set)
+
+
+        const lastSegment = segments[segments.length - 1];
+
+        if (lastSegment.type !== 'key') {
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('The last segment of the path must be a property key, not an array index.');
+
+          return;
+        } // Get parent path segments (all except last)
+
+
+        const parentSegments = segments.slice(0, -1); // Navigate to the parent object
+
+        let parentObj;
+
+        if (parentSegments.length === 0) {
+          parentObj = $ct.globalProfileMap;
+        } else {
+          parentObj = getNestedValue($ct.globalProfileMap, parentSegments);
+
+          if (parentObj === undefined || parentObj === null) {
+            _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Parent path does not exist in profile. Please create the profile structure first.');
+
+            return;
+          }
+
+          if (typeof parentObj !== 'object' || Array.isArray(parentObj)) {
+            _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Parent path does not point to an object.');
+
+            return;
+          }
+        } // Set the array at the target key
+
+
+        parentObj[lastSegment.value] = array;
+        StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap);
+        this.sendMultiValueData(key, arrayVal, command, true);
+      } else {
+        // Simple key handling (existing logic)
+        $ct.globalProfileMap[key] = array;
+        StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap);
+        this.sendMultiValueData(key, arrayVal, command, false);
       }
-
-      $ct.globalProfileMap[key] = array;
-      StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap);
-      this.sendMultiValueData(key, arrayVal, command);
     }
     /**
      *
-     * @param {any} propKey - the property name to be added in the profile object
+     * @param {any} propKey - the property name to be added in the profile object. Can be a simple key or nested path like "Trip[0].Emergency Contacts[0].Greet"
      * @param {string, number, array} propVal - the property value to be added against the @propkey key
      * @param {string} command
      * Adds array or single value against a key/property in profile object
@@ -10173,40 +11463,108 @@
         $ct.globalProfileMap = StorageManager.readFromLSorCookie(PR_COOKIE) || {};
       }
 
-      const existingValue = $ct.globalProfileMap[propKey];
-      const array = Array.isArray(existingValue) ? existingValue : existingValue != null ? [existingValue] : [];
+      const isNestedPath = propKey.includes('.') || propKey.includes('['); // Helper to normalize and add values to array
 
-      const addValue = value => {
+      const addValue = (array, value) => {
         const normalizedValue = typeof value === 'number' ? value : value.toLowerCase();
 
         if (!array.includes(normalizedValue)) {
           array.push(normalizedValue);
         }
+      }; // Helper to process propVal and add to array
+
+
+      const processAndAddValues = array => {
+        if (Array.isArray(propVal)) {
+          propVal.forEach(value => {
+            if (typeof value === 'string' || typeof value === 'number') {
+              addValue(array, value);
+            } else {
+              _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Array supports only string or number type values');
+            }
+          });
+        } else if (typeof propVal === 'string' || typeof propVal === 'number') {
+          addValue(array, propVal);
+        } else {
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Unsupported value type');
+
+          return false;
+        }
+
+        return true;
       };
 
-      if (Array.isArray(propVal)) {
-        propVal.forEach(value => {
-          if (typeof value === 'string' || typeof value === 'number') {
-            addValue(value);
-          } else {
-            _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Array supports only string or number type values');
+      if (isNestedPath) {
+        const segments = parseNestedPath(propKey);
+
+        if (segments.length === 0) {
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Invalid nested path format.');
+
+          return;
+        } // Get the last segment (the property we want to add to)
+
+
+        const lastSegment = segments[segments.length - 1];
+
+        if (lastSegment.type !== 'key') {
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('The last segment of the path must be a property key, not an array index.');
+
+          return;
+        } // Get parent path segments (all except last)
+
+
+        const parentSegments = segments.slice(0, -1); // Navigate to the parent object
+
+        let parentObj;
+
+        if (parentSegments.length === 0) {
+          parentObj = $ct.globalProfileMap;
+        } else {
+          parentObj = getNestedValue($ct.globalProfileMap, parentSegments);
+
+          if (parentObj === undefined || parentObj === null) {
+            _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Parent path does not exist in profile. Please create the profile structure first.');
+
+            return;
           }
-        });
-      } else if (typeof propVal === 'string' || typeof propVal === 'number') {
-        addValue(propVal);
+
+          if (typeof parentObj !== 'object' || Array.isArray(parentObj)) {
+            _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Parent path does not point to an object.');
+
+            return;
+          }
+        } // Get or create array at the target key
+
+
+        const targetKey = lastSegment.value;
+        const existingValue = parentObj[targetKey];
+        const array = Array.isArray(existingValue) ? existingValue : existingValue != null ? [existingValue] : []; // Add values to array
+
+        if (!processAndAddValues(array)) {
+          return;
+        } // Set the array back
+
+
+        parentObj[targetKey] = array;
+        StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap);
+        this.sendMultiValueData(propKey, propVal, command, true);
       } else {
-        _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Unsupported value type');
+        // Simple key handling (existing logic)
+        const existingValue = $ct.globalProfileMap[propKey];
+        const array = Array.isArray(existingValue) ? existingValue : existingValue != null ? [existingValue] : []; // Add values to array
 
-        return;
+        if (!processAndAddValues(array)) {
+          return;
+        }
+
+        $ct.globalProfileMap[propKey] = array;
+        StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap);
+        this.sendMultiValueData(propKey, propVal, command, false);
       }
-
-      $ct.globalProfileMap[propKey] = array;
-      StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap);
-      this.sendMultiValueData(propKey, propVal, command);
     }
     /**
      *
-     * @param {any} propKey
+     * @param {any} propKey - the property name. Can be a simple key or nested path like "Trip[0].Emergency Contacts[0].Tags"
      * @param {string, number, array} propVal
      * @param {string} command
      * removes value(s) against a key/property in profile object
@@ -10218,78 +11576,255 @@
         $ct.globalProfileMap = StorageManager.readFromLSorCookie(PR_COOKIE) || {};
       }
 
-      if (!$ct.globalProfileMap.hasOwnProperty(propKey)) {
-        _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error("The property ".concat(propKey, " does not exist."));
+      const isNestedPath = propKey.includes('.') || propKey.includes('[');
 
-        return;
-      }
+      if (isNestedPath) {
+        const segments = parseNestedPath(propKey);
 
-      const removeValue = value => {
-        const index = $ct.globalProfileMap[propKey].indexOf(value);
+        if (segments.length === 0) {
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Invalid nested path format.');
 
-        if (index !== -1) {
-          $ct.globalProfileMap[propKey].splice(index, 1);
+          return;
+        } // Get the last segment (the property we want to remove from)
+
+
+        const lastSegment = segments[segments.length - 1];
+
+        if (lastSegment.type !== 'key') {
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('The last segment of the path must be a property key, not an array index.');
+
+          return;
+        } // Get parent path segments (all except last)
+
+
+        const parentSegments = segments.slice(0, -1); // Navigate to the parent object
+
+        let parentObj;
+
+        if (parentSegments.length === 0) {
+          parentObj = $ct.globalProfileMap;
+        } else {
+          parentObj = getNestedValue($ct.globalProfileMap, parentSegments);
+
+          if (parentObj === undefined || parentObj === null) {
+            _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Parent path does not exist in profile.');
+
+            return;
+          }
+
+          if (typeof parentObj !== 'object' || Array.isArray(parentObj)) {
+            _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Parent path does not point to an object.');
+
+            return;
+          }
         }
-      };
 
-      if (Array.isArray(propVal)) {
-        propVal.forEach(removeValue);
-      } else if (typeof propVal === 'string' || typeof propVal === 'number') {
-        removeValue(propVal);
+        const targetKey = lastSegment.value;
+
+        if (!parentObj.hasOwnProperty(targetKey)) {
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error("The property ".concat(propKey, " does not exist."));
+
+          return;
+        }
+
+        const targetArray = parentObj[targetKey];
+
+        if (!Array.isArray(targetArray)) {
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error("The property ".concat(propKey, " is not an array."));
+
+          return;
+        } // Helper to remove value from array
+
+
+        const removeValue = value => {
+          const index = targetArray.indexOf(value);
+
+          if (index !== -1) {
+            targetArray.splice(index, 1);
+          }
+        };
+
+        if (Array.isArray(propVal)) {
+          propVal.forEach(removeValue);
+        } else if (typeof propVal === 'string' || typeof propVal === 'number') {
+          removeValue(propVal);
+        } else {
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Unsupported propVal type');
+
+          return;
+        } // Remove the key if the array is empty
+
+
+        if (targetArray.length === 0) {
+          delete parentObj[targetKey];
+        }
+
+        StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap);
+        this.sendMultiValueData(propKey, propVal, command, true);
       } else {
-        _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Unsupported propVal type');
+        // Simple key handling (existing logic)
+        if (!$ct.globalProfileMap.hasOwnProperty(propKey)) {
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error("The property ".concat(propKey, " does not exist."));
 
-        return;
-      } // Remove the key if the array is empty
+          return;
+        }
+
+        const removeValue = value => {
+          const index = $ct.globalProfileMap[propKey].indexOf(value);
+
+          if (index !== -1) {
+            $ct.globalProfileMap[propKey].splice(index, 1);
+          }
+        };
+
+        if (Array.isArray(propVal)) {
+          propVal.forEach(removeValue);
+        } else if (typeof propVal === 'string' || typeof propVal === 'number') {
+          removeValue(propVal);
+        } else {
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Unsupported propVal type');
+
+          return;
+        } // Remove the key if the array is empty
 
 
-      if ($ct.globalProfileMap[propKey].length === 0) {
-        delete $ct.globalProfileMap[propKey];
+        if ($ct.globalProfileMap[propKey].length === 0) {
+          delete $ct.globalProfileMap[propKey];
+        }
+
+        StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap);
+        this.sendMultiValueData(propKey, propVal, command, false);
       }
-
-      StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap);
-      this.sendMultiValueData(propKey, propVal, command);
     }
     /**
      *
-     * @param {any} propKey
+     * @param {any} propKey - Can be a simple key or nested path like "Policy[0].price"
      * @param {string} command
      * deletes a key value pair from the profile object
+     * Only primitive values (string, number, boolean) can be deleted.
+     * Arrays and objects cannot be deleted - use specific methods for those.
      */
 
 
     _handleMultiValueDelete(propKey, command) {
-      var _$ct$globalProfileMap2;
-
       if ($ct.globalProfileMap == null) {
         $ct.globalProfileMap = StorageManager.readFromLSorCookie(PR_COOKIE);
       }
 
-      if (!($ct === null || $ct === void 0 ? void 0 : (_$ct$globalProfileMap2 = $ct.globalProfileMap) === null || _$ct$globalProfileMap2 === void 0 ? void 0 : _$ct$globalProfileMap2.hasOwnProperty(propKey))) {
-        _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error("The property ".concat(propKey, " does not exist."));
-      } else {
-        delete $ct.globalProfileMap[propKey];
-      }
+      if ($ct.globalProfileMap == null) {
+        $ct.globalProfileMap = {};
+      } // Helper to check if value is primitive (not array or object)
 
-      StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap);
-      this.sendMultiValueData(propKey, null, command);
+
+      const isPrimitive = value => {
+        return value === null || value === undefined || typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean';
+      };
+
+      const isNestedPath = propKey.includes('.') || propKey.includes('[');
+
+      if (isNestedPath) {
+        const segments = parseNestedPath(propKey);
+
+        if (segments.length === 0) {
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Invalid nested path format.');
+
+          return;
+        } // Check if the path exists
+
+
+        const currentValue = getNestedValue($ct.globalProfileMap, segments);
+
+        if (currentValue === undefined) {
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error("Path '".concat(propKey, "' does not exist in profile."));
+
+          return;
+        } // Check if value is primitive - only allow deletion of primitive values
+
+
+        if (!isPrimitive(currentValue)) {
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error("Cannot delete '".concat(propKey, "': Value is an ").concat(Array.isArray(currentValue) ? 'array' : 'object', ". Only primitive values (string, number, boolean) can be deleted."));
+
+          return;
+        } // Remove the nested value
+
+
+        if (!removeNestedValue($ct.globalProfileMap, segments)) {
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error("Failed to remove value at path '".concat(propKey, "'."));
+
+          return;
+        }
+
+        StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap);
+        this.sendMultiValueData(propKey, null, command, true);
+      } else {
+        // Handle simple key (existing logic)
+        if (!$ct.globalProfileMap.hasOwnProperty(propKey)) {
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error("The property ".concat(propKey, " does not exist."));
+
+          return;
+        }
+
+        const currentValue = $ct.globalProfileMap[propKey]; // Check if value is primitive - only allow deletion of primitive values
+
+        if (!isPrimitive(currentValue)) {
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error("Cannot delete '".concat(propKey, "': Value is an ").concat(Array.isArray(currentValue) ? 'array' : 'object', ". Only primitive values (string, number, boolean) can be deleted."));
+
+          return;
+        }
+
+        delete $ct.globalProfileMap[propKey];
+        StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap);
+        this.sendMultiValueData(propKey, null, command, false);
+      }
     }
 
     sendMultiValueData(propKey, propVal, command) {
+      let isNested = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : false;
       // Send the updated value to LC
       let data = {};
       const profileObj = {};
-      data.type = 'profile'; // this removes the property at backend
+      data.type = 'profile';
 
-      profileObj[propKey] = {
-        [command]: command === COMMAND_DELETE ? true : propVal
-      };
+      if (isNested) {
+        // For nested paths, use the path as a flat key (e.g., "Platform.Web" or "Trip[0].Price")
+        // This sends: { "Platform.Web": { "$delete": true } } instead of nested structure
+        if (command === COMMAND_DELETE) {
+          profileObj[propKey] = {
+            [command]: true
+          };
+        } else {
+          profileObj[propKey] = {
+            [command]: propVal
+          };
+        }
+      } else {
+        // Simple key handling
+        profileObj[propKey] = {
+          [command]: command === COMMAND_DELETE ? true : propVal
+        };
+      }
 
       if (profileObj.tz == null) {
         profileObj.tz = new Date().toString().match(/([A-Z]+[\+-][0-9]+)/)[1];
+      } // Validate and clean the profile object before sending
+
+
+      const validationResult = isObjStructureValid(profileObj, _classPrivateFieldLooseBase(this, _logger$7)[_logger$7], 3);
+
+      if (validationResult.processedObj) {
+        const cleanedProfileObj = validationResult.processedObj;
+
+        const finalProfileObj = _classPrivateFieldLooseBase(this, _filterRestrictedKeys)[_filterRestrictedKeys](cleanedProfileObj);
+
+        if (isObjectEmpty(finalProfileObj)) {
+          return;
+        }
+
+        data.profile = finalProfileObj;
+      } else {
+        data.profile = profileObj;
       }
 
-      data.profile = profileObj;
       data = _classPrivateFieldLooseBase(this, _request$5)[_request$5].addSystemDataToObject(data, true);
 
       _classPrivateFieldLooseBase(this, _request$5)[_request$5].addFlags(data);
@@ -10318,7 +11853,39 @@
             // organic data from the site
             profileObj = outerObj.Site;
 
-            if (isObjectEmpty(profileObj) || !isProfileValid(profileObj, {
+            if (isObjectEmpty(profileObj)) {
+              _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Empty profile object provided. No data to send.');
+
+              return;
+            } // Save Date objects for restricted keys before isObjStructureValid converts them
+            // This allows isProfileValid to handle DOB and other date fields correctly
+
+
+            const savedRestrictedDateValues = {};
+
+            for (const key of PROFILE_RESTRICTED_ROOT_KEYS) {
+              if (profileObj[key] instanceof Date) {
+                savedRestrictedDateValues[key] = profileObj[key];
+              }
+            }
+
+            const validationResult = isObjStructureValid(profileObj, _classPrivateFieldLooseBase(this, _logger$7)[_logger$7], 3); // Validation errors are already logged via logger.reportError in validator
+            // Use cleaned object if provided (even if validation failed)
+            // This removes null/empty values that were logged
+
+            if (validationResult.processedObj) {
+              profileObj = validationResult.processedObj;
+            } // Restore Date objects for restricted keys so isProfileValid can handle them
+
+
+            for (const key in savedRestrictedDateValues) {
+              profileObj[key] = savedRestrictedDateValues[key];
+            } // Profile-specific validation: Drop restricted keys at root level
+
+
+            profileObj = _classPrivateFieldLooseBase(this, _filterRestrictedKeys)[_filterRestrictedKeys](profileObj);
+
+            if (!isProfileValid(profileObj, {
               logger: _classPrivateFieldLooseBase(this, _logger$7)[_logger$7]
             })) {
               return;
@@ -10369,375 +11936,65 @@
     }
   };
 
-  var _request$4 = _classPrivateFieldLooseKey("request");
+  var _filterRestrictedKeys2 = function _filterRestrictedKeys2(profileObj) {
+    const finalProfileObj = {};
 
-  var _logger$6 = _classPrivateFieldLooseKey("logger");
+    for (const key in profileObj) {
+      if (profileObj.hasOwnProperty(key)) {
+        const value = profileObj[key];
 
-  var _account$5 = _classPrivateFieldLooseKey("account");
+        if (PROFILE_RESTRICTED_ROOT_KEYS.includes(key)) {
+          // Check if value is nested (object or array, but not Date)
+          const isNestedValue = value !== null && typeof value === 'object' && !(value instanceof Date);
 
-  var _session$2 = _classPrivateFieldLooseKey("session");
-
-  var _oldValues$2 = _classPrivateFieldLooseKey("oldValues");
-
-  var _device$2 = _classPrivateFieldLooseKey("device");
-
-  var _processOUL = _classPrivateFieldLooseKey("processOUL");
-
-  var _handleCookieFromCache = _classPrivateFieldLooseKey("handleCookieFromCache");
-
-  var _deleteUser = _classPrivateFieldLooseKey("deleteUser");
-
-  var _processLoginArray = _classPrivateFieldLooseKey("processLoginArray");
-
-  class UserLoginHandler extends Array {
-    constructor(_ref, values) {
-      let {
-        request,
-        account,
-        session,
-        logger,
-        device
-      } = _ref;
-      super();
-      Object.defineProperty(this, _processLoginArray, {
-        value: _processLoginArray2
-      });
-      Object.defineProperty(this, _deleteUser, {
-        value: _deleteUser2
-      });
-      Object.defineProperty(this, _handleCookieFromCache, {
-        value: _handleCookieFromCache2
-      });
-      Object.defineProperty(this, _processOUL, {
-        value: _processOUL2
-      });
-      Object.defineProperty(this, _request$4, {
-        writable: true,
-        value: void 0
-      });
-      Object.defineProperty(this, _logger$6, {
-        writable: true,
-        value: void 0
-      });
-      Object.defineProperty(this, _account$5, {
-        writable: true,
-        value: void 0
-      });
-      Object.defineProperty(this, _session$2, {
-        writable: true,
-        value: void 0
-      });
-      Object.defineProperty(this, _oldValues$2, {
-        writable: true,
-        value: void 0
-      });
-      Object.defineProperty(this, _device$2, {
-        writable: true,
-        value: void 0
-      });
-      _classPrivateFieldLooseBase(this, _request$4)[_request$4] = request;
-      _classPrivateFieldLooseBase(this, _account$5)[_account$5] = account;
-      _classPrivateFieldLooseBase(this, _session$2)[_session$2] = session;
-      _classPrivateFieldLooseBase(this, _logger$6)[_logger$6] = logger;
-      _classPrivateFieldLooseBase(this, _oldValues$2)[_oldValues$2] = values;
-      _classPrivateFieldLooseBase(this, _device$2)[_device$2] = device;
-    } // On User Login
-
-
-    clear() {
-      _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].debug('clear called. Reset flag has been set.');
-
-      _classPrivateFieldLooseBase(this, _deleteUser)[_deleteUser]();
-
-      StorageManager.setMetaProp(CLEAR, true);
-    }
-
-    push() {
-      for (var _len = arguments.length, profilesArr = new Array(_len), _key = 0; _key < _len; _key++) {
-        profilesArr[_key] = arguments[_key];
-      }
-
-      _classPrivateFieldLooseBase(this, _processLoginArray)[_processLoginArray](profilesArr);
-
-      return 0;
-    }
-
-    _processOldValues() {
-      if (_classPrivateFieldLooseBase(this, _oldValues$2)[_oldValues$2]) {
-        _classPrivateFieldLooseBase(this, _processLoginArray)[_processLoginArray](_classPrivateFieldLooseBase(this, _oldValues$2)[_oldValues$2]);
-      }
-
-      _classPrivateFieldLooseBase(this, _oldValues$2)[_oldValues$2] = null;
-    }
-
-  }
-
-  var _processOUL2 = function _processOUL2(profileArr) {
-    let sendOULFlag = true;
-    StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, sendOULFlag);
-
-    const addToK = ids => {
-      let k = StorageManager.readFromLSorCookie(KCOOKIE_NAME);
-      const g = StorageManager.readFromLSorCookie(GCOOKIE_NAME);
-      let kId;
-
-      if (k == null) {
-        k = {};
-        kId = ids;
-      } else {
-        /* check if already exists */
-        kId = k.id;
-        let anonymousUser = false;
-        let foundInCache = false;
-
-        if (kId == null) {
-          kId = ids[0];
-          anonymousUser = true;
-        }
-
-        if ($ct.LRU_CACHE == null && StorageManager._isLocalStorageSupported()) {
-          $ct.LRU_CACHE = new LRUCache(LRU_CACHE_SIZE);
-        }
-
-        if (anonymousUser) {
-          if (g != null) {
-            // if have gcookie
-            $ct.LRU_CACHE.set(kId, g);
-            $ct.blockRequest = false;
+          if (isNestedValue) {
+            // Skip restricted keys with nested values and log error
+            _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].reportError(NESTED_OBJECT_ERRORS.RESTRICTED_PROFILE_PROPERTY.code, NESTED_OBJECT_ERRORS.RESTRICTED_PROFILE_PROPERTY.message.replace('%s', key));
+          } else {
+            // Allow restricted keys with primitive values
+            finalProfileObj[key] = value;
           }
         } else {
-          // check if the id is present in the cache
-          // set foundInCache to true
-          for (const idx in ids) {
-            if (ids.hasOwnProperty(idx)) {
-              const id = ids[idx];
-
-              if ($ct.LRU_CACHE.cache[id]) {
-                kId = id;
-                foundInCache = true;
-                break;
-              }
-            }
-          }
-        }
-
-        if (foundInCache) {
-          if (kId !== $ct.LRU_CACHE.getLastKey()) {
-            // New User found
-            // remove the entire cache
-            _classPrivateFieldLooseBase(this, _handleCookieFromCache)[_handleCookieFromCache]();
-          } else {
-            sendOULFlag = false;
-            StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, sendOULFlag);
-          }
-
-          const gFromCache = $ct.LRU_CACHE.get(kId);
-          $ct.LRU_CACHE.set(kId, gFromCache);
-          StorageManager.saveToLSorCookie(GCOOKIE_NAME, gFromCache);
-          _classPrivateFieldLooseBase(this, _device$2)[_device$2].gcookie = gFromCache;
-          const lastK = $ct.LRU_CACHE.getSecondLastKey();
-
-          if (StorageManager.readFromLSorCookie(FIRE_PUSH_UNREGISTERED) && lastK !== -1) {
-            // CACHED OLD USER FOUND. TRANSFER PUSH TOKEN TO THIS USER
-            const lastGUID = $ct.LRU_CACHE.cache[lastK];
-
-            _classPrivateFieldLooseBase(this, _request$4)[_request$4].unregisterTokenForGuid(lastGUID);
-          }
-        } else {
-          if (!anonymousUser) {
-            this.clear();
-          } else {
-            if (g != null) {
-              _classPrivateFieldLooseBase(this, _device$2)[_device$2].gcookie = g;
-              StorageManager.saveToLSorCookie(GCOOKIE_NAME, g);
-              sendOULFlag = false;
-            }
-          }
-
-          StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, false);
-          kId = ids[0];
-        }
-      }
-
-      k.id = kId;
-      StorageManager.saveToLSorCookie(KCOOKIE_NAME, k);
-    };
-
-    if (Array.isArray(profileArr) && profileArr.length > 0) {
-      for (const index in profileArr) {
-        if (profileArr.hasOwnProperty(index)) {
-          const outerObj = profileArr[index];
-          let data = {};
-          let profileObj;
-
-          if (outerObj.Site != null) {
-            // organic data from the site
-            profileObj = outerObj.Site;
-
-            if (isObjectEmpty(profileObj) || !isProfileValid(profileObj, {
-              logger: _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]
-            })) {
-              return;
-            }
-          } else if (outerObj.Facebook != null) {
-            // fb connect data
-            const FbProfileObj = outerObj.Facebook; // make sure that the object contains any data at all
-
-            if (!isObjectEmpty(FbProfileObj) && !FbProfileObj.error) {
-              profileObj = processFBUserObj(FbProfileObj);
-            }
-          } else if (outerObj['Google Plus'] != null) {
-            const GPlusProfileObj = outerObj['Google Plus'];
-
-            if (isObjectEmpty(GPlusProfileObj) && !GPlusProfileObj.error) {
-              profileObj = processGPlusUserObj(GPlusProfileObj, {
-                logger: _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]
-              });
-            }
-          }
-
-          if (profileObj != null && !isObjectEmpty(profileObj)) {
-            // profile got set from above
-            data.type = 'profile';
-
-            if (profileObj.tz == null) {
-              // try to auto capture user timezone if not present
-              profileObj.tz = new Date().toString().match(/([A-Z]+[\+-][0-9]+)/)[1];
-            }
-
-            data.profile = profileObj;
-            const ids = [];
-
-            if (StorageManager._isLocalStorageSupported()) {
-              if (profileObj.Identity) {
-                ids.push(profileObj.Identity);
-              }
-
-              if (profileObj.Email) {
-                ids.push(profileObj.Email);
-              }
-
-              if (profileObj.GPID) {
-                ids.push('GP:' + profileObj.GPID);
-              }
-
-              if (profileObj.FBID) {
-                ids.push('FB:' + profileObj.FBID);
-              }
-
-              if (ids.length > 0) {
-                addToK(ids);
-              }
-            }
-
-            addToLocalProfileMap(profileObj, true);
-            data = _classPrivateFieldLooseBase(this, _request$4)[_request$4].addSystemDataToObject(data, undefined);
-
-            _classPrivateFieldLooseBase(this, _request$4)[_request$4].addFlags(data); // Adding 'isOUL' flag in true for OUL cases which.
-            // This flag tells LC to create a new arp object.
-            // Also we will receive the same flag in response arp which tells to delete existing arp object.
-
-
-            if (sendOULFlag) {
-              data[IS_OUL] = true;
-            }
-
-            const compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]);
-
-            let pageLoadUrl = _classPrivateFieldLooseBase(this, _account$5)[_account$5].dataPostURL;
-
-            pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH);
-            pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData); // Whenever sendOULFlag is true then dont send arp and gcookie (guid in memory in the request)
-            // Also when this flag is set we will get another flag from LC in arp which tells us to delete arp
-            // stored in the cache and replace it with the response arp.
-
-            _classPrivateFieldLooseBase(this, _request$4)[_request$4].saveAndFireRequest(pageLoadUrl, $ct.blockRequest, sendOULFlag);
-          }
+          finalProfileObj[key] = value;
         }
       }
     }
+
+    return finalProfileObj;
   };
 
-  var _handleCookieFromCache2 = function _handleCookieFromCache2() {
-    $ct.blockRequest = false;
-    console.debug('Block request is false');
-
-    if (StorageManager._isLocalStorageSupported()) {
-      delete localStorage[PR_COOKIE];
-      delete localStorage[EV_COOKIE];
-      delete localStorage[META_COOKIE];
-      delete localStorage[ARP_COOKIE];
-      delete localStorage[CAMP_COOKIE_NAME];
-      delete localStorage[CHARGEDID_COOKIE_NAME];
+  var _validateAndSendProfile2 = function _validateAndSendProfile2(profileObj) {
+    if (profileObj.tz == null) {
+      profileObj.tz = new Date().toString().match(/([A-Z]+[\+-][0-9]+)/)[1];
     }
 
-    StorageManager.removeCookie(CAMP_COOKIE_NAME, getHostName());
-    StorageManager.removeCookie(_classPrivateFieldLooseBase(this, _session$2)[_session$2].cookieName, $ct.broadDomain);
-    StorageManager.removeCookie(ARP_COOKIE, $ct.broadDomain);
+    const validationResult = isObjStructureValid(profileObj, _classPrivateFieldLooseBase(this, _logger$7)[_logger$7], 3);
 
-    _classPrivateFieldLooseBase(this, _session$2)[_session$2].setSessionCookieObject('');
-  };
+    if (validationResult.processedObj) {
+      const cleanedProfileObj = validationResult.processedObj;
 
-  var _deleteUser2 = function _deleteUser2() {
-    $ct.blockRequest = true;
+      const finalProfileObj = _classPrivateFieldLooseBase(this, _filterRestrictedKeys)[_filterRestrictedKeys](cleanedProfileObj);
 
-    _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].debug('Block request is true');
-
-    $ct.globalCache = {
-      gcookie: null,
-      REQ_N: 0,
-      RESP_N: 0
-    };
-
-    if (StorageManager._isLocalStorageSupported()) {
-      delete localStorage[GCOOKIE_NAME];
-      delete localStorage[KCOOKIE_NAME];
-      delete localStorage[PR_COOKIE];
-      delete localStorage[EV_COOKIE];
-      delete localStorage[META_COOKIE];
-      delete localStorage[ARP_COOKIE];
-      delete localStorage[CAMP_COOKIE_NAME];
-      delete localStorage[CHARGEDID_COOKIE_NAME];
-    }
-
-    StorageManager.removeCookie(GCOOKIE_NAME, $ct.broadDomain);
-    StorageManager.removeCookie(CAMP_COOKIE_NAME, getHostName());
-    StorageManager.removeCookie(KCOOKIE_NAME, getHostName());
-    StorageManager.removeCookie(_classPrivateFieldLooseBase(this, _session$2)[_session$2].cookieName, $ct.broadDomain);
-    StorageManager.removeCookie(ARP_COOKIE, $ct.broadDomain);
-    _classPrivateFieldLooseBase(this, _device$2)[_device$2].gcookie = null;
-
-    _classPrivateFieldLooseBase(this, _session$2)[_session$2].setSessionCookieObject('');
-  };
-
-  var _processLoginArray2 = function _processLoginArray2(loginArr) {
-    if (Array.isArray(loginArr) && loginArr.length > 0) {
-      const profileObj = loginArr.pop();
-      const processProfile = profileObj != null && isObject(profileObj) && (profileObj.Site != null && Object.keys(profileObj.Site).length > 0 || profileObj.Facebook != null && Object.keys(profileObj.Facebook).length > 0 || profileObj['Google Plus'] != null && Object.keys(profileObj['Google Plus']).length > 0);
-
-      if (processProfile) {
-        StorageManager.setInstantDeleteFlagInK();
-
-        try {
-          _classPrivateFieldLooseBase(this, _processOUL)[_processOUL]([profileObj]);
-        } catch (e) {
-          _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].debug(e);
-        }
-      } else {
-        _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].error('Profile object is in incorrect format');
+      if (isObjectEmpty(finalProfileObj)) {
+        return;
       }
+
+      let data = {};
+      data.type = 'profile';
+      data.profile = finalProfileObj;
+      data = _classPrivateFieldLooseBase(this, _request$5)[_request$5].addSystemDataToObject(data, true);
+
+      _classPrivateFieldLooseBase(this, _request$5)[_request$5].addFlags(data);
+
+      const compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$7)[_logger$7]);
+
+      let pageLoadUrl = _classPrivateFieldLooseBase(this, _account$6)[_account$6].dataPostURL;
+
+      pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH);
+      pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
+
+      _classPrivateFieldLooseBase(this, _request$5)[_request$5].saveAndFireRequest(pageLoadUrl, $ct.blockRequest);
     }
-  };
-
-  const getBoxPromptStyles = style => {
-    const totalBorderWidth = style.card.borderEnabled ? style.card.border.borderWidth * 2 : 0;
-    const cardPadding = 16 * 2; // Left and right padding
-
-    const cardContentWidth = 360 - cardPadding - totalBorderWidth;
-    return "\n    #pnWrapper {\n      width: 360px;\n      font-family: proxima-nova, Arial, sans-serif;\n    }\n    \n    #pnWrapper * {\n       margin: 0px;\n       padding: 0px;\n       text-align: left;\n    }\n    ".concat(style.overlay.enabled ? "#pnOverlay {\n      background-color: ".concat(style.overlay.color || 'rgba(0, 0, 0, .15)', ";\n      position: fixed;\n      left: 0;\n      right: 0;\n      top: 0;\n      bottom: 0;\n      z-index: 10000\n    }\n") : '', "\n    #pnCard {\n      background-color: ").concat(style.card.color, ";\n      border-radius: ").concat(style.card.borderRadius, "px;\n      padding: 16px;\n      width: ").concat(cardContentWidth, "px;\n      position: fixed;\n      z-index: 999999;\n      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);\n      ").concat(style.card.borderEnabled ? "\n        border-width: ".concat(style.card.border.borderWidth, "px;\n        border-color: ").concat(style.card.border.borderColor, ";\n        border-style: solid;\n      ") : '', "\n      height: fit-content;\n    }\n\n    #iconTitleDescWrapper {\n      display: flex;\n      align-items: center;\n      margin-bottom: 16px;\n      gap: 12px;\n    }\n\n    #iconContainer {\n      min-width: 64px;\n      max-width: 64px;\n      aspect-ratio: 1;\n      object-fit: cover;\n    }\n\n    #titleDescWrapper {\n      flex-grow: 1;\n      overflow: hidden;\n      overflow-wrap: break-word;\n    }\n\n    #title {\n      font-size: 16px;\n      font-weight: 700;\n      color: ").concat(style.text.titleColor, ";\n      margin-bottom: 4px;\n      line-height: 24px;\n    }\n\n    #description {\n      font-size: 14px;\n      font-weight: 500;\n      color: ").concat(style.text.descriptionColor, ";\n      line-height: 20px;\n    }\n\n    #buttonsContainer {\n      display: flex;\n      justify-content: space-between;\n      min-height: 32px;\n      gap: 8px;\n      align-items: center;\n    }\n\n    #primaryButton, #secondaryButton {\n      padding: 6px 24px;\n      flex: 1;\n      cursor: pointer;\n      font-weight: bold;\n      display: flex;\n      align-items: center;\n      justify-content: center;\n      height: max-content;\n      font-size: 14px;\n      font-weight: 500;\n      line-height: 20px;\n      text-align: center;\n    }\n\n    #primaryButton {\n      background-color: ").concat(style.buttons.primaryButton.buttonColor, ";\n      color: ").concat(style.buttons.primaryButton.textColor, ";\n      border-radius: ").concat(style.buttons.primaryButton.borderRadius, "px;\n      ").concat(style.buttons.primaryButton.borderEnabled ? "\n          border-width: ".concat(style.buttons.primaryButton.border.borderWidth, "px;\n          border-color: ").concat(style.buttons.primaryButton.border.borderColor, ";\n          border-style: solid;\n        ") : 'border: none;', "\n    }\n\n    #secondaryButton {\n      background-color: ").concat(style.buttons.secondaryButton.buttonColor, ";\n      color: ").concat(style.buttons.secondaryButton.textColor, ";\n      border-radius: ").concat(style.buttons.secondaryButton.borderRadius, "px;\n      ").concat(style.buttons.secondaryButton.borderEnabled ? "\n          border-width: ".concat(style.buttons.secondaryButton.border.borderWidth, "px;\n          border-color: ").concat(style.buttons.secondaryButton.border.borderColor, ";\n          border-style: solid;\n        ") : 'border: none;', "\n    }\n\n    #primaryButton:hover, #secondaryButton:hover {\n      opacity: 0.9;\n    }\n  ");
-  };
-  const getBellIconStyles = style => {
-    return "\n    #bell_wrapper {\n      position: fixed;\n      cursor: pointer;\n      background-color: ".concat(style.card.backgroundColor, ";\n      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);\n      width: 48px;\n      height: 48px;\n      border-radius: 50%;\n      display: flex;\n      flex-direction: column;\n      gap: 8px;\n      z-index: 999999;\n    }\n\n    #bell_icon {\n      display: block;\n      width: 48px;\n      height: 48px;\n    }\n\n    #bell_wrapper:hover {\n      transform: scale(1.05);\n      transition: transform 0.2s ease-in-out;\n    }\n\n    #bell_tooltip {\n      display: none;\n      background-color: #2b2e3e;\n      color: #fff;\n      border-radius: 4px;\n      padding: 4px;\n      white-space: nowrap;\n      pointer-events: none;\n      font-size: 14px;\n      line-height: 1.4;\n    }\n\n    #gif_modal {\n      display: none;\n      background-color: #ffffff;\n      padding: 4px;\n      width: 400px;\n      height: 256px;\n      border-radius: 4px;\n      position: relative;\n      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);\n      cursor: default;\n    }\n\n    #gif_image {\n      object-fit: contain;\n      width: 100%;\n      height: 100%;\n    }\n\n    #close_modal {\n      position: absolute;\n      width: 24px;\n      height: 24px;\n      top: 8px;\n      right: 8px;\n      background: rgba(238, 238, 238, 0.8);\n      text-align: center;\n      line-height: 20px;\n      border-radius: 4px;\n      color: #000000;\n      font-size: 22px;\n      cursor: pointer;\n    }\n  ");
   };
 
   const isChrome = () => {
@@ -10889,6 +12146,406 @@
 
     return "".concat(CUSTOM_CT_ID_PREFIX).concat(id.toLowerCase());
   }
+
+  var _request$4 = _classPrivateFieldLooseKey("request");
+
+  var _logger$6 = _classPrivateFieldLooseKey("logger");
+
+  var _account$5 = _classPrivateFieldLooseKey("account");
+
+  var _session$2 = _classPrivateFieldLooseKey("session");
+
+  var _oldValues$2 = _classPrivateFieldLooseKey("oldValues");
+
+  var _device$2 = _classPrivateFieldLooseKey("device");
+
+  var _processOUL = _classPrivateFieldLooseKey("processOUL");
+
+  var _handleCookieFromCache = _classPrivateFieldLooseKey("handleCookieFromCache");
+
+  var _deleteUser = _classPrivateFieldLooseKey("deleteUser");
+
+  var _processLoginArray = _classPrivateFieldLooseKey("processLoginArray");
+
+  class UserLoginHandler extends Array {
+    constructor(_ref, values) {
+      let {
+        request,
+        account,
+        session,
+        logger,
+        device
+      } = _ref;
+      super();
+      Object.defineProperty(this, _processLoginArray, {
+        value: _processLoginArray2
+      });
+      Object.defineProperty(this, _deleteUser, {
+        value: _deleteUser2
+      });
+      Object.defineProperty(this, _handleCookieFromCache, {
+        value: _handleCookieFromCache2
+      });
+      Object.defineProperty(this, _processOUL, {
+        value: _processOUL2
+      });
+      Object.defineProperty(this, _request$4, {
+        writable: true,
+        value: void 0
+      });
+      Object.defineProperty(this, _logger$6, {
+        writable: true,
+        value: void 0
+      });
+      Object.defineProperty(this, _account$5, {
+        writable: true,
+        value: void 0
+      });
+      Object.defineProperty(this, _session$2, {
+        writable: true,
+        value: void 0
+      });
+      Object.defineProperty(this, _oldValues$2, {
+        writable: true,
+        value: void 0
+      });
+      Object.defineProperty(this, _device$2, {
+        writable: true,
+        value: void 0
+      });
+      _classPrivateFieldLooseBase(this, _request$4)[_request$4] = request;
+      _classPrivateFieldLooseBase(this, _account$5)[_account$5] = account;
+      _classPrivateFieldLooseBase(this, _session$2)[_session$2] = session;
+      _classPrivateFieldLooseBase(this, _logger$6)[_logger$6] = logger;
+      _classPrivateFieldLooseBase(this, _oldValues$2)[_oldValues$2] = values;
+      _classPrivateFieldLooseBase(this, _device$2)[_device$2] = device;
+    } // On User Login
+
+
+    clear() {
+      _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].debug('clear called. Reset flag has been set.');
+
+      _classPrivateFieldLooseBase(this, _deleteUser)[_deleteUser]();
+
+      StorageManager.setMetaProp(CLEAR, true);
+    }
+
+    push() {
+      for (var _len = arguments.length, profilesArr = new Array(_len), _key = 0; _key < _len; _key++) {
+        profilesArr[_key] = arguments[_key];
+      }
+
+      _classPrivateFieldLooseBase(this, _processLoginArray)[_processLoginArray](profilesArr);
+
+      return 0;
+    }
+
+    _processOldValues() {
+      if (_classPrivateFieldLooseBase(this, _oldValues$2)[_oldValues$2]) {
+        _classPrivateFieldLooseBase(this, _processLoginArray)[_processLoginArray](_classPrivateFieldLooseBase(this, _oldValues$2)[_oldValues$2]);
+      }
+
+      _classPrivateFieldLooseBase(this, _oldValues$2)[_oldValues$2] = null;
+    }
+
+  }
+
+  var _processOUL2 = function _processOUL2(profileArr) {
+    var _this = this;
+
+    let sendOULFlag = true;
+    StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, sendOULFlag);
+
+    const addToK = function (ids) {
+      let customIdFlag = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
+      let k = StorageManager.readFromLSorCookie(KCOOKIE_NAME);
+      const g = StorageManager.readFromLSorCookie(GCOOKIE_NAME);
+      let kId;
+
+      if (k == null) {
+        k = {};
+        kId = ids;
+      } else {
+        /* check if already exists */
+        kId = k.id;
+        let anonymousUser = false;
+        let foundInCache = false;
+
+        if (kId == null) {
+          kId = ids[0];
+          anonymousUser = true;
+        }
+
+        if ($ct.LRU_CACHE == null && StorageManager._isLocalStorageSupported()) {
+          $ct.LRU_CACHE = new LRUCache(LRU_CACHE_SIZE);
+        }
+
+        if (anonymousUser) {
+          if (g != null) {
+            // if have gcookie
+            $ct.LRU_CACHE.set(kId, g);
+            $ct.blockRequest = false;
+          }
+        } else {
+          // check if the id is present in the cache
+          // set foundInCache to true
+          for (const idx in ids) {
+            if (ids.hasOwnProperty(idx)) {
+              const id = ids[idx];
+
+              if ($ct.LRU_CACHE.cache[id]) {
+                kId = id;
+                foundInCache = true;
+                break;
+              }
+            }
+          }
+        }
+
+        if (foundInCache) {
+          if (kId !== $ct.LRU_CACHE.getLastKey()) {
+            // New User found
+            // remove the entire cache
+            _classPrivateFieldLooseBase(_this, _handleCookieFromCache)[_handleCookieFromCache]();
+          } else {
+            sendOULFlag = false;
+            StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, sendOULFlag);
+          }
+
+          const gFromCache = $ct.LRU_CACHE.get(kId);
+          $ct.LRU_CACHE.set(kId, gFromCache);
+          StorageManager.saveToLSorCookie(GCOOKIE_NAME, gFromCache); // Only override gcookie if we don't have a customId
+
+          if (!customIdFlag) {
+            _classPrivateFieldLooseBase(_this, _device$2)[_device$2].gcookie = gFromCache;
+          }
+
+          const lastK = $ct.LRU_CACHE.getSecondLastKey();
+
+          if (StorageManager.readFromLSorCookie(FIRE_PUSH_UNREGISTERED) && lastK !== -1) {
+            // CACHED OLD USER FOUND. TRANSFER PUSH TOKEN TO THIS USER
+            const lastGUID = $ct.LRU_CACHE.cache[lastK];
+
+            _classPrivateFieldLooseBase(_this, _request$4)[_request$4].unregisterTokenForGuid(lastGUID);
+          }
+        } else {
+          if (!anonymousUser && !customIdFlag) {
+            _this.clear();
+          } else {
+            if (g != null && !customIdFlag) {
+              _classPrivateFieldLooseBase(_this, _device$2)[_device$2].gcookie = g;
+              StorageManager.saveToLSorCookie(GCOOKIE_NAME, g);
+              sendOULFlag = false;
+            }
+          }
+
+          StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, false);
+          kId = ids[0];
+        }
+      }
+
+      k.id = kId;
+      StorageManager.saveToLSorCookie(KCOOKIE_NAME, k);
+    };
+
+    if (Array.isArray(profileArr) && profileArr.length > 0) {
+      for (const index in profileArr) {
+        if (profileArr.hasOwnProperty(index)) {
+          const outerObj = profileArr[index];
+          let data = {};
+          let profileObj;
+
+          if (outerObj.Site != null) {
+            // organic data from the site
+            profileObj = outerObj.Site;
+
+            if (isObjectEmpty(profileObj) || !isProfileValid(profileObj, {
+              logger: _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]
+            })) {
+              return;
+            }
+          } else if (outerObj.Facebook != null) {
+            // fb connect data
+            const FbProfileObj = outerObj.Facebook; // make sure that the object contains any data at all
+
+            if (!isObjectEmpty(FbProfileObj) && !FbProfileObj.error) {
+              profileObj = processFBUserObj(FbProfileObj);
+            }
+          } else if (outerObj['Google Plus'] != null) {
+            const GPlusProfileObj = outerObj['Google Plus'];
+
+            if (isObjectEmpty(GPlusProfileObj) && !GPlusProfileObj.error) {
+              profileObj = processGPlusUserObj(GPlusProfileObj, {
+                logger: _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]
+              });
+            }
+          }
+
+          if (profileObj != null && !isObjectEmpty(profileObj)) {
+            // profile got set from above
+            let hasCustomId = false;
+            data.type = 'profile';
+
+            if (profileObj.tz == null) {
+              // try to auto capture user timezone if not present
+              profileObj.tz = new Date().toString().match(/([A-Z]+[\+-][0-9]+)/)[1];
+            } // Handle customId field for setting custom CleverTap ID.
+
+
+            if (profileObj.customId) {
+              const result = validateCustomCleverTapID(profileObj.customId);
+
+              if (result.isValid) {
+                hasCustomId = true; // Set the custom ID as gcookie
+
+                _classPrivateFieldLooseBase(this, _device$2)[_device$2].gcookie = result.sanitizedId;
+                StorageManager.saveToLSorCookie(GCOOKIE_NAME, result.sanitizedId);
+
+                _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].debug('customId set for OUL flow:: ' + result.sanitizedId);
+              } else {
+                _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].error('Invalid customId: ' + result.error);
+              }
+
+              delete profileObj.customId;
+            } else if ('customId' in profileObj) {
+              // Key present but falsy (e.g. '', 0) — remove so it is not sent as a profile field
+              delete profileObj.customId;
+            }
+
+            data.profile = profileObj;
+            const ids = [];
+
+            if (StorageManager._isLocalStorageSupported()) {
+              if (profileObj.Identity) {
+                ids.push(profileObj.Identity);
+              }
+
+              if (profileObj.Email) {
+                ids.push(profileObj.Email);
+              }
+
+              if (profileObj.GPID) {
+                ids.push('GP:' + profileObj.GPID);
+              }
+
+              if (profileObj.FBID) {
+                ids.push('FB:' + profileObj.FBID);
+              }
+
+              if (ids.length > 0) {
+                addToK(ids, hasCustomId);
+              }
+            }
+
+            addToLocalProfileMap(profileObj, true);
+            data = _classPrivateFieldLooseBase(this, _request$4)[_request$4].addSystemDataToObject(data, undefined);
+
+            _classPrivateFieldLooseBase(this, _request$4)[_request$4].addFlags(data); // Adding 'isOUL' flag in true for OUL cases which.
+            // This flag tells LC to create a new arp object.
+            // Also we will receive the same flag in response arp which tells to delete existing arp object.
+
+
+            if (sendOULFlag) {
+              data[IS_OUL] = true;
+            }
+
+            const compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]);
+
+            let pageLoadUrl = _classPrivateFieldLooseBase(this, _account$5)[_account$5].dataPostURL;
+
+            pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH);
+            pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData); // Whenever sendOULFlag is true then dont send arp and gcookie (guid in memory in the request)
+            // Also when this flag is set we will get another flag from LC in arp which tells us to delete arp
+            // stored in the cache and replace it with the response arp.
+
+            _classPrivateFieldLooseBase(this, _request$4)[_request$4].saveAndFireRequest(pageLoadUrl, $ct.blockRequest, sendOULFlag);
+          }
+        }
+      }
+    }
+  };
+
+  var _handleCookieFromCache2 = function _handleCookieFromCache2() {
+    $ct.blockRequest = false;
+    console.debug('Block request is false');
+
+    if (StorageManager._isLocalStorageSupported()) {
+      delete localStorage[PR_COOKIE];
+      delete localStorage[EV_COOKIE];
+      delete localStorage[META_COOKIE];
+      delete localStorage[ARP_COOKIE];
+      delete localStorage[CAMP_COOKIE_NAME];
+      delete localStorage[CHARGEDID_COOKIE_NAME];
+    }
+
+    StorageManager.removeCookie(CAMP_COOKIE_NAME, getHostName());
+    StorageManager.removeCookie(_classPrivateFieldLooseBase(this, _session$2)[_session$2].cookieName, $ct.broadDomain);
+    StorageManager.removeCookie(ARP_COOKIE, $ct.broadDomain);
+
+    _classPrivateFieldLooseBase(this, _session$2)[_session$2].setSessionCookieObject('');
+  };
+
+  var _deleteUser2 = function _deleteUser2() {
+    $ct.blockRequest = true;
+
+    _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].debug('Block request is true');
+
+    $ct.globalCache = {
+      gcookie: null,
+      REQ_N: 0,
+      RESP_N: 0
+    };
+
+    if (StorageManager._isLocalStorageSupported()) {
+      delete localStorage[GCOOKIE_NAME];
+      delete localStorage[KCOOKIE_NAME];
+      delete localStorage[PR_COOKIE];
+      delete localStorage[EV_COOKIE];
+      delete localStorage[META_COOKIE];
+      delete localStorage[ARP_COOKIE];
+      delete localStorage[CAMP_COOKIE_NAME];
+      delete localStorage[CHARGEDID_COOKIE_NAME];
+    }
+
+    StorageManager.removeCookie(GCOOKIE_NAME, $ct.broadDomain);
+    StorageManager.removeCookie(CAMP_COOKIE_NAME, getHostName());
+    StorageManager.removeCookie(KCOOKIE_NAME, getHostName());
+    StorageManager.removeCookie(_classPrivateFieldLooseBase(this, _session$2)[_session$2].cookieName, $ct.broadDomain);
+    StorageManager.removeCookie(ARP_COOKIE, $ct.broadDomain);
+    _classPrivateFieldLooseBase(this, _device$2)[_device$2].gcookie = null;
+
+    _classPrivateFieldLooseBase(this, _session$2)[_session$2].setSessionCookieObject('');
+  };
+
+  var _processLoginArray2 = function _processLoginArray2(loginArr) {
+    if (Array.isArray(loginArr) && loginArr.length > 0) {
+      const profileObj = loginArr.pop();
+      const processProfile = profileObj != null && isObject(profileObj) && (profileObj.Site != null && Object.keys(profileObj.Site).length > 0 || profileObj.Facebook != null && Object.keys(profileObj.Facebook).length > 0 || profileObj['Google Plus'] != null && Object.keys(profileObj['Google Plus']).length > 0);
+
+      if (processProfile) {
+        StorageManager.setInstantDeleteFlagInK();
+
+        try {
+          _classPrivateFieldLooseBase(this, _processOUL)[_processOUL]([profileObj]);
+        } catch (e) {
+          _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].debug(e);
+        }
+      } else {
+        _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].error('Profile object is in incorrect format');
+      }
+    }
+  };
+
+  const getBoxPromptStyles = style => {
+    const totalBorderWidth = style.card.borderEnabled ? style.card.border.borderWidth * 2 : 0;
+    const cardPadding = 16 * 2; // Left and right padding
+
+    const cardContentWidth = 360 - cardPadding - totalBorderWidth;
+    return "\n    #pnWrapper {\n      width: 360px;\n      font-family: proxima-nova, Arial, sans-serif;\n    }\n    \n    #pnWrapper * {\n       margin: 0px;\n       padding: 0px;\n       text-align: left;\n    }\n    ".concat(style.overlay.enabled ? "#pnOverlay {\n      background-color: ".concat(style.overlay.color || 'rgba(0, 0, 0, .15)', ";\n      position: fixed;\n      left: 0;\n      right: 0;\n      top: 0;\n      bottom: 0;\n      z-index: 10000\n    }\n") : '', "\n    #pnCard {\n      background-color: ").concat(style.card.color, ";\n      border-radius: ").concat(style.card.borderRadius, "px;\n      padding: 16px;\n      width: ").concat(cardContentWidth, "px;\n      position: fixed;\n      z-index: 999999;\n      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);\n      ").concat(style.card.borderEnabled ? "\n        border-width: ".concat(style.card.border.borderWidth, "px;\n        border-color: ").concat(style.card.border.borderColor, ";\n        border-style: solid;\n      ") : '', "\n      height: fit-content;\n    }\n\n    #iconTitleDescWrapper {\n      display: flex;\n      align-items: center;\n      margin-bottom: 16px;\n      gap: 12px;\n    }\n\n    #iconContainer {\n      min-width: 64px;\n      max-width: 64px;\n      aspect-ratio: 1;\n      object-fit: cover;\n    }\n\n    #titleDescWrapper {\n      flex-grow: 1;\n      overflow: hidden;\n      overflow-wrap: break-word;\n    }\n\n    #title {\n      font-size: 16px;\n      font-weight: 700;\n      color: ").concat(style.text.titleColor, ";\n      margin-bottom: 4px;\n      line-height: 24px;\n    }\n\n    #description {\n      font-size: 14px;\n      font-weight: 500;\n      color: ").concat(style.text.descriptionColor, ";\n      line-height: 20px;\n    }\n\n    #buttonsContainer {\n      display: flex;\n      justify-content: space-between;\n      min-height: 32px;\n      gap: 8px;\n      align-items: center;\n    }\n\n    #primaryButton, #secondaryButton {\n      padding: 6px 24px;\n      flex: 1;\n      cursor: pointer;\n      font-weight: bold;\n      display: flex;\n      align-items: center;\n      justify-content: center;\n      height: max-content;\n      font-size: 14px;\n      font-weight: 500;\n      line-height: 20px;\n      text-align: center;\n    }\n\n    #primaryButton {\n      background-color: ").concat(style.buttons.primaryButton.buttonColor, ";\n      color: ").concat(style.buttons.primaryButton.textColor, ";\n      border-radius: ").concat(style.buttons.primaryButton.borderRadius, "px;\n      ").concat(style.buttons.primaryButton.borderEnabled ? "\n          border-width: ".concat(style.buttons.primaryButton.border.borderWidth, "px;\n          border-color: ").concat(style.buttons.primaryButton.border.borderColor, ";\n          border-style: solid;\n        ") : 'border: none;', "\n    }\n\n    #secondaryButton {\n      background-color: ").concat(style.buttons.secondaryButton.buttonColor, ";\n      color: ").concat(style.buttons.secondaryButton.textColor, ";\n      border-radius: ").concat(style.buttons.secondaryButton.borderRadius, "px;\n      ").concat(style.buttons.secondaryButton.borderEnabled ? "\n          border-width: ".concat(style.buttons.secondaryButton.border.borderWidth, "px;\n          border-color: ").concat(style.buttons.secondaryButton.border.borderColor, ";\n          border-style: solid;\n        ") : 'border: none;', "\n    }\n\n    #primaryButton:hover, #secondaryButton:hover {\n      opacity: 0.9;\n    }\n  ");
+  };
+  const getBellIconStyles = style => {
+    return "\n    #bell_wrapper {\n      position: fixed;\n      cursor: pointer;\n      background-color: ".concat(style.card.backgroundColor, ";\n      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);\n      width: 48px;\n      height: 48px;\n      border-radius: 50%;\n      display: flex;\n      flex-direction: column;\n      gap: 8px;\n      z-index: 999999;\n    }\n\n    #bell_icon {\n      display: block;\n      width: 48px;\n      height: 48px;\n    }\n\n    #bell_wrapper:hover {\n      transform: scale(1.05);\n      transition: transform 0.2s ease-in-out;\n    }\n\n    #bell_tooltip {\n      display: none;\n      background-color: #2b2e3e;\n      color: #fff;\n      border-radius: 4px;\n      padding: 4px;\n      white-space: nowrap;\n      pointer-events: none;\n      font-size: 14px;\n      line-height: 1.4;\n    }\n\n    #gif_modal {\n      display: none;\n      background-color: #ffffff;\n      padding: 4px;\n      width: 400px;\n      height: 256px;\n      border-radius: 4px;\n      position: relative;\n      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);\n      cursor: default;\n    }\n\n    #gif_image {\n      object-fit: contain;\n      width: 100%;\n      height: 100%;\n    }\n\n    #close_modal {\n      position: absolute;\n      width: 24px;\n      height: 24px;\n      top: 8px;\n      right: 8px;\n      background: rgba(238, 238, 238, 0.8);\n      text-align: center;\n      line-height: 20px;\n      border-radius: 4px;\n      color: #000000;\n      font-size: 22px;\n      cursor: pointer;\n    }\n  ");
+  };
 
   var _oldValues$1 = _classPrivateFieldLooseKey("oldValues");
 
@@ -11067,7 +12724,7 @@
 
       if ($ct.webPushEnabled && $ct.notifApi.notifEnabledFromApi) {
         _classPrivateFieldLooseBase(this, _handleNotificationRegistration)[_handleNotificationRegistration]($ct.notifApi.displayArgs);
-      } else if (!$ct.webPushEnabled && $ct.notifApi.notifEnabledFromApi) ;
+      }
     }
 
   }
@@ -12116,107 +13773,6 @@
     LOCAL: 'localhost'
   };
 
-  const logLevels = {
-    DISABLE: 0,
-    ERROR: 1,
-    INFO: 2,
-    DEBUG: 3,
-    DEBUG_PE: 4
-  };
-
-  var _logLevel = _classPrivateFieldLooseKey("logLevel");
-
-  var _log = _classPrivateFieldLooseKey("log");
-
-  var _isLegacyDebug = _classPrivateFieldLooseKey("isLegacyDebug");
-
-  class Logger {
-    constructor(logLevel) {
-      Object.defineProperty(this, _isLegacyDebug, {
-        get: _get_isLegacyDebug,
-        set: void 0
-      });
-      Object.defineProperty(this, _log, {
-        value: _log2
-      });
-      Object.defineProperty(this, _logLevel, {
-        writable: true,
-        value: void 0
-      });
-      this.wzrkError = {};
-
-      // Singleton pattern - return existing instance if it exists
-      if (Logger.instance) {
-        return Logger.instance;
-      }
-
-      _classPrivateFieldLooseBase(this, _logLevel)[_logLevel] = logLevel == null ? logLevels.INFO : logLevel;
-      this.wzrkError = {};
-      Logger.instance = this;
-    } // Static method for explicit singleton access
-
-
-    static getInstance(logLevel) {
-      if (!Logger.instance) {
-        Logger.instance = new Logger(logLevel);
-      }
-
-      return Logger.instance;
-    }
-
-    get logLevel() {
-      return _classPrivateFieldLooseBase(this, _logLevel)[_logLevel];
-    }
-
-    set logLevel(logLevel) {
-      _classPrivateFieldLooseBase(this, _logLevel)[_logLevel] = logLevel;
-    }
-
-    error(message) {
-      if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.ERROR) {
-        _classPrivateFieldLooseBase(this, _log)[_log]('error', message);
-      }
-    }
-
-    info(message) {
-      if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.INFO) {
-        _classPrivateFieldLooseBase(this, _log)[_log]('log', message);
-      }
-    }
-
-    debug(message) {
-      if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.DEBUG || _classPrivateFieldLooseBase(this, _isLegacyDebug)[_isLegacyDebug]) {
-        _classPrivateFieldLooseBase(this, _log)[_log]('debug', message);
-      }
-    }
-
-    debugPE(message) {
-      if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.DEBUG_PE) {
-        _classPrivateFieldLooseBase(this, _log)[_log]('debug_pe', message);
-      }
-    }
-
-    reportError(code, description) {
-      this.wzrkError.c = code;
-      this.wzrkError.d = description;
-      this.error("".concat(CLEVERTAP_ERROR_PREFIX, " ").concat(code, ": ").concat(description));
-    }
-
-  }
-
-  var _log2 = function _log2(level, message) {
-    if (window.console) {
-      try {
-        const ts = new Date().getTime();
-        console[level]("CleverTap [".concat(ts, "]: ").concat(message));
-      } catch (e) {}
-    }
-  };
-
-  var _get_isLegacyDebug = function () {
-    return typeof sessionStorage !== 'undefined' && sessionStorage.WZRK_D === '';
-  };
-
   const renderPopUpImageOnly = (targetingMsgJson, _session) => {
     const divId = 'wzrkImageOnlyDiv';
     const popupImageOnly = document.createElement('ct-web-popup-imageonly');
@@ -12482,6 +14038,10 @@
       this.shadow = this.attachShadow({
         mode: 'open'
       });
+    }
+
+    getShadowRoot() {
+      return this.shadow;
     }
 
     get target() {
@@ -12858,7 +14418,7 @@
       selectedCategoryBorderColor,
       headerCategoryHeight
     } = _ref2;
-    return "\n      <style id=\"webInboxStyles\">\n        #inbox {\n          width: 100%;\n          position: fixed;\n          background-color: #fff; \n          display: none; \n          box-shadow: 0px 2px 10px 0px #d7d7d791;\n          background-color: ".concat(panelBackgroundColor, "; \n          border: 1px solid ").concat(panelBorderColor, ";\n          top: 0;\n          left: 0;\n          height: 100%;\n          overflow: auto;\n          z-index: 1;\n          box-sizing: content-box;\n          border-radius: 4px;\n        }\n  \n        #emptyInboxMsg {\n          display: block;\n          padding: 10px;\n          text-align: center;\n          color: black;\n        }\n  \n        #header {\n          height: 36px; \n          width: 100%; \n          display: flex; \n          justify-content: center; \n          align-items: center; \n          background-color: ").concat(headerBackgroundColor, "; \n          background-color: var(--card-bg, ").concat(headerBackgroundColor, ");\n          color: ").concat(headerTitleColor, ";\n          position: sticky;\n          top: 0;\n        }\n  \n        #closeInbox {\n          font-size: 20px; \n          margin-right: 12px; \n          color: ").concat(closeIconColor, "; \n          cursor: pointer;\n        }\n  \n        #headerTitle {\n          font-size: 14px; \n          line-height: 20px; \n          flex-grow: 1; \n          font-weight: 700; \n          text-align: center;\n          flex-grow: 1;\n          text-align: center;\n        }\n  \n        #categoriesContainer {\n          padding: 16px 16px 0 16px; \n          height: 32px; \n          display: flex;\n          scroll-behavior: smooth;\n          position: relative;\n          z-index: -1;\n        }\n\n        #categoriesWrapper {\n          height: 32px; \n          overflow-x: scroll;\n          display: flex;\n          white-space: nowrap;\n          scrollbar-width: none;\n        }\n\n        #categoriesWrapper::-webkit-scrollbar {\n          display: none;\n        }\n  \n        #leftArrow, #rightArrow {\n          height: 32px;\n          align-items: center;\n          font-weight: 700;\n          position: absolute;\n          z-index: 2;\n          pointer-events: auto;\n          cursor: pointer;\n          display: none;\n        }\n\n        #leftArrow {\n          left: 0;\n          padding-left: 4px;\n          padding-right: 16px;\n          background: linear-gradient(90deg, ").concat(panelBackgroundColor, " 0%, ").concat(panelBackgroundColor, "99 80%, ").concat(panelBackgroundColor, "0d 100%);\n        }\n\n        #rightArrow {\n          right: 0;\n          padding-right: 4px;\n          padding-left: 16px;\n          background: linear-gradient(-90deg, ").concat(panelBackgroundColor, " 0%, ").concat(panelBackgroundColor, "99 80%, ").concat(panelBackgroundColor, "0d 100%);\n        }\n\n        [id^=\"category-\"] {\n          display: flex; \n          flex: 1 1 0; \n          justify-content: center; \n          align-items: center; \n          font-size: 14px; \n          line-height: 20px; \n          background-color: ").concat(categoriesTabColor, "; \n          color: ").concat(categoriesTitleColor, "; \n          cursor: pointer;\n          padding: 6px 24px;\n          margin: 0 3px;\n          border-radius: 16px;\n          border: ").concat(categoriesBorderColor ? '1px solid ' + categoriesBorderColor : 'none', ";\n        }\n\n        [id^=\"category-\"][selected=\"true\"] {\n          background-color: ").concat(selectedCategoryTabColor, "; \n          color: ").concat(selectedCategoryTitleColor, "; \n          border: ").concat(selectedCategoryBorderColor ? '1px solid ' + selectedCategoryBorderColor : 'none', "\n        }\n  \n        #inboxCard {\n          padding: 0 16px 0 16px;\n          overflow-y: auto;\n          box-sizing: border-box;\n          margin-top: 16px;\n          height: 100%;\n          overflow: scroll;\n        }\n\n        @media only screen and (min-width: 480px) {\n          #inbox {\n            width: var(--inbox-width, 392px);\n            height: var(--inbox-height, 546px);\n            position: var(--inbox-position, fixed);\n            right: var(--inbox-right, unset);\n            bottom: var(--inbox-bottom, unset);\n            top: var(--inbox-top, unset);\n            left: var(--inbox-left, unset);\n          }\n  \n          #inboxCard {\n            height: calc(var(--inbox-height, 546px) - ").concat(headerCategoryHeight, "px); \n          }\n  \n        }\n      </style>\n      ");
+    return "\n      <style id=\"webInboxStyles\">\n        #inbox {\n          width: 100%;\n          position: fixed;\n          background-color: #fff; \n          display: none; \n          box-shadow: 0px 2px 10px 0px #d7d7d791;\n          background-color: ".concat(panelBackgroundColor, "; \n          border: 1px solid ").concat(panelBorderColor, ";\n          top: 0;\n          left: 0;\n          height: 100%;\n          overflow: auto;\n          z-index: 1;\n          box-sizing: content-box;\n          border-radius: 4px;\n        }\n  \n        #emptyInboxMsg {\n          display: block;\n          padding: 10px;\n          text-align: center;\n          color: black;\n        }\n  \n        #header {\n          height: 36px; \n          width: 100%; \n          display: flex; \n          justify-content: center; \n          align-items: center; \n          background-color: ").concat(headerBackgroundColor, "; \n          background-color: var(--card-bg, ").concat(headerBackgroundColor, ");\n          color: ").concat(headerTitleColor, ";\n          position: sticky;\n          top: 0;\n        }\n  \n        #closeInbox {\n          font-size: 20px; \n          margin-right: 6px; \n          color: ").concat(closeIconColor, "; \n          cursor: pointer;\n          height: 24px;\n          width: 24px;\n          text-align: center;\n          line-height: 24px;\n          border-radius: 50%;\n        }\n  \n        #headerTitle {\n          font-size: 14px; \n          line-height: 20px; \n          flex-grow: 1; \n          font-weight: 700; \n          text-align: center;\n          flex-grow: 1;\n          text-align: center;\n        }\n  \n        #categoriesContainer {\n          padding: 16px 16px 0 16px; \n          height: 32px; \n          display: flex;\n          scroll-behavior: smooth;\n          position: relative;\n          z-index: -1;\n        }\n\n        #categoriesWrapper {\n          height: 32px; \n          overflow-x: scroll;\n          display: flex;\n          white-space: nowrap;\n          scrollbar-width: none;\n        }\n\n        #categoriesWrapper::-webkit-scrollbar {\n          display: none;\n        }\n  \n        #leftArrow, #rightArrow {\n          height: 32px;\n          align-items: center;\n          font-weight: 700;\n          position: absolute;\n          z-index: 2;\n          pointer-events: auto;\n          cursor: pointer;\n          display: none;\n        }\n\n        #leftArrow {\n          left: 0;\n          padding-left: 4px;\n          padding-right: 16px;\n          background: linear-gradient(90deg, ").concat(panelBackgroundColor, " 0%, ").concat(panelBackgroundColor, "99 80%, ").concat(panelBackgroundColor, "0d 100%);\n        }\n\n        #rightArrow {\n          right: 0;\n          padding-right: 4px;\n          padding-left: 16px;\n          background: linear-gradient(-90deg, ").concat(panelBackgroundColor, " 0%, ").concat(panelBackgroundColor, "99 80%, ").concat(panelBackgroundColor, "0d 100%);\n        }\n\n        [id^=\"category-\"] {\n          display: flex; \n          flex: 1 1 0; \n          justify-content: center; \n          align-items: center; \n          font-size: 14px; \n          line-height: 20px; \n          background-color: ").concat(categoriesTabColor, "; \n          color: ").concat(categoriesTitleColor, "; \n          cursor: pointer;\n          padding: 6px 24px;\n          margin: 0 3px;\n          border-radius: 16px;\n          border: ").concat(categoriesBorderColor ? '1px solid ' + categoriesBorderColor : 'none', ";\n        }\n\n        [id^=\"category-\"][selected=\"true\"] {\n          background-color: ").concat(selectedCategoryTabColor, "; \n          color: ").concat(selectedCategoryTitleColor, "; \n          border: ").concat(selectedCategoryBorderColor ? '1px solid ' + selectedCategoryBorderColor : 'none', "\n        }\n  \n        #inboxCard {\n          padding: 0 16px 0 16px;\n          overflow-y: auto;\n          box-sizing: border-box;\n          margin-top: 16px;\n          height: 100%;\n          overflow: scroll;\n        }\n\n        @media only screen and (min-width: 480px) {\n          #inbox {\n            width: var(--inbox-width, 392px);\n            height: var(--inbox-height, 546px);\n            position: var(--inbox-position, fixed);\n            right: var(--inbox-right, unset);\n            bottom: var(--inbox-bottom, unset);\n            top: var(--inbox-top, unset);\n            left: var(--inbox-left, unset);\n          }\n  \n          #inboxCard {\n            height: calc(var(--inbox-height, 546px) - ").concat(headerCategoryHeight, "px); \n          }\n  \n        }\n      </style>\n      ");
   };
 
   class Inbox extends HTMLElement {
@@ -13521,27 +15081,35 @@
   };
 
   const getInboxMessages = () => {
-    const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
+    try {
+      const guid = safeJSONParse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)), null);
 
-    if (!isValueValid(guid)) {
+      if (!isValueValid(guid)) {
+        return {};
+      }
+
+      const messages = getAndMigrateInboxMessages(guid);
+      return messages.hasOwnProperty(guid) ? messages[guid] : {};
+    } catch (e) {
       return {};
     }
-
-    const messages = getAndMigrateInboxMessages(guid);
-    return messages.hasOwnProperty(guid) ? messages[guid] : {};
   };
   const saveInboxMessages = messages => {
-    const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
+    try {
+      const guid = safeJSONParse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)), null);
 
-    if (!isValueValid(guid)) {
-      return;
+      if (!isValueValid(guid)) {
+        return;
+      }
+
+      const storedInboxObj = getAndMigrateInboxMessages(guid);
+      const newObj = { ...storedInboxObj,
+        [guid]: messages
+      };
+      StorageManager.saveToLSorCookie(WEBINBOX, newObj);
+    } catch (e) {
+      Logger.getInstance().error('Error saving inbox messages:', e.message);
     }
-
-    const storedInboxObj = getAndMigrateInboxMessages(guid);
-    const newObj = { ...storedInboxObj,
-      [guid]: messages
-    };
-    StorageManager.saveToLSorCookie(WEBINBOX, newObj);
   };
   const initializeWebInbox = logger => {
     return new Promise((resolve, reject) => {
@@ -13757,7 +15325,16 @@
       // Update the element style
       if (formStyle.style !== undefined) {
         Object.keys(formStyle.style).forEach(property => {
-          element.style.setProperty(property, formStyle.style[property]);
+          // Normalize property name (convert camelCase to kebab-case if needed)
+          const normalizedProperty = property.replace(/([A-Z])/g, '-$1').toLowerCase();
+          const value = formStyle.style[property]; // Use !important for display and visibility properties to ensure hide/show logic works
+          // even when there are conflicting CSS rules with !important
+
+          if (normalizedProperty === 'display' || normalizedProperty === 'visibility') {
+            element.style.setProperty(normalizedProperty, value, 'important');
+          } else {
+            element.style.setProperty(normalizedProperty, value);
+          }
         });
       } // Update underline for element
 
@@ -13793,11 +15370,43 @@
 
           window.location.href = url;
         };
-      } // Set the image source
+      } // Handle both img and picture elements
 
 
-      if (formStyle.imgURL !== undefined && element.tagName.toLowerCase() === 'img') {
-        element.src = formStyle.imgURL;
+      const tagName = element.tagName.toLowerCase();
+
+      if (tagName === 'img' || tagName === 'picture') {
+        // For picture elements, get the nested img element; for img elements, use directly
+        const imgElement = tagName === 'picture' ? element.querySelector('img') : element;
+
+        if (imgElement) {
+          // Set the image source
+          if (formStyle.imgURL !== undefined) {
+            imgElement.src = formStyle.imgURL;
+          } // Set or remove srcset attribute
+
+
+          if (formStyle.imgSrcset !== undefined) {
+            if (formStyle.imgSrcset) {
+              // Non-empty string: set the srcset attribute
+              imgElement.setAttribute('srcset', formStyle.imgSrcset);
+            } else {
+              // Empty string: remove the srcset attribute
+              imgElement.removeAttribute('srcset');
+            }
+          } // Set or remove sizes attribute
+
+
+          if (formStyle.imgSizes !== undefined) {
+            if (formStyle.imgSizes) {
+              // Non-empty string: set the sizes attribute
+              imgElement.setAttribute('sizes', formStyle.imgSizes);
+            } else {
+              // Empty string: remove the sizes attribute
+              imgElement.removeAttribute('sizes');
+            }
+          }
+        }
       }
     }
   };
@@ -13849,7 +15458,7 @@
         case WVE_QUERY_PARAMS.SDK_CHECK:
           if (parentWindow) {
             logger.debug('SDK version check');
-            const sdkVersion = '2.3.0';
+            const sdkVersion = '2.5.5';
             parentWindow.postMessage({
               message: 'SDKVersion',
               accountId,
@@ -14139,6 +15748,11 @@
         sibling
       } = findSiblingSelector(selector.selector);
       let count = 0;
+      $ct.intervalArray.forEach(interval => {
+        if (typeof interval === 'string' && interval.startsWith('addNewEl-')) {
+          clearInterval(parseInt(interval.split('-')[1], 10));
+        }
+      });
       const intervalId = setInterval(() => {
         let element = null;
 
@@ -14151,6 +15765,7 @@
         }
 
         if (element) {
+          clearInterval(intervalId);
           const tempDiv = document.createElement('div');
           tempDiv.innerHTML = selector.values.initialHtml;
           const newElement = tempDiv.firstElementChild;
@@ -14160,17 +15775,15 @@
             element.setAttribute('ct-selector', sibling);
           }
 
-          const insertedElement = document.querySelector("[ct-selector=\"".concat(selector.selector, "\"]"));
           raiseViewed();
-          processElement(insertedElement, selector);
-          clearInterval(intervalId);
+          processElement(newElement, selector);
           checkAndApplyReorder(); // Check if we can apply reordering now
         } else if (++count >= 20) {
           logger.debug("No element present on DOM with selector '".concat(sibling, "'."));
           clearInterval(intervalId);
         }
       }, 500);
-      $ct.intervalArray.push(intervalId);
+      $ct.intervalArray.push("addNewEl-".concat(intervalId));
     };
 
     if (insertedElements.length > 0) {
@@ -15375,6 +16988,12 @@
         html = appendScriptForCustomEvent(targetingMsgJson, html);
       }
 
+      const enableTVControls = StorageManager.readFromLSorCookie(ENABLE_TV_CONTROLS);
+
+      if (enableTVControls) {
+        html = appendTVNavigationScript(targetingMsgJson, html);
+      }
+
       iframe.srcdoc = html; // Adjusts iframe height based on content
 
       const adjustIFrameHeight = () => {
@@ -15483,30 +17102,62 @@
         }
       } else {
         window.clevertap.popupCurrentWzrkId = targetingMsgJson.wzrk_id; // Handles delivery triggers (inactivity, scroll, exit intent, delay)
+        // When multiple triggers are set, whichever fires first renders the campaign
+        // and all other triggers are cleaned up to prevent duplicate renders
 
         if (displayObj.deliveryTrigger) {
+          const triggerCleanups = [];
+          let delayTimeoutId = null;
+          let hasRendered = false; // Cleans up all triggers to prevent duplicate renders
+
+          const cleanupAllTriggers = () => {
+            triggerCleanups.forEach(cleanup => {
+              if (typeof cleanup === 'function') cleanup();
+            });
+
+            if (delayTimeoutId) {
+              clearTimeout(delayTimeoutId);
+              delayTimeoutId = null;
+            }
+          }; // Coordinated render function - renders once and cleans up all triggers
+
+
+          const renderOnceAndCleanup = () => {
+            if (hasRendered) return;
+            hasRendered = true;
+            cleanupAllTriggers();
+            this.renderFooterNotification(targetingMsgJson, exitintentObj);
+          };
+
           if (displayObj.deliveryTrigger.inactive) {
-            this.triggerByInactivity(targetingMsgJson);
+            triggerCleanups.push(this.triggerByInactivity(targetingMsgJson, renderOnceAndCleanup));
           }
 
           if (displayObj.deliveryTrigger.scroll) {
-            this.triggerByScroll(targetingMsgJson);
+            triggerCleanups.push(this.triggerByScroll(targetingMsgJson, renderOnceAndCleanup));
           }
 
           if (displayObj.deliveryTrigger.isExitIntent) {
             exitintentObj = targetingMsgJson;
-            /* Show it only once per callback */
 
-            const handleMouseLeave = this.createExitIntentMouseLeaveHandler(targetingMsgJson, exitintentObj);
+            const handleMouseLeave = event => {
+              if (hasRendered) return;
+              const wasRendered = this.showExitIntent(event, targetingMsgJson, null, exitintentObj);
+
+              if (wasRendered) {
+                hasRendered = true;
+                cleanupAllTriggers();
+              }
+            };
+
             window.document.addEventListener('mouseleave', handleMouseLeave);
+            triggerCleanups.push(() => window.document.removeEventListener('mouseleave', handleMouseLeave));
           }
 
           const delay = displayObj.delay || displayObj.deliveryTrigger.deliveryDelayed;
 
           if (delay != null && delay > 0) {
-            setTimeout(() => {
-              this.renderFooterNotification(targetingMsgJson, exitintentObj);
-            }, delay * 1000);
+            delayTimeoutId = setTimeout(renderOnceAndCleanup, delay * 1000);
           }
         } else {
           this.renderFooterNotification(targetingMsgJson, exitintentObj);
@@ -15580,7 +17231,8 @@
     },
 
     // Triggers campaign based on user inactivity
-    triggerByInactivity(targetNotif) {
+    // onTrigger callback is called when inactivity threshold is met
+    triggerByInactivity(targetNotif, onTrigger) {
       const IDLE_TIME_THRESHOLD = targetNotif.display.deliveryTrigger.inactive * 1000; // Convert to milliseconds
 
       let idleTimer;
@@ -15589,8 +17241,13 @@
       const resetIdleTimer = () => {
         clearTimeout(idleTimer);
         idleTimer = setTimeout(() => {
-          this.renderFooterNotification(targetNotif);
           removeEventListeners();
+
+          if (onTrigger) {
+            onTrigger();
+          } else {
+            this.renderFooterNotification(targetNotif);
+          }
         }, IDLE_TIME_THRESHOLD);
       };
 
@@ -15605,6 +17262,7 @@
       };
 
       const removeEventListeners = () => {
+        clearTimeout(idleTimer);
         events.forEach(eventType => window.removeEventListener(eventType, eventHandler));
       };
 
@@ -15615,7 +17273,8 @@
     },
 
     // Triggers campaign based on scroll percentage
-    triggerByScroll(targetNotif) {
+    // onTrigger callback is called when scroll threshold is met
+    triggerByScroll(targetNotif, onTrigger) {
       const calculateScrollPercentage = () => {
         const {
           scrollHeight,
@@ -15629,8 +17288,13 @@
         const scrollPercentage = calculateScrollPercentage();
 
         if (scrollPercentage >= targetNotif.display.deliveryTrigger.scroll) {
-          this.renderFooterNotification(targetNotif);
           window.removeEventListener('scroll', throttledScrollListener);
+
+          if (onTrigger) {
+            onTrigger();
+          } else {
+            this.renderFooterNotification(targetNotif);
+          }
         }
       };
 
@@ -15790,6 +17454,12 @@
 
       if (targetingMsgJson.display['custom-editor']) {
         html = appendScriptForCustomEvent(targetingMsgJson, html);
+      }
+
+      const enableTVControls = StorageManager.readFromLSorCookie(ENABLE_TV_CONTROLS);
+
+      if (enableTVControls) {
+        html = appendTVNavigationScript(targetingMsgJson, html);
       }
 
       iframe.srcdoc = html;
@@ -16123,13 +17793,21 @@
 
   var _isPersonalisationActive$1 = _classPrivateFieldLooseKey("isPersonalisationActive");
 
+  var _domainSpecification$1 = _classPrivateFieldLooseKey("domainSpecification");
+
+  var _resetSessionCampaignCounters = _classPrivateFieldLooseKey("resetSessionCampaignCounters");
+
   class SessionManager {
     // SCOOKIE_NAME
     constructor(_ref) {
       let {
         logger,
-        isPersonalisationActive
+        isPersonalisationActive,
+        domainSpecification
       } = _ref;
+      Object.defineProperty(this, _resetSessionCampaignCounters, {
+        value: _resetSessionCampaignCounters2
+      });
       Object.defineProperty(this, _logger$4, {
         writable: true,
         value: void 0
@@ -16144,6 +17822,11 @@
       });
       this.cookieName = void 0;
       this.scookieObj = void 0;
+      Object.defineProperty(this, _domainSpecification$1, {
+        writable: true,
+        value: void 0
+      });
+      this.domainSpecification = domainSpecification;
       this.sessionId = StorageManager.getMetaProp('cs');
       _classPrivateFieldLooseBase(this, _logger$4)[_logger$4] = logger;
       _classPrivateFieldLooseBase(this, _isPersonalisationActive$1)[_isPersonalisationActive$1] = isPersonalisationActive;
@@ -16157,30 +17840,43 @@
       _classPrivateFieldLooseBase(this, _sessionId)[_sessionId] = sessionId;
     }
 
+    get domainSpecification() {
+      return _classPrivateFieldLooseBase(this, _domainSpecification$1)[_domainSpecification$1];
+    }
+
+    set domainSpecification(domainSpecification) {
+      _classPrivateFieldLooseBase(this, _domainSpecification$1)[_domainSpecification$1] = domainSpecification;
+    }
+
     getSessionCookieObject() {
       let scookieStr = StorageManager.readCookie(this.cookieName);
       let obj = {};
 
       if (scookieStr != null) {
-        // converting back single quotes to double for JSON parsing - http://www.iandevlin.com/blog/2012/04/html5/cookies-json-localstorage-and-opera
-        scookieStr = scookieStr.replace(singleQuoteRegex, '"');
-        obj = JSON.parse(scookieStr);
+        try {
+          // converting back single quotes to double for JSON parsing - http://www.iandevlin.com/blog/2012/04/html5/cookies-json-localstorage-and-opera
+          scookieStr = scookieStr.replace(singleQuoteRegex, '"'); // Use safe JSON parsing to prevent injection attacks
 
-        if (!isObject(obj)) {
-          obj = {};
-        } else {
-          if (typeof obj.t !== 'undefined') {
-            // check time elapsed since last request
-            const lastTime = obj.t;
-            const now = getNow();
+          obj = safeJSONParse(scookieStr, {});
 
-            if (now - lastTime > SCOOKIE_EXP_TIME_IN_SECS + 60) {
-              // adding 60 seconds to compensate for in-journey requests
-              // ideally the cookie should've died after SCOOKIE_EXP_TIME_IN_SECS but it's still around as we can read
-              // hence we shouldn't use it.
-              obj = {};
+          if (!isObject(obj)) {
+            obj = {};
+          } else {
+            if (typeof obj.t !== 'undefined') {
+              // check time elapsed since last request
+              const lastTime = obj.t;
+              const now = getNow();
+
+              if (now - lastTime > SCOOKIE_EXP_TIME_IN_SECS + 60) {
+                // adding 60 seconds to compensate for in-journey requests
+                // ideally the cookie should've died after SCOOKIE_EXP_TIME_IN_SECS but it's still around as we can read
+                // hence we shouldn't use it.
+                obj = {};
+              }
             }
           }
+        } catch (e) {
+          obj = {};
         }
       }
 
@@ -16190,7 +17886,7 @@
 
     setSessionCookieObject(obj) {
       const objStr = JSON.stringify(obj);
-      StorageManager.createBroadCookie(this.cookieName, objStr, SCOOKIE_EXP_TIME_IN_SECS, getHostName());
+      StorageManager.createBroadCookie(this.cookieName, objStr, SCOOKIE_EXP_TIME_IN_SECS, getHostName(), this.domainSpecification);
     }
 
     manageSession(session) {
@@ -16213,7 +17909,9 @@
             sessionCount = 0;
           }
 
-          StorageManager.setMetaProp('sc', sessionCount + 1);
+          StorageManager.setMetaProp('sc', sessionCount + 1); // Reset session-based campaign counters on new session
+
+          _classPrivateFieldLooseBase(this, _resetSessionCampaignCounters)[_resetSessionCampaignCounters]();
         }
 
         this.sessionId = session;
@@ -16252,6 +17950,32 @@
     }
 
   }
+
+  var _resetSessionCampaignCounters2 = function _resetSessionCampaignCounters2() {
+    try {
+      const campaignObj = getCampaignObject();
+
+      if (campaignObj) {
+        // Reset Web Popup Show Count
+        if (typeof campaignObj.wsc !== 'undefined') {
+          campaignObj.wsc = 0;
+
+          _classPrivateFieldLooseBase(this, _logger$4)[_logger$4].debug('Reset wsc (Web Popup Show Count) to 0 for new session');
+        } // Reset Web Native Display Show Count
+
+
+        if (typeof campaignObj.wndsc !== 'undefined') {
+          campaignObj.wndsc = 0;
+
+          _classPrivateFieldLooseBase(this, _logger$4)[_logger$4].debug('Reset wndsc (Web Native Display Show Count) to 0 for new session');
+        }
+
+        saveCampaignObject(campaignObj);
+      }
+    } catch (error) {
+      _classPrivateFieldLooseBase(this, _logger$4)[_logger$4].error('Failed to reset session campaign counters: ' + error.message);
+    }
+  };
 
   let seqNo = 0;
   let requestTime = 0;
@@ -16352,7 +18076,8 @@
             _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].debug("Processing ".concat(isOULRequest ? 'OUL' : 'regular', " backup event : ").concat(backupEvent.q));
 
             if (typeof backupEvent.q !== 'undefined') {
-              const session = JSON.parse(StorageManager.readCookie(SCOOKIE_PREFIX + '_' + _classPrivateFieldLooseBase(this, _account$3)[_account$3].id));
+              // Use safe JSON parsing to prevent injection attacks
+              const session = safeJSONParse(StorageManager.readCookie(SCOOKIE_PREFIX + '_' + _classPrivateFieldLooseBase(this, _account$3)[_account$3].id), null);
 
               if (session === null || session === void 0 ? void 0 : session.s) {
                 backupEvent.q = backupEvent.q + '&s=' + session.s;
@@ -16396,7 +18121,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v2.3.0',
+        lib: 'web-sdk-v2.5.5',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -17213,6 +18938,1031 @@
     _classPrivateFieldLooseBase(this, _oneTimeVariablesChangedCallbacks)[_oneTimeVariablesChangedCallbacks].length = 0;
   };
 
+  // tvNavigation.js - Universal TV Navigation Singleton for all TV platforms
+
+  const TV_FOCUS_STYLE = '.ct-tv-focused { outline: 3px solid #00ff00 !important; outline-offset: -2px !important; }';
+
+  class TVNavigation {
+    constructor(logger) {
+      if (TVNavigation.instance) {
+        return TVNavigation.instance;
+      }
+
+      this.logger = logger;
+      this.isEnabled = false;
+      this.currentMenu = null;
+      this.focusableElements = [];
+      this.currentFocusIndex = 0;
+      this.shadowNavigation = null;
+      this.inboxNav = null; // Web Inbox navigation state
+      // Universal TV key mappings (standard across all platforms)
+
+      this.keyMappings = {
+        up: 38,
+        down: 40,
+        left: 37,
+        right: 39,
+        enter: 13,
+        back: 10009,
+        // Tizen back key
+        exit: 10182,
+        // Tizen exit key
+        webosBack: 461,
+        // webOS back key
+        webosExit: 27 // webOS exit key (ESC)
+
+      }; // Detect TV platform
+
+      this.platform = this.detectTVPlatform();
+      this.logger.debug('TV Platform detected:', this.platform); // Store singleton instance
+
+      TVNavigation.instance = this;
+    } // Static method to get singleton instance
+
+
+    static getInstance(logger) {
+      if (!TVNavigation.instance) {
+        TVNavigation.instance = new TVNavigation(logger);
+      }
+
+      return TVNavigation.instance;
+    } // Update logger if needed (useful when getting existing instance)
+
+
+    setLogger(logger) {
+      this.logger = logger;
+    } // Detect which TV platform we're running on
+
+
+    detectTVPlatform() {
+      if (typeof window.tizen !== 'undefined') {
+        return 'tizen';
+      }
+
+      if (typeof window.webOS !== 'undefined') {
+        return 'webos';
+      }
+
+      if (typeof window.Samsung !== 'undefined') {
+        return 'samsung';
+      }
+
+      if (typeof window.androidTV !== 'undefined') {
+        return 'androidtv';
+      }
+
+      if (navigator.userAgent.includes('SMART-TV') || navigator.userAgent.includes('SmartTV')) {
+        return 'smarttv';
+      }
+
+      return 'browser';
+    } // Initialize TV navigation system
+
+
+    init() {
+      if (this.isEnabled) return;
+      this.isEnabled = true;
+      this.setupPlatformSpecificKeys();
+      this.setupKeyHandler();
+      this.addFocusStyles();
+
+      const initElements = () => {
+        this.findFocusableElements();
+
+        if (this.focusableElements.length > 0) {
+          this.focusElement(0);
+        }
+
+        this.logger.debug("TV Navigation initialized: ".concat(this.focusableElements.length, " elements"));
+      };
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initElements);
+      } else {
+        setTimeout(initElements, 100);
+      }
+    } // Setup platform-specific key registrations
+
+
+    setupPlatformSpecificKeys() {
+      try {
+        switch (this.platform) {
+          case 'tizen':
+            // Register Tizen TV keys
+            if (window.tizen && window.tizen.tvinputdevice) {
+              window.tizen.tvinputdevice.registerKey('ColorF0Red');
+              window.tizen.tvinputdevice.registerKey('ColorF1Green');
+              window.tizen.tvinputdevice.registerKey('ColorF2Yellow');
+              window.tizen.tvinputdevice.registerKey('ColorF3Blue');
+              this.logger.debug('Tizen TV keys registered');
+            }
+
+            break;
+
+          case 'webos':
+            // webOS key setup if needed
+            this.logger.debug('webOS TV keys ready');
+            break;
+
+          case 'samsung':
+            // Samsung Smart TV key setup
+            this.logger.debug('Samsung TV keys ready');
+            break;
+
+          default:
+            this.logger.debug('Generic TV key setup');
+        }
+      } catch (error) {
+        this.logger.debug('Could not register platform-specific keys:', error.message);
+      }
+    } // Find all focusable elements on the page
+
+
+    findFocusableElements() {
+      this.focusableElements = Array.from(document.querySelectorAll('button, [role="button"], input[type="button"], input[type="submit"], ' + 'a[href], select, textarea, input:not([type="hidden"]):not([disabled]), ' + '[tabindex]:not([tabindex="-1"]), [data-list-item]')).filter(element => {
+        const style = window.getComputedStyle(element);
+        return style.display !== 'none' && style.visibility !== 'hidden' && element.offsetParent !== null;
+      });
+    } // Setup global key handler
+
+
+    setupKeyHandler() {
+      if (this.keyHandler) {
+        document.removeEventListener('keydown', this.keyHandler, {
+          capture: true
+        });
+      }
+
+      this.keyHandler = event => {
+        if (!this.isEnabled) return;
+        this.handleKeyPress(event);
+      };
+
+      document.addEventListener('keydown', this.keyHandler, {
+        capture: true,
+        passive: false
+      });
+    } // Handle key press events - Universal TV platform support
+
+
+    handleKeyPress(event) {
+      // Priority 1: Web Inbox (if open)
+      try {
+        if ($ct && $ct.inbox && $ct.inbox.isInboxOpen) {
+          this.handleInboxNavigation(event);
+          return;
+        }
+      } catch (e) {// Inbox not available, continue with other handlers
+      } // Priority 2: iframe popup
+
+
+      const activePopup = document.querySelector('iframe[id^="wiz-iframe"]') || document.querySelector('iframe[id="wiz-iframe-intent"]');
+
+      if (activePopup) {
+        this.forwardToIframe(event, activePopup);
+        return;
+      } // Priority 3: Shadow DOM popup
+
+
+      const shadowPopupElement = document.querySelector('ct-web-popup-imageonly') || document.querySelector('#wzrkImageOnlyDiv ct-web-popup-imageonly') || document.querySelector('#wzrkImageOnlyDiv[style*="visible"]');
+
+      if (shadowPopupElement) {
+        const parentDiv = document.getElementById('wzrkImageOnlyDiv');
+        const isVisible = parentDiv && (!parentDiv.style.display || parentDiv.style.display !== 'none');
+
+        if (isVisible) {
+          this.handleShadowDOMNavigation(event, shadowPopupElement);
+          return;
+        }
+      } // Default: Main page navigation
+
+
+      this.handleMainPageNavigation(event);
+    } // Forward key events to iframe
+
+
+    forwardToIframe(event, activePopup) {
+      // Remove any main page focus
+      if (this.focusableElements[this.currentFocusIndex]) {
+        this.focusableElements[this.currentFocusIndex].classList.remove('ct-tv-focused');
+      }
+
+      this.logger.debug('Forwarding key event to popup iframe:', event.keyCode); // Forward the key event to the iframe
+
+      try {
+        const iframeWindow = activePopup.contentWindow;
+        const forwardedEvent = new KeyboardEvent('keydown', {
+          keyCode: event.keyCode,
+          which: event.keyCode,
+          bubbles: true,
+          cancelable: true
+        });
+        iframeWindow.document.dispatchEvent(forwardedEvent);
+      } catch (error) {
+        this.logger.error('Could not forward event to iframe:', error);
+      } // Prevent main page from handling the key
+
+
+      event.preventDefault();
+      event.stopPropagation();
+    } // Handle shadow DOM navigation
+
+
+    handleShadowDOMNavigation(event, shadowPopupElement) {
+      // Remove any main page focus
+      if (this.focusableElements[this.currentFocusIndex]) {
+        this.focusableElements[this.currentFocusIndex].classList.remove('ct-tv-focused');
+      } // Initialize shadow DOM navigation if not done
+
+
+      if (!this.shadowNavigation) {
+        this.initShadowNavigation(shadowPopupElement);
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+
+      switch (event.keyCode) {
+        case this.keyMappings.up:
+        case this.keyMappings.left:
+          this.navigateShadow('prev');
+          break;
+
+        case this.keyMappings.down:
+        case this.keyMappings.right:
+          this.navigateShadow('next');
+          break;
+
+        case this.keyMappings.enter:
+          this.activateShadow();
+          break;
+
+        case this.keyMappings.back:
+        case this.keyMappings.exit:
+        case this.keyMappings.webosBack:
+        case this.keyMappings.webosExit:
+          this.closeShadowPopup();
+          break;
+      }
+    } // Initialize shadow DOM navigation
+
+
+    initShadowNavigation(shadowPopupElement) {
+      try {
+        // Try multiple ways to access shadow root
+        let shadowRoot = null;
+
+        if (shadowPopupElement.getShadowRoot) {
+          this.logger.debug('Using getShadowRoot method');
+          shadowRoot = shadowPopupElement.getShadowRoot();
+        } else if (shadowPopupElement.shadowRoot) {
+          this.logger.debug('Using shadowRoot property');
+          shadowRoot = shadowPopupElement.shadowRoot;
+        } else if (shadowPopupElement.shadow) {
+          this.logger.debug('Using shadow property');
+          shadowRoot = shadowPopupElement.shadow;
+        }
+
+        if (!shadowRoot) {
+          // Alternative: look for the element with shadow root
+          const ctElement = document.querySelector('ct-web-popup-imageonly');
+          this.logger.debug('Alternative ct-element:', ctElement);
+
+          if (ctElement && ctElement.shadowRoot) {
+            shadowRoot = ctElement.shadowRoot;
+            this.logger.debug('Found shadow root via alternative method');
+          }
+        }
+
+        if (!shadowRoot) {
+          this.logger.debug('Still no shadow root found');
+          return;
+        }
+
+        this.shadowNavigation = {
+          focusableElements: [],
+          currentFocusIndex: 0,
+          shadowRoot: shadowRoot
+        }; // Find focusable elements in shadow DOM
+
+        this.shadowNavigation.focusableElements = Array.from(shadowRoot.querySelectorAll('button, [role="button"], .close, img[src], [tabindex]:not([tabindex="-1"])')).filter(el => {
+          const style = window.getComputedStyle(el);
+          return style.display !== 'none' && style.visibility !== 'hidden';
+        }); // Add TV focus styles to shadow DOM
+
+        this.injectFocusStyle(shadowRoot, 'ct-tv-shadow-styles'); // Focus first element
+
+        if (this.shadowNavigation.focusableElements.length > 0) {
+          this.focusShadowElement(0);
+        }
+      } catch (error) {
+        this.logger.error('Could not initialize shadow DOM navigation:', error);
+      }
+    } // Navigate within shadow DOM
+
+
+    navigateShadow(direction) {
+      if (!this.shadowNavigation || this.shadowNavigation.focusableElements.length === 0) return;
+      let newIndex = this.shadowNavigation.currentFocusIndex;
+
+      if (direction === 'prev') {
+        newIndex = Math.max(0, this.shadowNavigation.currentFocusIndex - 1);
+      } else if (direction === 'next') {
+        newIndex = Math.min(this.shadowNavigation.focusableElements.length - 1, this.shadowNavigation.currentFocusIndex + 1);
+      }
+
+      if (newIndex !== this.shadowNavigation.currentFocusIndex) {
+        this.focusShadowElement(newIndex);
+      }
+    } // Focus element in shadow DOM
+
+
+    focusShadowElement(index) {
+      if (!this.shadowNavigation) return; // Remove focus from current element
+
+      if (this.shadowNavigation.focusableElements[this.shadowNavigation.currentFocusIndex]) {
+        this.shadowNavigation.focusableElements[this.shadowNavigation.currentFocusIndex].classList.remove('ct-tv-focused');
+      } // Focus new element
+
+
+      this.shadowNavigation.currentFocusIndex = index;
+      const element = this.shadowNavigation.focusableElements[this.shadowNavigation.currentFocusIndex];
+
+      if (element) {
+        element.classList.add('ct-tv-focused');
+        this.logger.debug('Shadow DOM focused:', element.tagName, element.className);
+      }
+    } // Activate element in shadow DOM
+
+
+    activateShadow() {
+      if (!this.shadowNavigation) return;
+      const element = this.shadowNavigation.focusableElements[this.shadowNavigation.currentFocusIndex];
+
+      if (element) {
+        element.click();
+      }
+    } // Close shadow DOM popup
+
+
+    closeShadowPopup() {
+      if (!this.shadowNavigation) return;
+      const closeBtn = this.shadowNavigation.shadowRoot.querySelector('.close');
+
+      if (closeBtn) {
+        closeBtn.click();
+      } // Clean up shadow navigation
+
+
+      this.shadowNavigation = null;
+    } // ==================== Web Inbox Navigation ====================
+
+
+    handleInboxNavigation(event) {
+      // Clear main page focus
+      if (this.focusableElements[this.currentFocusIndex]) {
+        this.focusableElements[this.currentFocusIndex].classList.remove('ct-tv-focused');
+      } // Initialize if needed
+
+
+      if (!this.inboxNav) {
+        this.initInboxNavigation();
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+      const {
+        up,
+        down,
+        left,
+        right,
+        enter,
+        back,
+        exit,
+        webosBack,
+        webosExit
+      } = this.keyMappings;
+
+      switch (event.keyCode) {
+        case up:
+          this.navigateInbox(-1, 'vertical');
+          break;
+
+        case down:
+          this.navigateInbox(1, 'vertical');
+          break;
+
+        case left:
+          this.navigateInbox(-1, 'horizontal');
+          break;
+
+        case right:
+          this.navigateInbox(1, 'horizontal');
+          break;
+
+        case enter:
+          this.activateInboxElement();
+          break;
+
+        case back:
+        case exit:
+        case webosBack:
+        case webosExit:
+          this.closeInbox();
+          break;
+      }
+    }
+
+    initInboxNavigation() {
+      const inbox = $ct.inbox;
+
+      if (!(inbox === null || inbox === void 0 ? void 0 : inbox.shadowRoot)) {
+        this.logger.debug('Web Inbox shadow root not found');
+        return;
+      }
+
+      this.inboxNav = {
+        shadowRoot: inbox.shadowRoot,
+        elements: [],
+        index: 0,
+        ctaFocused: false,
+        // Track if CTA button is focused within a message
+        ctaIndex: 0 // Track which CTA button is focused (0 or 1 for messages with 2 CTAs)
+
+      };
+      this.refreshInboxElements();
+      this.injectInboxStyles();
+
+      if (this.inboxNav.elements.length > 0) {
+        this.focusInboxElement(0);
+      }
+
+      this.logger.debug("Web Inbox navigation initialized: ".concat(this.inboxNav.elements.length, " elements"));
+    }
+
+    refreshInboxElements() {
+      if (!this.inboxNav) return;
+      const sr = this.inboxNav.shadowRoot;
+      const elements = []; // 1. Close button
+
+      const closeBtn = sr.getElementById('closeInbox');
+
+      if (closeBtn) {
+        elements.push({
+          el: closeBtn,
+          type: 'close'
+        });
+      } // 2. Category tabs
+
+
+      const catWrapper = sr.getElementById('categoriesWrapper');
+
+      if (catWrapper) {
+        catWrapper.querySelectorAll('[id^="category-"]').forEach(cat => {
+          if (this.isVisible(cat)) {
+            elements.push({
+              el: cat,
+              type: 'category'
+            });
+          }
+        });
+      } // 3. Messages
+
+
+      const inboxCard = sr.getElementById('inboxCard');
+
+      if (inboxCard) {
+        inboxCard.querySelectorAll('ct-inbox-message').forEach(msg => {
+          if (this.isVisible(msg)) {
+            elements.push({
+              el: msg,
+              type: 'message'
+            });
+            this.injectMessageStyles(msg);
+          }
+        });
+      }
+
+      this.inboxNav.elements = elements;
+    }
+
+    navigateInbox(delta, axis) {
+      if (!this.inboxNav) return;
+      this.refreshInboxElements();
+      const {
+        elements,
+        index,
+        ctaFocused,
+        ctaIndex
+      } = this.inboxNav;
+      if (elements.length === 0) return;
+      const current = elements[index];
+      let newIndex = index; // Handle CTA navigation within a message
+
+      if ((current === null || current === void 0 ? void 0 : current.type) === 'message') {
+        const ctaBtns = this.getMessageCTAs(current.el);
+        const hasMultipleCTAs = ctaBtns.length > 1;
+
+        if (ctaFocused && ctaBtns.length > 0) {
+          // Currently on CTA
+          if (axis === 'horizontal') {
+            if (delta > 0 && hasMultipleCTAs && ctaIndex < ctaBtns.length - 1) {
+              // Right: move to next CTA button
+              this.unfocusCTA(ctaBtns[ctaIndex]);
+              this.inboxNav.ctaIndex = ctaIndex + 1;
+              this.focusCTA(ctaBtns[this.inboxNav.ctaIndex]);
+              this.logger.debug("CTA focus moved to button ".concat(this.inboxNav.ctaIndex + 1));
+              return;
+            } else if (delta < 0 && ctaIndex > 0) {
+              // Left: move to previous CTA button
+              this.unfocusCTA(ctaBtns[ctaIndex]);
+              this.inboxNav.ctaIndex = ctaIndex - 1;
+              this.focusCTA(ctaBtns[this.inboxNav.ctaIndex]);
+              this.logger.debug("CTA focus moved to button ".concat(this.inboxNav.ctaIndex + 1));
+              return;
+            } else if (delta < 0 && ctaIndex === 0) {
+              // Left on first CTA: go back to message
+              this.focusInboxElement(index, false);
+              return;
+            }
+          } else if (axis === 'vertical') {
+            if (delta < 0) {
+              // Up: go back to message
+              this.focusInboxElement(index, false);
+              return;
+            } else if (delta > 0) {
+              // Down: move to next message/element
+              this.unfocusAllCTAs(current.el);
+              this.inboxNav.ctaFocused = false;
+              this.inboxNav.ctaIndex = 0;
+              newIndex = Math.min(elements.length - 1, index + 1);
+
+              if (newIndex !== index) {
+                this.focusInboxElement(newIndex, false);
+              }
+
+              return;
+            }
+          }
+        } else if (!ctaFocused && ctaBtns.length > 0) {
+          // Currently on message, check if we should go to CTA
+          if (axis === 'vertical' && delta > 0 || axis === 'horizontal' && delta > 0) {
+            // Down or Right: go to first CTA if it exists
+            this.inboxNav.ctaIndex = 0;
+            this.focusInboxElement(index, true);
+            return;
+          }
+        }
+      } // If CTA is focused and we're moving, first unfocus it
+
+
+      if (ctaFocused && (current === null || current === void 0 ? void 0 : current.type) === 'message') {
+        this.unfocusAllCTAs(current.el);
+        this.inboxNav.ctaFocused = false;
+        this.inboxNav.ctaIndex = 0;
+      }
+
+      if (axis === 'vertical') {
+        // Simple up/down movement
+        newIndex = Math.max(0, Math.min(elements.length - 1, index + delta));
+      } else {
+        // Horizontal: move within same type only (categories)
+        if ((current === null || current === void 0 ? void 0 : current.type) === 'category') {
+          for (let i = index + delta; i >= 0 && i < elements.length; i += delta) {
+            if (elements[i].type === 'category') {
+              newIndex = i;
+              break;
+            }
+          }
+        }
+      }
+
+      if (newIndex !== index) {
+        this.focusInboxElement(newIndex, false);
+      }
+    } // Get all CTA buttons from a message element
+
+
+    getMessageCTAs(msgEl) {
+      if (!(msgEl === null || msgEl === void 0 ? void 0 : msgEl.shadowRoot)) return []; // Look for all CTA buttons in message shadow DOM
+
+      const ctaBtns = msgEl.shadowRoot.querySelectorAll('.ct-inbox-cta button') || msgEl.shadowRoot.querySelectorAll('button[class*="cta"]') || msgEl.shadowRoot.querySelectorAll('.jsCTAButton'); // If no specific CTA class found, get all buttons except close
+
+      if (!ctaBtns || ctaBtns.length === 0) {
+        return Array.from(msgEl.shadowRoot.querySelectorAll('button')).filter(btn => !btn.classList.contains('close') && btn.offsetParent !== null);
+      }
+
+      return Array.from(ctaBtns).filter(btn => btn.offsetParent !== null);
+    } // Get single CTA button (for backward compatibility)
+
+
+    getMessageCTA(msgEl) {
+      const ctas = this.getMessageCTAs(msgEl);
+      return ctas.length > 0 ? ctas[0] : null;
+    } // Focus CTA button
+
+
+    focusCTA(ctaBtn) {
+      if (!ctaBtn) return;
+      ctaBtn.classList.add('ct-tv-focused');
+      ctaBtn.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest'
+      });
+      this.logger.debug('Inbox CTA focused');
+    } // Unfocus CTA button
+
+
+    unfocusCTA(ctaBtn) {
+      if (!ctaBtn) return;
+      ctaBtn.classList.remove('ct-tv-focused');
+    } // Unfocus all CTA buttons in a message
+
+
+    unfocusAllCTAs(msgEl) {
+      const ctas = this.getMessageCTAs(msgEl);
+      ctas.forEach(cta => this.unfocusCTA(cta));
+    }
+
+    focusInboxElement(index) {
+      let focusCTA = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
+      if (!this.inboxNav) return;
+      const {
+        elements
+      } = this.inboxNav;
+      if (index < 0 || index >= elements.length) return; // Remove previous focus (including CTA if any)
+
+      const prev = elements[this.inboxNav.index];
+
+      if (prev && prev.el) {
+        prev.el.classList.remove('ct-tv-focused'); // Also unfocus any previously focused CTAs
+
+        if (prev.type === 'message') {
+          this.unfocusAllCTAs(prev.el);
+        }
+      } // Apply new focus
+
+
+      this.inboxNav.index = index;
+      this.inboxNav.ctaFocused = false;
+      const curr = elements[index];
+
+      if (curr === null || curr === void 0 ? void 0 : curr.el) {
+        if (focusCTA && curr.type === 'message') {
+          // Focus the CTA button instead of the message
+          const ctaBtns = this.getMessageCTAs(curr.el);
+          const ctaIdx = this.inboxNav.ctaIndex || 0;
+
+          if (ctaBtns.length > 0 && ctaBtns[ctaIdx]) {
+            this.focusCTA(ctaBtns[ctaIdx]);
+            this.inboxNav.ctaFocused = true;
+            this.logger.debug("Inbox focus: CTA button ".concat(ctaIdx + 1, " of ").concat(ctaBtns.length));
+            return;
+          }
+        } // Normal element focus - reset CTA index when going back to message
+
+
+        this.inboxNav.ctaIndex = 0;
+        curr.el.classList.add('ct-tv-focused');
+        curr.el.scrollIntoView({
+          behavior: 'smooth',
+          block: 'nearest'
+        });
+        this.logger.debug("Inbox focus: ".concat(curr.type), curr.el.id || '');
+      }
+    }
+
+    activateInboxElement() {
+      if (!this.inboxNav) return;
+      const item = this.inboxNav.elements[this.inboxNav.index];
+      if (!(item === null || item === void 0 ? void 0 : item.el)) return;
+      this.logger.debug('Inbox activate:', item.type, 'CTA focused:', this.inboxNav.ctaFocused);
+      const inbox = $ct.inbox;
+
+      switch (item.type) {
+        case 'close':
+          this.closeInbox();
+          break;
+
+        case 'category':
+          if (inbox) {
+            inbox.prevCategoryRef = inbox.selectedCategoryRef;
+            inbox.selectedCategoryRef = item.el;
+            inbox.updateActiveCategory(item.el.innerText); // Refresh after category change
+
+            setTimeout(() => {
+              this.refreshInboxElements();
+              this.injectInboxStyles(); // Re-focus same category
+
+              const catIdx = this.inboxNav.elements.findIndex(e => e.el === item.el);
+              this.focusInboxElement(catIdx >= 0 ? catIdx : 0);
+            }, 100);
+          }
+
+          break;
+
+        case 'message':
+          // If CTA is focused, click the correct CTA button
+          if (this.inboxNav.ctaFocused) {
+            const ctaBtns = this.getMessageCTAs(item.el);
+            const ctaIdx = this.inboxNav.ctaIndex || 0;
+
+            if (ctaBtns.length > 0 && ctaBtns[ctaIdx]) {
+              this.logger.debug("Clicking CTA button ".concat(ctaIdx + 1));
+              ctaBtns[ctaIdx].click();
+              return;
+            }
+          } // Otherwise, raise the message clicked event
+
+
+          if (item.el.raiseClickedEvent) {
+            item.el.raiseClickedEvent(item.el, false);
+          }
+
+          break;
+      }
+    }
+
+    closeInbox() {
+      this.logger.debug('Closing Web Inbox');
+
+      if ($ct && $ct.inbox && $ct.inbox.isInboxOpen) {
+        $ct.inbox.toggleInbox();
+      } // Cleanup
+
+
+      if (this.inboxNav) {
+        const currentEl = this.inboxNav.elements[this.inboxNav.index];
+
+        if (currentEl && currentEl.el) {
+          currentEl.el.classList.remove('ct-tv-focused'); // Also clean up all CTA focus if any
+
+          if (currentEl.type === 'message') {
+            this.unfocusAllCTAs(currentEl.el);
+          }
+        }
+
+        this.inboxNav = null;
+      } // Restore main page focus
+
+
+      if (this.focusableElements.length > 0) {
+        this.focusElement(this.currentFocusIndex);
+      }
+    }
+
+    injectInboxStyles() {
+      var _this$inboxNav;
+
+      if (!((_this$inboxNav = this.inboxNav) === null || _this$inboxNav === void 0 ? void 0 : _this$inboxNav.shadowRoot)) return;
+      this.injectFocusStyle(this.inboxNav.shadowRoot, 'ct-tv-inbox-styles');
+    }
+
+    injectMessageStyles(msgEl) {
+      if (!(msgEl === null || msgEl === void 0 ? void 0 : msgEl.shadowRoot)) return;
+      this.injectFocusStyle(msgEl.shadowRoot, 'ct-tv-msg-styles');
+    }
+
+    isVisible(el) {
+      const style = window.getComputedStyle(el);
+      return style.display !== 'none' && style.visibility !== 'hidden';
+    } // ==================== End Web Inbox Navigation ====================
+    // Handle main page navigation
+
+
+    handleMainPageNavigation(event) {
+      if (this.focusableElements.length === 0) {
+        this.findFocusableElements();
+        return;
+      } // Define which keys to handle based on platform
+
+
+      const navigationKeys = [this.keyMappings.up, this.keyMappings.down, this.keyMappings.left, this.keyMappings.right, this.keyMappings.enter];
+      const backKeys = [this.keyMappings.back, // Tizen back
+      this.keyMappings.exit, // Tizen exit
+      this.keyMappings.webosBack, // webOS back
+      this.keyMappings.webosExit // webOS exit/ESC
+      ]; // Prevent default behavior for TV keys
+
+      if (navigationKeys.includes(event.keyCode) || backKeys.includes(event.keyCode)) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+
+      switch (event.keyCode) {
+        case this.keyMappings.up:
+        case this.keyMappings.left:
+          this.navigate('prev');
+          break;
+
+        case this.keyMappings.down:
+        case this.keyMappings.right:
+          this.navigate('next');
+          break;
+
+        case this.keyMappings.enter:
+          this.activate();
+          break;
+
+        case this.keyMappings.back:
+        case this.keyMappings.exit:
+        case this.keyMappings.webosBack:
+        case this.keyMappings.webosExit:
+          this.handleExit();
+          break;
+
+        default:
+          // Log unhandled keys for debugging
+          this.logger.debug('Unhandled key code:', event.keyCode);
+      }
+    } // Navigate between elements
+
+
+    navigate(direction) {
+      if (this.focusableElements.length === 0) return;
+      let newIndex = this.currentFocusIndex;
+
+      if (direction === 'prev') {
+        newIndex = Math.max(0, this.currentFocusIndex - 1);
+      } else if (direction === 'next') {
+        newIndex = Math.min(this.focusableElements.length - 1, this.currentFocusIndex + 1);
+      }
+
+      if (newIndex !== this.currentFocusIndex) {
+        this.focusElement(newIndex);
+      }
+    } // Focus specific element
+
+
+    focusElement(index) {
+      if (index < 0 || index >= this.focusableElements.length) return; // Remove focus from current element
+
+      if (this.focusableElements[this.currentFocusIndex]) {
+        this.focusableElements[this.currentFocusIndex].classList.remove('ct-tv-focused');
+        this.focusableElements[this.currentFocusIndex].blur();
+      } // Focus new element
+
+
+      this.currentFocusIndex = index;
+      const element = this.focusableElements[this.currentFocusIndex];
+
+      if (element) {
+        element.classList.add('ct-tv-focused');
+        element.focus();
+        element.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center'
+        });
+        this.logger.debug('TV Navigation focused:', element.tagName, element.textContent || element.id);
+      }
+    } // Activate current element
+
+
+    activate() {
+      const element = this.focusableElements[this.currentFocusIndex];
+
+      if (element) {
+        if (element.tagName === 'BUTTON' || element.tagName === 'A') {
+          element.click();
+        } else if (element.tagName === 'INPUT') {
+          if (element.type === 'button' || element.type === 'submit') {
+            element.click();
+          } else {
+            element.focus();
+            this.logger.debug('TV Navigation: Text input focused, virtual keyboard should appear');
+          }
+        }
+      }
+    } // Handle exit functionality - Universal TV platform support
+
+
+    handleExit() {
+      this.logger.debug('TV Navigation: Exit requested');
+
+      try {
+        // Tizen TV
+        if (typeof window.tizen !== 'undefined' && window.tizen.application) {
+          window.tizen.application.getCurrentApplication().exit();
+          return;
+        } // LG webOS
+
+
+        if (typeof window.webOS !== 'undefined' && window.webOS.platformBack) {
+          window.webOS.platformBack();
+          return;
+        } // Samsung Legacy
+
+
+        if (typeof window.Samsung !== 'undefined' && window.Samsung.Application) {
+          window.Samsung.Application.exit();
+          return;
+        } // Android TV
+
+
+        if (typeof window.androidTV !== 'undefined' && window.androidTV.exit) {
+          window.androidTV.exit();
+          return;
+        } // Generic/Browser fallback
+
+
+        this.logger.debug('No TV platform API available - using browser fallback');
+
+        if (typeof window.close === 'function') {
+          window.close();
+        } else {
+          this.logger.debug('Cannot exit - no exit method available');
+        }
+      } catch (error) {
+        this.logger.error('Exit error:', error);
+      }
+    } // Add TV focus styles to main document
+
+
+    addFocusStyles() {
+      this.injectFocusStyle(document.head, 'ct-tv-styles');
+    } // Helper to inject focus styles into a root element (document.head or shadowRoot)
+
+
+    injectFocusStyle(root, styleId) {
+      var _root$getElementById, _root$querySelector;
+
+      if (!root || ((_root$getElementById = root.getElementById) === null || _root$getElementById === void 0 ? void 0 : _root$getElementById.call(root, styleId)) || ((_root$querySelector = root.querySelector) === null || _root$querySelector === void 0 ? void 0 : _root$querySelector.call(root, "#".concat(styleId)))) return;
+      const style = document.createElement('style');
+      style.id = styleId;
+      style.textContent = TV_FOCUS_STYLE;
+      root.appendChild(style);
+    } // Refresh focusable elements (call when DOM changes)
+
+
+    refresh() {
+      this.findFocusableElements(); // Ensure current focus is still valid
+
+      if (this.currentFocusIndex >= this.focusableElements.length) {
+        this.currentFocusIndex = Math.max(0, this.focusableElements.length - 1);
+      }
+
+      if (this.focusableElements.length > 0) {
+        this.focusElement(this.currentFocusIndex);
+      }
+    } // Enable TV navigation
+
+
+    enable() {
+      this.isEnabled = true;
+      this.logger.debug('TV Navigation enabled');
+    } // Disable TV navigation
+
+
+    disable() {
+      this.isEnabled = false; // Remove focus styling
+
+      if (this.focusableElements[this.currentFocusIndex]) {
+        this.focusableElements[this.currentFocusIndex].classList.remove('ct-tv-focused');
+      }
+
+      this.logger.debug('TV Navigation disabled');
+    } // Clean up - remove event listeners
+
+
+    destroy() {
+      if (this.keyHandler) {
+        document.removeEventListener('keydown', this.keyHandler, {
+          capture: true
+        });
+        this.keyHandler = null;
+      }
+
+      this.isEnabled = false;
+      this.shadowNavigation = null;
+      this.inboxNav = null;
+      TVNavigation.instance = null;
+    } // Get current state
+
+
+    getState() {
+      return {
+        isEnabled: this.isEnabled,
+        currentFocusIndex: this.currentFocusIndex,
+        totalElements: this.focusableElements.length,
+        platform: this.platform,
+        shadowNavigation: this.shadowNavigation ? {
+          currentFocusIndex: this.shadowNavigation.currentFocusIndex,
+          totalElements: this.shadowNavigation.focusableElements.length
+        } : null,
+        inboxNavigation: this.inboxNav ? {
+          currentIndex: this.inboxNav.index,
+          totalElements: this.inboxNav.elements.length,
+          ctaFocused: this.inboxNav.ctaFocused,
+          ctaIndex: this.inboxNav.ctaIndex
+        } : null
+      };
+    }
+
+  } // Static property to hold singleton instance
+
+
+  TVNavigation.instance = null;
+
   var _logger = _classPrivateFieldLooseKey("logger");
 
   var _api = _classPrivateFieldLooseKey("api");
@@ -17238,6 +19988,14 @@
   var _dismissSpamControl = _classPrivateFieldLooseKey("dismissSpamControl");
 
   var _pageChangeTimeoutId = _classPrivateFieldLooseKey("pageChangeTimeoutId");
+
+  var _tvNavigation = _classPrivateFieldLooseKey("tvNavigation");
+
+  var _enableFetchApi = _classPrivateFieldLooseKey("enableFetchApi");
+
+  var _enableEncryptionInTransit = _classPrivateFieldLooseKey("enableEncryptionInTransit");
+
+  var _domainSpecification = _classPrivateFieldLooseKey("domainSpecification");
 
   var _processOldValues = _classPrivateFieldLooseKey("processOldValues");
 
@@ -17285,8 +20043,40 @@
       $ct.dismissSpamControl = dismissSpamControl;
     }
 
+    get enableFetchApi() {
+      return _classPrivateFieldLooseBase(this, _enableFetchApi)[_enableFetchApi];
+    }
+
+    set enableFetchApi(value) {
+      _classPrivateFieldLooseBase(this, _enableFetchApi)[_enableFetchApi] = value; // propagate the setting to RequestDispatcher so util layer can honour it
+
+      RequestDispatcher.enableFetchApi = value;
+    }
+
+    get enableEncryptionInTransit() {
+      return _classPrivateFieldLooseBase(this, _enableEncryptionInTransit)[_enableEncryptionInTransit];
+    }
+
+    set enableEncryptionInTransit(value) {
+      _classPrivateFieldLooseBase(this, _enableEncryptionInTransit)[_enableEncryptionInTransit] = value; // propagate the setting to RequestDispatcher so util layer can honour it
+
+      RequestDispatcher.enableEncryptionInTransit = value;
+    }
+
+    get domainSpecification() {
+      return _classPrivateFieldLooseBase(this, _domainSpecification)[_domainSpecification];
+    }
+
+    set domainSpecification(value) {
+      if (value && isFinite(value)) {
+        _classPrivateFieldLooseBase(this, _domainSpecification)[_domainSpecification] = Number(value);
+      } else {
+        _classPrivateFieldLooseBase(this, _domainSpecification)[_domainSpecification] = 0;
+      }
+    }
+
     constructor() {
-      var _clevertap$account, _clevertap$account2, _clevertap$account3, _clevertap$account4, _clevertap$account5, _clevertap$config, _clevertap$config2, _clevertap$dismissSpa, _clevertap$dismissSpa2, _clevertap$account6;
+      var _clevertap$account, _clevertap$account2, _clevertap$account3, _clevertap$account4, _clevertap$account5, _clevertap$config, _clevertap$config2, _clevertap$dismissSpa, _clevertap$dismissSpa2, _clevertap$config3, _clevertap$account6;
 
       let clevertap = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
       Object.defineProperty(this, _sendLocationData, {
@@ -17366,10 +20156,27 @@
         writable: true,
         value: void 0
       });
+      Object.defineProperty(this, _tvNavigation, {
+        writable: true,
+        value: void 0
+      });
+      Object.defineProperty(this, _enableFetchApi, {
+        writable: true,
+        value: void 0
+      });
+      Object.defineProperty(this, _enableEncryptionInTransit, {
+        writable: true,
+        value: void 0
+      });
+      Object.defineProperty(this, _domainSpecification, {
+        writable: true,
+        value: void 0
+      });
       this.popupCallbacks = {};
       this.popupCurrentWzrkId = '';
       _classPrivateFieldLooseBase(this, _onloadcalled)[_onloadcalled] = 0;
       this._isPersonalisationActive = this._isPersonalisationActive.bind(this);
+      this.domainSpecification = clevertap.domainSpecification || null;
 
       this.raiseNotificationClicked = () => {};
 
@@ -17385,13 +20192,19 @@
 
       _classPrivateFieldLooseBase(this, _device)[_device] = new DeviceManager({
         logger: _classPrivateFieldLooseBase(this, _logger)[_logger],
-        customId: (result === null || result === void 0 ? void 0 : result.isValid) ? result === null || result === void 0 ? void 0 : result.sanitizedId : null
+        customId: (result === null || result === void 0 ? void 0 : result.isValid) ? result === null || result === void 0 ? void 0 : result.sanitizedId : null,
+        domainSpecification: this.domainSpecification
       });
       _classPrivateFieldLooseBase(this, _dismissSpamControl)[_dismissSpamControl] = (_clevertap$dismissSpa = clevertap.dismissSpamControl) !== null && _clevertap$dismissSpa !== void 0 ? _clevertap$dismissSpa : true;
       this.shpfyProxyPath = clevertap.shpfyProxyPath || '';
+      _classPrivateFieldLooseBase(this, _enableFetchApi)[_enableFetchApi] = clevertap.enableFetchApi || false;
+      RequestDispatcher.enableFetchApi = _classPrivateFieldLooseBase(this, _enableFetchApi)[_enableFetchApi];
+      _classPrivateFieldLooseBase(this, _enableEncryptionInTransit)[_enableEncryptionInTransit] = clevertap.enableEncryptionInTransit || false;
+      RequestDispatcher.enableEncryptionInTransit = _classPrivateFieldLooseBase(this, _enableEncryptionInTransit)[_enableEncryptionInTransit];
       _classPrivateFieldLooseBase(this, _session)[_session] = new SessionManager({
         logger: _classPrivateFieldLooseBase(this, _logger)[_logger],
-        isPersonalisationActive: this._isPersonalisationActive
+        isPersonalisationActive: this._isPersonalisationActive,
+        domainSpecification: this.domainSpecification
       });
       _classPrivateFieldLooseBase(this, _request)[_request] = new RequestManager({
         logger: _classPrivateFieldLooseBase(this, _logger)[_logger],
@@ -17400,6 +20213,7 @@
         session: _classPrivateFieldLooseBase(this, _session)[_session],
         isPersonalisationActive: this._isPersonalisationActive
       });
+      _classPrivateFieldLooseBase(this, _tvNavigation)[_tvNavigation] = new TVNavigation(_classPrivateFieldLooseBase(this, _logger)[_logger]);
       this.enablePersonalization = clevertap.enablePersonalization || false;
       this.event = new EventHandler({
         logger: _classPrivateFieldLooseBase(this, _logger)[_logger],
@@ -17439,10 +20253,18 @@
         logger: _classPrivateFieldLooseBase(this, _logger)[_logger],
         request: _classPrivateFieldLooseBase(this, _request)[_request],
         device: _classPrivateFieldLooseBase(this, _device)[_device],
-        session: _classPrivateFieldLooseBase(this, _session)[_session]
+        session: _classPrivateFieldLooseBase(this, _session)[_session],
+        domainSpecification: this.domainSpecification
       });
       this.spa = clevertap.spa;
       this.dismissSpamControl = (_clevertap$dismissSpa2 = clevertap.dismissSpamControl) !== null && _clevertap$dismissSpa2 !== void 0 ? _clevertap$dismissSpa2 : true;
+
+      if ((_clevertap$config3 = clevertap.config) === null || _clevertap$config3 === void 0 ? void 0 : _clevertap$config3.enableTVControls) {
+        StorageManager.saveToLSorCookie(ENABLE_TV_CONTROLS, true);
+      } else {
+        StorageManager.saveToLSorCookie(ENABLE_TV_CONTROLS, false);
+      }
+
       this.user = new User({
         isPersonalisationActive: this._isPersonalisationActive
       });
@@ -17786,7 +20608,7 @@
         if (Array.isArray(value)) {
           this.profile._handleMultiValueSet(key, value, COMMAND_SET);
         } else {
-          console.error('setMultiValuesForKey should be called with a value of type array');
+          _classPrivateFieldLooseBase(this, _logger)[_logger].error('setMultiValuesForKey should be called with a value of type array');
         }
       };
 
@@ -17794,7 +20616,7 @@
         if (typeof value === 'string' || typeof value === 'number') {
           this.profile._handleMultiValueAdd(key, value, COMMAND_ADD);
         } else {
-          console.error('addMultiValueForKey should be called with a value of type string or number.');
+          _classPrivateFieldLooseBase(this, _logger)[_logger].error('addMultiValueForKey should be called with a value of type string or number.');
         }
       };
 
@@ -17802,7 +20624,7 @@
         if (Array.isArray(value)) {
           this.profile._handleMultiValueAdd(key, value, COMMAND_ADD);
         } else {
-          console.error('addMultiValuesForKey should be called with a value of type array.');
+          _classPrivateFieldLooseBase(this, _logger)[_logger].error('addMultiValuesForKey should be called with a value of type array.');
         }
       };
 
@@ -17810,7 +20632,7 @@
         if (typeof value === 'string' || typeof value === 'number') {
           this.profile._handleMultiValueRemove(key, value, COMMAND_REMOVE);
         } else {
-          console.error('removeMultiValueForKey should be called with a value of type string or number.');
+          _classPrivateFieldLooseBase(this, _logger)[_logger].error('removeMultiValueForKey should be called with a value of type string or number.');
         }
       };
 
@@ -17818,7 +20640,7 @@
         if (Array.isArray(value)) {
           this.profile._handleMultiValueRemove(key, value, COMMAND_REMOVE);
         } else {
-          console.error('removeMultiValuesForKey should be called with a value of type array.');
+          _classPrivateFieldLooseBase(this, _logger)[_logger].error('removeMultiValuesForKey should be called with a value of type array.');
         }
       };
 
@@ -17877,6 +20699,16 @@
           });
         } else {
           if (navigator.geolocation) {
+            const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+
+            if (isSafari) {
+              try {
+                if (localStorage.getItem(WZRK_GEO) !== null) {
+                  return;
+                }
+              } catch (e) {}
+            }
+
             navigator.geolocation.getCurrentPosition(showPosition.bind(this), showError);
           } else {
             console.log('Geolocation is not supported by this browser.');
@@ -17887,6 +20719,11 @@
       function showPosition(position) {
         var lat = position.coords.latitude;
         var lng = position.coords.longitude;
+
+        try {
+          localStorage.setItem(WZRK_GEO, 'true');
+        } catch (e) {}
+
         $ct.location = {
           Latitude: lat,
           Longitude: lng
@@ -17902,6 +20739,11 @@
         switch (error.code) {
           case error.PERMISSION_DENIED:
             console.log('User denied the request for Geolocation.');
+
+            try {
+              localStorage.setItem(WZRK_GEO, 'false');
+            } catch (e) {}
+
             break;
 
           case error.POSITION_UNAVAILABLE:
@@ -18053,11 +20895,22 @@
     }
 
     init(accountId, region, targetDomain, token) {
+      var _StorageManager$readF;
+
       let config = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : {
         antiFlicker: {},
         customId: null,
-        isolateSubdomain: false
+        isolateSubdomain: false,
+        enableTVControls: false,
+        domainSpecification: null
       };
+
+      if (config === null || config === void 0 ? void 0 : config.domainSpecification) {
+        this.domainSpecification = config.domainSpecification;
+        _classPrivateFieldLooseBase(this, _session)[_session].domainSpecification = config.domainSpecification;
+        _classPrivateFieldLooseBase(this, _device)[_device].domainSpecification = config.domainSpecification;
+        _classPrivateFieldLooseBase(this, _api)[_api].domainSpecification = config.domainSpecification;
+      }
 
       if ((config === null || config === void 0 ? void 0 : config.antiFlicker) && Object.keys(config === null || config === void 0 ? void 0 : config.antiFlicker).length > 0) {
         addAntiFlicker(config.antiFlicker);
@@ -18070,10 +20923,25 @@
       if (_classPrivateFieldLooseBase(this, _onloadcalled)[_onloadcalled] === 1) {
         // already initailsed
         return;
-      }
+      } // Clear EIT fallback flag on new session (init)
+
+
+      RequestDispatcher.clearEITFallback();
 
       if (accountId) {
         encryption.key = accountId;
+      }
+
+      const enableControls = (_StorageManager$readF = StorageManager.readFromLSorCookie(ENABLE_TV_CONTROLS)) !== null && _StorageManager$readF !== void 0 ? _StorageManager$readF : false;
+
+      if ((config === null || config === void 0 ? void 0 : config.enableTVControls) || enableControls) {
+        // CleverTap handles navigation
+        StorageManager.saveToLSorCookie(ENABLE_TV_CONTROLS, true);
+
+        _classPrivateFieldLooseBase(this, _logger)[_logger].debug('CleverTap TV Navigation Mode: CleverTap will handle all navigation'); // Initialize CleverTap TV navigation system
+
+
+        _classPrivateFieldLooseBase(this, _tvNavigation)[_tvNavigation].init();
       }
 
       StorageManager.removeCookie('WZRK_P', window.location.hostname);
@@ -18110,6 +20978,16 @@
 
       if (config === null || config === void 0 ? void 0 : config.customId) {
         this.createCustomIdIfValid(config.customId);
+      }
+
+      if (config.enableFetchApi) {
+        _classPrivateFieldLooseBase(this, _enableFetchApi)[_enableFetchApi] = config.enableFetchApi;
+        RequestDispatcher.enableFetchApi = config.enableFetchApi;
+      }
+
+      if (config.enableEncryptionInTransit) {
+        _classPrivateFieldLooseBase(this, _enableEncryptionInTransit)[_enableEncryptionInTransit] = config.enableEncryptionInTransit;
+        RequestDispatcher.enableEncryptionInTransit = config.enableEncryptionInTransit;
       } // Only process OUL backup events if BLOCK_REQUEST_COOKIE is set
       // This ensures user identity is established before other events
 
@@ -18260,10 +21138,15 @@
     _handleVisualEditorPreview() {
       if ($ct.intervalArray.length) {
         $ct.intervalArray.forEach(interval => {
-          clearInterval(interval);
+          if (typeof interval === 'string' && interval.startsWith('addNewEl-')) {
+            clearInterval(parseInt(interval.split('-')[1], 10));
+          } else {
+            clearInterval(interval);
+          }
         });
       }
 
+      $ct.intervalArray = [];
       const storedData = sessionStorage.getItem('visualEditorData');
       const targetJson = storedData ? JSON.parse(storedData) : null;
 
@@ -18318,7 +21201,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v2.3.0';
+      return 'web-sdk-v2.5.5';
     }
 
     defineVariable(name, defaultValue) {
@@ -18374,8 +21257,12 @@
 
 
     getAllQualifiedCampaignDetails() {
-      const existingCampaign = StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS) && JSON.parse(decodeURIComponent(StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS)));
-      return existingCampaign;
+      try {
+        const existingCampaign = StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS) && JSON.parse(decodeURIComponent(StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS)));
+        return existingCampaign;
+      } catch (e) {
+        return null;
+      }
     }
 
   }
