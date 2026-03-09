@@ -133,8 +133,15 @@ class CleverTapPluginWeb {
     String? region = args['region'] as String?;
     String? targetDomain = args['targetDomain'] as String?;
     String? token = args['token'] as String?;
-    print("actual call going to happen");
-    init(accountId, region, targetDomain, token);
+    Object? options = args['options'];
+
+    // Convert options Map to JS object if provided
+    JSAny? jsOptions;
+    if (options != null && options is Map) {
+      jsOptions = _jsify(options);
+    }
+
+    init(accountId, region, targetDomain, token, jsOptions);
   }
 
   void _setLibrary(MethodCall call) {
