@@ -80,7 +80,7 @@ class CleverTapPlugin {
   static const libName = 'Flutter';
 
   static const libVersion =
-      30800; // If the current version is X.X.X then pass as X0X0X
+      30801; // If the current version is X.X.X then pass as X0X0X
 
   CleverTapPlugin._internal() {
     /// Set the CleverTap Flutter library name and the current version for version tracking
@@ -411,8 +411,11 @@ class CleverTapPlugin {
   }
 
   /// Only for Web - Initialize clevertap sdk
+  /// [options] - Optional map with properties like:
+  ///   - enableEncryptionInTransit: bool
+  ///   - customId: String
   static Future<void> init(String accountId,
-      [String? region, String? targetDomain, String? token]) async {
+      [String? region, String? targetDomain, String? token, Map<String, dynamic>? options]) async {
     if (!kIsWeb) {
       return;
     }
@@ -420,7 +423,8 @@ class CleverTapPlugin {
       'accountId': accountId,
       'region': region,
       'targetDomain': targetDomain,
-      'token': token
+      'token': token,
+      'options': options
     };
     await _dartToNativeMethodChannel.invokeMethod<void>('init', allProperties);
   }
