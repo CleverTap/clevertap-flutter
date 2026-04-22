@@ -321,10 +321,17 @@ static NSDateFormatter *dateFormatter;
         [self getUserAppLaunchCount:call withResult:result];
     else if ([@"getUserLastVisitTs" isEqualToString:call.method])
         [self getUserLastVisitTs:call withResult:result];
+    else if ([@"unmute" isEqualToString:call.method])
+        [self unmute:call withResult:result];
     else
         result(FlutterMethodNotImplemented);
 }
 
+
+- (void)unmute:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    [[CleverTap sharedInstance] unmute];
+    result(nil);
+}
 
 #pragma mark - Launch
 

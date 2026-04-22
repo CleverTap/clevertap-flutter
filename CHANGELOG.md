@@ -7,6 +7,31 @@
   * Supports [CleverTap Web SDK v2.5.5](https://github.com/CleverTap/clevertap-web-sdk/releases/tag/v2.5.5)
   * Adds support for nested objects ingestion in event and profile properties
 
+### Version 4.0.0 *(24 April 2026)*
+-------------------------------------------
+**What's new**
+
+* **[Android Platform]**
+  * Supports [CleverTap Android SDK v8.1.0](https://github.com/CleverTap/clevertap-android-sdk/blob/master/docs/CTCORECHANGELOG.md#version-810-april-17-2026).
+  * Deprecates ExoPlayer integration. Migration to Media3 is required before Android SDK v9.0.0.
+
+* **[iOS Platform]**
+  * Supports [CleverTap iOS SDK v7.6.0](https://github.com/CleverTap/clevertap-ios-sdk/blob/master/CHANGELOG.md#version-760-april-17-2026).
+
+* **[Android and iOS Platform]**
+  * Adds support for Picture-in-Picture (PiP) in-app notifications.
+  * Adds support for GIF and video media in in-app notifications.
+  * Adds support for App Inbox default media view.
+  * Adds support for server-controlled mute durations via backend header.
+
+**API changes**
+* **[Android and iOS Platform]**
+  * New API: `unmute()` - Resumes event tracking, overriding any active mute period.
+
+**Breaking Changes**
+* **[Android Platform]**
+  * Raises `minSdkVersion` from 21 to 23. Devices running Android 5.x (API levels 21–22) are no longer supported.
+
 ### Version 3.8.0 *(2 March 2026)*
 -------------------------------------------
 **What's new**

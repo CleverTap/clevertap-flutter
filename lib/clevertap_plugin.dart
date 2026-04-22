@@ -80,7 +80,7 @@ class CleverTapPlugin {
   static const libName = 'Flutter';
 
   static const libVersion =
-      30801; // If the current version is X.X.X then pass as X0X0X
+      40000; // If the current version is X.X.X then pass as X0X0X
 
   CleverTapPlugin._internal() {
     /// Set the CleverTap Flutter library name and the current version for version tracking
@@ -1041,6 +1041,11 @@ class CleverTapPlugin {
   static Future<void> resumeInAppNotifications() async {
     return await _dartToNativeMethodChannel
         .invokeMethod('resumeInAppNotifications', {});
+  }
+
+  /// Resumes event tracking, overriding any active mute period.
+  static Future<void> unmute() async {
+    return await _dartToNativeMethodChannel.invokeMethod('unmute', {});
   }
 
   /// Initializes the inbox controller and sends a callback
