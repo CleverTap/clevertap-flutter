@@ -1,6 +1,6 @@
 ## CHANGE LOG
 
-### Version 4.0.0 *(24 April 2026)*
+### Version 4.0.0 *(23 April 2026)*
 -------------------------------------------
 **What's new**
 
@@ -25,6 +25,10 @@
 **Breaking Changes**
 * **[Android Platform]**
   * Raises `minSdkVersion` from 21 to 23. Devices running Android 5.x (API levels 21–22) are no longer supported.
+ 
+**Bug Fixes**
+* **[iOS Platform]**
+  * Fixes a bug where `onUserLogin` was creating additional guids only for encryption level high.
 
 ### Version 3.8.1 *(9 March 2026)*
 -------------------------------------------
