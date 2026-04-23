@@ -814,6 +814,8 @@ class _MyAppState extends State<MyApp> {
                 _buildExpansionTile("Offline Mode", [
                   _buildListTile("Set Offline", setOffline,
                       "Switches CleverTap to offline mode"),
+                  _buildListTile("Unmute", unmute,
+                      "Resumes event tracking, overriding any active mute period."),
                 ]),
                 _buildExpansionTile("Push Templates", [
                   _buildListTile("Basic Push", sendBasicPush),
@@ -1466,6 +1468,11 @@ class _MyAppState extends State<MyApp> {
       offLine = true;
       showToast("You are offline");
     }
+  }
+
+  void unmute() {
+    CleverTapPlugin.unmute();
+    showToast("Unmute called");
   }
 
   void setEnableDeviceNetworkingInfo() {
