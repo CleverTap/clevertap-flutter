@@ -14,6 +14,7 @@
 * **[Android Platform]**
   * Supports [CleverTap Android SDK v8.1.0](https://github.com/CleverTap/clevertap-android-sdk/blob/master/docs/CTCORECHANGELOG.md#version-810-april-17-2026).
   * Deprecates ExoPlayer integration. Migration to Media3 is required before Android SDK v9.0.0.
+  * Upgrades `compileSDKVersion` to 36
 
 * **[iOS Platform]**
   * Supports [CleverTap iOS SDK v7.6.0](https://github.com/CleverTap/clevertap-ios-sdk/blob/master/CHANGELOG.md#version-760-april-17-2026).
