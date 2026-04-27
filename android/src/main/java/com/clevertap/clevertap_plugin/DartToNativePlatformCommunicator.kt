@@ -642,6 +642,10 @@ class DartToNativePlatformCommunicator(
                 )
             }
 
+            "unmute" -> {
+                unmute(result)
+            }
+
             else -> {
                 result.notImplemented()
             }
@@ -2105,6 +2109,14 @@ class DartToNativePlatformCommunicator(
         ) { templateContext: CustomTemplateContext -> templateContext.toString() }
     }
 
+    private fun unmute(result: MethodChannel.Result) {
+        if (cleverTapAPI != null) {
+            cleverTapAPI.unmute()
+            result.success(null)
+        } else {
+            result.error(TAG, ERROR_MSG, null)
+        }
+    }
 
     private fun resolveWithTemplateContext(
         templateName: String?,
