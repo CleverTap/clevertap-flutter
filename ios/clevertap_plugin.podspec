@@ -11,6 +11,7 @@ Pod::Spec.new do |s|
   s.author                   = { "CleverTap" => "http://www.clevertap.com" }
   s.source                   = { :path => '.' }
   s.source_files             = 'Classes/**/*'
+  s.exclude_files            = 'Classes/include/**/*'
   s.public_header_files      = 'Classes/*.h'
   s.dependency               'Flutter'
   s.dependency               'CleverTap-iOS-SDK', '7.6.0'
