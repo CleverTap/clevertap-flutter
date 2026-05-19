@@ -563,7 +563,6 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return StyledToast(
-      locale: const Locale('en', 'US'),
       child: MaterialApp(
         home: Scaffold(
             appBar: AppBar(

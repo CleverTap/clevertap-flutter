@@ -28,6 +28,7 @@ flutter:
         pluginClass: CleverTapPlugin
       ios:
         pluginClass: CleverTapPlugin
+        swiftPackageName: clevertap_plugin
       web:
         pluginClass: CleverTapPluginWeb
         fileName: clevertap_plugin_web.dart
