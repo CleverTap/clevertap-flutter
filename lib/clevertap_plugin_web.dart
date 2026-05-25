@@ -21,8 +21,11 @@ class CleverTapPluginWeb {
     _dartToNativeMethodChannel
         .setMethodCallHandler(pluginInstance._handleMethodCall);
 
-    setLibrary(MainPlugin.CleverTapPlugin.libName,
-        MainPlugin.CleverTapPlugin.libVersion);
+    final clevertapObj = globalContext['clevertap'];
+    if (clevertapObj != null && !clevertapObj.isUndefinedOrNull) {
+      setLibrary(MainPlugin.CleverTapPlugin.libName,
+          MainPlugin.CleverTapPlugin.libVersion);
+    }
   }
 
   /// Handles method calls over the MethodChannel of this plugin.

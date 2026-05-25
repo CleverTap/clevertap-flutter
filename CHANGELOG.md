@@ -1,5 +1,12 @@
 ## CHANGE LOG
 
+### Version 4.0.1 *(XX May 2026)*
+-------------------------------------------
+**What's new**
+* **[Web Platform]**
+  * Supports [CleverTap Web SDK v2.7.1](https://github.com/CleverTap/clevertap-web-sdk/releases/tag/v2.7.1)
+  * Adds null check for setLibrary function
+
 ### Version 4.0.0 *(23 April 2026)*
 -------------------------------------------
 **What's new**
