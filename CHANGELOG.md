@@ -1,6 +1,6 @@
 ## CHANGE LOG
 
-### Version 4.0.1 *(XX May 2026)*
+### Version 4.0.1 *(26 May 2026)*
 -------------------------------------------
 **What's new**
 * **[Web Platform]**
