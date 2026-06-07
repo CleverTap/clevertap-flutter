@@ -21,11 +21,11 @@
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>CleverTapAccountID</key>
-	<string>CLEVERTAP_ACCOUNT_ID</string>
+	<string>8KK-85K-996Z</string>
 	<key>CleverTapToken</key>
-	<string>CLEVERTAP_ACCOUNT_TOKEN</string>
+	<string>35b-33b</string>
 	<key>CleverTapRegion</key>
-	<string>CLEVERTAP_ACCOUNT_REGION</string>
+	<string>sk1-staging-18</string>
 	<key>CleverTapUseIFA</key>
 	<false/>
 	<key>LSRequiresIPhoneOS</key>

@@ -1,5 +1,8 @@
+source 'https://github.com/akashvercetti/clevertap-podspecs-test.git'
+source 'https://cdn.cocoapods.org/'
+
 # Uncomment this line to define a global platform for your project
-platform :ios, '12.0'
+platform :ios, '15.0'
 
 # CocoaPods analytics sends network stats synchronously affecting flutter build latency.
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'
@@ -32,6 +35,19 @@ flutter_ios_podfile_setup
 target 'Runner' do
   flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
 end
+
+dynamic_frameworks = ['CleverTap-iOS-SDK', 'SDWebImage']
+  pre_install do |installer|
+    Pod::Installer::Xcode::TargetValidator.send(:define_method, :verify_no_static_framework_transitive_dependencies) {}
+    installer.pod_targets.each do |pod|
+        if dynamic_frameworks.include?(pod.name)
+          Pod::UI.puts "Setting dynamic linking for #{pod.name}".green
+          def pod.build_type;
+            Pod::BuildType.dynamic_framework
+          end
+        end
+      end
+  end
 
 post_install do |installer|
   installer.pods_project.targets.each do |target|
