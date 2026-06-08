@@ -10,6 +10,9 @@
 
 * **[iOS Platform]**
   * Supports [CleverTap iOS SDK v7.7.1](https://github.com/CleverTap/clevertap-ios-sdk/blob/master/CHANGELOG.md#version-771-june-4-2026).
+  * Fixes a bug where server-side InApps evaluation IDs were being duplicated in UserDefaults.
+  * Fixes a bug where apps were freezing when InApps were being shown in low network conditions.
+
 
 **API changes**
 * **[Android and iOS Platform]**
