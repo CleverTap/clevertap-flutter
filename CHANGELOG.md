@@ -6,13 +6,12 @@
 
 * **[Android Platform]**
   * Supports [CleverTap Android SDK v8.3.0](https://github.com/CleverTap/clevertap-android-sdk/blob/master/docs/CTCORECHANGELOG.md#version-830-june-2026).
-  * Deprecates ExoPlayer (`com.google.android.exoplayer2`) in favor of AndroidX Media3. ExoPlayer support will be removed in Android SDK v9.0.0.
 
 * **[iOS Platform]**
   * Supports [CleverTap iOS SDK v7.7.1](https://github.com/CleverTap/clevertap-ios-sdk/blob/master/CHANGELOG.md#version-771-june-4-2026).
-  * Fixes a bug where server-side InApps evaluation IDs were being duplicated in UserDefaults.
-  * Fixes a bug where apps were freezing when InApps were being shown in low network conditions.
 
+* **[Android and iOS Platform]**
+  * Adds support for **App Inbox Cross-Device Sync** — read and delete state for App Inbox messages now syncs across a user's devices.
 
 **API changes**
 * **[Android and iOS Platform]**
@@ -20,9 +19,10 @@
   * New API: `fetchInboxWithCallback()` - Triggers an on-demand App Inbox refresh and returns a `Future<bool?>` indicating success or failure.
   * New API: `pushDisplayUnitElementClickedEvent(unitId, additionalProperties)` - Records a `Notification Clicked` event for a specific element within a Display Unit, enriched with caller-supplied `additionalProperties`.
 
-**Breaking Changes**
-* **[Android Platform]**
-  * Raises minimum supported API level from 21 to 23. Devices running Android 5.x (API levels 21-22) are no longer supported.
+**Bug Fixes**
+* **[iOS Platform]**
+  * Fixes a bug where server-side InApps evaluation IDs were being duplicated in UserDefaults.
+  * Fixes a bug where apps were freezing when InApps were being shown in low network conditions.
 
 ### Version 4.0.1 *(26 May 2026)*
 -------------------------------------------

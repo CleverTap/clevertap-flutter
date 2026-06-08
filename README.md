@@ -34,10 +34,6 @@ import 'package:clevertap_plugin/clevertap_plugin.dart';
 
 See our [Technical Documentation for Android](doc/Integrate-Android.md) and [Technical Documentation for iOS](doc/Integrate-iOS.md) for instructions on integrating CleverTap into your Flutter app.
 
-> **Note (Android):** The minimum supported Android API level is now 23.
-
-> **Note (Android - ExoPlayer to Media3 migration):** The deprecated `ExoPlayer` (`com.google.android.exoplayer2`) libraries used for audio/video App Inbox messages are being replaced by `AndroidX Media3`. The native CleverTap Android SDK removes ExoPlayer support in `v9.0.0`. If you use audio/video App Inbox messages, migrate your optional media dependencies to `androidx.media3` (see [Integrate-Android](doc/Integrate-Android.md#migrateExoplayer) for the dependency mapping).
-
 ## 📑 Documentation & Example
 
 - Checkout our [CleverTap Flutter Usage documentation](doc/Usage.md)
