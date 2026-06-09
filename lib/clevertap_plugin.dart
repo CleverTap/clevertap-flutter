@@ -1057,11 +1057,17 @@ class CleverTapPlugin {
   ///
   /// This is a fire-and-forget call. To be notified of the refresh result,
   /// use [fetchInboxWithCallback] instead.
+  ///
+  /// Note: the native SDK throttles this to one refresh every 5 minutes.
+  /// Calls made within that window are skipped.
   static Future<void> fetchInbox() async {
     return await _dartToNativeMethodChannel.invokeMethod('fetchInbox', {});
   }
 
   /// Triggers an on-demand refresh of the App Inbox messages and returns the result.
+  ///
+  /// Note: the native SDK throttles this to one refresh every 5 minutes.
+  /// A call made within that window is skipped and completes with `false`.
   ///
   /// Returns: `true` if the inbox was refreshed successfully, `false` otherwise.
   static Future<bool?> fetchInboxWithCallback() async {
