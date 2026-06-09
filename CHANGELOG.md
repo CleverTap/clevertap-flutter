@@ -1,12 +1,5 @@
 ## CHANGE LOG
 
-### Version 4.1.0 *(8 June 2026)*
--------------------------------------------
-**What's new**
-* **[Web Platform]**
-  * Supports [CleverTap Web SDK v2.7.2](https://github.com/CleverTap/clevertap-web-sdk/releases/tag/v2.7.2)
-  * New API: `getVariants()` - Returns variants for the current user for A/B testing.
-
 ### Version 4.0.1 *(26 May 2026)*
 -------------------------------------------
 **What's new**
