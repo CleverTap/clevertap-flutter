@@ -1,6 +1,6 @@
 ## CHANGE LOG
 
-### Version 4.1.0 *(7 June 2026)*
+### Version 4.1.0 *(9 June 2026)*
 -------------------------------------------
 **What's new**
 
@@ -10,8 +10,10 @@
 * **[iOS Platform]**
   * Supports [CleverTap iOS SDK v7.7.1](https://github.com/CleverTap/clevertap-ios-sdk/blob/master/CHANGELOG.md#version-771-june-4-2026).
 
-* **[Android and iOS Platform]**
-  * Adds support for **App Inbox Cross-Device Sync** — read and delete state for App Inbox messages now syncs across a user's devices.
+* **[Web Platform]**
+  * Supports [CleverTap Web SDK v2.7.2](https://github.com/CleverTap/clevertap-web-sdk/releases/tag/v2.7.2)
+  * New API: `getVariants()` - Returns variants for the current user for A/B testing.
+
 
 **API changes**
 * **[Android and iOS Platform]**
