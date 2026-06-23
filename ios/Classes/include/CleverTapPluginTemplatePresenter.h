@@ -1,1 +1,0 @@
-../CleverTapPluginTemplatePresenter.h

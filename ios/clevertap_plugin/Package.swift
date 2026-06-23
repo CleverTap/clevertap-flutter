@@ -4,7 +4,7 @@ import PackageDescription
 let package = Package(
     name: "clevertap_plugin",
     platforms: [
-        .iOS("12.0")
+        .iOS("13.0")
     ],
     products: [
         .library(name: "clevertap-plugin", targets: ["clevertap_plugin"])
@@ -21,11 +21,9 @@ let package = Package(
             dependencies: [
                 .product(name: "CleverTapSDK", package: "clevertap-ios-sdk")
             ],
-            path: "Classes",
-            publicHeadersPath: "include",
+            publicHeadersPath: "include/clevertap_plugin",
             cSettings: [
-                .headerSearchPath("include"),
-                .headerSearchPath(".")
+                .headerSearchPath("include/clevertap_plugin")
             ]
         )
     ]
