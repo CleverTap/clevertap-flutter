@@ -12,7 +12,7 @@ let package = Package(
     dependencies: [
         .package(
             url: "https://github.com/CleverTap/clevertap-ios-sdk",
-            from: "7.6.0"
+            exact: "7.6.0"
         )
     ],
     targets: [
