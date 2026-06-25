@@ -732,6 +732,16 @@ class _MyAppState extends State<MyApp> {
                         "Push Inbox Message Viewed",
                         pushInboxNotificationViewedEventForId,
                         "Pushes/Records inbox message viewed event"),
+                  if (!kIsWeb)
+                    _buildListTile(
+                        "Fetch Inbox",
+                        fetchInbox,
+                        "Triggers an on-demand App Inbox refresh (fire-and-forget)."),
+                  if (!kIsWeb)
+                    _buildListTile(
+                        "Fetch Inbox With Callback",
+                        fetchInboxWithCallback,
+                        "Triggers an on-demand App Inbox refresh and returns success status."),
                 ]),
                 _buildExpansionTile("Enable Debugging", [
                   _buildListTile("Set Debug Level", () {
@@ -795,6 +805,10 @@ class _MyAppState extends State<MyApp> {
                         "Returns session UTM details"),
                     _buildListTile("Get Ad Units", getAdUnits,
                         "Returns all Display Units set"),
+                    _buildListTile(
+                        "Push Display Unit Element Clicked",
+                        pushDisplayUnitElementClickedEvent,
+                        "Records an enriched element-clicked event for a Display Unit with additional properties."),
                   ]),
                 _buildExpansionTile("GDPR", [ 
                   _buildListTile("Opt Out User", () => setOptOut(true), "Opt Out User fully"),
@@ -1422,6 +1436,23 @@ class _MyAppState extends State<MyApp> {
     }));
   }
 
+  void fetchInbox() {
+    CleverTapPlugin.fetchInbox();
+    showToast("Inbox refresh triggered");
+    print("Fetch Inbox -> Triggered (fire-and-forget)");
+  }
+
+  void fetchInboxWithCallback() async {
+    bool? success = await CleverTapPlugin.fetchInboxWithCallback();
+    if (success == null) {
+      showToast("Inbox refresh result = null");
+      print("Fetch Inbox With Callback -> result: null");
+    } else {
+      showToast("Inbox refresh success = $success");
+      print("Fetch Inbox With Callback -> success: $success");
+    }
+  }
+
   Future<String>? getFirstInboxMessageId() async {
     var messageList = await CleverTapPlugin.getAllInboxMessages();
     print("inside getFirstInboxMessageId");
@@ -1781,6 +1812,20 @@ class _MyAppState extends State<MyApp> {
 
     // Uncomment to print payload.
     // printDisplayUnitPayload(displayUnits);
+  }
+
+  void pushDisplayUnitElementClickedEvent() {
+    String unitId = "unit_001";
+    Map<String, dynamic> additionalProperties = {
+      "elementType": "banner",
+      "elementPosition": 0,
+      "campaignId": "camp_flutter_demo",
+    };
+    CleverTapPlugin.pushDisplayUnitElementClickedEvent(
+        unitId, additionalProperties);
+    showToast("Display Unit element clicked event pushed");
+    print("Push Display Unit Element Clicked -> unitId: $unitId, "
+        "additionalProperties: " + additionalProperties.toString());
   }
 
   void promptForPushNotification() {

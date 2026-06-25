@@ -137,6 +137,9 @@ external bool? isLocalStorageEncryptionEnabled();
 @JS('clevertap.getAllQualifiedCampaignDetails')
 external JSArray<JSObject> getAllQualifiedCampaignDetails();
 
+@JS('clevertap.getVariants')
+external JSAny getVariants();
+
 @JS('document.addEventListener')
 external void addDocumentEventListenerImpl(String name, JSFunction callback);
 

@@ -21,8 +21,11 @@ class CleverTapPluginWeb {
     _dartToNativeMethodChannel
         .setMethodCallHandler(pluginInstance._handleMethodCall);
 
-    setLibrary(MainPlugin.CleverTapPlugin.libName,
-        MainPlugin.CleverTapPlugin.libVersion);
+    final clevertapObj = globalContext['clevertap'];
+    if (clevertapObj != null && !clevertapObj.isUndefinedOrNull) {
+      setLibrary(MainPlugin.CleverTapPlugin.libName,
+          MainPlugin.CleverTapPlugin.libVersion);
+    }
   }
 
   /// Handles method calls over the MethodChannel of this plugin.
@@ -116,6 +119,8 @@ class CleverTapPluginWeb {
         return _enableLocalStorageEncryption(call);
       case 'isLocalStorageEncryptionEnabled':
         return _isLocalStorageEncryptionEnabled(call);
+      case 'getVariants':
+        return _getVariants(call);
       case 'getAllQualifiedCampaignDetails':
         return _getAllQualifiedCampaignDetails(call);
       default:
@@ -503,6 +508,12 @@ class CleverTapPluginWeb {
   /// Check if the local storage encryption is enabled
   bool? _isLocalStorageEncryptionEnabled(MethodCall call) {
     return isLocalStorageEncryptionEnabled();
+  }
+
+ /// Get Variants for the current user for A/B testing
+  List _getVariants(MethodCall call) {
+    final jsResult = getVariants();
+    return _dartify(jsResult) as List;
   }
 
   /// Get All Qualified campaigns
