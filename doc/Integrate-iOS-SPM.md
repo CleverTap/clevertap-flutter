@@ -2,10 +2,12 @@
 
 Starting from Flutter 3.27, Flutter supports resolving plugin dependencies via Swift Package Manager in addition to CocoaPods. The CleverTap Flutter plugin ships a `Package.swift` alongside its podspec, so both package managers resolve the same native SDK version (`CleverTap-iOS-SDK 7.7.1`).
 
-> **Minimum requirements**
+> **Minimum requirements for SPM integration**
 > - Flutter 3.27+
 > - Xcode 15+
 > - iOS deployment target: 13.0+
+>
+> If you are on Flutter < 3.27, the plugin continues to work via CocoaPods — no action required.
 
 ---
 
