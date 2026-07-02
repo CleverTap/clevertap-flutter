@@ -33,13 +33,13 @@
             android:value="2" />
         <meta-data
             android:name="CLEVERTAP_ACCOUNT_ID"
-            android:value="CLEVERTAP_ACCOUNT_ID"/>
+            android:value="YOUR_CLEVERTAP_ACCOUNT_ID" />
         <meta-data
             android:name="CLEVERTAP_TOKEN"
-            android:value="CLEVERTAP_TOKEN"/>
+            android:value="YOUR_CLEVERTAP_TOKEN" />
         <meta-data
             android:name="CLEVERTAP_REGION"
-            android:value="CLEVERTAP_REGION"/>
+            android:value="YOUR_CLEVERTAP_REGION"/>
 
         <meta-data
             android:name="CLEVERTAP_HANDSHAKE_DOMAIN"
@@ -53,6 +53,31 @@
         <meta-data
             android:name="CLEVERTAP_ENCRYPTION_IN_TRANSIT"
             android:value="0" />
+
+        <!-- Huawei Push (HMS) provider registration -->
+        <meta-data
+            android:name="CLEVERTAP_PROVIDER_1"
+            android:value="hps,hps_token,com.clevertap.android.hms.HmsPushProvider,com.huawei.hms.push.HmsMessageService" />
+
+        <!-- Self-handled messages: huawei_push's FlutterHmsMessageService is the sole
+             HMS message receiver, so incoming pushes reach Dart (onMessageReceivedStream)
+             and are rendered via CleverTapPlugin.createNotification. Disable clevertap-hms's
+             CTHmsMessageService (auto-merged from the add-on) to avoid a second receiver. -->
+        <service
+            android:name="com.clevertap.android.hms.CTHmsMessageService"
+            tools:node="remove" />
+
+        <!-- Required by huawei_push so background/killed-state messages reach the Dart
+             background handler (huawei_push broadcasts to this receiver when the app is
+             not in the foreground). Without it, onMessageReceivedStream works but the
+             registerBackgroundMessageHandler callback never fires. -->
+        <receiver
+            android:name="com.huawei.hms.flutter.push.receiver.BackgroundMessageBroadcastReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.huawei.hms.flutter.push.receiver.BACKGROUND_REMOTE_MESSAGE" />
+            </intent-filter>
+        </receiver>
 
         <service
             android:name="com.clevertap.android.sdk.pushnotification.fcm.FcmMessageListenerService"

@@ -7,6 +7,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
 import 'package:clevertap_plugin/clevertap_plugin.dart';
+import 'package:huawei_push/huawei_push.dart' as hms;
 import 'package:example/deeplink_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_styled_toast/flutter_styled_toast.dart';
@@ -36,6 +37,22 @@ Future<void> _firebaseBackgroundMessageHandler(RemoteMessage message) async {
 void _firebaseForegroundMessageHandler(RemoteMessage remoteMessage) {
   print('_firebaseForegroundMessageHandler called');
   // CleverTapPlugin.createNotification(jsonEncode(remoteMessage.data));
+}
+
+/// Handles HMS push messages received while the app is in the background or killed.
+///
+/// Must be a top-level (or static) function annotated with @pragma('vm:entry-point')
+/// because huawei_push runs it in a separate background isolate. That isolate does not
+/// share state with the app, so we forward the payload to CleverTap the same way the
+/// foreground handler does. NOTE: this depends on clevertap_plugin being registered in
+/// huawei_push's background FlutterEngine — verify on-device that the notification
+/// renders when the app is killed.
+@pragma('vm:entry-point')
+void hmsBackgroundMessageHandler(hms.RemoteMessage message) {
+  final Map<String, String> data = message.dataOfMap ?? <String, String>{};
+  if (data.isEmpty) return;
+  print("HMS background message, rendering via CleverTap: $data");
+  CleverTapPlugin.createNotification(jsonEncode(data));
 }
 
 void main() async {
@@ -115,6 +132,60 @@ class _MyAppState extends State<MyApp> {
     CleverTapPlugin.initializeInbox();
     CleverTapPlugin.registerForPush(); //only for iOS
     //var initialUrl = CleverTapPlugin.getInitialUrl();
+
+    // Huawei Push Kit is Android-only. On an HMS device the huawei_push plugin
+    // fetches the push token which we forward to CleverTap (see below).
+    if (!kIsWeb && Platform.isAndroid) {
+      _initHmsPush();
+    }
+  }
+
+  /// Listens for Huawei (HMS) push tokens from the huawei_push plugin and
+  /// registers each one with CleverTap. This is the token source that makes the
+  /// CleverTap "hps" push provider reachable (flips the device out of ddnd).
+  void _initHmsPush() {
+    // The token is delivered asynchronously on this stream (initial fetch and
+    // every refresh), so register the listener before requesting the token.
+    hms.Push.getTokenStream.listen(_registerHmsTokenWithCleverTap, onError: (e) {
+      print("HMS getTokenStream error: $e");
+    });
+    // Incoming HMS data messages (foreground). We hand the payload to CleverTap
+    // to render the notification. huawei_push is the sole message receiver here
+    // (clevertap-hms's CTHmsMessageService is disabled in AndroidManifest.xml).
+    hms.Push.onMessageReceivedStream.listen(_renderHmsMessageWithCleverTap,
+        onError: (e) {
+      print("HMS onMessageReceivedStream error: $e");
+    });
+    // Render pushes that arrive while the app is backgrounded/killed. huawei_push
+    // runs hmsBackgroundMessageHandler in a background isolate (see its note).
+    hms.Push.registerBackgroundMessageHandler(hmsBackgroundMessageHandler);
+    // Ensure the HMS SDK auto-initializes, then trigger a token request. The
+    // result arrives on getTokenStream above.
+    hms.Push.setAutoInitEnabled(true);
+    hms.Push.getToken("");
+  }
+
+  /// Renders an incoming HMS push via CleverTap. The message's data map holds
+  /// the CleverTap payload (wzrk_* keys); createNotification expects it as JSON.
+  void _renderHmsMessageWithCleverTap(hms.RemoteMessage message) {
+    final Map<String, String> data = message.dataOfMap ?? <String, String>{};
+    if (data.isEmpty) return;
+    print("Rendering HMS push via CleverTap: $data");
+    CleverTapPlugin.createNotification(jsonEncode(data));
+  }
+
+  /// Forwards an HMS token to CleverTap under the "hps" push type.
+  void _registerHmsTokenWithCleverTap(String token) {
+    if (token.isEmpty) return;
+    print("Registering HMS token with CleverTap: $token");
+    CleverTapPlugin.pushRegistrationToken(token, {
+      'type': 'hps',
+      'prefKey': 'hps_token',
+      'className': 'com.clevertap.android.hms.HmsPushProvider',
+      'messagingSDKClassName': 'com.huawei.hms.push.HmsMessageService'
+    }).catchError((error) {
+      print("pushRegistrationToken (hps) error: $error");
+    });
   }
 
   @override
@@ -1066,16 +1137,11 @@ class _MyAppState extends State<MyApp> {
   }
 
   void setPushTokenHMS() {
-    CleverTapPlugin.pushRegistrationToken("token_hms", {
-      'type': 'hps',
-      'prefKey': 'hps_token',
-      'className': 'com.clevertap.android.hms.HmsPushProvider',
-      'messagingSDKClassName': 'com.huawei.hms.push.HmsMessageService'
-    }).catchError((error) {
-      setState(() {
-        print("$error");
-      });
-    });
+    // Request the real HMS token from huawei_push; it is delivered on
+    // getTokenStream and forwarded to CleverTap by _registerHmsTokenWithCleverTap.
+    if (!kIsWeb && Platform.isAndroid) {
+      hms.Push.getToken("");
+    }
   }
 
   void recordCustomEvent(String eventName) {

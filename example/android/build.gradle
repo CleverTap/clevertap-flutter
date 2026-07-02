@@ -1,8 +1,25 @@
+// For Huawei Push (HMS): AGConnect Gradle plugin is published as com.huawei.agconnect:agcp
+// (no plugin marker), so it must be applied via the legacy buildscript classpath.
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+        maven { url 'https://developer.huawei.com/repo/' }
+    }
+    dependencies {
+        // agcp 1.9.x reads the AGP version from the buildscript classpath; must match
+        // the AGP version applied via settings.gradle (com.android.application 8.6.1).
+        classpath 'com.android.tools.build:gradle:8.6.1'
+        classpath 'com.huawei.agconnect:agcp:1.9.1.301'
+    }
+}
 
 allprojects {
     repositories {
         google()
         mavenCentral()
+        // For Huawei Push (HMS)
+        maven { url 'https://developer.huawei.com/repo/' }
         flatDir {
             dirs 'libs'
         }

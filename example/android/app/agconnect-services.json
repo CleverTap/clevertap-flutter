@@ -1,0 +1,53 @@
+{
+  "agcgw": {
+    "url": "connect-dra.dbankcloud.cn",
+    "backurl": "connect-dra.hispace.hicloud.com"
+  },
+  "agcgw_all": {
+    "SG": "connect-dra.dbankcloud.cn",
+    "SG_back": "connect-dra.hispace.hicloud.com",
+    "CN": "connect-drcn.dbankcloud.cn",
+    "CN_back": "connect-drcn.hispace.hicloud.com",
+    "RU": "connect-drru.hispace.dbankcloud.ru",
+    "RU_back": "connect-drru.hispace.dbankcloud.cn",
+    "DE": "connect-dre.dbankcloud.cn",
+    "DE_back": "connect-dre.hispace.hicloud.com"
+  },
+  "client": {
+    "cp_id": "0000000000000000000",
+    "product_id": "000000000000000000",
+    "client_id": "000000000000000000",
+    "client_secret": "REPLACE_WITH_YOUR_CLIENT_SECRET",
+    "project_id": "000000000000000000",
+    "app_id": "100000000",
+    "api_key": "REPLACE_WITH_YOUR_API_KEY",
+    "package_name": "com.example.clevertap_plugin_example"
+  },
+  "oauth_client": {
+    "client_id": "100000000",
+    "client_type": 1
+  },
+  "app_info": {
+    "app_id": "100000000",
+    "package_name": "com.example.clevertap_plugin_example"
+  },
+  "service": {},
+  "region": "SG",
+  "configuration_version": "3.0",
+  "appInfos": [
+    {
+      "package_name": "com.example.clevertap_plugin_example",
+      "client": {
+        "app_id": "100000000"
+      },
+      "oauth_client": {
+        "client_id": "100000000",
+        "client_type": 1
+      },
+      "app_info": {
+        "app_id": "100000000",
+        "package_name": "com.example.clevertap_plugin_example"
+      }
+    }
+  ]
+}

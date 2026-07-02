@@ -55,6 +55,9 @@ dependencies {
     //implementation fileTree('libs')
     implementation "com.clevertap.android:push-templates:2.2.0"
     implementation 'com.google.firebase:firebase-messaging:24.0.0'
+    //For Huawei Push (HMS)
+    implementation 'com.clevertap.android:clevertap-hms-sdk:1.5.1'
+    implementation 'com.huawei.hms:push:6.11.0.300'
     implementation 'androidx.core:core:1.13.1'
     implementation 'androidx.fragment:fragment:1.7.0'
     //MANDATORY for App Inbox
@@ -72,3 +75,7 @@ dependencies {
 
     implementation 'com.android.support:multidex:1.0.3'
 }
+
+// For Huawei Push (HMS): apply at the bottom so AGP is already applied to this project
+// (AGConnect's agcp plugin needs the Android plugin present to configure itself).
+apply plugin: 'com.huawei.agconnect'

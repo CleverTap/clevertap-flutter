@@ -26,6 +26,9 @@ dependencies:
   cupertino_icons: ^1.0.3
   firebase_messaging: ^14.9.2
   firebase_core: ^2.31.0
+  # Huawei Push Kit (Android-only). Used to fetch the HMS push token which is
+  # then registered with CleverTap via CleverTapPlugin.pushRegistrationToken.
+  huawei_push: ^6.12.0+300
 
 dev_dependencies:
   flutter_test:
