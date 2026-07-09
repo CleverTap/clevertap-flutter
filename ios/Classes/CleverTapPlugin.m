@@ -1,4 +1,5 @@
 
+#import <UserNotifications/UserNotifications.h>
 #import "CleverTap.h"
 #import "CleverTapPlugin.h"
 #import "CleverTap+Inbox.h"
@@ -76,6 +77,20 @@ static NSDateFormatter *dateFormatter;
     if (notification && notification[@"wzrk_dl"]) {
         self.launchDeepLink = notification[@"wzrk_dl"];
         NSLog(@"CleverTapFlutter: setting launch deeplink: %@", self.launchDeepLink);
+    }
+}
+
+- (void)sceneWillConnectWithOptions:(UISceneConnectionOptions *)connectionOptions API_AVAILABLE(ios(13.0)) {
+
+    if (@available(iOS 13.0, *)) {
+        UNNotificationResponse *response = connectionOptions.notificationResponse;
+        if (response) {
+            NSDictionary *userInfo = response.notification.request.content.userInfo;
+            if (userInfo && userInfo[@"wzrk_dl"]) {
+                self.launchDeepLink = userInfo[@"wzrk_dl"];
+                NSLog(@"CleverTapFlutter: setting launch deeplink (scene): %@", self.launchDeepLink);
+            }
+        }
     }
 }
 
@@ -780,8 +795,20 @@ static NSDateFormatter *dateFormatter;
     }];
 }
 
+- (UIWindow *)ct_keyWindow {
+
+    if (@available(iOS 11.0, *)) {
+        for (UIWindow *window in [UIApplication sharedApplication].windows) {
+            if (window.isKeyWindow) {
+                return window;
+            }
+        }
+    }
+    return [[UIApplication sharedApplication] keyWindow];
+}
+
 - (void)showInbox:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    
+
     NSDictionary *styleConfig = call.arguments[@"styleConfig"];
     if ([styleConfig isKindOfClass:[NSNull class]]) {
         styleConfig = nil;
@@ -789,7 +816,7 @@ static NSDateFormatter *dateFormatter;
     CleverTapInboxViewController *inboxController = [[CleverTap sharedInstance] newInboxViewControllerWithConfig:[self _dictToInboxStyleConfig:styleConfig ? styleConfig : nil] andDelegate:(id <CleverTapInboxViewControllerDelegate>)self];
     if (inboxController) {
         UINavigationController *navigationController = [[UINavigationController alloc] initWithRootViewController:inboxController];
-        UIWindow *keyWindow = [[UIApplication sharedApplication] keyWindow];
+        UIWindow *keyWindow = [self ct_keyWindow];
         UIViewController *mainViewController = keyWindow.rootViewController;
         [mainViewController presentViewController:navigationController animated:YES completion:nil];
     }
