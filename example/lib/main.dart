@@ -74,17 +74,30 @@ class _MyAppState extends State<MyApp> {
   var offLine = false;
   var firstMsgId = "";
 
+  // Tracks the notification that launched the app from a killed state so the
+  // push-click handler doesn't open a second (blank) DeepLink page for it.
+  String? _launchNotificationId;
+
   var enableDeviceNetworkingInfo = false;
 
   void _handleKilledStateNotificationInteraction() async {
-    CleverTapAppLaunchNotification appLaunchNotification =
-        await CleverTapPlugin.getAppLaunchNotification();
-    print(
-        "_handleKilledStateNotificationInteraction => $appLaunchNotification");
+    try {
+      CleverTapAppLaunchNotification appLaunchNotification =
+          await CleverTapPlugin.getAppLaunchNotification();
+      print(
+          "_handleKilledStateNotificationInteraction => $appLaunchNotification");
 
-    if (appLaunchNotification.didNotificationLaunchApp) {
-      Map<String, dynamic> notificationPayload = appLaunchNotification.payload!;
-      handleDeeplink(notificationPayload);
+      if (appLaunchNotification.didNotificationLaunchApp) {
+        Map<String, dynamic> notificationPayload =
+            appLaunchNotification.payload!;
+        // Remember this notification so the push-click handler (which also fires
+        // on a killed-state launch, but with a blank title/message on iOS) skips
+        // opening a duplicate DeepLink page for the same notification.
+        _launchNotificationId = notificationPayload["wzrk_id"]?.toString();
+        handleDeeplink(notificationPayload);
+      }
+    } catch (e) {
+      print("_handleKilledStateNotificationInteraction => ERROR: $e");
     }
   }
 
@@ -107,9 +120,8 @@ class _MyAppState extends State<MyApp> {
       });
       return;
     }
-    if (Platform.isAndroid) {
-      _handleKilledStateNotificationInteraction();
-    }
+    // Handle notification-launch on both Android and iOS (web already returned above).
+    _handleKilledStateNotificationInteraction();
     CleverTapPlugin.createNotificationChannel(
         "fluttertest", "Flutter Test", "Flutter Test", 3, true);
     CleverTapPlugin.initializeInbox();
@@ -439,6 +451,17 @@ class _MyAppState extends State<MyApp> {
   void pushClickedPayloadReceived(Map<String, dynamic> notificationPayload) {
     print("pushClickedPayloadReceived called");
     print("on Push Click Payload = " + notificationPayload.toString());
+
+    // On a killed-state launch, getAppLaunchNotification() already opened the
+    // DeepLink page with the full title/message. This push-click callback fires
+    // for the same notification too (with a blank title/message on iOS), so skip
+    // it to avoid stacking a duplicate page.
+    final clickedId = notificationPayload["wzrk_id"]?.toString();
+    if (clickedId != null && clickedId == _launchNotificationId) {
+      _launchNotificationId = null;
+      return;
+    }
+
     handleDeeplink(notificationPayload);
   }
 
@@ -2009,20 +2032,44 @@ class _MyAppState extends State<MyApp> {
   }
 
   void handleDeeplink(Map<String, dynamic> notificationPayload) {
-    var type = notificationPayload["type"];
-    var title = notificationPayload["nt"];
-    var message = notificationPayload["nm"];
+    // Custom key-value pair set on the CleverTap campaign (same key on both platforms).
+    var type = notificationPayload["type"]?.toString();
 
-    if (type != null) {
+    // Notification title/message live under different keys per platform:
+    //   Android (FCM data payload): "nt" (title) / "nm" (message)
+    //   iOS (APNs): aps.alert.title / aps.alert.body
+    String? title = notificationPayload["nt"]?.toString();
+    String? message = notificationPayload["nm"]?.toString();
+    if (title == null && message == null) {
+      final aps = notificationPayload["aps"];
+      if (aps is Map) {
+        final alert = aps["alert"];
+        if (alert is Map) {
+          title = alert["title"]?.toString();
+          message = alert["body"]?.toString();
+        } else if (alert is String) {
+          message = alert;
+        }
+      }
+    }
+
+    // Deep link URL is "wzrk_dl" on both Android and iOS.
+    final deepLink = notificationPayload["wzrk_dl"]?.toString();
+
+    if (type != null || deepLink != null) {
       Navigator.push(
           context,
           MaterialPageRoute(
-              builder: (context) =>
-                  DeepLinkPage(type: type, title: title, message: message)));
+              builder: (context) => DeepLinkPage(
+                    type: type ?? "",
+                    title: title ?? "",
+                    message: message ?? "",
+                    deepLink: deepLink ?? "",
+                  )));
     }
 
     print(
-        "_handleKilledStateNotificationInteraction => Type: $type, Title: $title, Message: $message ");
+        "_handleKilledStateNotificationInteraction => Type: $type, Title: $title, Message: $message, DeepLink: $deepLink");
   }
 
   void fetchInApps() {
