@@ -140,13 +140,15 @@ class CleverTapPluginWeb {
     String? token = args['token'] as String?;
     Object? options = args['options'];
 
-    // Convert options Map to JS object if provided
+    // Convert options Map to JS object if provided, default to empty object
     JSAny? jsOptions;
     if (options != null && options is Map) {
       jsOptions = _jsify(options);
+    } else {
+      jsOptions = _jsify({});
     }
 
-    init(accountId, region, targetDomain, token, jsOptions);
+    init(accountId, region, targetDomain, token, jsOptions!);
   }
 
   void _setLibrary(MethodCall call) {
