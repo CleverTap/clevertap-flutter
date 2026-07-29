@@ -1,5 +1,11 @@
 ## CHANGE LOG
 
+### Version 4.1.1 *(Unreleased)*
+-------------------------------------------
+**Bug Fixes**
+* **[iOS Platform]**
+  * Fixes `getAppLaunchNotification()` not being implemented on iOS, which caused a `PlatformException` (`MissingPluginException`) when called.
+
 ### Version 4.1.0 *(9 June 2026)*
 -------------------------------------------
 **What's new**
