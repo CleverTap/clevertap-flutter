@@ -291,7 +291,96 @@ CleverTapPlugin.isLocalStorageEncryptionEnabled();
 ```Dart
 CleverTapPlugin.getAllQualifiedCampaignDetails();
 ```
+## Multi-Instance Support
+
+The Web SDK supports up to **5 simultaneous instances** (1 default + 4 additional). Each instance operates independently with its own events, profiles, sessions, inbox, and storage — fully isolated from other instances.
+
+### Setup
+
+Initialize your default instance as usual, then create additional instances with `createInstance`:
+
+```Dart
+// Default instance
+CleverTapPlugin.init('884-5ZW-8Z7Z', 'sk1-staging-13', 'wzrkt.com', '012-b64');
+CleverTapPlugin.setDebugLevel(4);
+
+// Additional instance — returns a CleverTapInstance object
+final ct2 = await CleverTapPlugin.createInstance('W9R-486-4W5Z',
+    region: 'eu1', targetDomain: 'wzrkt.com');
+ct2.setDebugLevel(4);
+```
+
+### Usage
+
+Call methods directly on the instance object — same API as `CleverTapPlugin`, but instance methods:
+
+```Dart
+// Record events
+ct2.recordEvent('Purchase', {'amount': 200});
+ct2.recordChargedEvent({'total': '200', 'payment': 'cash'}, [{'name': 'item1'}]);
+
+// User login
+ct2.onUserLogin({
+  'Identity': 'user_second',
+  'Name': 'Jane Doe',
+  'Email': 'jane@example.com',
+});
+
+// Profile updates
+ct2.profileSet({'Name': 'Jane Updated'});
+ct2.profileSetMultiValues('interests', ['sports', 'music']);
+ct2.profileIncrementValue('score', 10);
+
+// Get identity
+String? ctId = await ct2.getCleverTapID();
+String? accId = await ct2.getAccountID();
+
+// Inbox
+int total = await ct2.getInboxMessageCount() ?? 0;
+int unread = await ct2.getInboxMessageUnreadCount() ?? 0;
+List? messages = await ct2.getAllInboxMessages();
+
+// Settings
+ct2.setOptOut(false);
+ct2.setOffline(false);
+ct2.setLocation(19.07, 72.87);
+
+// Variables
+ct2.defineVariables({'key': 'defaultValue'});
+ct2.fetchVariables();
+ct2.onVariablesChanged((vars) {
+  print('Variables changed on ct2: $vars');
+});
+
+// Encryption
+ct2.enableLocalStorageEncryption(true);
+```
+
+### Available Methods on CleverTapInstance
+
+| Category | Methods |
+|----------|---------|
+| **Events** | `recordEvent`, `recordChargedEvent` |
+| **User/Profile** | `onUserLogin`, `profileSet`, `profileSetMultiValues`, `profileAddMultiValue`, `profileAddMultiValues`, `profileRemoveMultiValue`, `profileRemoveMultiValues`, `profileRemoveValueForKey`, `profileIncrementValue`, `profileDecrementValue` |
+| **Identity** | `getCleverTapID`, `getAccountID` |
+| **Settings** | `setDebugLevel`, `setOptOut`, `setOffline`, `setLocation`, `setUseIP` |
+| **Inbox** | `toggleInbox`, `getInboxMessageCount`, `getInboxMessageUnreadCount`, `getAllInboxMessages`, `getUnreadInboxMessages`, `getInboxMessageForId`, `deleteInboxMessageForId`, `deleteInboxMessagesForIds`, `markReadInboxMessageForId`, `markReadInboxMessagesForIds`, `markReadAllInboxMessage` |
+| **Notifications** | `enableWebPush`, `renderNotificationViewed`, `renderNotificationClicked` |
+| **Variables** | `defineVariables`, `defineFileVariable`, `syncVariables`, `fetchVariables`, `getVariables`, `getVariable`, `getVariants` |
+| **Callbacks** | `onVariablesChanged`, `onValueChanged`, `addKVDataChangeListener` |
+| **Encryption** | `enableLocalStorageEncryption`, `isLocalStorageEncryptionEnabled` |
+| **Other** | `getAllQualifiedCampaignDetails`, `getSDKVersion` |
+
+### Notes
+
+- **Web-only** — `createInstance` is a no-op on Android/iOS.
+- **Max 5 instances** — 1 default + 4 additional. The JS SDK logs an error if you exceed this.
+- **Full isolation** — each instance has its own device GUID, session, event tracking, profile, inbox, push config, and storage.
+- **Default instance unchanged** — all existing `CleverTapPlugin` static methods continue to work on the default instance without any changes.
+
+---
+
 ### For more information,
 
- - [See Example Application Dart interface](/example/lib/main.dart) 
+ - [See Example Application Dart interface](/example/lib/main.dart)
  - [See CleverTap Dart interface](/lib/clevertap_plugin_web.dart)

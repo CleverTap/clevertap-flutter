@@ -410,6 +410,30 @@ class CleverTapPlugin {
     return CleverTapAppLaunchNotification.fromMap(result);
   }
 
+  /// Only for Web - Create an additional CleverTap instance.
+  ///
+  /// The Web SDK supports up to 5 instances (1 default + 4 additional).
+  /// Each instance operates independently with its own events, profiles,
+  /// sessions, and storage.
+  ///
+  /// Returns a [CleverTapInstance] that you can call methods on directly:
+  /// ```dart
+  /// final ct2 = await CleverTapPlugin.createInstance('W9R-486-4W5Z', region: 'eu1');
+  /// ct2.setDebugLevel(4);
+  /// ct2.recordEvent('Purchase', {'amount': 100});
+  /// ct2.onUserLogin({'Identity': 'user123'});
+  /// ```
+  static Future<CleverTapInstance> createInstance(String accountId,
+      {String? region, String? targetDomain, String? token}) async {
+    await _dartToNativeMethodChannel.invokeMethod('createInstance', {
+      'accountId': accountId,
+      'region': region,
+      'targetDomain': targetDomain,
+      'token': token,
+    });
+    return CleverTapInstance._(accountId);
+  }
+
   /// Only for Web - Initialize clevertap sdk
   /// [options] - Optional map with properties like:
   ///   - enableEncryptionInTransit: bool
@@ -1570,5 +1594,279 @@ class CleverTapPlugin {
     }
     return await _dartToNativeMethodChannel
         .invokeMethod('getAllQualifiedCampaignDetails', {});
+  }
+}
+
+/// Represents an additional CleverTap Web SDK instance.
+///
+/// Created via [CleverTapPlugin.createInstance]. Each instance operates
+/// independently with its own events, profiles, sessions, and storage.
+///
+/// Usage:
+/// ```dart
+/// final ct2 = await CleverTapPlugin.createInstance('W9R-486-4W5Z', region: 'eu1');
+/// ct2.setDebugLevel(4);
+/// ct2.recordEvent('Purchase', {'amount': 100});
+/// ct2.onUserLogin({'Identity': 'user123'});
+/// ```
+class CleverTapInstance {
+  final String accountId;
+
+  static const MethodChannel _channel =
+      MethodChannel('clevertap_plugin/dart_to_native');
+
+  CleverTapInstance._(this.accountId);
+
+  Map<String, dynamic> _args([Map<String, dynamic>? extra]) {
+    final args = <String, dynamic>{'accountId': accountId};
+    if (extra != null) args.addAll(extra);
+    return args;
+  }
+
+  // --- Settings ---
+
+  Future<void> setDebugLevel(int value) async {
+    return await _channel
+        .invokeMethod('setDebugLevel', _args({'debugLevel': value}));
+  }
+
+  Future<void> setOptOut(bool value, [bool? allowSystemEvents]) async {
+    final args = _args({'value': value});
+    if (allowSystemEvents != null) {
+      args['allowSystemEvents'] = allowSystemEvents;
+    }
+    return await _channel.invokeMethod('setOptOut', args);
+  }
+
+  Future<void> setOffline(bool value) async {
+    return await _channel.invokeMethod('setOffline', _args({'value': value}));
+  }
+
+  Future<void> setLocation(double latitude, double longitude) async {
+    return await _channel.invokeMethod(
+        'setLocation', _args({'latitude': latitude, 'longitude': longitude}));
+  }
+
+  // --- Events ---
+
+  Future<void> recordEvent(
+      String eventName, Map<String, dynamic> properties) async {
+    return await _channel.invokeMethod('recordEvent',
+        _args({'eventName': eventName, 'eventData': properties}));
+  }
+
+  Future<void> recordChargedEvent(Map<String, dynamic> chargeDetails,
+      List<Map<String, dynamic>> items) async {
+    return await _channel.invokeMethod('recordChargedEvent',
+        _args({'chargeDetails': chargeDetails, 'items': items}));
+  }
+
+  // --- User & Profile ---
+
+  Future<void> onUserLogin(Map<String, dynamic> profile) async {
+    return await _channel
+        .invokeMethod('onUserLogin', _args({'profile': profile}));
+  }
+
+  Future<void> profileSet(Map<String, dynamic> profile) async {
+    return await _channel
+        .invokeMethod('profileSet', _args({'profile': profile}));
+  }
+
+  Future<void> profileRemoveValueForKey(String key) async {
+    return await _channel
+        .invokeMethod('profileRemoveValueForKey', _args({'key': key}));
+  }
+
+  Future<void> profileSetMultiValues(String key, List values) async {
+    return await _channel.invokeMethod(
+        'profileSetMultiValues', _args({'key': key, 'values': values}));
+  }
+
+  Future<void> profileAddMultiValue(String key, String value) async {
+    return await _channel.invokeMethod(
+        'profileAddMultiValue', _args({'key': key, 'value': value}));
+  }
+
+  Future<void> profileAddMultiValues(String key, List values) async {
+    return await _channel.invokeMethod(
+        'profileAddMultiValues', _args({'key': key, 'values': values}));
+  }
+
+  Future<void> profileRemoveMultiValue(String key, String value) async {
+    return await _channel.invokeMethod(
+        'profileRemoveMultiValue', _args({'key': key, 'value': value}));
+  }
+
+  Future<void> profileRemoveMultiValues(String key, List values) async {
+    return await _channel.invokeMethod(
+        'profileRemoveMultiValues', _args({'key': key, 'values': values}));
+  }
+
+  Future<void> profileIncrementValue(String key, num value) async {
+    return await _channel.invokeMethod(
+        'profileIncrementValue', _args({'key': key, 'value': value}));
+  }
+
+  Future<void> profileDecrementValue(String key, num value) async {
+    return await _channel.invokeMethod(
+        'profileDecrementValue', _args({'key': key, 'value': value}));
+  }
+
+  // --- Identity ---
+
+  Future<String?> getCleverTapID() async {
+    return await _channel.invokeMethod('getCleverTapID', _args());
+  }
+
+  Future<String?> getAccountID() async {
+    return await _channel.invokeMethod('getAccountID', _args());
+  }
+
+  // --- Inbox ---
+
+  Future<void> toggleInbox(Object rect) async {
+    return await _channel.invokeMethod('toggleInbox', _args({'rect': rect}));
+  }
+
+  Future<int?> getInboxMessageCount() async {
+    return await _channel.invokeMethod('getInboxMessageCount', _args());
+  }
+
+  Future<int?> getInboxMessageUnreadCount() async {
+    return await _channel.invokeMethod('getInboxMessageUnreadCount', _args());
+  }
+
+  Future<List?> getAllInboxMessages() async {
+    return await _channel.invokeMethod('getAllInboxMessages', _args());
+  }
+
+  Future<List?> getUnreadInboxMessages() async {
+    return await _channel.invokeMethod('getUnreadInboxMessages', _args());
+  }
+
+  Future<Map<String, dynamic>> getInboxMessageForId(String messageId) async {
+    Map<dynamic, dynamic> response = await _channel.invokeMethod(
+        'getInboxMessageForId', _args({'messageId': messageId}));
+    return response.cast<String, dynamic>();
+  }
+
+  Future<void> deleteInboxMessageForId(String messageId) async {
+    return await _channel.invokeMethod(
+        'deleteInboxMessageForId', _args({'messageId': messageId}));
+  }
+
+  Future<void> deleteInboxMessagesForIds(List<String> messageIds) async {
+    return await _channel.invokeMethod(
+        'deleteInboxMessagesForIds', _args({'messageIds': messageIds}));
+  }
+
+  Future<void> markReadInboxMessageForId(String messageId) async {
+    return await _channel.invokeMethod(
+        'markReadInboxMessageForId', _args({'messageId': messageId}));
+  }
+
+  Future<void> markReadInboxMessagesForIds(List<String> messageIds) async {
+    return await _channel.invokeMethod(
+        'markReadInboxMessagesForIds', _args({'messageIds': messageIds}));
+  }
+
+  Future<void> markReadAllInboxMessage() async {
+    return await _channel.invokeMethod('markReadAllInboxMessage', _args());
+  }
+
+  // --- Notifications ---
+
+  Future<void> enableWebPush(Map<String, dynamic> pushData) async {
+    final args = _args();
+    args.addAll(pushData);
+    return await _channel.invokeMethod('enableWebPush', args);
+  }
+
+  Future<void> renderNotificationViewed(
+      Map<String, dynamic> viewedData) async {
+    final args = _args();
+    args.addAll(viewedData);
+    return await _channel.invokeMethod('renderNotificationViewed', args);
+  }
+
+  Future<void> renderNotificationClicked(
+      Map<String, dynamic> clickedData) async {
+    final args = _args();
+    args.addAll(clickedData);
+    return await _channel.invokeMethod('renderNotificationClicked', args);
+  }
+
+  // --- Privacy ---
+
+  Future<void> setUseIP(bool value) async {
+    return await _channel.invokeMethod('setUseIP', _args({'value': value}));
+  }
+
+  // --- Variables / Product Experiences ---
+
+  Future<void> defineVariables(Map<String, dynamic> variables) async {
+    return await _channel
+        .invokeMethod('defineVariables', _args({'variables': variables}));
+  }
+
+  Future<void> defineFileVariable(String fileVariable) async {
+    return await _channel.invokeMethod(
+        'defineFileVariable', _args({'fileVariable': fileVariable}));
+  }
+
+  Future<void> syncVariables() async {
+    return await _channel.invokeMethod('syncVariables', _args());
+  }
+
+  Future<bool?> fetchVariables() async {
+    return await _channel.invokeMethod('fetchVariables', _args());
+  }
+
+  Future<Map<Object?, Object?>> getVariables() async {
+    return await _channel.invokeMethod('getVariables', _args());
+  }
+
+  Future<dynamic> getVariable(String name) async {
+    return await _channel.invokeMethod('getVariable', _args({'name': name}));
+  }
+
+  Future<List?> getVariants() async {
+    return await _channel.invokeMethod('getVariants', _args());
+  }
+
+  void onVariablesChanged(CleverTapOnVariablesChangedHandler handler) {
+    CleverTapPluginWeb.onVariablesChanged(handler, accountId: accountId);
+  }
+
+  void onValueChanged(String name, CleverTapOnValueChangedHandler handler) {
+    CleverTapPluginWeb.onValueChanged(name, handler, accountId: accountId);
+  }
+
+  void addKVDataChangeListener(CleverTapOnKVDataChangedHandler handler) {
+    CleverTapPluginWeb.addKVDataChangeListener(handler, accountId: accountId);
+  }
+
+  // --- Encryption ---
+
+  Future<void> enableLocalStorageEncryption(bool value) async {
+    return await _channel.invokeMethod(
+        'enableLocalStorageEncryption', _args({'value': value}));
+  }
+
+  Future<bool?> isLocalStorageEncryptionEnabled() async {
+    return await _channel
+        .invokeMethod('isLocalStorageEncryptionEnabled', _args());
+  }
+
+  // --- Campaigns ---
+
+  Future<List?> getAllQualifiedCampaignDetails() async {
+    return await _channel
+        .invokeMethod('getAllQualifiedCampaignDetails', _args());
+  }
+
+  Future<String?> getSDKVersion() async {
+    return await _channel.invokeMethod('getSDKVersion', _args());
   }
 }
