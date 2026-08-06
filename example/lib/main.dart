@@ -824,6 +824,25 @@ class _MyAppState extends State<MyApp> {
                     _buildListTile("Disable Personalization",
                         disablePersonalization, "Disables Personalization"),
                   ]),
+                if (kIsWeb)
+                  _buildExpansionTile("Web Multi-Instance", [
+                    _buildListTile(
+                        "Create Instance",
+                        _createWebInstance,
+                        "Create an additional CleverTap instance"),
+                    _buildListTile(
+                        "Record Event (2nd Instance)",
+                        _recordEventOnSecondInstance,
+                        "Record event on additional instance"),
+                    _buildListTile(
+                        "Get CleverTapID (2nd Instance)",
+                        _getCleverTapIDOnSecondInstance,
+                        "Get CleverTap ID from additional instance"),
+                    _buildListTile(
+                        "OnUserLogin (2nd Instance)",
+                        _onUserLoginOnSecondInstance,
+                        "Login user on additional instance"),
+                  ]),
                 _buildExpansionTile("Offline Mode", [
                   _buildListTile("Set Offline", setOffline,
                       "Switches CleverTap to offline mode"),
@@ -1516,6 +1535,54 @@ class _MyAppState extends State<MyApp> {
       showToast("You have enabled device networking info");
     }
   }
+
+  // --- Web Multi-Instance Methods ---
+
+  CleverTapInstance? _secondInstance;
+
+  void _createWebInstance() async {
+    _secondInstance = await CleverTapPlugin.createInstance("SECOND_ACCOUNT_ID",
+        region: "SECOND_REGION", targetDomain: "SECOND_TARGET_DOMAIN");
+    _secondInstance!.setDebugLevel(4);
+    showToast("Created instance for SECOND_ACCOUNT_ID");
+  }
+
+  void _recordEventOnSecondInstance() {
+    if (_secondInstance == null) {
+      showToast("Create instance first");
+      return;
+    }
+    _secondInstance!
+        .recordEvent("WebMultiInstanceEvent", {"source": "second_instance"});
+    showToast("Event recorded on 2nd instance");
+  }
+
+  void _getCleverTapIDOnSecondInstance() {
+    if (_secondInstance == null) {
+      showToast("Create instance first");
+      return;
+    }
+    _secondInstance!.getCleverTapID().then((cleverTapId) {
+      setState(() {
+        showToast("CleverTapID (2nd): $cleverTapId");
+      });
+    });
+  }
+
+  void _onUserLoginOnSecondInstance() {
+    if (_secondInstance == null) {
+      showToast("Create instance first");
+      return;
+    }
+    _secondInstance!.onUserLogin({
+      "Identity": "web_multi_instance_user",
+      "Name": "Multi Instance User",
+      "Email": "multi@instance.test"
+    });
+    showToast("onUserLogin on 2nd instance");
+  }
+
+  // --- End Web Multi-Instance Methods ---
 
   void recordScreenView() {
     var screenName = "Home Screen";
