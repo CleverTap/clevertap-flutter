@@ -167,6 +167,8 @@ static NSDateFormatter *dateFormatter;
         [self discardInAppNotifications:call withResult:result];
     else if ([@"resumeInAppNotifications" isEqualToString:call.method])
         [self resumeInAppNotifications];
+    else if ([@"dismissPipInApp" isEqualToString:call.method])
+        [self dismissPipInApp:call withResult:result];
     else if ([@"fetchInbox" isEqualToString:call.method])
         [self fetchInbox:call withResult:result];
     else if ([@"fetchInboxWithCallback" isEqualToString:call.method])
@@ -671,8 +673,13 @@ static NSDateFormatter *dateFormatter;
 }
 
 - (void)resumeInAppNotifications {
-    
+
     [[CleverTap sharedInstance] resumeInAppNotifications];
+}
+
+- (void)dismissPipInApp:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    [[CleverTap sharedInstance] dismissPipInApp];
+    result(nil);
 }
 
 #pragma mark - InApp Controls
