@@ -16,3 +16,7 @@ example/android/app/property*
 # Generated SDK review reports
 sdk-review-*.html
 
+# SPM build artifacts
+.build/
+.swiftpm/
+
