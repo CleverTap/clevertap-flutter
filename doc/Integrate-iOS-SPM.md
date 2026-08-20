@@ -1,6 +1,6 @@
 ## 📦 iOS Integration via Swift Package Manager (SPM)
 
-Flutter introduced Swift Package Manager support as an **opt-in** feature in Flutter 3.24, and it became the **default** package manager in Flutter 3.44. The CleverTap Flutter plugin ships a `Package.swift` alongside its podspec, so both package managers resolve the same native SDK version (`CleverTap-iOS-SDK 7.7.1`).
+Flutter introduced Swift Package Manager support as an **opt-in** feature in Flutter 3.24, and it became the **default** package manager in Flutter 3.44. The CleverTap Flutter plugin from v4.2.0 ships a `Package.swift` alongside its podspec, so both package managers resolve the same native SDK version (`CleverTap-iOS-SDK 7.8.1`).
 
 > **Minimum requirements for SPM integration**
 > - Flutter 3.24+ (opt-in) - enabled by default from Flutter 3.44
@@ -13,7 +13,7 @@ Flutter introduced Swift Package Manager support as an **opt-in** feature in Flu
 
 ### How it works
 
-The plugin ships a Swift package that pins `CleverTap-iOS-SDK 7.7.1`. When your app is built with SPM enabled, Flutter resolves it automatically - you don't add anything to your app's own `Package.swift` or edit any plugin files.
+The plugin ships a Swift package that pins `CleverTap-iOS-SDK 7.8.1`. When your app is built with SPM enabled, Flutter resolves it automatically - you don't add anything to your app's own `Package.swift` or edit any plugin files.
 
 ---
 
@@ -65,7 +65,7 @@ flutter build ios --config-only   # or: flutter run
 On this build Flutter adds a `FlutterGeneratedPluginSwiftPackage` to the Xcode project and resolves every plugin that ships a `Package.swift` (including `clevertap_plugin`) via SPM. Plugins that only ship a podspec stay on CocoaPods - a hybrid setup is expected.
 
 **4. Verify SPM took over.** Open `ios/Runner.xcworkspace` and confirm:
-- **Package Dependencies** lists `clevertap_plugin` and, transitively, `clevertap-ios-sdk` at `7.7.1`.
+- **Package Dependencies** lists `clevertap_plugin` and, transitively, `clevertap-ios-sdk` at `7.8.1`.
 - The regenerated `Podfile.lock` no longer contains a `clevertap_plugin` pod entry.
 
 **5. Build and run** on a simulator/device and smoke-test CleverTap initialization plus a `recordEvent` to confirm native symbols link.
@@ -107,8 +107,8 @@ These guards ensure your app compiles correctly regardless of which package mana
 
 | | CocoaPods | SPM |
 |---|---|---|
-| SDK version pinned | `7.7.1` | `7.7.1` |
-| Deployment target | `13.0` | `13.0` |
+| SDK version pinned | `7.8.1` | `7.8.1` |
+| Deployment target | `9.0` | `13.0` |
 | Opt-in required | No | Yes on Flutter 3.24–3.43; default from 3.44 |
 
 Both package managers resolve the same CleverTap iOS SDK version to ensure no drift between the two integration paths.
