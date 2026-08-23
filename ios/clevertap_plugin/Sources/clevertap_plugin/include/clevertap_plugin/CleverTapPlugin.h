@@ -32,6 +32,7 @@ static NSString *const kCleverTapCustomTemplateClose                       = @"c
 + (instancetype)sharedInstance;
 
 - (void)applicationDidLaunchWithOptions:(NSDictionary *)options;
+- (void)sceneWillConnectWithOptions:(UISceneConnectionOptions *)connectionOptions API_AVAILABLE(ios(13.0));
 - (void)postNotificationWithName:(NSString *)name andBody:(NSDictionary *)body;
 
 @property NSString *launchDeepLink;
