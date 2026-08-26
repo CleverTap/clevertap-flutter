@@ -23,7 +23,6 @@ let package = Package(
                 .product(name: "FlutterFramework", package: "FlutterFramework"),
                 .product(name: "CleverTapSDK", package: "clevertap-ios-sdk")
             ],
-            publicHeadersPath: "include/clevertap_plugin",
             cSettings: [
                 .headerSearchPath("include/clevertap_plugin")
             ]
