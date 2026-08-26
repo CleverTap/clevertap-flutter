@@ -72,11 +72,14 @@ static NSDateFormatter *dateFormatter;
 }
 
 - (void)applicationDidLaunchWithOptions:(NSDictionary *)options {
-    
+
     NSDictionary *notification = [options valueForKey:UIApplicationLaunchOptionsRemoteNotificationKey];
     if (notification && notification[@"wzrk_dl"]) {
         self.launchDeepLink = notification[@"wzrk_dl"];
         NSLog(@"CleverTapFlutter: setting launch deeplink: %@", self.launchDeepLink);
+    }
+    if (notification && [[CleverTap sharedInstance] isCleverTapNotification:notification]) {
+        self.launchNotification = notification;
     }
 }
 
@@ -340,6 +343,8 @@ static NSDateFormatter *dateFormatter;
         [self getUserEventLogHistory:call withResult:result];
     else if ([@"getUserAppLaunchCount" isEqualToString:call.method])
         [self getUserAppLaunchCount:call withResult:result];
+    else if ([@"getAppLaunchNotification" isEqualToString:call.method])
+        [self getAppLaunchNotification:call withResult:result];
     else if ([@"getUserLastVisitTs" isEqualToString:call.method])
         [self getUserLastVisitTs:call withResult:result];
     else if ([@"unmute" isEqualToString:call.method])
@@ -638,9 +643,20 @@ static NSDateFormatter *dateFormatter;
 }
 
 - (void)getUserAppLaunchCount:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    
+
     int res = [[CleverTap sharedInstance] getUserAppLaunchCount];
     result(@(res));
+}
+
+- (void)getAppLaunchNotification:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+
+    NSMutableDictionary *res = [NSMutableDictionary new];
+    BOOL launched = (self.launchNotification != nil);
+    res[@"notificationLaunchedApp"] = @(launched);
+    if (launched) {
+        res[@"notificationPayload"] = self.launchNotification;
+    }
+    result(res);
 }
 
 - (void)sessionGetScreenCount:(FlutterMethodCall *)call withResult:(FlutterResult)result {
