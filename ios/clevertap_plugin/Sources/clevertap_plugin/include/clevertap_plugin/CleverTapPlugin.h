@@ -36,5 +36,6 @@ static NSString *const kCleverTapCustomTemplateClose                       = @"c
 - (void)postNotificationWithName:(NSString *)name andBody:(NSDictionary *)body;
 
 @property NSString *launchDeepLink;
+@property (strong, nonatomic) NSDictionary *launchNotification;
 
 @end
