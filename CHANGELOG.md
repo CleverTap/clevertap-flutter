@@ -10,10 +10,10 @@
   * Improves accessibility across in-app notifications and App Inbox with dynamic text scaling, screen-reader announcements and content descriptions, a larger 48dp dismiss-button tap area, and corrected carousel TalkBack navigation.
 
 * **[iOS Platform]**
-  * Supports [CleverTap iOS SDK v7.8.1](https://github.com/CleverTap/clevertap-ios-sdk/blob/master/CHANGELOG.md#version-781-august-7-2026).
-  * Improves accessibility across in-app notifications and App Inbox with VoiceOver labels, a larger dismiss-button tap area, and better handling of image content descriptions.
   * Adds Swift Package Manager (SPM) support alongside the existing CocoaPods integration - consumers can pick either package manager based on their project setup. Raises the minimum iOS deployment target to 13.0; projects below this are auto-promoted by Flutter's SPM tooling with a build log notice. See [Integrate-iOS-SPM.md](https://github.com/CleverTap/clevertap-flutter/blob/master/doc/Integrate-iOS-SPM.md) for setup and migration guidance.
   * Adds `UIScene` lifecycle support via a new `sceneWillConnectWithOptions:` method on `CleverTapPlugin`. Apps that use a `SceneDelegate` should call it from `scene(_:willConnectTo:options:)` so `getInitialUrl()` returns the deep link on a cold launch; apps that do not use the `UIScene` lifecycle need no changes.
+  * Supports [CleverTap iOS SDK v7.8.1](https://github.com/CleverTap/clevertap-ios-sdk/blob/master/CHANGELOG.md#version-781-august-7-2026).
+  * Improves accessibility across in-app notifications and App Inbox with VoiceOver labels, a larger dismiss-button tap area, and better handling of image content descriptions.
 
 * **[Android and iOS Platform]**
   * Adds Spin-the-Wheel and Scratch Card gamified templates to Advanced InApp Builder in-app notifications — campaign-driven, no app-side wiring needed.
