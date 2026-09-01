@@ -9,8 +9,18 @@
 #import "CleverTapPluginCustomTemplates.h"
 #import "CleverTapPluginTemplatePresenter.h"
 #import "CleverTapPluginAppFunctionPresenter.h"
+
+#if __has_include(<CleverTapSDK/CTJsonTemplateProducer.h>)
+#import <CleverTapSDK/CTJsonTemplateProducer.h>
+#else
 #import "CTJsonTemplateProducer.h"
+#endif
+
+#if __has_include(<CleverTapSDK/CTCustomTemplatesManager.h>)
+#import <CleverTapSDK/CTCustomTemplatesManager.h>
+#else
 #import "CTCustomTemplatesManager.h"
+#endif
 
 @implementation CleverTapPluginCustomTemplates
 

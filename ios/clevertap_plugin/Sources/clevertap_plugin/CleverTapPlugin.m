@@ -1,22 +1,103 @@
 
 #import <UserNotifications/UserNotifications.h>
+
+#if __has_include(<CleverTapSDK/CleverTap.h>)
+#import <CleverTapSDK/CleverTap.h>
+#else
 #import "CleverTap.h"
+#endif
+
 #import "CleverTapPlugin.h"
+
+#if __has_include(<CleverTapSDK/CleverTap+Inbox.h>)
+#import <CleverTapSDK/CleverTap+Inbox.h>
+#else
 #import "CleverTap+Inbox.h"
+#endif
+
+#if __has_include(<CleverTapSDK/CleverTapUTMDetail.h>)
+#import <CleverTapSDK/CleverTapUTMDetail.h>
+#else
 #import "CleverTapUTMDetail.h"
+#endif
+
+#if __has_include(<CleverTapSDK/CleverTapEventDetail.h>)
+#import <CleverTapSDK/CleverTapEventDetail.h>
+#else
 #import "CleverTapEventDetail.h"
+#endif
+
+#if __has_include(<CleverTapSDK/CleverTapSyncDelegate.h>)
+#import <CleverTapSDK/CleverTapSyncDelegate.h>
+#else
 #import "CleverTapSyncDelegate.h"
+#endif
+
+#if __has_include(<CleverTapSDK/CleverTap+DisplayUnit.h>)
+#import <CleverTapSDK/CleverTap+DisplayUnit.h>
+#else
 #import "CleverTap+DisplayUnit.h"
+#endif
+
+#if __has_include(<CleverTapSDK/CleverTap+FeatureFlags.h>)
+#import <CleverTapSDK/CleverTap+FeatureFlags.h>
+#else
 #import "CleverTap+FeatureFlags.h"
+#endif
+
+#if __has_include(<CleverTapSDK/CleverTap+ProductConfig.h>)
+#import <CleverTapSDK/CleverTap+ProductConfig.h>
+#else
 #import "CleverTap+ProductConfig.h"
+#endif
+
+#if __has_include(<CleverTapSDK/CleverTapPushNotificationDelegate.h>)
+#import <CleverTapSDK/CleverTapPushNotificationDelegate.h>
+#else
 #import "CleverTapPushNotificationDelegate.h"
+#endif
+
+#if __has_include(<CleverTapSDK/CleverTapInAppNotificationDelegate.h>)
+#import <CleverTapSDK/CleverTapInAppNotificationDelegate.h>
+#else
 #import "CleverTapInAppNotificationDelegate.h"
+#endif
+
+#if __has_include(<CleverTapSDK/CleverTap+InAppNotifications.h>)
+#import <CleverTapSDK/CleverTap+InAppNotifications.h>
+#else
 #import "CleverTap+InAppNotifications.h"
+#endif
+
+#if __has_include(<CleverTapSDK/CleverTap+PushPermission.h>)
+#import <CleverTapSDK/CleverTap+PushPermission.h>
+#else
 #import "CleverTap+PushPermission.h"
+#endif
+
+#if __has_include(<CleverTapSDK/CTLocalInApp.h>)
+#import <CleverTapSDK/CTLocalInApp.h>
+#else
 #import "CTLocalInApp.h"
+#endif
+
+#if __has_include(<CleverTapSDK/CleverTap+CTVar.h>)
+#import <CleverTapSDK/CleverTap+CTVar.h>
+#else
 #import "CleverTap+CTVar.h"
+#endif
+
+#if __has_include(<CleverTapSDK/CTVar.h>)
+#import <CleverTapSDK/CTVar.h>
+#else
 #import "CTVar.h"
+#endif
+
+#if __has_include(<CleverTapSDK/CTTemplateContext.h>)
+#import <CleverTapSDK/CTTemplateContext.h>
+#else
 #import "CTTemplateContext.h"
+#endif
 
 @interface CleverTapPlugin () <CleverTapSyncDelegate, CleverTapInAppNotificationDelegate, CleverTapDisplayUnitDelegate, CleverTapInboxViewControllerDelegate, CleverTapProductConfigDelegate, CleverTapFeatureFlagsDelegate, CleverTapPushNotificationDelegate, CleverTapPushPermissionDelegate>
 

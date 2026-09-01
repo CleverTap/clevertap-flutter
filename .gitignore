@@ -10,3 +10,13 @@ example/pubspec.lock
 pubspec.lock
 example/android/app/property*
 
+# Local Claude Code settings
+.claude/settings.local.json
+
+# Generated SDK review reports
+sdk-review-*.html
+
+# SPM build artifacts
+.build/
+.swiftpm/
+
