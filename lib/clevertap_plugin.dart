@@ -1046,7 +1046,7 @@ class CleverTapPlugin {
   /// Dismisses the currently visible Picture-in-Picture (PIP) InApp Notification, if any.
   ///
   /// This is a no-op when no PIP InApp is visible. Other InApp Notification types are
-  /// never affected. Safe to call from any thread.
+  /// never affected.
   ///
   /// Note: dismissing releases the InApp display slot, so the next queued InApp (if any)
   /// may show immediately. To keep a screen free of all InApps, pair this with

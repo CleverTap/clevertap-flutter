@@ -174,6 +174,9 @@ static NSDateFormatter *dateFormatter;
                 self.launchDeepLink = userInfo[@"wzrk_dl"];
                 NSLog(@"CleverTapFlutter: setting launch deeplink (scene): %@", self.launchDeepLink);
             }
+            if (userInfo && [[CleverTap sharedInstance] isCleverTapNotification:userInfo]) {
+                self.launchNotification = userInfo;
+            }
         }
     }
 }
