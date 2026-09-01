@@ -789,6 +789,10 @@ class _MyAppState extends State<MyApp> {
                         "Resume InApp notifications",
                         resumeInAppNotifications,
                         "Resumes display of InApp Notifications."),
+                    _buildListTile(
+                        "Dismiss PIP InApp",
+                        dismissPipInApp,
+                        "Dismisses the currently visible Picture-in-Picture InApp notification, if any."),
                   ]),
                 if (!kIsWeb)
                   _buildExpansionTile("Event History", [
@@ -1814,6 +1818,12 @@ class _MyAppState extends State<MyApp> {
   void resumeInAppNotifications() {
     CleverTapPlugin.resumeInAppNotifications();
     showToast("InApp notification is resumed");
+  }
+
+  void dismissPipInApp() {
+    CleverTapPlugin.dismissPipInApp();
+    showToast("PIP InApp notification dismissed (if visible)");
+    print("InApp -> dismissPipInApp called");
   }
 
   void enablePersonalization() {

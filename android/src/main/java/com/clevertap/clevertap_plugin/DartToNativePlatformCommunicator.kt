@@ -373,6 +373,10 @@ class DartToNativePlatformCommunicator(
                 resumeInAppNotifications(result)
             }
 
+            "dismissPipInApp" -> {
+                dismissPipInApp(result)
+            }
+
             "initializeInbox" -> {
                 initializeInbox(result)
             }
@@ -1530,6 +1534,15 @@ class DartToNativePlatformCommunicator(
     private fun resumeInAppNotifications(result: MethodChannel.Result) {
         if (cleverTapAPI != null) {
             cleverTapAPI.resumeInAppNotifications()
+            result.success(null)
+        } else {
+            result.error(TAG, ERROR_MSG, null)
+        }
+    }
+
+    private fun dismissPipInApp(result: MethodChannel.Result) {
+        if (cleverTapAPI != null) {
+            cleverTapAPI.dismissPipInApp()
             result.success(null)
         } else {
             result.error(TAG, ERROR_MSG, null)
