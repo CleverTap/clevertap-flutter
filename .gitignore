@@ -2,7 +2,6 @@
 .packages
 .idea/
 .DS_Store
-.metadata
 example/build
 example/android/app/google-services.json
 build/
@@ -10,3 +9,15 @@ example/pubspec.lock
 pubspec.lock
 example/android/app/property*
 
+# Local Claude Code settings
+.claude/settings.local.json
+
+# Generated SDK review reports
+sdk-review-*.html
+
+# SPM build artifacts
+.build/
+.swiftpm/
+
+# FVM Version Cache
+.fvm/
