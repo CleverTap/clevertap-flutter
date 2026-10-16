@@ -40,6 +40,12 @@ dev_dependencies:
 # The following section is specific to Flutter.
 flutter:
 
+  # The native CleverTap SDK is integrated via CocoaPods (ios/Podfile), so keep
+  # Swift Package Manager off. Flutter 3.44+ enables SPM by default, which fails
+  # to resolve the plugin's Package.swift in CI.
+  config:
+    enable-swift-package-manager: false
+
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.
