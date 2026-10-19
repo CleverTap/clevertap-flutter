@@ -5,12 +5,14 @@ class DeepLinkPage extends StatelessWidget {
       {Key? key,
       required this.type,
       required this.title,
-      required this.message})
+      required this.message,
+      this.deepLink = ""})
       : super(key: key);
 
   final String type;
   final String title;
   final String message;
+  final String deepLink;
 
   @override
   Widget build(BuildContext context) {
@@ -30,10 +32,14 @@ class DeepLinkPage extends StatelessWidget {
   }
 
   String getFormattedText() {
-    return "Notification-Type:: $type" +
+    var text = "Notification-Type:: $type" +
         "\n" +
         "Notification-Title:: $title" +
         "\n" +
         "Notification-Message:: $message";
+    if (deepLink.isNotEmpty) {
+      text += "\n" + "Deep-Link:: $deepLink";
+    }
+    return text;
   }
 }

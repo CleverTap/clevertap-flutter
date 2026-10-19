@@ -1,0 +1,73 @@
+name: native-release-sync
+
+# Manually-dispatched entry point for syncing the CleverTap Flutter SDK with a
+# new native Android / iOS SDK release.
+#
+# This is a thin wrapper: it collects the target versions and routes all the
+# real work to the reusable workflow in the central tooling repo
+# (clevertap-wrapper-tooling). Claude runs headless there, edits the wrapper,
+# builds the example app, and opens a PR for review.
+#
+# Required repo secrets (Settings -> Secrets and variables -> Actions):
+#   CLEVERTAP_WRAPPER_SYNC_APP_ID       - clevertap-wrapper-sync GitHub App id
+#   CLEVERTAP_WRAPPER_SYNC_PRIVATE_KEY  - that App's private key (.pem contents)
+#   ANTHROPIC_API_KEY                   - Anthropic API key
+#   SLACK_WEBHOOK_URL                   - Slack webhook for failure pings
+
+on:
+  workflow_dispatch:
+    inputs:
+      android_module:
+        description: 'Android module being bumped'
+        type: choice
+        options: [none, core, pushtemplates, hms]
+        default: core
+      android_version:
+        description: 'New Android version (e.g. 7.7.1). Leave empty to skip Android.'
+        type: string
+        default: ''
+      ios_module:
+        description: 'iOS module being bumped'
+        type: choice
+        options: [none, core, pushtemplates]
+        default: core
+      ios_version:
+        description: 'New iOS version (e.g. 7.4.2). Leave empty to skip iOS.'
+        type: string
+        default: ''
+      release_name:
+        description: 'Optional branch suffix (defaults to today YYYY-MM-DD)'
+        type: string
+        default: ''
+      base_ref:
+        description: 'Wrapper branch to sync from / open PR against (default develop; use a test baseline branch for testing)'
+        type: string
+        default: 'develop'
+      model:
+        description: 'Claude model (alias)'
+        type: choice
+        options: [sonnet, opus, haiku]
+        default: sonnet
+      skip_sync:
+        description: 'Skip Claude Sync + post-sync builds (pre-sync builds still run). Use for debugging the build pipeline without Claude cost.'
+        type: boolean
+        default: false
+
+jobs:
+  sync:
+    uses: CleverTap/clevertap-wrapper-tooling/.github/workflows/sync.yml@v1
+    with:
+      wrapper:         flutter
+      android_module:  ${{ inputs.android_module != 'none' && inputs.android_module || '' }}
+      android_version: ${{ inputs.android_version }}
+      ios_module:      ${{ inputs.ios_module != 'none' && inputs.ios_module || '' }}
+      ios_version:     ${{ inputs.ios_version }}
+      release_name:    ${{ inputs.release_name }}
+      base_ref:        ${{ inputs.base_ref }}
+      model:           ${{ inputs.model }}
+      skip_sync:       ${{ inputs.skip_sync }}
+    secrets:
+      app_id:            ${{ secrets.CLEVERTAP_WRAPPER_SYNC_APP_ID }}
+      app_private_key:   ${{ secrets.CLEVERTAP_WRAPPER_SYNC_PRIVATE_KEY }}
+      anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+      slack_webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}

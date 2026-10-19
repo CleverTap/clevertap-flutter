@@ -80,7 +80,7 @@ class CleverTapPlugin {
   static const libName = 'Flutter';
 
   static const libVersion =
-      40100; // If the current version is X.X.X then pass as X0X0X
+      40200; // If the current version is X.X.X then pass as X0X0X
 
   CleverTapPlugin._internal() {
     /// Set the CleverTap Flutter library name and the current version for version tracking
@@ -1041,6 +1041,18 @@ class CleverTapPlugin {
   static Future<void> resumeInAppNotifications() async {
     return await _dartToNativeMethodChannel
         .invokeMethod('resumeInAppNotifications', {});
+  }
+
+  /// Dismisses the currently visible Picture-in-Picture (PIP) InApp Notification, if any.
+  ///
+  /// This is a no-op when no PIP InApp is visible. Other InApp Notification types are
+  /// never affected.
+  ///
+  /// Note: dismissing releases the InApp display slot, so the next queued InApp (if any)
+  /// may show immediately. To keep a screen free of all InApps, pair this with
+  /// suspendInAppNotifications() on screen entry and resumeInAppNotifications() on exit.
+  static Future<void> dismissPipInApp() async {
+    return await _dartToNativeMethodChannel.invokeMethod('dismissPipInApp', {});
   }
 
   /// Resumes event tracking, overriding any active mute period.

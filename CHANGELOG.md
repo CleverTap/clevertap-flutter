@@ -1,5 +1,44 @@
 ## CHANGE LOG
 
+### Version 4.2.0 *(2 September 2026)*
+-------------------------------------------
+**What's new**
+
+* **[Android Platform]**
+  * Supports [CleverTap Android SDK v8.4.1](https://github.com/CleverTap/clevertap-android-sdk/blob/master/docs/CTCORECHANGELOG.md#version-841-august-7-2026).
+  * Custom-HTML header and footer in-apps now render when the host Activity is not a `FragmentActivity`. Opt in by adding the `CLEVERTAP_INAPP_FRAGMENTLESS_BANNERS` flag to your app's `AndroidManifest.xml`; default off, so existing integrations are unaffected.
+  * Improves accessibility across in-app notifications and App Inbox with dynamic text scaling, screen-reader announcements and content descriptions, a larger 48dp dismiss-button tap area, and corrected carousel TalkBack navigation.
+
+* **[iOS Platform]**
+  * Adds Swift Package Manager (SPM) support alongside the existing CocoaPods integration - consumers can pick either package manager based on their project setup. Raises the minimum iOS deployment target to 13.0; projects below this are auto-promoted by Flutter's SPM tooling with a build log notice. See [Integrate-iOS-SPM.md](https://github.com/CleverTap/clevertap-flutter/blob/master/doc/Integrate-iOS-SPM.md) for setup and migration guidance.
+  * Adds `UIScene` lifecycle support via a new `sceneWillConnectWithOptions:` method on `CleverTapPlugin`. Apps that use a `SceneDelegate` should call it from `scene(_:willConnectTo:options:)` so `getInitialUrl()` returns the deep link on a cold launch; apps that do not use the `UIScene` lifecycle need no changes.
+  * Supports [CleverTap iOS SDK v7.8.1](https://github.com/CleverTap/clevertap-ios-sdk/blob/master/CHANGELOG.md#version-781-august-7-2026).
+  * Improves accessibility across in-app notifications and App Inbox with VoiceOver labels, a larger dismiss-button tap area, and better handling of image content descriptions.
+
+* **[Android and iOS Platform]**
+  * Adds Spin-the-Wheel and Scratch Card gamified templates to Advanced InApp Builder in-app notifications — campaign-driven, no app-side wiring needed.
+  * Adds per-element click attribution to the in-app `Notification Clicked` event across all in-app templates, plus configurable dismiss gestures (swipe-to-dismiss, and tap-outside on iOS) that are also tracked as `Notification Clicked` events.
+
+**API changes**
+* **[Android and iOS Platform]**
+  * New API: `dismissPipInApp()` - Dismisses the currently visible Picture-in-Picture (PIP) in-app notification. A no-op when no PIP in-app is visible, and other in-app types are never affected. Dismissing frees the in-app display slot, so pair it with `suspendInAppNotifications()` and `resumeInAppNotifications()` to keep a screen free of all in-apps.
+
+**Bug Fixes**
+* **[Android Platform]**
+  * Fixes a critical issue where App Inbox messages were never saved on the device on Android 6.0 through Android 10 (API 23 – 29), leaving the inbox permanently empty. Affects every app using App Inbox on `v4.0.0` and `v4.1.0`; messages reappear automatically on the next inbox fetch after updating, with no code change required.
+  * Fixes an `AbstractMethodError` crash when a Picture-in-Picture in-app notification played a video on Android 6.0 (API 23). Only affects apps whose `minSdkVersion` is below 24; the fix also covers in-app and App Inbox video playback.
+
+* **[iOS Platform]**
+  * Fixes `getAppLaunchNotification()` not being implemented on iOS, which caused a `PlatformException` (`MissingPluginException`) when called.
+  * Fixes an issue where in-apps that were missed while the app was in the background were not shown when the app returned to the foreground.
+  * Fixes an issue where the `Notification Clicked` event did not include deeplink properties for custom-HTML in-apps.
+  * Fixes an issue where Advanced InApp Builder full-screen cover in-apps did not respect the device safe area.
+  * Fixes an issue where client-side in-apps were not persisted when an empty campaign list was received.
+  * Fixes a potential crash while saving variable diffs, and a potential crash when `syncVariables()` and concurrent variable updates ran at the same time.
+
+* **[Android and iOS Platform]**
+  * Fixes an issue where the built-in App Inbox did not repaint the message list after a pull-to-refresh — newly fetched messages only appeared after closing and reopening the inbox.
+
 ### Version 4.1.0 *(9 June 2026)*
 -------------------------------------------
 **What's new**

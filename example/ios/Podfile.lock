@@ -1,8 +1,8 @@
 PODS:
-  - CleverTap-iOS-SDK (7.7.1):
+  - CleverTap-iOS-SDK (7.8.1):
     - SDWebImage (~> 5.11)
-  - clevertap_plugin (4.1.0):
-    - CleverTap-iOS-SDK (= 7.7.1)
+  - clevertap_plugin (4.2.0):
+    - CleverTap-iOS-SDK (= 7.8.1)
     - Flutter
   - Firebase/CoreOnly (10.25.0):
     - FirebaseCore (= 10.25.0)
@@ -71,7 +71,7 @@ PODS:
     - nanopb/encode (= 2.30910.0)
   - nanopb/decode (2.30910.0)
   - nanopb/encode (2.30910.0)
-  - PromisesObjC (2.4.0)
+  - PromisesObjC (2.4.1)
   - SDWebImage (5.21.7):
     - SDWebImage/Core (= 5.21.7)
   - SDWebImage/Core (5.21.7)
@@ -107,8 +107,8 @@ EXTERNAL SOURCES:
     :path: Flutter
 
 SPEC CHECKSUMS:
-  CleverTap-iOS-SDK: c80354ca6bca086bd9ea242c0ad15e859b867ea5
-  clevertap_plugin: 967312b3841bf78738a922ebe1becbe6085e8029
+  CleverTap-iOS-SDK: 5cdc6452d832182516340f76444f757962b75db8
+  clevertap_plugin: 4b1cd9391438bcb537ba4020c3cc7c16271f694b
   Firebase: 0312a2352584f782ea56f66d91606891d4607f06
   firebase_core: a626d00494efa398e7c54f25f1454a64c8abf197
   firebase_messaging: 06391e8f35dc65a00c56580266285263d2861f10
@@ -120,9 +120,9 @@ SPEC CHECKSUMS:
   GoogleDataTransport: 6c09b596d841063d76d4288cc2d2f42cc36e1e2a
   GoogleUtilities: ea963c370a38a8069cc5f7ba4ca849a60b6d7d15
   nanopb: 438bc412db1928dac798aa6fd75726007be04262
-  PromisesObjC: f5707f49cb48b9636751c5b2e7d227e43fba9f47
+  PromisesObjC: 752c3227f599e3467650e47ea36f433eeb10c273
   SDWebImage: e9fc87c1aab89a8ab1bbd74eba378c6f53be8abf
 
 PODFILE CHECKSUM: 291c6e37be125d1f160f3b46b95592d2c695ff17
 
-COCOAPODS: 1.15.2
+COCOAPODS: 1.16.2

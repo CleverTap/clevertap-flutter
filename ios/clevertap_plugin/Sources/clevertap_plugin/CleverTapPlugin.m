@@ -1,21 +1,103 @@
 
+#import <UserNotifications/UserNotifications.h>
+
+#if __has_include(<CleverTapSDK/CleverTap.h>)
+#import <CleverTapSDK/CleverTap.h>
+#else
 #import "CleverTap.h"
+#endif
+
 #import "CleverTapPlugin.h"
+
+#if __has_include(<CleverTapSDK/CleverTap+Inbox.h>)
+#import <CleverTapSDK/CleverTap+Inbox.h>
+#else
 #import "CleverTap+Inbox.h"
+#endif
+
+#if __has_include(<CleverTapSDK/CleverTapUTMDetail.h>)
+#import <CleverTapSDK/CleverTapUTMDetail.h>
+#else
 #import "CleverTapUTMDetail.h"
+#endif
+
+#if __has_include(<CleverTapSDK/CleverTapEventDetail.h>)
+#import <CleverTapSDK/CleverTapEventDetail.h>
+#else
 #import "CleverTapEventDetail.h"
+#endif
+
+#if __has_include(<CleverTapSDK/CleverTapSyncDelegate.h>)
+#import <CleverTapSDK/CleverTapSyncDelegate.h>
+#else
 #import "CleverTapSyncDelegate.h"
+#endif
+
+#if __has_include(<CleverTapSDK/CleverTap+DisplayUnit.h>)
+#import <CleverTapSDK/CleverTap+DisplayUnit.h>
+#else
 #import "CleverTap+DisplayUnit.h"
+#endif
+
+#if __has_include(<CleverTapSDK/CleverTap+FeatureFlags.h>)
+#import <CleverTapSDK/CleverTap+FeatureFlags.h>
+#else
 #import "CleverTap+FeatureFlags.h"
+#endif
+
+#if __has_include(<CleverTapSDK/CleverTap+ProductConfig.h>)
+#import <CleverTapSDK/CleverTap+ProductConfig.h>
+#else
 #import "CleverTap+ProductConfig.h"
+#endif
+
+#if __has_include(<CleverTapSDK/CleverTapPushNotificationDelegate.h>)
+#import <CleverTapSDK/CleverTapPushNotificationDelegate.h>
+#else
 #import "CleverTapPushNotificationDelegate.h"
+#endif
+
+#if __has_include(<CleverTapSDK/CleverTapInAppNotificationDelegate.h>)
+#import <CleverTapSDK/CleverTapInAppNotificationDelegate.h>
+#else
 #import "CleverTapInAppNotificationDelegate.h"
+#endif
+
+#if __has_include(<CleverTapSDK/CleverTap+InAppNotifications.h>)
+#import <CleverTapSDK/CleverTap+InAppNotifications.h>
+#else
 #import "CleverTap+InAppNotifications.h"
+#endif
+
+#if __has_include(<CleverTapSDK/CleverTap+PushPermission.h>)
+#import <CleverTapSDK/CleverTap+PushPermission.h>
+#else
 #import "CleverTap+PushPermission.h"
+#endif
+
+#if __has_include(<CleverTapSDK/CTLocalInApp.h>)
+#import <CleverTapSDK/CTLocalInApp.h>
+#else
 #import "CTLocalInApp.h"
+#endif
+
+#if __has_include(<CleverTapSDK/CleverTap+CTVar.h>)
+#import <CleverTapSDK/CleverTap+CTVar.h>
+#else
 #import "CleverTap+CTVar.h"
+#endif
+
+#if __has_include(<CleverTapSDK/CTVar.h>)
+#import <CleverTapSDK/CTVar.h>
+#else
 #import "CTVar.h"
+#endif
+
+#if __has_include(<CleverTapSDK/CTTemplateContext.h>)
+#import <CleverTapSDK/CTTemplateContext.h>
+#else
 #import "CTTemplateContext.h"
+#endif
 
 @interface CleverTapPlugin () <CleverTapSyncDelegate, CleverTapInAppNotificationDelegate, CleverTapDisplayUnitDelegate, CleverTapInboxViewControllerDelegate, CleverTapProductConfigDelegate, CleverTapFeatureFlagsDelegate, CleverTapPushNotificationDelegate, CleverTapPushPermissionDelegate>
 
@@ -71,11 +153,31 @@ static NSDateFormatter *dateFormatter;
 }
 
 - (void)applicationDidLaunchWithOptions:(NSDictionary *)options {
-    
+
     NSDictionary *notification = [options valueForKey:UIApplicationLaunchOptionsRemoteNotificationKey];
     if (notification && notification[@"wzrk_dl"]) {
         self.launchDeepLink = notification[@"wzrk_dl"];
         NSLog(@"CleverTapFlutter: setting launch deeplink: %@", self.launchDeepLink);
+    }
+    if (notification && [[CleverTap sharedInstance] isCleverTapNotification:notification]) {
+        self.launchNotification = notification;
+    }
+}
+
+- (void)sceneWillConnectWithOptions:(UISceneConnectionOptions *)connectionOptions API_AVAILABLE(ios(13.0)) {
+
+    if (@available(iOS 13.0, *)) {
+        UNNotificationResponse *response = connectionOptions.notificationResponse;
+        if (response) {
+            NSDictionary *userInfo = response.notification.request.content.userInfo;
+            if (userInfo && userInfo[@"wzrk_dl"]) {
+                self.launchDeepLink = userInfo[@"wzrk_dl"];
+                NSLog(@"CleverTapFlutter: setting launch deeplink (scene): %@", self.launchDeepLink);
+            }
+            if (userInfo && [[CleverTap sharedInstance] isCleverTapNotification:userInfo]) {
+                self.launchNotification = userInfo;
+            }
+        }
     }
 }
 
@@ -167,6 +269,8 @@ static NSDateFormatter *dateFormatter;
         [self discardInAppNotifications:call withResult:result];
     else if ([@"resumeInAppNotifications" isEqualToString:call.method])
         [self resumeInAppNotifications];
+    else if ([@"dismissPipInApp" isEqualToString:call.method])
+        [self dismissPipInApp:call withResult:result];
     else if ([@"fetchInbox" isEqualToString:call.method])
         [self fetchInbox:call withResult:result];
     else if ([@"fetchInboxWithCallback" isEqualToString:call.method])
@@ -325,6 +429,8 @@ static NSDateFormatter *dateFormatter;
         [self getUserEventLogHistory:call withResult:result];
     else if ([@"getUserAppLaunchCount" isEqualToString:call.method])
         [self getUserAppLaunchCount:call withResult:result];
+    else if ([@"getAppLaunchNotification" isEqualToString:call.method])
+        [self getAppLaunchNotification:call withResult:result];
     else if ([@"getUserLastVisitTs" isEqualToString:call.method])
         [self getUserLastVisitTs:call withResult:result];
     else if ([@"unmute" isEqualToString:call.method])
@@ -623,9 +729,20 @@ static NSDateFormatter *dateFormatter;
 }
 
 - (void)getUserAppLaunchCount:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    
+
     int res = [[CleverTap sharedInstance] getUserAppLaunchCount];
     result(@(res));
+}
+
+- (void)getAppLaunchNotification:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+
+    NSMutableDictionary *res = [NSMutableDictionary new];
+    BOOL launched = (self.launchNotification != nil);
+    res[@"notificationLaunchedApp"] = @(launched);
+    if (launched) {
+        res[@"notificationPayload"] = self.launchNotification;
+    }
+    result(res);
 }
 
 - (void)sessionGetScreenCount:(FlutterMethodCall *)call withResult:(FlutterResult)result {
@@ -671,8 +788,13 @@ static NSDateFormatter *dateFormatter;
 }
 
 - (void)resumeInAppNotifications {
-    
+
     [[CleverTap sharedInstance] resumeInAppNotifications];
+}
+
+- (void)dismissPipInApp:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    [[CleverTap sharedInstance] dismissPipInApp];
+    result(nil);
 }
 
 #pragma mark - InApp Controls
@@ -780,8 +902,20 @@ static NSDateFormatter *dateFormatter;
     }];
 }
 
+- (UIWindow *)ct_keyWindow {
+
+    if (@available(iOS 11.0, *)) {
+        for (UIWindow *window in [UIApplication sharedApplication].windows) {
+            if (window.isKeyWindow) {
+                return window;
+            }
+        }
+    }
+    return [[UIApplication sharedApplication] keyWindow];
+}
+
 - (void)showInbox:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    
+
     NSDictionary *styleConfig = call.arguments[@"styleConfig"];
     if ([styleConfig isKindOfClass:[NSNull class]]) {
         styleConfig = nil;
@@ -789,7 +923,7 @@ static NSDateFormatter *dateFormatter;
     CleverTapInboxViewController *inboxController = [[CleverTap sharedInstance] newInboxViewControllerWithConfig:[self _dictToInboxStyleConfig:styleConfig ? styleConfig : nil] andDelegate:(id <CleverTapInboxViewControllerDelegate>)self];
     if (inboxController) {
         UINavigationController *navigationController = [[UINavigationController alloc] initWithRootViewController:inboxController];
-        UIWindow *keyWindow = [[UIApplication sharedApplication] keyWindow];
+        UIWindow *keyWindow = [self ct_keyWindow];
         UIViewController *mainViewController = keyWindow.rootViewController;
         [mainViewController presentViewController:navigationController animated:YES completion:nil];
     }
