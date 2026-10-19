@@ -1,5 +1,20 @@
 ## CHANGE LOG
 
+### Version 4.3.0 *(October 19 2026)*
+-------------------------------------------
+**What's new**
+
+* **[iOS Platform]**
+  * Supports [CleverTap iOS SDK v7.9.0](https://github.com/CleverTap/clevertap-ios-sdk/blob/master/CHANGELOG.md#version-790-october-15-2026).
+  * Native Display campaigns now honour the frequency caps set in the dashboard. Caps are counted from `pushDisplayUnitViewedEvent()`, so call it once per displayed unit view.
+  * Recommendations-personalized In-App campaigns are supported, and Native Display Units from a recommendations response are now merged by unit ID instead of replacing the whole set.
+  * Fixes In-App campaigns triggered by custom events not matching device and app properties, discarded event names being re-sent on every request, and stored In-Apps being cleared when the delivery mode was missing.
+
+**API changes**
+* **[iOS Platform]**
+  * New API: `pushDisplayUnitElementViewedEvent(unitId, additionalProperties)` - Raises `Notification Viewed` for a single element of a Native Display unit, such as one carousel slide.
+  * New API: `fetchNativeDisplayMeta()` - Requests a fresh set of Native Display frequency-cap rules mid-session.
+
 ### Version 4.2.0 *(2 September 2026)*
 -------------------------------------------
 **What's new**

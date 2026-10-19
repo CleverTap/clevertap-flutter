@@ -836,6 +836,14 @@ class _MyAppState extends State<MyApp> {
                         "Push Display Unit Element Clicked",
                         pushDisplayUnitElementClickedEvent,
                         "Records an enriched element-clicked event for a Display Unit with additional properties."),
+                    _buildListTile(
+                        "Push Display Unit Element Viewed",
+                        pushDisplayUnitElementViewedEvent,
+                        "Records an element-viewed event for a Display Unit with additional properties (iOS)."),
+                    _buildListTile(
+                        "Fetch Native Display Meta",
+                        fetchNativeDisplayMeta,
+                        "Refreshes Native Display frequency-cap rules mid-session (iOS)."),
                   ]),
                 _buildExpansionTile("GDPR", [ 
                   _buildListTile("Opt Out User", () => setOptOut(true), "Opt Out User fully"),
@@ -1859,6 +1867,26 @@ class _MyAppState extends State<MyApp> {
     showToast("Display Unit element clicked event pushed");
     print("Push Display Unit Element Clicked -> unitId: $unitId, "
         "additionalProperties: " + additionalProperties.toString());
+  }
+
+  void pushDisplayUnitElementViewedEvent() {
+    String unitId = "unit_001";
+    Map<String, dynamic> additionalProperties = {
+      "elementType": "banner",
+      "elementPosition": 0,
+      "campaignId": "camp_flutter_demo",
+    };
+    CleverTapPlugin.pushDisplayUnitElementViewedEvent(
+        unitId, additionalProperties);
+    showToast("Display Unit element viewed event pushed");
+    print("Push Display Unit Element Viewed -> unitId: $unitId, "
+        "additionalProperties: " + additionalProperties.toString());
+  }
+
+  void fetchNativeDisplayMeta() {
+    CleverTapPlugin.fetchNativeDisplayMeta();
+    showToast("Requested fresh Native Display frequency-cap rules");
+    print("Fetch Native Display Meta requested");
   }
 
   void promptForPushNotification() {
