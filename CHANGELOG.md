@@ -9,6 +9,7 @@
   * Adds Native Display frequency caps. Call `pushDisplayUnitViewedEvent` once per real impression, as it now counts toward the caps.
   * Adds per-element view attribution for Native Display units.
   * The App-Launch In-App can now wait up to 3 seconds for personalized (recommendations) content before it is shown.
+  * Supports [Live Updates](https://github.com/CleverTap/clevertap-android-sdk/blob/master/docs/CTLIVEUPDATES.md) - a single ongoing notification that is refreshed in place over the course of a campaign. These arrive as standard push notifications and are rendered by the native SDK, so there is no Flutter API to call. Setup and any custom rendering are done on the Android side of your app.
 
 * **[iOS Platform]**
   * Supports [CleverTap iOS SDK v7.9.0](https://github.com/CleverTap/clevertap-ios-sdk/blob/master/CHANGELOG.md#version-790-october-15-2026).
