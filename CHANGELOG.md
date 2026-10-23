@@ -17,6 +17,9 @@
   * Adds per-element view attribution for Native Display units.
   * Adds support for In-App campaigns personalized with recommendations, so only one In-App is shown on app launch. Native Display units from a recommendations response are now merged by unit ID instead of replacing the existing set.
 
+* **[Web Platform]**
+  * Supports [CleverTap Web SDK v3.1.0](https://github.com/CleverTap/clevertap-web-sdk/releases/tag/v3.1.0)
+
 **API changes**
 * **[Android and iOS Platform]**
   * New API: `pushDisplayUnitElementViewedEvent(unitId, additionalProperties)` - Records a view of a single element or slide of a Native Display unit.
@@ -32,6 +35,7 @@
   * Fixes App-Launch In-Apps personalized with recommendations sometimes showing twice, and Native Display units being lost after a recommendations fetch.
   * Fixes App Inbox video not playing when switching to a tab that contains a video message.
   * Fixes "N times in D days/weeks" In-App and Native Display caps resetting a day (or week) late.
+
 
 ### Version 4.2.0 *(2 September 2026)*
 -------------------------------------------
