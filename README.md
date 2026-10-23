@@ -21,7 +21,7 @@ To get started, sign up [here](https://clevertap.com/live-product-demo/).
 
 ```yaml
 dependencies:
-  clevertap_plugin: 4.2.0
+  clevertap_plugin: 4.3.0
 ```
 
 - Run `flutter packages get` to install the SDK
@@ -31,6 +31,8 @@ dependencies:
 ```dart
 import 'package:clevertap_plugin/clevertap_plugin.dart';
 ```
+
+> **iOS note:** CocoaPods trunk becomes read-only on December 2, 2026. iOS apps must add a CocoaPods `source` line to their `ios/Podfile` to keep receiving CleverTap updates. See the [Technical Documentation for iOS](doc/Integrate-iOS.md) for the exact lines. Existing installs are unaffected.
 
 See our [Technical Documentation for Android](doc/Integrate-Android.md) and [Technical Documentation for iOS](doc/Integrate-iOS.md) for instructions on integrating CleverTap into your Flutter app.
 
