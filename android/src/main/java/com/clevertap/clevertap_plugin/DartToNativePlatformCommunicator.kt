@@ -517,6 +517,14 @@ class DartToNativePlatformCommunicator(
                 pushDisplayUnitClickedEvent(call, result)
             }
 
+            "pushDisplayUnitElementViewedEvent" -> {
+                pushDisplayUnitElementViewedEvent(call, result)
+            }
+
+            "fetchNativeDisplayMeta" -> {
+                fetchNativeDisplayMeta(result)
+            }
+
             "pushDisplayUnitElementClickedEvent" -> {
                 pushDisplayUnitElementClickedEvent(call, result)
             }
@@ -1757,6 +1765,26 @@ class DartToNativePlatformCommunicator(
         val additionalProperties = call.argument<HashMap<String, Any>>("additionalProperties")
         if (cleverTapAPI != null) {
             cleverTapAPI.pushDisplayUnitElementClickedEventForID(unitId, additionalProperties)
+            result.success(null)
+        } else {
+            result.error(TAG, ERROR_MSG, null)
+        }
+    }
+
+    private fun pushDisplayUnitElementViewedEvent(call: MethodCall, result: MethodChannel.Result) {
+        val unitId = call.argument<String>("unitId")
+        val additionalProperties = call.argument<HashMap<String, Any>>("additionalProperties")
+        if (cleverTapAPI != null) {
+            cleverTapAPI.pushDisplayUnitElementViewedEventForID(unitId, additionalProperties)
+            result.success(null)
+        } else {
+            result.error(TAG, ERROR_MSG, null)
+        }
+    }
+
+    private fun fetchNativeDisplayMeta(result: MethodChannel.Result) {
+        if (cleverTapAPI != null) {
+            cleverTapAPI.fetchNativeDisplayMeta()
             result.success(null)
         } else {
             result.error(TAG, ERROR_MSG, null)

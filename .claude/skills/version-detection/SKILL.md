@@ -1,6 +1,6 @@
 ---
 name: version-detection
-description: Version locations, patterns, and conversion logic for the CleverTap Flutter SDK. Single source of truth for all 7 version file locations. Used by version-gather (read) and version-update (write) agents.
+description: Version locations, patterns, and conversion logic for the CleverTap Flutter SDK. Single source of truth for all 8 version file locations. Used by version-gather (read) and version-update (write) agents.
 ---
 
 # Version Detection
@@ -9,7 +9,7 @@ Version locations, extraction patterns, and conversion logic for the CleverTap F
 
 ## Version Locations
 
-The CleverTap Flutter SDK maintains version numbers in 7 locations that must stay synchronized:
+The CleverTap Flutter SDK maintains version numbers in 8 locations that must stay synchronized:
 
 | # | File | Location       | Pattern |
 |---|------|----------------|---------|
@@ -20,6 +20,13 @@ The CleverTap Flutter SDK maintains version numbers in 7 locations that must sta
 | 5 | `ios/clevertap_plugin.podspec` | Dependencies   | `CleverTap-iOS-SDK', 'X.Y.Z'` |
 | 6 | `lib/clevertap_plugin.dart` | Class constant | `static const libVersion = XXXXX;` |
 | 7 | `README.md` | Installation   | `clevertap_plugin: X.Y.Z` |
+| 8 | `ios/clevertap_plugin/Package.swift` | Dependencies | `url: "https://github.com/CleverTap/clevertap-ios-sdk"` + `exact: "X.Y.Z"` |
+
+**Location 8 is the Swift Package Manager (SPM) manifest.** Host apps that use SPM
+instead of CocoaPods resolve the native CleverTap iOS SDK from THIS pin, not the
+podspec. Locations 5 and 8 MUST always carry the same CleverTap iOS SDK version —
+bumping the podspec but not Package.swift ships two different native SDKs depending
+on how the host app integrates.
 
 ## Extraction Process
 
@@ -29,10 +36,11 @@ The CleverTap Flutter SDK maintains version numbers in 7 locations that must sta
 
 Read file, find version pattern, extract `X.Y.Z` format.
 
-### Native SDK Versions (3, 5)
+### Native SDK Versions (3, 5, 8)
 
 **Android**: `android/build.gradle` → `api 'com.clevertap.android:clevertap-android-sdk:X.Y.Z'`  
-**iOS**: `ios/clevertap_plugin.podspec` → `s.dependency 'CleverTap-iOS-SDK', 'X.Y.Z'`
+**iOS (CocoaPods)**: `ios/clevertap_plugin.podspec` → `s.dependency 'CleverTap-iOS-SDK', 'X.Y.Z'`  
+**iOS (SPM)**: `ios/clevertap_plugin/Package.swift` → `exact: "X.Y.Z"` (must equal location 5)
 
 ### Dart Version Constant (6)
 
@@ -51,7 +59,7 @@ Read file, find version pattern, extract `X.Y.Z` format.
 ## Version Consistency Check
 
 **Flutter Plugin versions** (1, 2, 4, 6, 7) should all match.  
-**Native SDK versions** (3, 5) are independent.
+**Native SDK versions** (3, 5, 8) are independent of the plugin version, but 5 and 8 must equal each other (same iOS SDK via CocoaPods and SPM).
 
 **Validation**:
 1. Extract all Flutter Plugin versions

@@ -311,6 +311,10 @@ static NSDateFormatter *dateFormatter;
         [self pushDisplayUnitClickedEvent:call withResult:result];
     else if ([@"pushDisplayUnitElementClickedEvent" isEqualToString:call.method])
         [self pushDisplayUnitElementClickedEvent:call withResult:result];
+    else if ([@"pushDisplayUnitElementViewedEvent" isEqualToString:call.method])
+        [self pushDisplayUnitElementViewedEvent:call withResult:result];
+    else if ([@"fetchNativeDisplayMeta" isEqualToString:call.method])
+        [self fetchNativeDisplayMeta:call withResult:result];
     else if ([@"fetch" isEqualToString:call.method])
         [self fetch:call withResult:result];
     else if ([@"fetchWithMinimumFetchIntervalInSeconds" isEqualToString:call.method])
@@ -1037,6 +1041,18 @@ static NSDateFormatter *dateFormatter;
 - (void)pushDisplayUnitElementClickedEvent:(FlutterMethodCall *)call withResult:(FlutterResult)result {
 
     [[CleverTap sharedInstance] recordDisplayUnitElementClickedEventForID:call.arguments[@"unitId"] additionalProperties:call.arguments[@"additionalProperties"]];
+    result(nil);
+}
+
+- (void)pushDisplayUnitElementViewedEvent:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+
+    [[CleverTap sharedInstance] recordDisplayUnitElementViewedEventForID:call.arguments[@"unitId"] additionalProperties:call.arguments[@"additionalProperties"]];
+    result(nil);
+}
+
+- (void)fetchNativeDisplayMeta:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+
+    [[CleverTap sharedInstance] fetchNativeDisplayMeta];
     result(nil);
 }
 

@@ -80,7 +80,7 @@ class CleverTapPlugin {
   static const libName = 'Flutter';
 
   static const libVersion =
-      40200; // If the current version is X.X.X then pass as X0X0X
+      40300; // If the current version is X.X.X then pass as X0X0X
 
   CleverTapPlugin._internal() {
     /// Set the CleverTap Flutter library name and the current version for version tracking
@@ -1216,6 +1216,27 @@ class CleverTapPlugin {
       'unitId': unitId,
       'additionalProperties': additionalProperties
     });
+  }
+
+  /// Raise Notification Viewed event for a specific element of a Display Unit,
+  /// enriched with additional properties.
+  ///
+  /// Parameters:
+  /// - [unitId]: Unique id of the Display Unit
+  /// - [additionalProperties]: Additional key-value properties to attach to the event
+  static Future<void> pushDisplayUnitElementViewedEvent(
+      String unitId, Map<String, dynamic> additionalProperties) async {
+    return await _dartToNativeMethodChannel.invokeMethod(
+        'pushDisplayUnitElementViewedEvent', {
+      'unitId': unitId,
+      'additionalProperties': additionalProperties
+    });
+  }
+
+  /// Requests fresh Native Display frequency-cap rules mid-session.
+  static Future<void> fetchNativeDisplayMeta() async {
+    return await _dartToNativeMethodChannel
+        .invokeMethod('fetchNativeDisplayMeta', {});
   }
 
   ///Feature Flags

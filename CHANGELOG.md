@@ -1,5 +1,38 @@
 ## CHANGE LOG
 
+### Version 4.3.0 *(23 October 2026)*
+-------------------------------------------
+**What's new**
+
+* **[Android Platform]**
+  * Supports [CleverTap Android SDK v8.5.0](https://github.com/CleverTap/clevertap-android-sdk/blob/master/docs/CTCORECHANGELOG.md#version-850-october-15-2026).
+  * Adds Native Display frequency caps. Call `pushDisplayUnitViewedEvent` once per real impression, as it now counts toward the caps.
+  * Adds per-element view attribution for Native Display units.
+  * The App-Launch In-App can now wait up to 3 seconds for personalized (recommendations) content before it is shown.
+  * Supports [Live Updates](https://github.com/CleverTap/clevertap-android-sdk/blob/master/docs/CTLIVEUPDATES.md) - a single ongoing notification that is refreshed in place over the course of a campaign. These arrive as standard push notifications and are rendered by the native SDK, so there is no Flutter API to call. Setup and any custom rendering are done on the Android side of your app.
+
+* **[iOS Platform]**
+  * Supports [CleverTap iOS SDK v7.9.0](https://github.com/CleverTap/clevertap-ios-sdk/blob/master/CHANGELOG.md#version-790-october-15-2026).
+  * Adds Native Display frequency caps. Call `pushDisplayUnitViewedEvent` once per real impression, as it now counts toward the caps.
+  * Adds per-element view attribution for Native Display units.
+  * Adds support for In-App campaigns personalized with recommendations, so only one In-App is shown on app launch. Native Display units from a recommendations response are now merged by unit ID instead of replacing the existing set.
+
+**API changes**
+* **[Android and iOS Platform]**
+  * New API: `pushDisplayUnitElementViewedEvent(unitId, additionalProperties)` - Records a view of a single element or slide of a Native Display unit.
+  * New API: `fetchNativeDisplayMeta()` - Requests fresh Native Display frequency-cap rules mid-session.
+
+**Bug Fixes**
+* **[iOS Platform]**
+  * Fixes In-App campaigns triggered by custom events not matching device and app properties.
+  * Fixes discarded event names being stored and re-sent to the server on every request.
+  * Fixes stored Client-Side and Server-Side In-Apps being cleared when the delivery mode was missing.
+  * Fixes event name and property validation warnings being replayed on later calls.
+* **[Android Platform]**
+  * Fixes App-Launch In-Apps personalized with recommendations sometimes showing twice, and Native Display units being lost after a recommendations fetch.
+  * Fixes App Inbox video not playing when switching to a tab that contains a video message.
+  * Fixes "N times in D days/weeks" In-App and Native Display caps resetting a day (or week) late.
+
 ### Version 4.2.0 *(2 September 2026)*
 -------------------------------------------
 **What's new**

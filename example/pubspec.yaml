@@ -40,6 +40,14 @@ dev_dependencies:
 # The following section is specific to Flutter.
 flutter:
 
+  # Keep the example on CocoaPods only. Newer Flutter (3.47+) force-adds Swift
+  # Package Manager integration during `flutter build ios` and its dependency
+  # resolution fails on this project, breaking CI before anything compiles.
+  # Remove this once the plugin ships proper SPM support — needed before the
+  # CocoaPods registry goes read-only on 2026-12-02.
+  config:
+    enable-swift-package-manager: false
+
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.
