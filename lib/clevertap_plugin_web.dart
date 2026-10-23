@@ -23,7 +23,7 @@ class CleverTapPluginWeb {
 
     final clevertapObj = globalContext['clevertap'];
     if (clevertapObj != null && !clevertapObj.isUndefinedOrNull) {
-      setLibrary(MainPlugin.CleverTapPlugin.libName,
+      setLibrary(null, MainPlugin.CleverTapPlugin.libName,
           MainPlugin.CleverTapPlugin.libVersion);
     }
   }
@@ -33,6 +33,8 @@ class CleverTapPluginWeb {
   /// https://flutter.dev/go/federated-plugins
   Future<dynamic> _handleMethodCall(MethodCall call) async {
     switch (call.method) {
+      case 'createInstance':
+        return _createInstance(call);
       case 'init':
         return _init(call);
       case 'setLibrary':
@@ -132,9 +134,31 @@ class CleverTapPluginWeb {
     }
   }
 
-  void _init(MethodCall call) {
+  /// Helper to extract accountId from method call arguments.
+  String? _getAccountId(MethodCall call) {
+    if (call.arguments is Map) {
+      return (call.arguments as Map<Object?, Object?>)['accountId'] as String?;
+    }
+    return null;
+  }
+
+  void _createInstance(MethodCall call) {
     Map<Object?, Object?> args = call.arguments as Map<Object?, Object?>;
     String accountId = args['accountId'] as String;
+    String? region = args['region'] as String?;
+    String? targetDomain = args['targetDomain'] as String?;
+    String? token = args['token'] as String?;
+    final instance = createInstance(accountId, region, targetDomain, token);
+    if (instance != null) {
+      instance.callMethod('init'.toJS);
+      setLibrary(accountId, MainPlugin.CleverTapPlugin.libName,
+          MainPlugin.CleverTapPlugin.libVersion);
+    }
+  }
+
+  void _init(MethodCall call) {
+    Map<Object?, Object?> args = call.arguments as Map<Object?, Object?>;
+    String? accountId = args['accountId'] as String?;
     String? region = args['region'] as String?;
     String? targetDomain = args['targetDomain'] as String?;
     String? token = args['token'] as String?;
@@ -146,289 +170,333 @@ class CleverTapPluginWeb {
       jsOptions = _jsify(options);
     }
 
-    init(accountId, region, targetDomain, token, jsOptions);
+    // For init, accountId is used both as instance identifier and init param
+    // Default instance init passes accountId to JS init()
+    init(null, accountId!, region, targetDomain, token, jsOptions);
   }
 
   void _setLibrary(MethodCall call) {
     Map<Object?, Object?> args = call.arguments as Map<Object?, Object?>;
+    String? accountId = args['accountId'] as String?;
     int libVersion = args['libVersion'] as int;
-    setLibrary("Flutter", libVersion);
+    setLibrary(accountId, "Flutter", libVersion);
   }
 
   void _toggleInbox(MethodCall call) {
     Map<Object?, Object?> args = call.arguments as Map<Object?, Object?>;
+    String? accountId = args['accountId'] as String?;
     final jsObj = _jsify({'rect': args['rect']});
     if (jsObj != null) {
-      toggleInbox(jsObj);
+      toggleInbox(accountId, jsObj);
     }
   }
 
   /// Pushes a basic event
   void _recordEvent(MethodCall call) {
     Map<Object?, Object?> args = call.arguments as Map<Object?, Object?>;
+    String? accountId = args['accountId'] as String?;
     String eventName = args['eventName'] as String;
     Object? eventData = args['eventData'];
     final jsEventData = _jsify(eventData ?? {});
-    event_push(eventName, jsEventData);
+    event_push(accountId, eventName, jsEventData);
   }
 
   /// Pushed a Charged event
   void _recordChargedEvent(MethodCall call) {
     Map<Object?, Object?> args = call.arguments as Map<Object?, Object?>;
+    String? accountId = args['accountId'] as String?;
     Map chargeDetails = args['chargeDetails'] as Map;
     chargeDetails["Items"] = args['items'] as List;
     final jsChargeDetails = _jsify(chargeDetails);
     if (jsChargeDetails != null) {
-      event_push("Charged", jsChargeDetails);
+      event_push(accountId, "Charged", jsChargeDetails);
     }
   }
 
   /// OnUserLogin request
   void _onUserLogin(MethodCall call) {
     Map<Object?, Object?> args = call.arguments as Map<Object?, Object?>;
+    String? accountId = args['accountId'] as String?;
     final jsProfile = _jsify({"Site": args['profile']});
     if (jsProfile != null) {
-      onUserLogin_push(jsProfile);
+      onUserLogin_push(accountId, jsProfile);
     }
   }
 
   /// enable web push
   void _enableWebPush(MethodCall call) {
     Map<Object?, Object?> args = call.arguments as Map<Object?, Object?>;
-    final jsArgs = _jsify(args);
+    String? accountId = args['accountId'] as String?;
+    // Remove accountId from the args before passing to JS
+    final pushArgs = Map<Object?, Object?>.from(args)..remove('accountId');
+    final jsArgs = _jsify(pushArgs);
     if (jsArgs != null) {
-      notifications_push(jsArgs);
+      notifications_push(accountId, jsArgs);
     }
   }
 
   /// Profile push request
   void _profileSet(MethodCall call) {
     Map<Object?, Object?> args = call.arguments as Map<Object?, Object?>;
+    String? accountId = args['accountId'] as String?;
     final jsProfile = _jsify({"Site": args['profile']});
     if (jsProfile != null) {
-      onUserLogin_push(jsProfile);
+      onUserLogin_push(accountId, jsProfile);
     }
   }
 
   /// Set Optout flag
   void _setOptOut(MethodCall call) {
     Map<Object?, Object?> args = call.arguments as Map<Object?, Object?>;
+    String? accountId = args['accountId'] as String?;
     bool value = args['value'] as bool;
     final jsPrivacy = _jsify({"optOut": value});
     if (jsPrivacy != null) {
-      privacy_push(jsPrivacy);
+      privacy_push(accountId, jsPrivacy);
     }
   }
 
   /// Set useIP flag
   void _setUseIP(MethodCall call) {
     Map<Object?, Object?> args = call.arguments as Map<Object?, Object?>;
+    String? accountId = args['accountId'] as String?;
     bool value = args['value'] as bool;
     final jsPrivacy = _jsify({"useIP": value});
     if (jsPrivacy != null) {
-      privacy_push(jsPrivacy);
+      privacy_push(accountId, jsPrivacy);
     }
   }
 
   /// Set Log Level
   void _setDebugLevel(MethodCall call) {
     Map<Object?, Object?> args = call.arguments as Map<Object?, Object?>;
+    String? accountId = args['accountId'] as String?;
     int value = args['debugLevel'] as int;
-    setLogLevel(value);
+    setLogLevel(accountId, value);
   }
 
   /// Get ClevertapId
   String? _getCleverTapID(MethodCall call) {
-    return getCleverTapID();
+    String? accountId = _getAccountId(call);
+    return getCleverTapID(accountId);
   }
 
   /// Get AccountId
   String? _getAccountID(MethodCall call) {
-    return getAccountID();
+    String? accountId = _getAccountId(call);
+    return getAccountID(accountId);
   }
 
   /// Sets the CleverTap SDK to offline
   void _setOffline(MethodCall call) {
     Map<Object?, Object?> args = call.arguments as Map<Object?, Object?>;
+    String? accountId = args['accountId'] as String?;
     bool value = args['value'] as bool;
-    setOffline(value);
+    setOffline(accountId, value);
   }
 
   /// Set a multi-value property
   void _profileSetMultiValues(MethodCall call) {
     Map<Object?, Object?> args = call.arguments as Map<Object?, Object?>;
+    String? accountId = args['accountId'] as String?;
     String key = args['key'] as String;
     List value = args['values'] as List;
-    setMultiValuesForKeyWrapper(key, value);
+    setMultiValuesForKeyWrapper(accountId, key, value);
   }
 
   /// Add a unique value to a multi-value user profile property
   void _profileAddMultiValue(MethodCall call) {
     Map<Object?, Object?> args = call.arguments as Map<Object?, Object?>;
+    String? accountId = args['accountId'] as String?;
     String key = args['key'] as String;
     String value = args['value'] as String;
-    addMultiValueForKey(key, value);
+    addMultiValueForKey(accountId, key, value);
   }
 
   /// Add a collection of unique values to a multi-value user profile property
   void _profileAddMultiValues(MethodCall call) {
     Map<Object?, Object?> args = call.arguments as Map<Object?, Object?>;
+    String? accountId = args['accountId'] as String?;
     String key = args['key'] as String;
     List value = args['values'] as List;
-    addMultiValuesForKeyWrapper(key, value);
+    addMultiValuesForKeyWrapper(accountId, key, value);
   }
 
   /// Remove a unique value from a multi-value user profile property
   void _profileRemoveMultiValue(MethodCall call) {
     Map<Object?, Object?> args = call.arguments as Map<Object?, Object?>;
+    String? accountId = args['accountId'] as String?;
     String key = args['key'] as String;
     String value = args['value'] as String;
-    removeMultiValueForKey(key, value);
+    removeMultiValueForKey(accountId, key, value);
   }
 
   /// Remove a collection of unique values from a multi-value user profile property
   void _profileRemoveMultiValues(MethodCall call) {
     Map<Object?, Object?> args = call.arguments as Map<Object?, Object?>;
+    String? accountId = args['accountId'] as String?;
     String key = args['key'] as String;
     List value = args['values'] as List;
-    removeMultiValuesForKeyWrapper(key, value);
+    removeMultiValuesForKeyWrapper(accountId, key, value);
   }
 
   /// Remove the user profile property value specified by key from the user profile
   void _profileRemoveValueForKey(MethodCall call) {
     Map<Object?, Object?> args = call.arguments as Map<Object?, Object?>;
+    String? accountId = args['accountId'] as String?;
     String key = args['key'] as String;
-    removeValueForKey(key);
+    removeValueForKey(accountId, key);
   }
 
   /// Increment given num value. The value should be in positive range
   void _profileIncrementValue(MethodCall call) {
     Map<Object?, Object?> args = call.arguments as Map<Object?, Object?>;
+    String? accountId = args['accountId'] as String?;
     String key = args['key'] as String;
     num value = args['value'] as num;
-    handleIncrementValueWrapper(key, value);
+    handleIncrementValueWrapper(accountId, key, value);
   }
 
   /// Decrement given num value. The value should be in positive range
   void _profileDecrementValue(MethodCall call) {
     Map<Object?, Object?> args = call.arguments as Map<Object?, Object?>;
+    String? accountId = args['accountId'] as String?;
     String key = args['key'] as String;
     num value = args['value'] as num;
-    handleDecrementValueWrapper(key, value);
+    handleDecrementValueWrapper(accountId, key, value);
   }
 
   /// Set the user profile location in CleverTap
   void _setLocation(MethodCall call) {
     Map<Object?, Object?> args = call.arguments as Map<Object?, Object?>;
+    String? accountId = args['accountId'] as String?;
     double latitude = args['latitude'] as double;
     double longitude = args['longitude'] as double;
-    getLocationWrapper(latitude, longitude);
+    getLocationWrapper(accountId, latitude, longitude);
   }
 
   /// Method for notification viewed
   void _renderNotificationViewed(MethodCall call) {
     Map<Object?, Object?> args = call.arguments as Map<Object?, Object?>;
+    String? accountId = args['accountId'] as String?;
     String msgId = args['msgId'] as String;
     String pivotId = args['pivotId'] as String;
     final jsNotification = _jsify({"msgId": msgId, "pivotId": pivotId});
     if (jsNotification != null) {
-      renderNotificationViewed(jsNotification);
+      renderNotificationViewed(accountId, jsNotification);
     }
   }
 
   /// Method for notification clicked
   void _renderNotificationClicked(MethodCall call) {
     Map<Object?, Object?> args = call.arguments as Map<Object?, Object?>;
+    String? accountId = args['accountId'] as String?;
     String msgId = args['msgId'] as String;
     String pivotId = args['pivotId'] as String;
     final jsNotification = _jsify({"msgId": msgId, "pivotId": pivotId});
     if (jsNotification != null) {
-      renderNotificationClicked(jsNotification);
+      renderNotificationClicked(accountId, jsNotification);
     }
   }
 
   /// Get total inbox message count
   int _getInboxMessageCount(MethodCall call) {
-    return getInboxMessageCount();
+    String? accountId = _getAccountId(call);
+    return getInboxMessageCount(accountId);
   }
 
   /// Get Total Inbox Unread Count
   int _getInboxMessageUnreadCount(MethodCall call) {
-    return getInboxMessageUnreadCount();
+    String? accountId = _getAccountId(call);
+    return getInboxMessageUnreadCount(accountId);
   }
 
   /// Get All Inbox Messages
   List _getAllInboxMessages(MethodCall call) {
-    return List.from((_dartify(getAllInboxMessages()) as Map).values);
+    String? accountId = _getAccountId(call);
+    return List.from((_dartify(getAllInboxMessages(accountId)) as Map).values);
   }
 
   /// Get All Inbox Unread Messages
   List _getUnreadInboxMessages(MethodCall call) {
-    return List.from((_dartify(getUnreadInboxMessages()) as Map).values);
+    String? accountId = _getAccountId(call);
+    return List.from(
+        (_dartify(getUnreadInboxMessages(accountId)) as Map).values);
   }
 
   /// Get Inbox Message for the given message-id
   Object _getInboxMessageForId(MethodCall call) {
     Map<Object?, Object?> args = call.arguments as Map<Object?, Object?>;
+    String? accountId = args['accountId'] as String?;
     String messageId = args['messageId'] as String;
-    return (_dartify(getInboxMessageForId(messageId)) as Map);
+    return (_dartify(getInboxMessageForId(accountId, messageId)) as Map);
   }
 
   /// Delete Message for the given message-id
   void _deleteInboxMessageForId(MethodCall call) {
     Map<Object?, Object?> args = call.arguments as Map<Object?, Object?>;
+    String? accountId = args['accountId'] as String?;
     String messageId = args['messageId'] as String;
-    deleteInboxMessage(messageId);
+    deleteInboxMessage(accountId, messageId);
   }
 
   /// Mark Message as Read for the given message-id
   void _markReadInboxMessageForId(MethodCall call) {
     Map<Object?, Object?> args = call.arguments as Map<Object?, Object?>;
+    String? accountId = args['accountId'] as String?;
     String messageId = args['messageId'] as String;
-    markReadInboxMessage(messageId);
+    markReadInboxMessage(accountId, messageId);
   }
 
   /// Mark all inbox Message as Read
   void _markReadAllInboxMessage(MethodCall call) {
-    markReadAllInboxMessage();
+    String? accountId = _getAccountId(call);
+    markReadAllInboxMessage(accountId);
   }
 
   void _markReadInboxMessagesForIds(MethodCall call) {
     Map<Object?, Object?> args = call.arguments as Map<Object?, Object?>;
+    String? accountId = args['accountId'] as String?;
     List messageIds = args['messageIds'] as List;
-    markReadInboxMessagesForIdsWrapper(messageIds);
+    markReadInboxMessagesForIdsWrapper(accountId, messageIds);
   }
 
   void _defineVariables(MethodCall call) {
     Map<Object?, Object?> args = call.arguments as Map<Object?, Object?>;
+    String? accountId = args['accountId'] as String?;
     Object variables = args['variables'] as Object;
     final jsVariables = _jsify(variables);
     if (jsVariables != null) {
-      defineVariables(jsVariables);
+      defineVariables(accountId, jsVariables);
     }
   }
 
   void _defineFileVariable(MethodCall call) {
     Map<Object?, Object?> args = call.arguments as Map<Object?, Object?>;
+    String? accountId = args['accountId'] as String?;
     String fileVariable = args['fileVariable'] as String;
-    defineFileVariable(fileVariable);
+    defineFileVariable(accountId, fileVariable);
   }
 
   /// Sync Variables
   void _syncVariables(MethodCall call) {
-    syncVariables();
+    String? accountId = _getAccountId(call);
+    syncVariables(accountId);
   }
 
   /// Fetch Variables
   Future<bool> _fetchVariables(MethodCall call) async {
+    String? accountId = _getAccountId(call);
     var completer = Completer<bool>();
-    fetchVariables((() => completer.complete(true)).toJS);
+    fetchVariables(accountId, (() => completer.complete(true)).toJS);
     return completer.future;
   }
 
   static void onValueChanged(
-      String name, CleverTapOnValueChangedHandler handler) {
+      String name, CleverTapOnValueChangedHandler handler,
+      {String? accountId}) {
     onValueChangedImpl(
+        accountId,
         name,
         ((JSAny object) {
           var dartObject = _dartify(object);
@@ -438,33 +506,41 @@ class CleverTapPluginWeb {
         }).toJS);
   }
 
-  static void onVariablesChanged(CleverTapOnVariablesChangedHandler handler) {
-    onVariablesChangedImpl(((JSAny object) {
-      var dartObject = _dartify(object);
-      var convertedMap = (dartObject as Map)
-          .map((key, value) => MapEntry(key.toString(), value as dynamic));
-      handler(convertedMap.cast<String, dynamic>());
-    }).toJS);
+  static void onVariablesChanged(CleverTapOnVariablesChangedHandler handler,
+      {String? accountId}) {
+    onVariablesChangedImpl(
+        accountId,
+        ((JSAny object) {
+          var dartObject = _dartify(object);
+          var convertedMap = (dartObject as Map)
+              .map((key, value) => MapEntry(key.toString(), value as dynamic));
+          handler(convertedMap.cast<String, dynamic>());
+        }).toJS);
   }
 
   Future<Map<Object?, Object?>> _getVariables(MethodCall call) async {
+    String? accountId = _getAccountId(call);
     var completer = Completer<Map<Object?, Object?>>();
-    getVariables(((JSAny object) =>
-        completer.complete(_dartify(object) as Map<Object?, Object?>)).toJS);
+    getVariables(
+        accountId,
+        ((JSAny object) =>
+            completer.complete(_dartify(object) as Map<Object?, Object?>))
+            .toJS);
     return completer.future;
   }
 
   Future<dynamic> _getVariable(MethodCall call) async {
     Map<Object?, Object?> args = call.arguments as Map<Object?, Object?>;
+    String? accountId = args['accountId'] as String?;
     String name = args['name'] as String;
     var completer = Completer<dynamic>();
-    getVariable(
-        name, ((JSAny object) => completer.complete(_dartify(object))).toJS);
+    getVariable(accountId, name,
+        ((JSAny object) => completer.complete(_dartify(object))).toJS);
     return completer.future;
   }
 
   static void addKVDataChangeListener(
-      CleverTapOnKVDataChangedHandler handler) async {
+      CleverTapOnKVDataChangedHandler handler, {String? accountId}) async {
     addDocumentEventListenerImpl(
         'CT_web_native_display',
         ((JSAny jsEvent) {
@@ -495,30 +571,35 @@ class CleverTapPluginWeb {
 
   /// Get Web SDK version
   String? _getSDKVersion(MethodCall call) {
-    return getSDKVersion();
+    String? accountId = _getAccountId(call);
+    return getSDKVersion(accountId);
   }
 
   /// Enable/Disable local storage encryption
   void _enableLocalStorageEncryption(MethodCall call) {
     Map<Object?, Object?> args = call.arguments as Map<Object?, Object?>;
+    String? accountId = args['accountId'] as String?;
     bool value = args['value'] as bool;
-    enableLocalStorageEncryption(value);
+    enableLocalStorageEncryption(accountId, value);
   }
 
   /// Check if the local storage encryption is enabled
   bool? _isLocalStorageEncryptionEnabled(MethodCall call) {
-    return isLocalStorageEncryptionEnabled();
+    String? accountId = _getAccountId(call);
+    return isLocalStorageEncryptionEnabled(accountId);
   }
 
  /// Get Variants for the current user for A/B testing
   List _getVariants(MethodCall call) {
-    final jsResult = getVariants();
+    String? accountId = _getAccountId(call);
+    final jsResult = getVariants(accountId);
     return _dartify(jsResult) as List;
   }
 
   /// Get All Qualified campaigns
   List _getAllQualifiedCampaignDetails(MethodCall call) {
-    final jsArray = getAllQualifiedCampaignDetails();
+    String? accountId = _getAccountId(call);
+    final jsArray = getAllQualifiedCampaignDetails(accountId);
     return _dartify(jsArray) as List;
   }
 
