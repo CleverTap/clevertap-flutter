@@ -11,6 +11,8 @@ source 'https://cdn.cocoapods.org/'
 
 Keep the `cdn.cocoapods.org` line. It is still needed so other pods (for example SDWebImage) resolve. Both lines are required: once a Podfile declares any `source`, CocoaPods stops using the default CDN automatically. Existing installs keep working with no change. After editing the Podfile, run `pod install` from your `ios/` directory.
 
+> **Recommended:** the plugin now supports Swift Package Manager, which is not affected by the CocoaPods changes. Consider migrating to SPM - see [iOS Integration via Swift Package Manager](Integrate-iOS-SPM.md).
+
 After installation, you will need to integrate CleverTap SDK into your app.
 
 * Follow the integration instructions [starting with Step 2 here](https://developer.clevertap.com/docs/ios-quickstart-guide#section-step-2-add-clever-tap-credentials).
