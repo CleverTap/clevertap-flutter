@@ -32,6 +32,8 @@ dependencies:
 import 'package:clevertap_plugin/clevertap_plugin.dart';
 ```
 
+> **iOS note:** CocoaPods trunk becomes read-only on December 2, 2026. iOS apps must add a CocoaPods `source` line to their `ios/Podfile` to keep receiving CleverTap updates. See the [Technical Documentation for iOS](doc/Integrate-iOS.md) for the exact lines. Existing installs are unaffected.
+
 See our [Technical Documentation for Android](doc/Integrate-Android.md) and [Technical Documentation for iOS](doc/Integrate-iOS.md) for instructions on integrating CleverTap into your Flutter app.
 
 ## 📑 Documentation & Example
