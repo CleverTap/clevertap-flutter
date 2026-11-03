@@ -119,7 +119,9 @@ object CleverTapListenerProxy : SyncListener, InAppNotificationListener, CTInbox
     override fun onInboxButtonClick(payload: HashMap<String, String>?) {
         CleverTapEventEmitter.emit(
             event = CLEVERTAP_ON_INBOX_BUTTON_CLICK,
-            params = payload
+            // Copy: the map belongs to the native SDK and the emitter reads it later, on its
+            // worker thread. Keys and values are Strings, so a shallow copy is a full copy.
+            params = payload?.let { HashMap(it) }
         )
     }
 
@@ -143,7 +145,9 @@ object CleverTapListenerProxy : SyncListener, InAppNotificationListener, CTInbox
     override fun onInAppButtonClick(payload: HashMap<String, String>?) {
         CleverTapEventEmitter.emit(
             event = CLEVERTAP_ON_INAPP_BUTTON_CLICK,
-            params = payload
+            // Copy: the map belongs to the native SDK and the emitter reads it later, on its
+            // worker thread. Keys and values are Strings, so a shallow copy is a full copy.
+            params = payload?.let { HashMap(it) }
         )
     }
 

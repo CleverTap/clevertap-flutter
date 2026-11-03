@@ -54,6 +54,12 @@ android {
         targetCompatibility = JavaVersion.VERSION_1_8
     }
 
+    // JVM unit tests call code that logs through android.util.Log; return defaults instead
+    // of throwing "Method ... not mocked".
+    testOptions {
+        unitTests.returnDefaultValues = true
+    }
+
     sourceSets {
         if (builtInKotlin) {
             main.kotlin.srcDirs += "src/main/kotlin"

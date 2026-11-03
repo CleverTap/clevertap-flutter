@@ -6,6 +6,7 @@ import android.location.Location
 import android.os.Build
 import android.os.Looper
 import android.util.Log
+import androidx.annotation.VisibleForTesting
 import com.clevertap.android.sdk.CleverTapAPI
 import com.clevertap.android.sdk.UTMDetail
 import com.clevertap.android.sdk.events.EventDetail
@@ -74,6 +75,56 @@ class DartToNativePlatformCommunicator(
         private const val KEY_EVENT_NAME: String = "eventName"
 
         val variables: HashMap<String, Any> = java.util.HashMap()
+
+        /**
+         * Returns a copy of [value] that shares no Map, List or array with the original, so the
+         * native SDK can no longer change what Dart receives.
+         *
+         * Why: a dictionary variable's value() is a node of the SDK's VarCache tree, which
+         * defineVariable changes in place (VarCache.registerVariable -> updateValuesAndKinds puts
+         * the new key into the existing map). Payloads are now encoded a moment later, on the
+         * main thread after the emitter's worker, instead of inside the SDK callback. Example:
+         * the callback sees theme = {color: red}; before the encode, Dart defines theme.size = L
+         * and the SDK puts size into that same map. Without the copy Dart could receive
+         * {color: red, size: L} - a value that did not exist when the event fired.
+         *
+         * The copy must not change a single byte of what Dart receives, so:
+         *  - Map -> LinkedHashMap filled in the source's iteration order. A new HashMap could
+         *    iterate in a different order (it depends on the table size), and Dart keeps the
+         *    order the map was encoded in.
+         *  - List -> ArrayList, same order. The Flutter codec writes every List the same way.
+         *  - byte[] / int[] / long[] / double[] / float[] (the arrays the codec supports) and
+         *    Object[] keep their exact runtime type; their elements are numbers or leaves.
+         *  - Everything else is returned as is: String, Boolean and the Number types are
+         *    immutable, and any other type is rejected by the codec exactly as before.
+         *
+         * Callers apply it AFTER CleverTapTypeUtils.MapUtil.addValue, so addValue keeps deciding
+         * on the SDK's original object (for example its `instanceof ArrayList` check).
+         */
+        @VisibleForTesting
+        internal fun detachedCopy(value: Any?): Any? = when (value) {
+            is Map<*, *> -> {
+                val copy = LinkedHashMap<Any?, Any?>()
+                for ((k, v) in value) {
+                    copy[k] = detachedCopy(v)
+                }
+                copy
+            }
+            is List<*> -> {
+                val copy = ArrayList<Any?>(value.size)
+                for (item in value) {
+                    copy.add(detachedCopy(item))
+                }
+                copy
+            }
+            is Array<*> -> value.copyOf()
+            is ByteArray -> value.copyOf()
+            is IntArray -> value.copyOf()
+            is LongArray -> value.copyOf()
+            is DoubleArray -> value.copyOf()
+            is FloatArray -> value.copyOf()
+            else -> value
+        }
     }
 
     override fun onMethodCall(
@@ -694,8 +745,9 @@ class DartToNativePlatformCommunicator(
             return
         }
 
-        CleverTapEventEmitter.flushBuffer(ctEvent)
-        CleverTapEventEmitter.disableBuffer(ctEvent)
+        // One call on purpose: "stop buffering" and "send what was held" must run as one step,
+        // or an event emitted between them is left in a disabled buffer and lost.
+        CleverTapEventEmitter.startEmission(ctEvent)
         result.success(true)
     }
 
@@ -798,8 +850,8 @@ class DartToNativePlatformCommunicator(
         if (cleverTapAPI != null) {
             cleverTapAPI.addVariablesChangedCallback(object : VariablesChangedCallback() {
                 override fun variablesChanged() {
-                    CleverTapPlugin.invokeMethodOnUiThread(
-                        "onVariablesChanged",
+                    CleverTapEventEmitter.emit(
+                        CleverTapEvent.CLEVERTAP_ON_VARIABLES_CHANGED,
                         getVariablesValues()
                     )
                 }
@@ -813,8 +865,8 @@ class DartToNativePlatformCommunicator(
         if (cleverTapAPI != null) {
             cleverTapAPI.addOneTimeVariablesChangedCallback(object : VariablesChangedCallback() {
                 override fun variablesChanged() {
-                    CleverTapPlugin.invokeMethodOnUiThread(
-                        "onOneTimeVariablesChanged",
+                    CleverTapEventEmitter.emit(
+                        CleverTapEvent.CLEVERTAP_ON_ONE_TIME_VARIABLES_CHANGED,
                         getVariablesValues()
                     )
                 }
@@ -829,8 +881,8 @@ class DartToNativePlatformCommunicator(
             cleverTapAPI.onVariablesChangedAndNoDownloadsPending(object :
                 VariablesChangedCallback() {
                 override fun variablesChanged() {
-                    CleverTapPlugin.invokeMethodOnUiThread(
-                        "onVariablesChangedAndNoDownloadsPending",
+                    CleverTapEventEmitter.emit(
+                        CleverTapEvent.CLEVERTAP_ON_VARIABLES_CHANGED_AND_NO_DOWNLOADS_PENDING,
                         getVariablesValues()
                     )
                 }
@@ -845,8 +897,8 @@ class DartToNativePlatformCommunicator(
             cleverTapAPI.onceVariablesChangedAndNoDownloadsPending(object :
                 VariablesChangedCallback() {
                 override fun variablesChanged() {
-                    CleverTapPlugin.invokeMethodOnUiThread(
-                        "onceVariablesChangedAndNoDownloadsPending",
+                    CleverTapEventEmitter.emit(
+                        CleverTapEvent.CLEVERTAP_ONCE_VARIABLES_CHANGED_AND_NO_DOWNLOADS_PENDING,
                         getVariablesValues()
                     )
                 }
@@ -874,7 +926,7 @@ class DartToNativePlatformCommunicator(
                                 null
                             )
                         }
-                        CleverTapPlugin.invokeMethodOnUiThread("onValueChanged", variablesMap)
+                        CleverTapEventEmitter.emit(CleverTapEvent.CLEVERTAP_ON_VALUE_CHANGED, variablesMap)
                     }
                 })
             } else {
@@ -907,7 +959,7 @@ class DartToNativePlatformCommunicator(
                                 null
                             )
                         }
-                        CleverTapPlugin.invokeMethodOnUiThread("onFileValueChanged", variablesMap)
+                        CleverTapEventEmitter.emit(CleverTapEvent.CLEVERTAP_ON_FILE_VALUE_CHANGED, variablesMap)
                     }
                 })
             } else {
@@ -963,7 +1015,11 @@ class DartToNativePlatformCommunicator(
         for ((key, value) in variables) {
             val variable = value as Var<*>
 
-            val variableWritableMap = CleverTapTypeUtils.MapUtil.addValue(key, variable.value())
+            // Copy after addValue: addValue decides on the SDK's original object.
+            @Suppress("UNCHECKED_CAST")
+            val variableWritableMap = detachedCopy(
+                CleverTapTypeUtils.MapUtil.addValue(key, variable.value())
+            ) as Map<String, Any>
             variablesMapObject.putAll(variableWritableMap)
         }
         return variablesMapObject
@@ -973,7 +1029,11 @@ class DartToNativePlatformCommunicator(
     private fun getVariableValueAsMap(name: String): Map<String, Any> {
         if (variables.containsKey(name)) {
             val variable = variables[name] as Var<*>?
-            return CleverTapTypeUtils.MapUtil.addValue(name, variable!!.value())
+            // Copy after addValue: addValue decides on the SDK's original object.
+            @Suppress("UNCHECKED_CAST")
+            return detachedCopy(
+                CleverTapTypeUtils.MapUtil.addValue(name, variable!!.value())
+            ) as Map<String, Any>
         }
         throw IllegalArgumentException(
             "Variable name = $name does not exist."

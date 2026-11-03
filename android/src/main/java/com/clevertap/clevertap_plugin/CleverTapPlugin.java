@@ -11,8 +11,8 @@ import androidx.annotation.NonNull;
 import com.clevertap.android.sdk.CleverTapAPI;
 
 import java.lang.ref.WeakReference;
-import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 import io.flutter.embedding.engine.plugins.FlutterPlugin;
 import io.flutter.embedding.engine.plugins.activity.ActivityAware;
@@ -38,7 +38,11 @@ public class CleverTapPlugin implements ActivityAware, FlutterPlugin {
 
     private DartToNativePlatformCommunicator dartToNativePlatformCommunicator;
 
-    public static final Set<MethodChannel> nativeToDartMethodChannelSet = new HashSet<>();
+    // Thread-safe on purpose: engines are added/removed on the main thread (onAttachedToEngine /
+    // onDetachedFromEngine) while invokeMethodOnUiThread loops over the set on whatever thread
+    // emits - a HashSet there threw ConcurrentModificationException and the event was lost for
+    // every engine. Each loop walks a snapshot, and writes (engine attach/detach) are rare.
+    public static final Set<MethodChannel> nativeToDartMethodChannelSet = new CopyOnWriteArraySet<>();
 
     private static final Handler mainHandler = new Handler(Looper.getMainLooper());
 
