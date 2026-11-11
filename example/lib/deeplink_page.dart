@@ -21,12 +21,22 @@ class DeepLinkPage extends StatelessWidget {
         title: Text('DeepLink Page'),
       ),
       body: Center(
-        child: Text(getFormattedText(),
-            style: TextStyle(
-              fontSize: 15.0,
-              fontWeight: FontWeight.bold,
-              // insert your font size here
-            )),
+        child: Container(
+          margin: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFFDCE8F7)),
+          ),
+          child: Text(getFormattedText(),
+              style: const TextStyle(
+                fontSize: 14.0,
+                height: 1.6,
+                fontWeight: FontWeight.w500,
+                color: Color(0xFF16222E),
+              )),
+        ),
       ),
     );
   }
