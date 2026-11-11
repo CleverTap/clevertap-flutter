@@ -4,7 +4,7 @@ import PackageDescription
 let package = Package(
     name: "clevertap_plugin",
     platforms: [
-        .iOS("13.0")
+        .iOS("15.0")
     ],
     products: [
         .library(name: "clevertap-plugin", targets: ["clevertap_plugin"])
@@ -12,7 +12,7 @@ let package = Package(
     dependencies: [
         .package(
             url: "https://github.com/CleverTap/clevertap-ios-sdk",
-            exact: "7.9.0"
+            exact: "7.9.1"
         )
     ],
     targets: [

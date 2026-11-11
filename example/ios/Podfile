@@ -52,5 +52,10 @@ dynamic_frameworks = ['CleverTap-iOS-SDK', 'SDWebImage']
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
+    # Must run after flutter_additional_ios_build_settings, which lowers the target
+    # back to Flutter's minimum. Xcode 27 refuses to build anything below 15.0.
+    target.build_configurations.each do |config|
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+    end
   end
 end
