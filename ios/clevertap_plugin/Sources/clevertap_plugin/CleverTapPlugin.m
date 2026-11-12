@@ -7,6 +7,12 @@
 #import "CleverTap.h"
 #endif
 
+#if __has_include(<CleverTapSDK/CleverTapInstanceConfig.h>)
+#import <CleverTapSDK/CleverTapInstanceConfig.h>
+#else
+#import "CleverTapInstanceConfig.h"
+#endif
+
 #import "CleverTapPlugin.h"
 
 #if __has_include(<CleverTapSDK/CleverTap+Inbox.h>)
@@ -105,6 +111,14 @@
 @property (strong, nonatomic) FlutterMethodChannel *nativeToDartMethodChannel;
 @property(nonatomic, strong) NSMutableDictionary *allVariables;
 
+// Account lookup state (see resolveInstance:). Main queue only: every caller is a method-channel
+// handler or init, and Flutter runs both on the main thread.
+@property(nonatomic, strong, nullable) CleverTap *defaultInstance;
+@property(nonatomic, strong) NSMutableSet<NSString *> *wiredAccountIds;
+// Remembered from Dart's setLibrary, so accounts wired later report the wrapper version too.
+@property(nonatomic, copy, nullable) NSString *libraryName;
+@property(nonatomic, assign) int libraryVersion;
+
 @end
 
 static NSDateFormatter *dateFormatter;
@@ -139,7 +153,8 @@ static NSDateFormatter *dateFormatter;
     self = [super init];
     if (self) {
         self.allVariables = [NSMutableDictionary dictionary];
-        CleverTap *clevertap = [CleverTap sharedInstance];
+        self.wiredAccountIds = [NSMutableSet set];
+        CleverTap *clevertap = [self resolveInstance:nil];
         [clevertap setSyncDelegate:self];
         [clevertap setInAppNotificationDelegate:self];
         [clevertap setDisplayUnitDelegate:self];
@@ -150,6 +165,45 @@ static NSDateFormatter *dateFormatter;
         [self addObservers];
     }
     return self;
+}
+
+/// Finds the CleverTap instance for an account.
+/// accountId == nil: the default slot (the Info.plist account).
+/// accountId != nil: that account's instance, or nil after ONE warning naming the ID.
+/// We keep no map of instances: the SDK has one, and getGlobalInstance: can bring an account back
+/// from disk on a cold start, so a copy here could only drift.
+- (nullable CleverTap *)resolveInstance:(nullable NSString *)accountId {
+    if (![NSThread isMainThread]) {
+        // Never expected: the state below is main-queue only. Log loudly, do not crash the app.
+        NSLog(@"CleverTapFlutter: resolveInstance: called off the main thread, please report this.");
+    }
+    CleverTap *instance;
+    if (accountId == nil) {
+        // Saved only when found, so a missing Info.plist account is looked up again next time.
+        if (self.defaultInstance == nil) {
+            self.defaultInstance = [CleverTap sharedInstance];
+        }
+        instance = self.defaultInstance;
+    } else {
+        instance = [CleverTap getGlobalInstance:accountId];
+    }
+    if (instance == nil) {
+        if (accountId == nil) {
+            NSLog(@"CleverTapFlutter: CleverTap default instance not found. Add CleverTapAccountID and CleverTapToken to Info.plist.");
+        } else {
+            NSLog(@"CleverTapFlutter: CleverTap instance not found for accountId: %@. Call ignored. Check the ID, and create the instance before using it.", accountId);
+        }
+        return nil;
+    }
+    NSString *key = instance.config.accountId;
+    if (key != nil && ![self.wiredAccountIds containsObject:key]) {
+        [self.wiredAccountIds addObject:key];
+        if (self.libraryName != nil) {
+            [instance setLibrary:self.libraryName];
+            [instance setCustomSdkVersion:self.libraryName version:self.libraryVersion];
+        }
+    }
+    return instance;
 }
 
 - (void)applicationDidLaunchWithOptions:(NSDictionary *)options {
@@ -501,6 +555,12 @@ static NSDateFormatter *dateFormatter;
 }
 
 - (void)setLibrary:(FlutterMethodCall*)call withResult:(FlutterResult)result {
+    // Remembered even when there is no default account, so accounts created later report it.
+    id libName = call.arguments[@"libName"];
+    if ([libName isKindOfClass:[NSString class]]) {
+        self.libraryName = libName;
+        self.libraryVersion = [call.arguments[@"libVersion"] intValue];
+    }
     [[CleverTap sharedInstance] setLibrary:call.arguments[@"libName"]];
     [[CleverTap sharedInstance] setCustomSdkVersion:call.arguments[@"libName"] version:[call.arguments[@"libVersion"]intValue]];
 }
