@@ -90,6 +90,13 @@ internal class InstanceRegistry<C, T : Any>(private val source: InstanceSource<C
         library = CleverTapLibrary(name, version)
     }
 
+    /**
+     * True when this plugin has already resolved [accountId] in this app run. createInstance uses it
+     * to warn that a second config for the same account is ignored. An account the host app made in
+     * native code without going through the plugin is not counted.
+     */
+    fun isWired(accountId: String): Boolean = wiredAccountIds.contains(accountId)
+
     private fun resolveDefault(context: C): T? {
         defaultInstance?.let { return it }
         val found = source.default(context) ?: return null
@@ -130,4 +137,7 @@ internal object CleverTapInstanceRegistry {
 
     @JvmStatic
     fun rememberLibrary(name: String?, version: Int) = registry.rememberLibrary(name, version)
+
+    @JvmStatic
+    fun isWired(accountId: String): Boolean = registry.isWired(accountId)
 }

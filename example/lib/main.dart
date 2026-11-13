@@ -9,6 +9,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:clevertap_plugin/clevertap_plugin.dart';
 import 'package:example/deeplink_page.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_styled_toast/flutter_styled_toast.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'custom_template.dart';
@@ -854,6 +855,16 @@ class _MyAppState extends State<MyApp> {
                 ]),
                 if (!kIsWeb)
                   _buildExpansionTile("Multi-Instance", [
+                    _buildListTile("Create Instance", createInstanceB,
+                        "Creates account TEST-ACC-B (region eu1)"),
+                    _buildListTile("Create Same Instance Again",
+                        createInstanceBAgain,
+                        "Same account, different token: the new config is ignored"),
+                    _buildListTile("Create Instance With Empty ID",
+                        createInstanceEmptyId, "Fails with EINVALID"),
+                    _buildListTile("Create Instance With ID But No Flag",
+                        createInstanceIdWithoutFlag,
+                        "cleverTapId without useCustomCleverTapId: fails with EINVALID"),
                     _buildListTile("Enable Personalization",
                         enablePersonalization, "Enables Personalization"),
                     _buildListTile("Disable Personalization",
@@ -1833,6 +1844,40 @@ class _MyAppState extends State<MyApp> {
     showToast("PIP InApp notification dismissed (if visible)");
     print("InApp -> dismissPipInApp called");
   }
+
+  Future<void> _createInstance(String label, CleverTapInstanceConfig config) async {
+    try {
+      final instance = await CleverTapPlugin.createInstance(config);
+      showToast("$label: created ${instance.accountId}");
+      print("MI -> $label: created $instance");
+    } on PlatformException catch (e) {
+      showToast("$label: ${e.code}");
+      print("MI -> $label: PlatformException(${e.code}, ${e.message})");
+    }
+  }
+
+  void createInstanceB() => _createInstance(
+      "Create Instance",
+      const CleverTapInstanceConfig(
+          accountId: 'TEST-ACC-B',
+          accountToken: 'TEST-TOKEN-B',
+          region: 'eu1',
+          logLevel: CleverTapLogLevel.verbose));
+
+  void createInstanceBAgain() => _createInstance(
+      "Create Same Instance Again",
+      const CleverTapInstanceConfig(
+          accountId: 'TEST-ACC-B', accountToken: 'A-DIFFERENT-TOKEN'));
+
+  void createInstanceEmptyId() => _createInstance("Create Instance With Empty ID",
+      const CleverTapInstanceConfig(accountId: '', accountToken: 'TEST-TOKEN-B'));
+
+  void createInstanceIdWithoutFlag() => _createInstance(
+      "Create Instance With ID But No Flag",
+      const CleverTapInstanceConfig(
+          accountId: 'TEST-ACC-C',
+          accountToken: 'TEST-TOKEN-C',
+          cleverTapId: 'my-user-42'));
 
   void enablePersonalization() {
     CleverTapPlugin.enablePersonalization();

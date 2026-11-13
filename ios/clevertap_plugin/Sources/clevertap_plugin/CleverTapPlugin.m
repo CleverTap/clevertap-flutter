@@ -14,6 +14,7 @@
 #endif
 
 #import "CleverTapPlugin.h"
+#import "CleverTapPluginInstanceConfigRequest.h"
 
 #if __has_include(<CleverTapSDK/CleverTap+Inbox.h>)
 #import <CleverTapSDK/CleverTap+Inbox.h>
@@ -122,6 +123,12 @@
 @end
 
 static NSDateFormatter *dateFormatter;
+
+/// createInstance error codes, the same as the React Native SDK and the Android side. Apps can
+/// switch on PlatformException.code, so these strings must never change.
+/// EINVALID: the config is unacceptable. ECREATE: the SDK could not create the account.
+static NSString *const kCleverTapErrorCodeInvalidConfig = @"EINVALID";
+static NSString *const kCleverTapErrorCodeCreateFailed = @"ECREATE";
 
 @implementation CleverTapPlugin
 
@@ -417,6 +424,10 @@ static NSDateFormatter *dateFormatter;
         result(nil);
     else if ([@"setLibrary" isEqualToString:call.method])
         [self setLibrary:call withResult:result];
+    else if ([@"createInstance" isEqualToString:call.method])
+        [self createInstance:call withResult:result];
+    else if ([@"getDefaultAccountId" isEqualToString:call.method])
+        result([self resolveInstance:nil].config.accountId);
     else if ([@"promptPushPrimer" isEqualToString:call.method])
         [self promptPushPrimer:call withResult:result];
     else if ([@"promptForPushNotification" isEqualToString:call.method])
@@ -563,6 +574,111 @@ static NSDateFormatter *dateFormatter;
     }
     [[CleverTap sharedInstance] setLibrary:call.arguments[@"libName"]];
     [[CleverTap sharedInstance] setCustomSdkVersion:call.arguments[@"libName"] version:[call.arguments[@"libVersion"]intValue]];
+    // This handler never answered before. Dart does not await setLibrary, so nothing waited, but
+    // every method call must be answered once.
+    result(nil);
+}
+
+#pragma mark - Multi-instance
+
+// "off" -> Off(-1), "info" -> Info(0), "debug" and "verbose" -> Debug(1). iOS has no verbose level.
+static CleverTapLogLevel ctLogLevelFromString(NSString *level) {
+    if ([level isEqualToString:@"off"]) return CleverTapLogOff;
+    if ([level isEqualToString:@"debug"] || [level isEqualToString:@"verbose"]) return CleverTapLogDebug;
+    return CleverTapLogInfo;
+}
+
+// "none" -> None(0), "medium" -> Medium(1, PII only), "high" -> High(2, all data).
+static CleverTapEncryptionLevel ctEncryptionLevelFromString(NSString *level) {
+    if ([level isEqualToString:@"medium"]) return CleverTapEncryptionMedium;
+    if ([level isEqualToString:@"high"]) return CleverTapEncryptionHigh;
+    return CleverTapEncryptionNone;
+}
+
+/// Creates an additional CleverTap account. Answers Dart with the account ID, or with an
+/// EINVALID / ECREATE error. Every path answers exactly once.
+///
+/// Example: @{@"accountId": @"ACC-B", @"accountToken": @"TOK-B", @"region": @"eu1"} answers
+/// @"ACC-B", and [self resolveInstance:@"ACC-B"] finds the account from then on.
+///
+/// Calling it again for the same account returns that account and ignores the new config (the SDK
+/// keeps the first one for the whole app run). A warning says so.
+- (void)createInstance:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    // 1. Check the input before building anything, so a bad config only fails the call.
+    NSString *configError = nil;
+    CleverTapPluginInstanceConfigRequest *request = [CleverTapPluginInstanceConfigRequest parse:call.arguments error:&configError];
+    if (request == nil) {
+        result([FlutterError errorWithCode:kCleverTapErrorCodeInvalidConfig
+                                   message:[@"createInstance: " stringByAppendingString:configError]
+                                   details:nil]);
+        return;
+    }
+    NSString *accountId = request.accountId;
+
+    // 2. Build the SDK config. Region, proxy and spiky proxy can only be set through one of the
+    //    four initializers, and none takes a region AND a proxy. So the region wins and the proxy
+    //    settings are ignored with a warning (Android applies both). Empty proxy strings count as
+    //    "not given".
+    BOOL hasProxy = request.proxyDomain.length > 0;
+    BOOL hasSpiky = request.spikyProxyDomain.length > 0;
+    CleverTapInstanceConfig *config;
+    if (request.region != nil) {
+        if (hasProxy || hasSpiky) {
+            NSLog(@"CleverTapFlutter: createInstance: iOS cannot combine region with proxyDomain/spikyProxyDomain; region applied, proxy settings ignored (Android applies both)");
+        }
+        config = [[CleverTapInstanceConfig alloc] initWithAccountId:accountId accountToken:request.accountToken accountRegion:request.region];
+    } else if (hasProxy && hasSpiky) {
+        config = [[CleverTapInstanceConfig alloc] initWithAccountId:accountId accountToken:request.accountToken proxyDomain:request.proxyDomain spikyProxyDomain:request.spikyProxyDomain];
+    } else if (hasProxy) {
+        config = [[CleverTapInstanceConfig alloc] initWithAccountId:accountId accountToken:request.accountToken proxyDomain:request.proxyDomain];
+    } else {
+        if (hasSpiky) {
+            NSLog(@"CleverTapFlutter: createInstance: spikyProxyDomain requires proxyDomain; ignored");
+        }
+        config = [[CleverTapInstanceConfig alloc] initWithAccountId:accountId accountToken:request.accountToken];
+    }
+    // These are writable properties. nil = not given: the config keeps its default.
+    if (request.handshakeDomain != nil) config.handshakeDomain = request.handshakeDomain;
+    if (request.identityKeys != nil) config.identityKeys = request.identityKeys;
+    if (request.logLevel != nil) config.logLevel = ctLogLevelFromString(request.logLevel);
+    if (request.analyticsOnly != nil) config.analyticsOnly = request.analyticsOnly.boolValue;
+    if (request.enablePersonalization != nil) config.enablePersonalization = request.enablePersonalization.boolValue;
+    if (request.disableAppLaunchedEvent != nil) config.disableAppLaunchedEvent = request.disableAppLaunchedEvent.boolValue;
+    if (request.encryptionLevel != nil) config.encryptionLevel = ctEncryptionLevelFromString(request.encryptionLevel);
+    if (request.encryptionInTransit != nil) config.encryptionInTransitEnabled = request.encryptionInTransit.boolValue;
+    if (request.useCustomCleverTapId != nil) config.useCustomCleverTapId = request.useCustomCleverTapId.boolValue;
+    if (request.disableIDFV != nil) config.disableIDFV = request.disableIDFV.boolValue;
+    if (request.enableFileProtection != nil) config.enableFileProtection = request.enableFileProtection.boolValue;
+
+    BOOL alreadyCreated = [self.wiredAccountIds containsObject:accountId];
+
+    // 3. Creation can throw, not just return nil: custom template producers run inside it, and a
+    //    duplicate template name raises CleverTapCustomTemplateException. Uncaught, that would
+    //    crash the app. We are on the main thread (Flutter calls this handler there), as the SDK's
+    //    unlocked instance map needs.
+    CleverTap *instance;
+    @try {
+        instance = (request.cleverTapId != nil)
+            ? [CleverTap instanceWithConfig:config andCleverTapID:request.cleverTapId]
+            : [CleverTap instanceWithConfig:config];
+    } @catch (NSException *exception) {
+        result([FlutterError errorWithCode:kCleverTapErrorCodeCreateFailed
+                                   message:[NSString stringWithFormat:@"createInstance failed for accountId %@: %@", accountId, exception.reason]
+                                   details:nil]);
+        return;
+    }
+    if (instance == nil) {
+        result([FlutterError errorWithCode:kCleverTapErrorCodeCreateFailed
+                                   message:[NSString stringWithFormat:@"createInstance failed for accountId %@", accountId]
+                                   details:nil]);
+        return;
+    }
+    if (alreadyCreated) {
+        NSLog(@"CleverTapFlutter: createInstance: account %@ already exists in this app run; the new config was ignored. Restart the app to apply a new config.", accountId);
+    }
+    // Stamps the wrapper name and version once per account (Phase 1 registry).
+    [self resolveInstance:accountId];
+    result(accountId);
 }
 
 

@@ -8,7 +8,9 @@ import android.os.Looper
 import android.util.Log
 import androidx.annotation.VisibleForTesting
 import com.clevertap.android.sdk.CleverTapAPI
+import com.clevertap.android.sdk.CleverTapInstanceConfig
 import com.clevertap.android.sdk.UTMDetail
+import com.clevertap.android.sdk.cryption.EncryptionLevel
 import com.clevertap.android.sdk.events.EventDetail
 import com.clevertap.android.sdk.inapp.callbacks.FetchInAppsCallback
 import com.clevertap.android.sdk.inapp.customtemplates.CustomTemplateContext
@@ -16,6 +18,7 @@ import com.clevertap.android.sdk.FetchInboxCallback
 import com.clevertap.android.sdk.inbox.CTInboxMessage
 import com.clevertap.android.sdk.pushnotification.PushConstants
 import com.clevertap.android.sdk.pushnotification.PushNotificationHandler
+import com.clevertap.android.sdk.pushnotification.PushType
 import com.clevertap.android.sdk.usereventlogs.UserEventLog
 import com.clevertap.android.sdk.variables.Var
 import com.clevertap.android.sdk.variables.callbacks.VariableCallback
@@ -46,6 +49,12 @@ class DartToNativePlatformCommunicator(
 
 
         private const val ERROR_MSG: String = "CleverTap Instance is not initialized"
+
+        // createInstance error codes, the same as the React Native SDK and the iOS side. Apps can
+        // switch on PlatformException.code, so these strings must never change.
+        // EINVALID: the config is unacceptable. ECREATE: the SDK could not create the account.
+        const val ERROR_CODE_INVALID_CONFIG = "EINVALID"
+        const val ERROR_CODE_CREATE_FAILED = "ECREATE"
 
         private const val ERROR_MSG_PUSH_TYPE: String = "Couldn't parse PushType. Please provide a non-null type and prefKey"
 
@@ -141,6 +150,14 @@ class DartToNativePlatformCommunicator(
 
             "setLibrary" -> {
                 setLibrary(call, result)
+            }
+
+            "createInstance" -> {
+                createInstance(call, result)
+            }
+
+            "getDefaultAccountId" -> {
+                result.success(CleverTapInstanceRegistry.resolve(context, null)?.accountId)
             }
 
             "setDebugLevel" -> {
@@ -1076,12 +1093,128 @@ class DartToNativePlatformCommunicator(
         val libVersion = call.argument<Int>("libVersion")!!
         // Remembered even when there is no default account, so accounts created later report it.
         CleverTapInstanceRegistry.rememberLibrary(libName, libVersion)
-        if (cleverTapAPI != null) {
-            cleverTapAPI.setCustomSdkVersion(libName, libVersion)
-            result.success(null)
-        } else {
-            result.error(TAG, ERROR_MSG, null)
+        cleverTapAPI?.setCustomSdkVersion(libName, libVersion)
+        // Always success: remembering the version above is this call's job, and it worked. An app
+        // with no AndroidManifest.xml account (every account created from Dart) used to get an
+        // error here. Dart does not await this call, so the error surfaced as an uncaught
+        // PlatformException on every launch.
+        result.success(null)
+    }
+
+    /**
+     * Creates an additional CleverTap account. Answers Dart with the account ID, or with an
+     * `EINVALID` / `ECREATE` error. Every path answers exactly once.
+     *
+     * Example: `{"accountId": "ACC-B", "accountToken": "TOK-B", "region": "eu1"}` answers "ACC-B",
+     * and `CleverTapInstanceRegistry.resolve(context, "ACC-B")` finds the account from then on.
+     *
+     * Calling it again for the same account returns that account and ignores the new config (the
+     * SDK keeps the first one for the whole app run). A warning says so.
+     */
+    private fun createInstance(call: MethodCall, result: MethodChannel.Result) {
+        // 1. Check the input before building anything, so a bad config only fails the call.
+        val request = try {
+            InstanceConfigRequest.parse(call.arguments as? Map<*, *>)
+        } catch (e: InstanceConfigRequest.InvalidConfigException) {
+            result.error(ERROR_CODE_INVALID_CONFIG, "createInstance: ${e.message}", null)
+            return
         }
+        val accountId = request.accountId
+
+        // 2. Build the SDK config. It reads AndroidManifest.xml defaults (ManifestInfo); the
+        //    fields given from Dart override them.
+        val config = CleverTapInstanceConfig.createInstance(
+            context, accountId, request.accountToken, request.region
+        )
+        if (config == null) {
+            result.error(ERROR_CODE_CREATE_FAILED, "createInstance could not build a config for accountId $accountId", null)
+            return
+        }
+        try {
+            applyOptionalConfig(config, request)
+        } catch (t: Throwable) {
+            // For example a push provider the SDK refuses. Fail the call, never the app.
+            result.error(ERROR_CODE_CREATE_FAILED, "createInstance could not apply the config for accountId $accountId: $t", null)
+            return
+        }
+        val alreadyCreated = CleverTapInstanceRegistry.isWired(accountId)
+
+        // 3. Create on the MAIN thread. instanceWithConfig does get, new, put on a static map with
+        //    no lock, and the new instance posts deviceIDCreated to main, which calls
+        //    instanceWithConfig again. Off main, that can build two objects for one account. Flutter
+        //    already calls this handler on main, so this normally runs inline.
+        CleverTapPlugin.runOnMainThread {
+            // Creation can throw, not just return null: custom template producers run inside it,
+            // and a duplicate template name throws CustomTemplateException. On main, an uncaught
+            // throw would crash the app.
+            val instance = try {
+                if (request.cleverTapId != null) {
+                    CleverTapAPI.instanceWithConfig(context, config, request.cleverTapId)
+                } else {
+                    CleverTapAPI.instanceWithConfig(context, config)
+                }
+            } catch (t: Throwable) {
+                result.error(ERROR_CODE_CREATE_FAILED, "createInstance failed for accountId $accountId: $t", null)
+                return@runOnMainThread
+            }
+            if (instance == null) {
+                result.error(ERROR_CODE_CREATE_FAILED, "createInstance failed for accountId $accountId", null)
+                return@runOnMainThread
+            }
+            if (alreadyCreated) {
+                Log.w(TAG, "createInstance: account $accountId already exists in this app run; the new config was ignored. Restart the app to apply a new config.")
+            }
+            // Stamps the wrapper name and version once per account (Phase 1 registry).
+            CleverTapInstanceRegistry.resolve(context, accountId)
+            result.success(accountId)
+        }
+    }
+
+    // Copies the checked optional fields onto the SDK config. Region was passed to the factory.
+    // null means "not given": the config keeps its default.
+    private fun applyOptionalConfig(config: CleverTapInstanceConfig, request: InstanceConfigRequest) {
+        request.proxyDomain?.let { config.setProxyDomain(it) }
+        request.spikyProxyDomain?.let { config.setSpikyProxyDomain(it) }
+        request.handshakeDomain?.let { config.setCustomHandshakeDomain(it) }
+        request.identityKeys?.takeIf { it.isNotEmpty() }?.let { setIdentityKeys(config, it) }
+        request.logLevel?.let { config.setDebugLevel(toLogLevel(it)) }
+        request.analyticsOnly?.let { config.setAnalyticsOnly(it) }
+        request.enablePersonalization?.let { config.enablePersonalization(it) }
+        request.disableAppLaunchedEvent?.let { config.setDisableAppLaunchedEvent(it) }
+        request.encryptionLevel?.let { config.setEncryptionLevel(toEncryptionLevel(it)) }
+        request.encryptionInTransit?.let { config.setEncryptionInTransit(it) }
+        request.useCustomCleverTapId?.let { config.setEnableCustomCleverTapId(it) }
+        request.useGoogleAdId?.let { config.useGoogleAdId(it) }
+        request.backgroundSync?.let { config.setBackgroundSync(it) }
+        for (provider in request.pushProviders) {
+            config.addPushType(
+                PushType(provider.type, provider.prefKey, provider.className, provider.messagingSDKClassName)
+            )
+        }
+    }
+
+    // setIdentityKeys is marked @IdentityType (only "Email", "Phone", "Identity"), but these strings
+    // come from Dart, so lint cannot check them. The SDK filters them itself at run time: IdentitySet
+    // keeps only known keys, ignoring case, so ["Email", "Mail"] works as ["Email"] and never
+    // crashes. The React Native SDK passes them the same way.
+    @SuppressLint("WrongConstant")
+    private fun setIdentityKeys(config: CleverTapInstanceConfig, keys: List<String>) {
+        config.setIdentityKeys(*keys.toTypedArray())
+    }
+
+    // "off" -> OFF(-1), "info" -> INFO(0), "debug" -> DEBUG(2), "verbose" -> VERBOSE(3).
+    private fun toLogLevel(level: String): CleverTapAPI.LogLevel = when (level) {
+        "off" -> CleverTapAPI.LogLevel.OFF
+        "debug" -> CleverTapAPI.LogLevel.DEBUG
+        "verbose" -> CleverTapAPI.LogLevel.VERBOSE
+        else -> CleverTapAPI.LogLevel.INFO
+    }
+
+    // "none" -> NONE, "medium" -> MEDIUM (PII only), "high" -> FULL_DATA (all data).
+    private fun toEncryptionLevel(level: String): EncryptionLevel = when (level) {
+        "medium" -> EncryptionLevel.MEDIUM
+        "high" -> EncryptionLevel.FULL_DATA
+        else -> EncryptionLevel.NONE
     }
 
     private fun activate(result: MethodChannel.Result) {

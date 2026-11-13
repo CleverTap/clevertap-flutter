@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:clevertap_plugin/clevertap_plugin_web_wrapper.dart';
 import 'package:clevertap_plugin/src/types.dart';
+import 'package:clevertap_plugin/src/instance_config.dart';
 import 'package:clevertap_plugin/src/typedefs.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -12,6 +13,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'src/clevertap_callback_dispatcher.dart';
 
 export 'src/types.dart';
+export 'src/instance_config.dart';
 
 class CleverTapPlugin {
   late CleverTapInAppNotificationDismissedHandler
@@ -87,6 +89,35 @@ class CleverTapPlugin {
     _dartToNativeMethodChannel.invokeMethod(
         'setLibrary', {'libName': libName, 'libVersion': libVersion});
     _nativeToDartMethodChannel.setMethodCallHandler(_platformCallHandler);
+  }
+
+  /// Creates an additional CleverTap account (Android and iOS) and returns its handle.
+  ///
+  /// ```dart
+  /// final insurance = await CleverTapPlugin.createInstance(
+  ///   CleverTapInstanceConfig(accountId: 'INS-ID', accountToken: 'INS-TOKEN', region: 'eu1'),
+  /// );
+  /// print(insurance.accountId); // INS-ID
+  /// ```
+  ///
+  /// Calling it again with the same `accountId` returns the same account. The new config is
+  /// ignored for the rest of the app run (a native warning says so).
+  ///
+  /// Throws a [PlatformException]:
+  /// - `EINVALID`: the config is not acceptable, for example an empty `accountId`. The message
+  ///   names the field.
+  /// - `ECREATE`: the native SDK could not create the account, for example because two custom
+  ///   templates share a name.
+  /// - `Unimplemented`: on Web, which does not support additional accounts.
+  static Future<CleverTapInstance> createInstance(
+      CleverTapInstanceConfig config) async {
+    // Make sure setLibrary has been sent first. Static methods do not build the plugin object,
+    // and its constructor is what sends setLibrary. Calls on one channel reach native in order,
+    // so native knows the wrapper version before it sets up the new account.
+    _clevertapPlugin;
+    final String? accountId = await _dartToNativeMethodChannel
+        .invokeMethod<String>('createInstance', config.toMap());
+    return CleverTapInstance._(accountId ?? config.accountId);
   }
 
   Future _platformCallHandler(MethodCall call) async {
@@ -1604,4 +1635,24 @@ class CleverTapPlugin {
     return await _dartToNativeMethodChannel
         .invokeMethod('getAllQualifiedCampaignDetails', {});
   }
+}
+
+/// A handle to one CleverTap account, returned by [CleverTapPlugin.createInstance].
+///
+/// Two handles are equal when they point to the same account.
+class CleverTapInstance {
+  /// The CleverTap account ID this handle sends to.
+  final String accountId;
+
+  CleverTapInstance._(this.accountId);
+
+  @override
+  bool operator ==(Object other) =>
+      other is CleverTapInstance && other.accountId == accountId;
+
+  @override
+  int get hashCode => accountId.hashCode;
+
+  @override
+  String toString() => 'CleverTapInstance{accountId: $accountId}';
 }

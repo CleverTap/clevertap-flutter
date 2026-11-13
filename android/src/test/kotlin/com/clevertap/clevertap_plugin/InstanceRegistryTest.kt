@@ -144,6 +144,18 @@ class InstanceRegistryTest {
     }
 
     @Test
+    fun isWired_onlyAfterASuccessfulResolve() {
+        val source = FakeSource(known = ConcurrentHashMap(mapOf("B" to FakeInstance("B"))))
+        val registry = InstanceRegistry(source)
+
+        assertEquals(false, registry.isWired("B"))
+        registry.resolve(Unit, "MISSING") // a failed lookup wires nothing
+        assertEquals(false, registry.isWired("MISSING"))
+        registry.resolve(Unit, "B")
+        assertEquals(true, registry.isWired("B"))
+    }
+
+    @Test
     fun instanceWithoutAccountId_isReturned_butNotWired() {
         // Defensive: the SDK always has an account ID, but a null must not crash or wire twice.
         val odd = FakeInstance(null)
