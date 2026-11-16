@@ -66,6 +66,8 @@ jobs:
       base_ref:        ${{ inputs.base_ref }}
       model:           ${{ inputs.model }}
       skip_sync:       ${{ inputs.skip_sync }}
+      # macos-14 runners are no longer available on GitHub, so use macos-15.
+      runs_on:         macos-15
     secrets:
       app_id:            ${{ secrets.CLEVERTAP_WRAPPER_SYNC_APP_ID }}
       app_private_key:   ${{ secrets.CLEVERTAP_WRAPPER_SYNC_PRIVATE_KEY }}
