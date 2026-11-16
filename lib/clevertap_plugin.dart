@@ -120,20 +120,39 @@ class CleverTapPlugin {
     return CleverTapInstance._(accountId ?? config.accountId);
   }
 
+  /// The key that marks a native event envelope. Native sends every event as
+  /// `{__ctEnvelope: true, accountId: 'B', isDefault: false, payload: <value>}`
+  /// (CleverTapEventEmitter.ENVELOPE_MARKER on Android, CleverTapPlugin.m on iOS).
+  static const String _envelopeMarker = '__ctEnvelope';
+
   Future _platformCallHandler(MethodCall call) async {
     print("_platformCallHandler call ${call.method} ${call.arguments}");
+    // Open the envelope. The marker key keeps an app-defined payload that happens to contain
+    // "accountId" or "payload" keys from being mistaken for one. A value without the marker is
+    // treated as the default account's (a native path that does not wrap still works).
+    dynamic payload = call.arguments;
+    if (payload is Map && payload[_envelopeMarker] == true) {
+      if (payload['isDefault'] != true) {
+        // Another account's event. Account handles get their own handlers in a later release;
+        // the static handlers belong to the default account only.
+        print("CleverTapPlugin: ${call.method} for account ${payload['accountId']} "
+            "is not delivered to the default account's handlers");
+        return;
+      }
+      payload = payload['payload'];
+    }
     switch (call.method) {
       case "inAppNotificationDismissed":
-        Map<dynamic, dynamic> args = call.arguments;
+        Map<dynamic, dynamic> args = payload;
         cleverTapInAppNotificationDismissedHandler(
             args.cast<String, dynamic>());
         break;
       case "inAppNotificationShow":
-        Map<dynamic, dynamic> args = call.arguments;
+        Map<dynamic, dynamic> args = payload;
         cleverTapInAppNotificationShowHandler(args.cast<String, dynamic>());
         break;
       case "onInAppButtonClick":
-        Map<dynamic, dynamic> args = call.arguments;
+        Map<dynamic, dynamic> args = payload;
         cleverTapInAppNotificationButtonClickedHandler(
             args.cast<String, dynamic>());
         break;
@@ -141,7 +160,10 @@ class CleverTapPlugin {
         cleverTapProfileDidInitializeHandler();
         break;
       case "profileDataUpdated":
-        cleverTapProfileSyncHandler(call.arguments);
+        // Cast like every other map event. Without it Dart threw a TypeError (the channel gives a
+        // Map<Object?, Object?>) and the handler never ran, from 1.0.0 until this fix.
+        Map<dynamic, dynamic>? args = payload;
+        cleverTapProfileSyncHandler(args?.cast<String, dynamic>());
         break;
       case "inboxDidInitialize":
         cleverTapInboxDidInitializeHandler();
@@ -150,12 +172,12 @@ class CleverTapPlugin {
         cleverTapInboxMessagesDidUpdateHandler();
         break;
       case "onInboxButtonClick":
-        Map<dynamic, dynamic> args = call.arguments;
+        Map<dynamic, dynamic> args = payload;
         cleverTapInboxNotificationButtonClickedHandler(
             args.cast<String, dynamic>());
         break;
       case "onInboxMessageClick":
-        Map<dynamic, dynamic> args = call.arguments;
+        Map<dynamic, dynamic> args = payload;
         Map<dynamic, dynamic> message = args["data"];
         int contentPageIndex = args["contentPageIndex"];
         int buttonIndex = args["buttonIndex"];
@@ -163,7 +185,7 @@ class CleverTapPlugin {
             message.cast<String, dynamic>(), contentPageIndex, buttonIndex);
         break;
       case "onDisplayUnitsLoaded":
-        List<dynamic>? args = call.arguments;
+        List<dynamic>? args = payload;
         cleverTapDisplayUnitsLoadedHandler(args);
         break;
       case "featureFlagsUpdated":
@@ -179,28 +201,28 @@ class CleverTapPlugin {
         cleverTapProductConfigActivatedHandler();
         break;
       case "pushAmpPayloadReceived":
-        Map<dynamic, dynamic> args = call.arguments;
+        Map<dynamic, dynamic> args = payload;
         cleverTapPushAmpPayloadReceivedHandler(args.cast<String, dynamic>());
         break;
 
       case "pushClickedPayloadReceived":
-        Map<dynamic, dynamic> args = call.arguments;
+        Map<dynamic, dynamic> args = payload;
         cleverTapPushClickedPayloadReceivedHandler(
             args.cast<String, dynamic>());
         break;
       case "pushPermissionResponseReceived":
-        bool accepted = call.arguments;
+        bool accepted = payload;
         cleverTapPushPermissionResponseReceivedHandler(accepted);
         break;
       case "onVariablesChanged":
-        Map<dynamic, dynamic> args = call.arguments;
+        Map<dynamic, dynamic> args = payload;
         cleverTapOnVariablesChangedHandlers
             .forEach((cleverTapOnVariablesChangedHandler) {
           cleverTapOnVariablesChangedHandler(args.cast<String, dynamic>());
         });
         break;
       case "onOneTimeVariablesChanged":
-        Map<dynamic, dynamic> args = call.arguments;
+        Map<dynamic, dynamic> args = payload;
         cleverTapOnOneTimeVariablesChangedHandlers
             .forEach((cleverTapOnOneTimeVariablesChangedHandler) {
           cleverTapOnOneTimeVariablesChangedHandler(
@@ -208,14 +230,14 @@ class CleverTapPlugin {
         });
         break;
       case "onValueChanged":
-        Map<dynamic, dynamic> args = call.arguments;
+        Map<dynamic, dynamic> args = payload;
         cleverTapOnValueChangedHandlers
             .forEach((cleverTapOnValueChangedHandler) {
           cleverTapOnValueChangedHandler(args.cast<String, dynamic>());
         });
         break;
       case "onVariablesChangedAndNoDownloadsPending":
-        Map<dynamic, dynamic> args = call.arguments;
+        Map<dynamic, dynamic> args = payload;
         cleverTapOnVariablesChangedAndNoDownloadsPendingHandlers
             .forEach((cleverTapOnVariablesChangedAndNoDownloadsPendingHandler) {
           cleverTapOnVariablesChangedAndNoDownloadsPendingHandler(
@@ -223,7 +245,7 @@ class CleverTapPlugin {
         });
         break;
       case "onceVariablesChangedAndNoDownloadsPending":
-        Map<dynamic, dynamic> args = call.arguments;
+        Map<dynamic, dynamic> args = payload;
         cleverTapOnceVariablesChangedAndNoDownloadsPendingHandlers.forEach(
             (cleverTapOnceVariablesChangedAndNoDownloadsPendingHandler) {
           cleverTapOnceVariablesChangedAndNoDownloadsPendingHandler(
@@ -231,22 +253,22 @@ class CleverTapPlugin {
         });
         break;
       case "onFileValueChanged":
-        Map<dynamic, dynamic> args = call.arguments;
+        Map<dynamic, dynamic> args = payload;
         cleverTapOnFileValueChangedHandlers
             .forEach((cleverTapOnFileValueChangedHandler) {
           cleverTapOnFileValueChangedHandler(args.cast<String, dynamic>());
         });
         break;
       case "customTemplatePresent":
-        String templateName = call.arguments;
+        String templateName = payload;
         cleverTapCustomTemplatePresentHandler(templateName);
         break;
       case "customFunctionPresent":
-        String templateName = call.arguments;
+        String templateName = payload;
         cleverTapCustomFunctionPresentHandler(templateName);
         break;
       case "customTemplateClose":
-        String templateName = call.arguments;
+        String templateName = payload;
         cleverTapCustomTemplateCloseHandler(templateName);
         break;
       default:
@@ -291,7 +313,8 @@ class CleverTapPlugin {
     cleverTapInAppNotificationDismissedHandler = handler;
   }
 
-  /// Only for Android - Define a method to handle inApp notification shown
+  /// Define a method to handle inApp notification shown. The handler receives the in-app's JSON.
+  /// Android and iOS.
   void setCleverTapInAppNotificationShowHandler(
       CleverTapInAppNotificationShowHandler handler) {
     invokeStartEmission('CleverTapInAppNotificationShowed');

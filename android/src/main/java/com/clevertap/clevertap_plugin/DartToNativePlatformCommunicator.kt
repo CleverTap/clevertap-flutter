@@ -863,12 +863,15 @@ class DartToNativePlatformCommunicator(
         }
     }
 
+    // The six variables callbacks below are registered on this communicator's instance (the
+    // default account), so their events carry its accountId. Per-account variables: Phase 6.
     private fun onVariablesChanged() {
         if (cleverTapAPI != null) {
             cleverTapAPI.addVariablesChangedCallback(object : VariablesChangedCallback() {
                 override fun variablesChanged() {
                     CleverTapEventEmitter.emit(
                         CleverTapEvent.CLEVERTAP_ON_VARIABLES_CHANGED,
+                        cleverTapAPI.accountId,
                         getVariablesValues()
                     )
                 }
@@ -884,6 +887,7 @@ class DartToNativePlatformCommunicator(
                 override fun variablesChanged() {
                     CleverTapEventEmitter.emit(
                         CleverTapEvent.CLEVERTAP_ON_ONE_TIME_VARIABLES_CHANGED,
+                        cleverTapAPI.accountId,
                         getVariablesValues()
                     )
                 }
@@ -900,6 +904,7 @@ class DartToNativePlatformCommunicator(
                 override fun variablesChanged() {
                     CleverTapEventEmitter.emit(
                         CleverTapEvent.CLEVERTAP_ON_VARIABLES_CHANGED_AND_NO_DOWNLOADS_PENDING,
+                        cleverTapAPI.accountId,
                         getVariablesValues()
                     )
                 }
@@ -916,6 +921,7 @@ class DartToNativePlatformCommunicator(
                 override fun variablesChanged() {
                     CleverTapEventEmitter.emit(
                         CleverTapEvent.CLEVERTAP_ONCE_VARIABLES_CHANGED_AND_NO_DOWNLOADS_PENDING,
+                        cleverTapAPI.accountId,
                         getVariablesValues()
                     )
                 }
@@ -943,7 +949,7 @@ class DartToNativePlatformCommunicator(
                                 null
                             )
                         }
-                        CleverTapEventEmitter.emit(CleverTapEvent.CLEVERTAP_ON_VALUE_CHANGED, variablesMap)
+                        CleverTapEventEmitter.emit(CleverTapEvent.CLEVERTAP_ON_VALUE_CHANGED, cleverTapAPI?.accountId, variablesMap)
                     }
                 })
             } else {
@@ -976,7 +982,7 @@ class DartToNativePlatformCommunicator(
                                 null
                             )
                         }
-                        CleverTapEventEmitter.emit(CleverTapEvent.CLEVERTAP_ON_FILE_VALUE_CHANGED, variablesMap)
+                        CleverTapEventEmitter.emit(CleverTapEvent.CLEVERTAP_ON_FILE_VALUE_CHANGED, cleverTapAPI?.accountId, variablesMap)
                     }
                 })
             } else {

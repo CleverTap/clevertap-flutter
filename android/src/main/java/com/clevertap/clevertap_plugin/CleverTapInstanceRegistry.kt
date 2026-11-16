@@ -97,6 +97,13 @@ internal class InstanceRegistry<C, T : Any>(private val source: InstanceSource<C
      */
     fun isWired(accountId: String): Boolean = wiredAccountIds.contains(accountId)
 
+    /**
+     * The default account's ID, or null when it has not been found (no AndroidManifest.xml
+     * account, or not resolved yet). Never calls the SDK: it only reads the saved default, so it
+     * is safe from any thread (the event emitter reads it on its worker thread).
+     */
+    fun defaultAccountId(): String? = defaultInstance?.let { source.accountIdOf(it) }
+
     private fun resolveDefault(context: C): T? {
         defaultInstance?.let { return it }
         val found = source.default(context) ?: return null
@@ -125,6 +132,10 @@ internal object CleverTapInstanceRegistry {
             if (library != null) {
                 instance.setCustomSdkVersion(library.name, library.version)
             }
+            // The account's own listener, so its events reach Dart tagged with its ID. This is the
+            // only attach for a created account. The default account is also re-attached on every
+            // engine attach in CleverTapPlugin.setupPlugin, as before.
+            CleverTapListenerProxy.attachToInstance(instance)
         }
 
         override fun warn(message: String) {
@@ -140,4 +151,7 @@ internal object CleverTapInstanceRegistry {
 
     @JvmStatic
     fun isWired(accountId: String): Boolean = registry.isWired(accountId)
+
+    @JvmStatic
+    fun defaultAccountId(): String? = registry.defaultAccountId()
 }

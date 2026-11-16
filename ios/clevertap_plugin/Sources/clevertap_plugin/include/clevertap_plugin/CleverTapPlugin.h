@@ -3,6 +3,7 @@
 static NSString *const kCleverTapProfileDidInitialize                      = @"profileDidInitialize";
 static NSString *const kCleverTapProfileSync                               = @"profileDataUpdated";
 static NSString *const kCleverTapInAppNotificationDismissed                = @"inAppNotificationDismissed";
+static NSString *const kCleverTapInAppNotificationShow                     = @"inAppNotificationShow";
 static NSString *const kCleverTapInboxDidInitialize                        = @"inboxDidInitialize";
 static NSString *const kCleverTapInboxMessagesDidUpdate                    = @"inboxMessagesDidUpdate";
 static NSString *const kCleverTapDisplayUnitsLoaded                        = @"onDisplayUnitsLoaded";

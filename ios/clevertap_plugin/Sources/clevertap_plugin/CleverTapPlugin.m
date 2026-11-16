@@ -15,6 +15,8 @@
 
 #import "CleverTapPlugin.h"
 #import "CleverTapPluginInstanceConfigRequest.h"
+#import "CleverTapPluginInstanceDelegate.h"
+#import "CleverTapPlugin+Internal.h"
 
 #if __has_include(<CleverTapSDK/CleverTap+Inbox.h>)
 #import <CleverTapSDK/CleverTap+Inbox.h>
@@ -106,7 +108,7 @@
 #import "CTTemplateContext.h"
 #endif
 
-@interface CleverTapPlugin () <CleverTapSyncDelegate, CleverTapInAppNotificationDelegate, CleverTapDisplayUnitDelegate, CleverTapInboxViewControllerDelegate, CleverTapProductConfigDelegate, CleverTapFeatureFlagsDelegate, CleverTapPushNotificationDelegate, CleverTapPushPermissionDelegate>
+@interface CleverTapPlugin () <CleverTapInboxViewControllerDelegate>
 
 @property (strong, nonatomic) FlutterMethodChannel *dartToNativeMethodChannel;
 @property (strong, nonatomic) FlutterMethodChannel *nativeToDartMethodChannel;
@@ -116,6 +118,9 @@
 // handler or init, and Flutter runs both on the main thread.
 @property(nonatomic, strong, nullable) CleverTap *defaultInstance;
 @property(nonatomic, strong) NSMutableSet<NSString *> *wiredAccountIds;
+// Each account's SDK delegate. The SDK holds delegates weakly, so this dictionary is what keeps
+// them alive for the app's lifetime. Main queue only, like the other registry state.
+@property(nonatomic, strong) NSMutableDictionary<NSString *, CleverTapPluginInstanceDelegate *> *instanceDelegates;
 // Remembered from Dart's setLibrary, so accounts wired later report the wrapper version too.
 @property(nonatomic, copy, nullable) NSString *libraryName;
 @property(nonatomic, assign) int libraryVersion;
@@ -161,14 +166,9 @@ static NSString *const kCleverTapErrorCodeCreateFailed = @"ECREATE";
     if (self) {
         self.allVariables = [NSMutableDictionary dictionary];
         self.wiredAccountIds = [NSMutableSet set];
-        CleverTap *clevertap = [self resolveInstance:nil];
-        [clevertap setSyncDelegate:self];
-        [clevertap setInAppNotificationDelegate:self];
-        [clevertap setDisplayUnitDelegate:self];
-        [[clevertap productConfig] setDelegate:self];
-        [[clevertap featureFlags] setDelegate:self];
-        [clevertap setPushNotificationDelegate:self];
-        [clevertap setPushPermissionDelegate:self];
+        self.instanceDelegates = [NSMutableDictionary dictionary];
+        // Resolving the default account wires it, which sets its delegates (resolveInstance:).
+        [self resolveInstance:nil];
         [self addObservers];
     }
     return self;
@@ -209,6 +209,11 @@ static NSString *const kCleverTapErrorCodeCreateFailed = @"ECREATE";
             [instance setLibrary:self.libraryName];
             [instance setCustomSdkVersion:self.libraryName version:self.libraryVersion];
         }
+        // The account's own delegate, so its events reach Dart tagged with its ID. Kept in the
+        // dictionary because the SDK holds delegates weakly.
+        CleverTapPluginInstanceDelegate *delegate = [[CleverTapPluginInstanceDelegate alloc] initWithAccountId:key];
+        self.instanceDelegates[key] = delegate;
+        [delegate attachToInstance:instance];
     }
     return instance;
 }
@@ -1060,12 +1065,14 @@ static CleverTapEncryptionLevel ctEncryptionLevelFromString(NSString *level) {
 }
 
 - (void)initializeInbox {
+    // Registered on the default account (main queue): its events carry that account's ID.
+    NSString *accountId = self.defaultInstance.config.accountId;
 
     [[CleverTap sharedInstance] initializeInboxWithCallback:^(BOOL success) {
         if (success) {
-            [self postNotificationWithName:kCleverTapInboxDidInitialize andBody:nil];
+            [self postNotificationWithName:kCleverTapInboxDidInitialize andBody:nil accountId:accountId];
             [[CleverTap sharedInstance] registerInboxUpdatedBlock:^{
-                [self postNotificationWithName:kCleverTapInboxMessagesDidUpdate andBody:nil];
+                [self postNotificationWithName:kCleverTapInboxMessagesDidUpdate andBody:nil accountId:accountId];
             }];
         }
     }];
@@ -1232,14 +1239,6 @@ static CleverTapEncryptionLevel ctEncryptionLevelFromString(NSString *level) {
     result(nil);
 }
 
-- (void)displayUnitsUpdated:(NSArray<CleverTapDisplayUnit *> *)displayUnits {
-    
-    NSMutableDictionary *_dict = [NSMutableDictionary new];
-    [_dict setValue:[self _cleverTapDisplayUnitToArray:displayUnits] forKey:@"adUnits"];
-    [self postNotificationWithName:kCleverTapDisplayUnitsLoaded andBody:_dict];
-}
-
-
 #pragma mark - Product Config
 
 - (void)fetch:(FlutterMethodCall *)call withResult:(FlutterResult)result {
@@ -1305,22 +1304,6 @@ static CleverTapEncryptionLevel ctEncryptionLevelFromString(NSString *level) {
 }
 
 
-#pragma mark - Product Config Delegates
-
-- (void)ctProductConfigFetched {
-    
-    [self postNotificationWithName:kCleverTapProductConfigFetched andBody:nil];
-}
-
-- (void)ctProductConfigActivated {
-    [self postNotificationWithName:kCleverTapProductConfigActivated andBody:nil];
-}
-
-- (void)ctProductConfigInitialized {
-    [self postNotificationWithName:kCleverTapProductConfigInitialized andBody:nil];
-}
-
-
 #pragma mark - Feature Flag
 
 - (void)getFeatureFlag:(FlutterMethodCall *)call withResult:(FlutterResult)result {
@@ -1329,11 +1312,6 @@ static CleverTapEncryptionLevel ctEncryptionLevelFromString(NSString *level) {
     BOOL value = [[[CleverTap sharedInstance] featureFlags] get:key withDefaultValue:defaultValue];
     result(@(value));
 }
-
-- (void)ctFeatureFlagsUpdated {
-    [self postNotificationWithName:kCleverTapFeatureFlagsUpdated andBody:nil];
-}
-
 
 #pragma mark - Helpers
 
@@ -1479,28 +1457,36 @@ static CleverTapEncryptionLevel ctEncryptionLevelFromString(NSString *level) {
 
 - (void)emitEventInternal:(NSNotification *)notification {
     dispatch_async(dispatch_get_main_queue(), ^{
-        [self.nativeToDartMethodChannel invokeMethod:notification.name arguments:notification.userInfo];
+        [self.nativeToDartMethodChannel invokeMethod:notification.name arguments:[self envelopeForNotification:notification payload:notification.userInfo]];
+    });
+}
+
+- (void)emitEventProfileSync:(NSNotification *)notification {
+    // Sends the SDK's updates directly ({"profile": {...}, "events": {...}}), like the other
+    // listeners send their data. The notification keeps its {"updates": ...} userInfo.
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [self.nativeToDartMethodChannel invokeMethod:notification.name arguments:[self envelopeForNotification:notification payload:notification.userInfo[@"updates"]]];
     });
 }
 
 - (void)emitEventPushPermissionResponse:(NSNotification *)notification {
     // Passed boolean value of `accepted` directly.
     dispatch_async(dispatch_get_main_queue(), ^{
-        [self.nativeToDartMethodChannel invokeMethod:notification.name arguments:notification.userInfo[@"accepted"]];
+        [self.nativeToDartMethodChannel invokeMethod:notification.name arguments:[self envelopeForNotification:notification payload:notification.userInfo[@"accepted"]]];
     });
 }
 
 - (void)emitEventDisplayUnitsLoaded:(NSNotification *)notification {
     // Passed CleverTapDisplayUnit Array directly.
     dispatch_async(dispatch_get_main_queue(), ^{
-        [self.nativeToDartMethodChannel invokeMethod:notification.name arguments:notification.userInfo[@"adUnits"]];
+        [self.nativeToDartMethodChannel invokeMethod:notification.name arguments:[self envelopeForNotification:notification payload:notification.userInfo[@"adUnits"]]];
     });
 }
 
 - (void)emitCustomTemplate:(NSNotification *)notification {
     // Passed Custom Template String directly.
     dispatch_async(dispatch_get_main_queue(), ^{
-        [self.nativeToDartMethodChannel invokeMethod:notification.name arguments:notification.userInfo[@"templateName"]];
+        [self.nativeToDartMethodChannel invokeMethod:notification.name arguments:[self envelopeForNotification:notification payload:notification.userInfo[@"templateName"]]];
     });
 }
 
@@ -1512,13 +1498,18 @@ static CleverTapEncryptionLevel ctEncryptionLevelFromString(NSString *level) {
                                                object:nil];
     
     [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(emitEventInternal:)
+                                             selector:@selector(emitEventProfileSync:)
                                                  name:kCleverTapProfileSync
                                                object:nil];
     
     [[NSNotificationCenter defaultCenter] addObserver:self
                                              selector:@selector(emitEventInternal:)
                                                  name:kCleverTapInAppNotificationDismissed
+                                               object:nil];
+
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(emitEventInternal:)
+                                                 name:kCleverTapInAppNotificationShow
                                                object:nil];
     
     [[NSNotificationCenter defaultCenter] addObserver:self
@@ -1625,49 +1616,32 @@ static CleverTapEncryptionLevel ctEncryptionLevelFromString(NSString *level) {
 }
 
 - (void)postNotificationWithName:(NSString *)name andBody:(NSDictionary *)body {
-    [[NSNotificationCenter defaultCenter] postNotificationName:name object:nil userInfo:body];
+    // Public: the account is unknown (custom templates, older callers). Dart routes it to the
+    // default handlers, as before.
+    [self postNotificationWithName:name andBody:body accountId:nil];
+}
+
+- (void)postNotificationWithName:(NSString *)name andBody:(NSDictionary *)body accountId:(NSString *)accountId {
+    // The account rides in `object`. Observers registered with object:nil (ours, and any app's)
+    // still receive every notification, with the same name and userInfo as before.
+    [[NSNotificationCenter defaultCenter] postNotificationName:name object:accountId userInfo:body];
+}
+
+/// The value Dart receives: {__ctEnvelope: true, accountId, isDefault, payload}. Main queue only
+/// (it reads defaultInstance). An unknown account (nil) counts as default, which is where those
+/// events went before. The marker matches _envelopeMarker in lib/clevertap_plugin.dart.
+- (NSDictionary *)envelopeForNotification:(NSNotification *)notification payload:(id)payload {
+    NSString *accountId = [notification.object isKindOfClass:[NSString class]] ? notification.object : nil;
+    BOOL isDefault = accountId == nil || [accountId isEqualToString:self.defaultInstance.config.accountId];
+    return @{
+        @"__ctEnvelope": @YES,
+        @"accountId": accountId ?: [NSNull null],
+        @"isDefault": @(isDefault),
+        @"payload": payload ?: [NSNull null],
+    };
 }
 
 #pragma mark - Delegates
-#pragma mark CleverTapSyncDelegate
-
-- (void)profileDidInitialize:(NSString*)cleverTapID {
-    
-    if(!cleverTapID) {
-        return;
-    }
-    [self postNotificationWithName:kCleverTapProfileDidInitialize andBody:@{@"CleverTapID":cleverTapID}];
-}
-
-- (void)profileDataUpdated:(NSDictionary *)updates {
-    
-    if(!updates) {
-        return ;
-    }
-    [self postNotificationWithName:kCleverTapProfileSync andBody:@{@"updates":updates}];
-}
-
-
-#pragma mark CleverTapInAppNotificationDelegate
-
-- (void)inAppNotificationDismissedWithExtras:(NSDictionary *)extras andActionExtras:(NSDictionary *)actionExtras {
-    
-    NSMutableDictionary *body = [NSMutableDictionary new];
-    body[@"extras"] = (extras != nil) ? extras : [NSMutableDictionary new];
-    body[@"actionExtras"] = (actionExtras != nil) ? actionExtras : [NSMutableDictionary new];
-    [self postNotificationWithName:kCleverTapInAppNotificationDismissed andBody:body];
-}
-
-- (void)inAppNotificationButtonTappedWithCustomExtras:(NSDictionary *)customExtras {
-    
-    NSMutableDictionary *body = [NSMutableDictionary new];
-    if (customExtras != nil) {
-        body[@"customExtras"] = customExtras;
-    }
-    [self postNotificationWithName:kCleverTapInAppNotificationButtonTapped andBody:customExtras];
-}
-
-
 #pragma mark CleverTapInboxViewControllerDelegate
 
 - (void)messageButtonTappedWithCustomExtras:(NSDictionary *_Nullable)customExtras {
@@ -1675,7 +1649,7 @@ static CleverTapEncryptionLevel ctEncryptionLevelFromString(NSString *level) {
     if (customExtras != nil) {
         body = [NSMutableDictionary dictionaryWithDictionary:customExtras];
     }
-    [self postNotificationWithName:kCleverTapInboxMessageButtonTapped andBody:body];
+    [self postNotificationWithName:kCleverTapInboxMessageButtonTapped andBody:body accountId:self.defaultInstance.config.accountId];
 }
 
 - (void)messageDidSelect:(CleverTapInboxMessage *_Nonnull)message atIndex:(int)index withButtonIndex:(int)buttonIndex {
@@ -1687,17 +1661,7 @@ static CleverTapEncryptionLevel ctEncryptionLevelFromString(NSString *level) {
     }
     body[@"contentPageIndex"] = @(index);
     body[@"buttonIndex"] = @(buttonIndex);
-    [self postNotificationWithName:kCleverTapInboxMessageTapped andBody:body];
-}
-
-#pragma mark CleverTapPushNotificationDelegate
-
-- (void)pushNotificationTappedWithCustomExtras:(NSDictionary *)customExtras {
-    NSMutableDictionary *pushNotificationExtras = [NSMutableDictionary new];
-    if (customExtras != nil) {
-        pushNotificationExtras = [NSMutableDictionary dictionaryWithDictionary:customExtras];
-    }
-    [self postNotificationWithName:kCleverTapPushNotificationClicked andBody:pushNotificationExtras];
+    [self postNotificationWithName:kCleverTapInboxMessageTapped andBody:body accountId:self.defaultInstance.config.accountId];
 }
 
 #pragma mark - Push Notifications
@@ -1740,14 +1704,6 @@ static CleverTapEncryptionLevel ctEncryptionLevelFromString(NSString *level) {
         }
         result(@(isPushEnabled));
     }];
-}
-
-#pragma mark - CleverTapPushPermissionDelegate
-
-- (void)onPushPermissionResponse:(BOOL)accepted {
-    NSMutableDictionary *body = [NSMutableDictionary new];
-    body[@"accepted"] = [NSNumber numberWithBool:accepted];
-    [self postNotificationWithName:kCleverTapPushPermissionResponseReceived andBody:body];
 }
 
 - (BOOL)validatePushPrimerRequiredSettings:(NSDictionary *)json {
@@ -1881,49 +1837,61 @@ static CleverTapEncryptionLevel ctEncryptionLevelFromString(NSString *level) {
 }
 
 - (void)onVariablesChanged:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    // Registered on the default account (main queue): its events carry that account's ID.
+    NSString *accountId = self.defaultInstance.config.accountId;
     [[CleverTap sharedInstance]onVariablesChanged:^{
-        [self postNotificationWithName:kCleverTapOnVariablesChanged andBody:[self getVariableValues]];
+        [self postNotificationWithName:kCleverTapOnVariablesChanged andBody:[self getVariableValues] accountId:accountId];
     }];
 }
 
 - (void)onOneTimeVariablesChanged:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    // Registered on the default account (main queue): its events carry that account's ID.
+    NSString *accountId = self.defaultInstance.config.accountId;
     [[CleverTap sharedInstance]onceVariablesChanged:^{
-        [self postNotificationWithName:kCleverTapOnOneTimeVariablesChanged andBody:[self getVariableValues]];
+        [self postNotificationWithName:kCleverTapOnOneTimeVariablesChanged andBody:[self getVariableValues] accountId:accountId];
     }];
 }
 
 - (void)onValueChanged:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    // Registered on the default account (main queue): its events carry that account's ID.
+    NSString *accountId = self.defaultInstance.config.accountId;
     CTVar *var = self.allVariables[call.arguments[@"name"]];
     if (var) {
         [var onValueChanged:^{
             NSDictionary *varResult = @{
                 var.name: var.value
             };
-            [self postNotificationWithName:kCleverTapOnValueChanged andBody:varResult];
+            [self postNotificationWithName:kCleverTapOnValueChanged andBody:varResult accountId:accountId];
         }];
     }
 }
 
 - (void)onVariablesChangedAndNoDownloadsPending:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    // Registered on the default account (main queue): its events carry that account's ID.
+    NSString *accountId = self.defaultInstance.config.accountId;
     [[CleverTap sharedInstance]onVariablesChangedAndNoDownloadsPending:^{
-        [self postNotificationWithName:kCleverTapOnVariablesChangedAndNoDownloadsPending andBody:[self getVariableValues]];
+        [self postNotificationWithName:kCleverTapOnVariablesChangedAndNoDownloadsPending andBody:[self getVariableValues] accountId:accountId];
     }];
 }
 
 - (void)onceVariablesChangedAndNoDownloadsPending:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    // Registered on the default account (main queue): its events carry that account's ID.
+    NSString *accountId = self.defaultInstance.config.accountId;
     [[CleverTap sharedInstance]onceVariablesChangedAndNoDownloadsPending:^{
-        [self postNotificationWithName:kCleverTapOnceVariablesChangedAndNoDownloadsPending andBody:[self getVariableValues]];
+        [self postNotificationWithName:kCleverTapOnceVariablesChangedAndNoDownloadsPending andBody:[self getVariableValues] accountId:accountId];
     }];
 }
 
 - (void)onFileValueChanged:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    // Registered on the default account (main queue): its events carry that account's ID.
+    NSString *accountId = self.defaultInstance.config.accountId;
     CTVar *var = self.allVariables[call.arguments[@"name"]];
     if (var) {
         [var onFileIsReady:^{
             NSDictionary *varFileResult = @{
                 var.name: var.value
             };
-            [self postNotificationWithName:kCleverTapOnFileValueChanged andBody:varFileResult];
+            [self postNotificationWithName:kCleverTapOnFileValueChanged andBody:varFileResult accountId:accountId];
         }];
     }
 }

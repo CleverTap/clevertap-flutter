@@ -33,6 +33,17 @@ import java.util.concurrent.Executors
  * submitting a task happens-before the task runs (java.util.concurrent memory consistency), so
  * payloads built on the SDK thread are safely visible to the worker. Callers never wait: posting
  * only enqueues.
+ *
+ * ACCOUNTS. Every event carries the account it came from (null when unknown, for example custom
+ * templates, which are registered app-wide). Dart receives it wrapped:
+ * `{"__ctEnvelope": true, "accountId": "B", "isDefault": false, "payload": <today's value>}`.
+ * Buffers hold each payload with its account. Arming an account ([startEmission] with an
+ * accountId) releases only that account's held payloads (plus unknown-account ones), so the
+ * default account's handler can never receive, or release, account B's events.
+ *
+ * Example: B's profileDidInitialize is held. Dart sets the default account's handler, which arms
+ * the default: B's payload stays held. It is released when B is armed (Phase 4 handles), or
+ * discarded by the 5-second reset.
  */
 object CleverTapEventEmitter {
     private const val LOG_TAG = "CleverTapEventEmitter"
@@ -50,25 +61,42 @@ object CleverTapEventEmitter {
         CleverTapEvent.values().filter { it.bufferable }.associateWith { Buffer(enabled = true) }
 
     // Where events go. Production sends to every Flutter engine; tests replace it to record
-    // deliveries. Read on the worker, written by tests on their own thread.
+    // deliveries. It receives the envelope. Read on the worker, written by tests on their own thread.
     @Volatile
     @VisibleForTesting
     internal var sender: (CleverTapEvent, Any?) -> Unit = ::sendToDart
 
+    // The default (AndroidManifest.xml) account's ID, read when an event is sent to set
+    // isDefault, and when Dart arms "the default account". The default slot never changes once
+    // set (no setInstanceWithAccountId in v1), so reading it at send time is stable. Tests
+    // replace it.
+    @Volatile
+    @VisibleForTesting
+    internal var defaultAccountId: () -> String? = { CleverTapInstanceRegistry.defaultAccountId() }
+
     /**
-     * Dart set its handler for the specified event: stop buffering it, then send everything
-     * that was held for it, in order. Both steps run in ONE worker task, so an event emitted
-     * at the same moment is either sent with the held ones or sent live after them - never
-     * left behind in a buffer that is already off.
+     * Dart set its handler for the specified event on the DEFAULT account (the static
+     * CleverTapPlugin handlers). The same as [startEmission] with the default account's ID.
      */
     @JvmStatic
     fun startEmission(event: CleverTapEvent) {
+        startEmission(event, defaultAccountId())
+    }
+
+    /**
+     * Dart set its handler for [event] on [accountId]: from now on that account's payloads for
+     * this event are sent live, and the ones held for it are sent first, in order. Both steps run
+     * in ONE worker task, so a payload emitted at the same moment is either sent with the held
+     * ones or sent live after them, never left behind. Other accounts' held payloads stay held.
+     */
+    @JvmStatic
+    fun startEmission(event: CleverTapEvent, accountId: String?) {
         val buffer = eventsBuffers[event] ?: return
-        post("startEmission($event)") {
-            buffer.enabled = false
-            val held = buffer.drain()
-            Log.i(LOG_TAG, "Emission started for $event, flushing ${held.size}")
-            held.forEach { params -> send(event, params) }
+        post("startEmission($event, $accountId)") {
+            buffer.arm(accountId)
+            val held = buffer.drainFor(accountId)
+            Log.i(LOG_TAG, "Emission started for $event, account $accountId, flushing ${held.size}")
+            held.forEach { send(event, it.accountId, it.payload) }
         }
     }
 
@@ -119,7 +147,7 @@ object CleverTapEventEmitter {
     fun flushBuffer(event: CleverTapEvent) {
         val buffer = eventsBuffers[event] ?: return
         post("flushBuffer($event)") {
-            buffer.drain().forEach { params -> send(event, params) }
+            buffer.drain().forEach { send(event, it.accountId, it.payload) }
         }
     }
 
@@ -135,30 +163,37 @@ object CleverTapEventEmitter {
         post("disableAllAndFlush") {
             eventsBuffers.forEach { (event, buffer) ->
                 buffer.enabled = false
-                buffer.drain().forEach { params -> send(event, params) }
+                buffer.drain().forEach { send(event, it.accountId, it.payload) }
             }
         }
     }
 
     /**
-     * Emit an event with specified params. It will be buffered if buffering for the event is
-     * enabled or it will be sent immediately otherwise.
-     *
-     * @param event The event to be emitted
-     * @param params Optional event parameters
-     *
-     * @see [startEmission]
+     * Emit an event whose account is not known (for example custom templates, registered
+     * app-wide). Dart routes it like a default-account event, which is today's behavior.
      */
     @JvmStatic
     fun emit(event: CleverTapEvent, params: Any?) {
+        emit(event, null, params)
+    }
+
+    /**
+     * Emit [event] for [accountId] with [params]. It is held while buffering is on and the account
+     * has not armed this event yet; otherwise it is sent immediately.
+     *
+     * @param accountId the account the event came from, or null when unknown
+     * @see [startEmission]
+     */
+    @JvmStatic
+    fun emit(event: CleverTapEvent, accountId: String?, params: Any?) {
         // Non-bufferable events still go through the worker, so they keep their place in line
         // behind everything emitted before them.
         val buffer = eventsBuffers[event]
-        post("emit($event)") {
-            if (buffer != null && buffer.offer(params)) {
-                Log.i(LOG_TAG, "Event $event added to buffer.")
+        post("emit($event, $accountId)") {
+            if (buffer != null && buffer.offer(accountId, params)) {
+                Log.i(LOG_TAG, "Event $event for account $accountId added to buffer.")
             } else {
-                send(event, params)
+                send(event, accountId, params)
             }
         }
     }
@@ -191,13 +226,29 @@ object CleverTapEventEmitter {
     }
 
     // Runs on the worker. One throwing send must not stop the rest of a flush.
-    private fun send(event: CleverTapEvent, params: Any?) {
+    private fun send(event: CleverTapEvent, accountId: String?, payload: Any?) {
         try {
-            sender(event, params)
+            sender(event, envelope(accountId, payload))
         } catch (t: Throwable) {
             Log.e(LOG_TAG, "Sending event $event failed", t)
         }
     }
+
+    /**
+     * The map Dart receives. `__ctEnvelope` marks it, so Dart never mistakes an app-defined payload
+     * that happens to contain "accountId" or "payload" keys (for example a push payload) for an
+     * envelope. An unknown account (null) counts as default: that is where those events go today.
+     */
+    @VisibleForTesting
+    internal fun envelope(accountId: String?, payload: Any?): Map<String, Any?> = linkedMapOf(
+        ENVELOPE_MARKER to true,
+        "accountId" to accountId,
+        "isDefault" to (accountId == null || accountId == defaultAccountId()),
+        "payload" to payload,
+    )
+
+    /** The key that marks an envelope. Dart checks the same key (lib/clevertap_plugin.dart). */
+    const val ENVELOPE_MARKER = "__ctEnvelope"
 
     private fun sendToDart(event: CleverTapEvent, params: Any?) {
         if (event == CleverTapEvent.CLEVERTAP_UNKNOWN) {
@@ -208,38 +259,72 @@ object CleverTapEventEmitter {
         Log.i(LOG_TAG, "Sending event $event")
     }
 
+    /** One held payload and the account it came from (null when unknown). */
+    private class Held(val accountId: String?, val payload: Any?)
+
     /**
      * One event's buffer. Plain data, CONFINED TO THE WORKER THREAD: every method is only ever
      * called from a task posted through [post], so no synchronization is needed or wanted here.
      */
     private class Buffer(var enabled: Boolean) {
 
-        private val items = LinkedList<Any?>()
+        private val items = LinkedList<Held>()
+
+        // Accounts whose handler for this event is set. A null entry is "the default account"
+        // when the app has no default account; it never matches a known account's payload.
+        private val armedAccounts = HashSet<String?>()
 
         /**
-         * Buffers the payload and returns true when buffering is on; returns false (the caller
-         * sends immediately) otherwise.
+         * Holds the payload and returns true when buffering is on and its account has not armed
+         * this event yet; returns false (the caller sends immediately) otherwise. A payload of an
+         * unknown account goes live once any account has armed the event.
          */
-        fun offer(item: Any?): Boolean {
-            if (!enabled) {
+        fun offer(accountId: String?, payload: Any?): Boolean {
+            val armed = if (accountId == null) armedAccounts.isNotEmpty() else accountId in armedAccounts
+            if (!enabled || armed) {
                 return false
             }
-            items.add(item)
+            items.add(Held(accountId, payload))
             return true
         }
 
-        /** Removes and returns every held payload, in order. */
-        fun drain(): List<Any?> {
+        fun arm(accountId: String?) {
+            armedAccounts.add(accountId)
+        }
+
+        /**
+         * Removes and returns the payloads of [accountId] plus the unknown-account ones, in order.
+         * Other accounts' payloads stay held, in order.
+         */
+        fun drainFor(accountId: String?): List<Held> {
             if (items.isEmpty()) {
                 return emptyList()
             }
-            val all = ArrayList<Any?>(items)
+            val released = ArrayList<Held>()
+            val iterator = items.iterator()
+            while (iterator.hasNext()) {
+                val held = iterator.next()
+                if (held.accountId == null || held.accountId == accountId) {
+                    released.add(held)
+                    iterator.remove()
+                }
+            }
+            return released
+        }
+
+        /** Removes and returns every held payload, in order, whatever its account. */
+        fun drain(): List<Held> {
+            if (items.isEmpty()) {
+                return emptyList()
+            }
+            val all = ArrayList<Held>(items)
             items.clear()
             return all
         }
 
         fun reset(enable: Boolean) {
             items.clear()
+            armedAccounts.clear()
             enabled = enable
         }
     }

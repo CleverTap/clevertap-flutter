@@ -57,7 +57,9 @@ class CleverTapEventEmitterTest {
 
     @Before
     fun setUp() {
-        CleverTapEventEmitter.sender = { event, params -> delivered.add(event to params) }
+        // Everything Dart receives is an envelope; these tests check the payload inside it.
+        CleverTapEventEmitter.sender = { event, envelope -> delivered.add(event to (envelope as Map<*, *>)["payload"]) }
+        CleverTapEventEmitter.defaultAccountId = { null }
         // The emitter is a singleton object: start every test with clean, enabled buffers.
         CleverTapEventEmitter.resetAllBuffers(true)
         CleverTapEventEmitter.awaitIdle()
@@ -219,7 +221,8 @@ class CleverTapEventEmitterTest {
     @Test
     fun throwingSender_doesNotStopLaterEvents() {
         var first = true
-        CleverTapEventEmitter.sender = { event, params ->
+        CleverTapEventEmitter.sender = { event, envelope ->
+            val params = (envelope as Map<*, *>)["payload"]
             if (first) {
                 first = false
                 throw IllegalStateException("boom")

@@ -144,6 +144,20 @@ class InstanceRegistryTest {
     }
 
     @Test
+    fun defaultAccountId_isNullUntilTheDefaultIsFound_andNeverCallsTheSdk() {
+        val source = FakeSource(defaultInstance = null)
+        val registry = InstanceRegistry(source)
+
+        assertNull(registry.defaultAccountId())
+        assertEquals("reading the ID must not look the default up", 0, source.defaultCalls.get())
+
+        source.defaultInstance = FakeInstance("DEF")
+        registry.resolve(Unit, null)
+        assertEquals("DEF", registry.defaultAccountId())
+        assertEquals(1, source.defaultCalls.get())
+    }
+
+    @Test
     fun isWired_onlyAfterASuccessfulResolve() {
         val source = FakeSource(known = ConcurrentHashMap(mapOf("B" to FakeInstance("B"))))
         val registry = InstanceRegistry(source)
