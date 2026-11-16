@@ -1848,6 +1848,11 @@ class _MyAppState extends State<MyApp> {
   Future<void> _createInstance(String label, CleverTapInstanceConfig config) async {
     try {
       final instance = await CleverTapPlugin.createInstance(config);
+      // Set the account's handlers right away, before any other await, to receive its first events.
+      instance.setCleverTapProfileDidInitializeHandler(
+          () => print("MI -> ${instance.accountId}: profileDidInitialize"));
+      instance.setCleverTapInAppNotificationShowHandler(
+          (map) => print("MI -> ${instance.accountId}: inAppNotificationShow $map"));
       showToast("$label: created ${instance.accountId}");
       print("MI -> $label: created $instance");
     } on PlatformException catch (e) {

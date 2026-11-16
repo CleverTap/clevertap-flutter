@@ -50,6 +50,27 @@ class DartToNativePlatformCommunicator(
 
         private const val ERROR_MSG: String = "CleverTap Instance is not initialized"
 
+        /** What Dart's startEmission asks for: an event, and the account whose handler was set. */
+        internal data class StartEmissionRequest(val eventName: String, val accountId: String?)
+
+        /**
+         * Reads startEmission's argument. Two shapes:
+         *  - a String event name, sent when a static handler is set: the default account (as before);
+         *  - {"event": name, "accountId": "B"}, sent when a handle's handler is set: that account.
+         * Returns null for anything else.
+         *
+         * Example: "CleverTapProfileDidInitialize" arms the default account;
+         * {"event": "CleverTapProfileDidInitialize", "accountId": "B"} arms B.
+         */
+        @VisibleForTesting
+        internal fun parseStartEmission(arguments: Any?): StartEmissionRequest? = when (arguments) {
+            is String -> StartEmissionRequest(arguments, null)
+            is Map<*, *> -> (arguments["event"] as? String)?.let { event ->
+                StartEmissionRequest(event, (arguments["accountId"] as? String)?.takeIf { it.isNotEmpty() })
+            }
+            else -> null
+        }
+
         // createInstance error codes, the same as the React Native SDK and the iOS side. Apps can
         // switch on PlatformException.code, so these strings must never change.
         // EINVALID: the config is unacceptable. ECREATE: the SDK could not create the account.
@@ -749,22 +770,25 @@ class DartToNativePlatformCommunicator(
         call: MethodCall,
         result: MethodChannel.Result
     ) {
-        val flushForEvent = call.arguments<String>()
-
-        if (flushForEvent == null) {
-            result.error(TAG, ERROR_EMIT_EVENT_PROBLEM(flushForEvent), null)
+        val request = parseStartEmission(call.arguments)
+        if (request == null) {
+            result.error(TAG, ERROR_EMIT_EVENT_PROBLEM(call.arguments?.toString()), null)
             return
         }
 
-        val ctEvent = CleverTapEvent.fromName(flushForEvent)
+        val ctEvent = CleverTapEvent.fromName(request.eventName)
         if (ctEvent == CleverTapEvent.CLEVERTAP_UNKNOWN) {
-            result.error(TAG, ERROR_EMIT_EVENT_PROBLEM(flushForEvent), null)
+            result.error(TAG, ERROR_EMIT_EVENT_PROBLEM(request.eventName), null)
             return
         }
 
         // One call on purpose: "stop buffering" and "send what was held" must run as one step,
         // or an event emitted between them is left in a disabled buffer and lost.
-        CleverTapEventEmitter.startEmission(ctEvent)
+        if (request.accountId == null) {
+            CleverTapEventEmitter.startEmission(ctEvent) // a static handler: the default account
+        } else {
+            CleverTapEventEmitter.startEmission(ctEvent, request.accountId)
+        }
         result.success(true)
     }
 

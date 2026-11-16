@@ -117,7 +117,30 @@ class CleverTapPlugin {
     _clevertapPlugin;
     final String? accountId = await _dartToNativeMethodChannel
         .invokeMethod<String>('createInstance', config.toMap());
-    return CleverTapInstance._(accountId ?? config.accountId);
+    return getInstance(accountId ?? config.accountId);
+  }
+
+  // One handle per account ID, for the life of the app: the handle holds that account's handlers.
+  static final Map<String, CleverTapInstance> _instances = {};
+
+  /// The handle for [accountId]. Always the same object for the same ID, and it never calls native.
+  ///
+  /// Use it for an account that already exists: one created earlier with [createInstance], or the
+  /// default account (`AndroidManifest.xml` / `Info.plist`). A handle's handlers receive only that
+  /// account's events. Set them right after the account is created, before any other `await`,
+  /// to receive its first events.
+  ///
+  /// ```dart
+  /// final b = CleverTapPlugin.getInstance('B-ID');
+  /// b.setCleverTapProfileDidInitializeHandler(() => print('B is ready'));
+  /// ```
+  ///
+  /// Throws an [ArgumentError] when [accountId] is empty.
+  static CleverTapInstance getInstance(String accountId) {
+    if (accountId.isEmpty) {
+      throw ArgumentError.value(accountId, 'accountId', 'must not be empty');
+    }
+    return _instances.putIfAbsent(accountId, () => CleverTapInstance._(accountId));
   }
 
   /// The key that marks a native event envelope. Native sends every event as
@@ -131,15 +154,24 @@ class CleverTapPlugin {
     // "accountId" or "payload" keys from being mistaken for one. A value without the marker is
     // treated as the default account's (a native path that does not wrap still works).
     dynamic payload = call.arguments;
+    String? accountId;
+    bool isDefault = true;
     if (payload is Map && payload[_envelopeMarker] == true) {
-      if (payload['isDefault'] != true) {
-        // Another account's event. Account handles get their own handlers in a later release;
-        // the static handlers belong to the default account only.
-        print("CleverTapPlugin: ${call.method} for account ${payload['accountId']} "
-            "is not delivered to the default account's handlers");
-        return;
-      }
+      accountId = payload['accountId'];
+      isDefault = payload['isDefault'] == true;
       payload = payload['payload'];
+    }
+    // The account's handle, if the app made one and set a handler for this event. For the
+    // default account this is in addition to the static handlers below.
+    final bool deliveredToHandle = accountId != null &&
+        (_instances[accountId]?._deliver(call.method, payload) ?? false);
+    if (!isDefault) {
+      // The static handlers belong to the default account only.
+      if (!deliveredToHandle) {
+        print("CleverTapPlugin: ${call.method} for account $accountId has no handler "
+            "(set one on CleverTapPlugin.getInstance('$accountId'))");
+      }
+      return;
     }
     switch (call.method) {
       case "inAppNotificationDismissed":
@@ -283,7 +315,9 @@ class CleverTapPlugin {
    * failed
    */
   void invokeStartEmission(String name) {
-    if (!kIsWeb && Platform.isAndroid) {
+    // defaultTargetPlatform gives the same answer as Platform.isAndroid on a device, and tests can
+    // change it (debugDefaultTargetPlatformOverride).
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
       _dartToNativeMethodChannel.invokeMethod('startEmission', name);
     }
   }
@@ -1660,7 +1694,11 @@ class CleverTapPlugin {
   }
 }
 
-/// A handle to one CleverTap account, returned by [CleverTapPlugin.createInstance].
+/// A handle to one CleverTap account, from [CleverTapPlugin.createInstance] or
+/// [CleverTapPlugin.getInstance].
+///
+/// Its handlers receive only this account's events. The setters work like the static ones on
+/// [CleverTapPlugin]: one handler per event, and setting it again replaces it.
 ///
 /// Two handles are equal when they point to the same account.
 class CleverTapInstance {
@@ -1668,6 +1706,142 @@ class CleverTapInstance {
   final String accountId;
 
   CleverTapInstance._(this.accountId);
+
+  // This account's handlers, by the event's method name (as native sends it).
+  final Map<String, Function> _handlers = {};
+
+  /// Stores [handler] for [method] and, on Android, releases this account's events the native
+  /// buffer held for it at start-up (`startEmission` with this account). Web has no per-account
+  /// events, so there it only warns.
+  void _setHandler(String method, String nativeEvent, Function handler) {
+    if (kIsWeb) {
+      print("CleverTapPlugin: account handlers are not supported on Web; "
+          "the $method handler for $accountId is ignored");
+      return;
+    }
+    _handlers[method] = handler;
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      CleverTapPlugin._dartToNativeMethodChannel.invokeMethod(
+          'startEmission', {'event': nativeEvent, 'accountId': accountId});
+    }
+  }
+
+  /// Calls this account's handler for [method] with [payload], converted exactly as for the
+  /// static handlers. Returns false when there is no handler for it. A handler that throws is
+  /// reported and does not stop the static handlers for the same event.
+  bool _deliver(String method, dynamic payload) {
+    final Function? handler = _handlers[method];
+    if (handler == null) {
+      return false;
+    }
+    try {
+      switch (method) {
+        case "profileDidInitialize":
+        case "inboxDidInitialize":
+        case "inboxMessagesDidUpdate":
+        case "featureFlagsUpdated":
+        case "productConfigInitialized":
+        case "productConfigFetched":
+        case "productConfigActivated":
+          handler();
+          break;
+        case "profileDataUpdated":
+          handler((payload as Map?)?.cast<String, dynamic>());
+          break;
+        case "inAppNotificationDismissed":
+        case "inAppNotificationShow":
+        case "onInAppButtonClick":
+        case "onInboxButtonClick":
+        case "pushAmpPayloadReceived":
+        case "pushClickedPayloadReceived":
+          handler((payload as Map).cast<String, dynamic>());
+          break;
+        case "onInboxMessageClick":
+          final Map args = payload as Map;
+          handler((args["data"] as Map).cast<String, dynamic>(),
+              args["contentPageIndex"] as int, args["buttonIndex"] as int);
+          break;
+        case "onDisplayUnitsLoaded":
+          handler(payload as List?);
+          break;
+        case "pushPermissionResponseReceived":
+          handler(payload as bool);
+          break;
+        default:
+          return false;
+      }
+    } catch (error, stack) {
+      print("CleverTapPlugin: the $method handler for account $accountId threw: $error\n$stack");
+    }
+    return true;
+  }
+
+  void setCleverTapProfileDidInitializeHandler(
+          CleverTapProfileDidInitializeHandler handler) =>
+      _setHandler('profileDidInitialize', 'CleverTapProfileDidInitialize', handler);
+
+  void setCleverTapProfileSyncHandler(CleverTapProfileSyncHandler handler) =>
+      _setHandler('profileDataUpdated', 'CleverTapProfileSync', handler);
+
+  void setCleverTapInAppNotificationDismissedHandler(
+          CleverTapInAppNotificationDismissedHandler handler) =>
+      _setHandler('inAppNotificationDismissed', 'CleverTapInAppNotificationDismissed', handler);
+
+  void setCleverTapInAppNotificationShowHandler(
+          CleverTapInAppNotificationShowHandler handler) =>
+      _setHandler('inAppNotificationShow', 'CleverTapInAppNotificationShowed', handler);
+
+  void setCleverTapInAppNotificationButtonClickedHandler(
+          CleverTapInAppNotificationButtonClickedHandler handler) =>
+      _setHandler('onInAppButtonClick', 'CleverTapInAppNotificationButtonTapped', handler);
+
+  void setCleverTapInboxDidInitializeHandler(
+          CleverTapInboxDidInitializeHandler handler) =>
+      _setHandler('inboxDidInitialize', 'CleverTapInboxDidInitialize', handler);
+
+  void setCleverTapInboxMessagesDidUpdateHandler(
+          CleverTapInboxMessagesDidUpdateHandler handler) =>
+      _setHandler('inboxMessagesDidUpdate', 'CleverTapInboxMessagesDidUpdate', handler);
+
+  void setCleverTapInboxNotificationButtonClickedHandler(
+          CleverTapInboxNotificationButtonClickedHandler handler) =>
+      _setHandler('onInboxButtonClick', 'CleverTapInboxMessageButtonTapped', handler);
+
+  void setCleverTapInboxNotificationMessageClickedHandler(
+          CleverTapInboxNotificationMessageClickedHandler handler) =>
+      _setHandler('onInboxMessageClick', 'CleverTapInboxMessageTapped', handler);
+
+  void setCleverTapDisplayUnitsLoadedHandler(
+          CleverTapDisplayUnitsLoadedHandler handler) =>
+      _setHandler('onDisplayUnitsLoaded', 'CleverTapDisplayUnitsLoaded', handler);
+
+  void setCleverTapFeatureFlagUpdatedHandler(
+          CleverTapFeatureFlagUpdatedHandler handler) =>
+      _setHandler('featureFlagsUpdated', 'CleverTapFeatureFlagsDidUpdate', handler);
+
+  void setCleverTapProductConfigInitializedHandler(
+          CleverTapProductConfigInitializedHandler handler) =>
+      _setHandler('productConfigInitialized', 'CleverTapProductConfigDidInitialize', handler);
+
+  void setCleverTapProductConfigFetchedHandler(
+          CleverTapProductConfigFetchedHandler handler) =>
+      _setHandler('productConfigFetched', 'CleverTapProductConfigDidFetch', handler);
+
+  void setCleverTapProductConfigActivatedHandler(
+          CleverTapProductConfigActivatedHandler handler) =>
+      _setHandler('productConfigActivated', 'CleverTapProductConfigDidActivate', handler);
+
+  void setCleverTapPushClickedPayloadReceivedHandler(
+          CleverTapPushClickedPayloadReceivedHandler handler) =>
+      _setHandler('pushClickedPayloadReceived', 'CleverTapPushNotificationClicked', handler);
+
+  void setCleverTapPushPermissionResponseReceivedHandler(
+          CleverTapPushPermissionResponseReceivedHandler handler) =>
+      _setHandler('pushPermissionResponseReceived', 'CleverTapPushPermissionResponseReceived', handler);
+
+  void setCleverTapPushAmpPayloadReceivedHandler(
+          CleverTapPushAmpPayloadReceivedHandler handler) =>
+      _setHandler('pushAmpPayloadReceived', 'CleverTapPushAmpPayloadReceived', handler);
 
   @override
   bool operator ==(Object other) =>
