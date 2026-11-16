@@ -218,6 +218,23 @@ static NSString *const kCleverTapErrorCodeCreateFailed = @"ECREATE";
     return instance;
 }
 
+/// The accountId a CleverTapInstance (handle) call sends, or nil for a static call. Anything that
+/// is not a non-empty string counts as absent (the default account, as before).
+- (nullable NSString *)handleAccountIdOfCall:(FlutterMethodCall *)call {
+    if (![call.arguments isKindOfClass:[NSDictionary class]]) {
+        return nil;
+    }
+    id accountId = call.arguments[@"accountId"];
+    return ([accountId isKindOfClass:[NSString class]] && [accountId length] > 0) ? accountId : nil;
+}
+
+/// The instance a call addresses. A static call (no accountId): [CleverTap sharedInstance], exactly
+/// as before. A handle call: that account, or nil after the registry's warning; never the default.
+- (nullable CleverTap *)instanceForCall:(FlutterMethodCall *)call {
+    NSString *accountId = [self handleAccountIdOfCall:call];
+    return accountId == nil ? [CleverTap sharedInstance] : [self resolveInstance:accountId];
+}
+
 - (void)applicationDidLaunchWithOptions:(NSDictionary *)options {
 
     NSDictionary *notification = [options valueForKey:UIApplicationLaunchOptionsRemoteNotificationKey];
@@ -706,7 +723,10 @@ static CleverTapEncryptionLevel ctEncryptionLevelFromString(NSString *level) {
 
 - (void)recordEvent:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     
-    [[CleverTap sharedInstance] recordEvent:call.arguments[@"eventName"] withProps:call.arguments[@"eventData"]];
+    // A handle call for an unknown account: instanceForCall: returns nil after the registry's
+    // warning, the call does nothing and completes (React Native parity), as a static call with no
+    // default account already does on iOS.
+    [[self instanceForCall:call] recordEvent:call.arguments[@"eventName"] withProps:call.arguments[@"eventData"]];
     result(nil);
 }
 
@@ -724,13 +744,13 @@ static CleverTapEncryptionLevel ctEncryptionLevelFromString(NSString *level) {
 
 - (void)profileSet:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     
-    [[CleverTap sharedInstance] profilePush:call.arguments[@"profile"]];
+    [[self instanceForCall:call] profilePush:call.arguments[@"profile"]];
     result(nil);
 }
 
 - (void)onUserLogin:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     
-    [[CleverTap sharedInstance] onUserLogin:call.arguments[@"profile"]];
+    [[self instanceForCall:call] onUserLogin:call.arguments[@"profile"]];
     result(nil);
 }
 
@@ -840,7 +860,16 @@ static CleverTapEncryptionLevel ctEncryptionLevelFromString(NSString *level) {
 
 - (void)getCleverTapID:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     
-    result([[CleverTap sharedInstance] profileGetCleverTapID]);
+    CleverTap *instance = [self instanceForCall:call];
+    NSString *accountId = [self handleAccountIdOfCall:call];
+    if (instance == nil && accountId != nil) {
+        // A value call: an error, naming the account (the static call keeps answering nil).
+        result([FlutterError errorWithCode:@"DartToNative"
+                                   message:[NSString stringWithFormat:@"CleverTap instance not found for accountId: %@", accountId]
+                                   details:nil]);
+        return;
+    }
+    result([instance profileGetCleverTapID]);
 }
 
 - (void)profileGetProperty:(FlutterMethodCall *)call withResult:(FlutterResult)result {

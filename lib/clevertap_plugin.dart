@@ -1776,6 +1776,39 @@ class CleverTapInstance {
     return true;
   }
 
+  // ---- Methods. Each one sends today's arguments plus this handle's accountId; native routes the
+  // call to this account only (never the default). A method is added here only once its native
+  // side reads the accountId; otherwise it would silently reach the default account.
+
+  /// Sends [method] to native for this account. On Web, which has no per-account support, it only
+  /// warns. For an account that does not exist, native logs one warning; void methods then complete
+  /// normally and methods that return a value throw a [PlatformException].
+  Future<T?> _invoke<T>(String method, Map<String, dynamic> arguments) async {
+    if (kIsWeb) {
+      print("CleverTapPlugin: account handles are not supported on Web; $method for $accountId is ignored");
+      return null;
+    }
+    return CleverTapPlugin._dartToNativeMethodChannel
+        .invokeMethod<T>(method, {...arguments, 'accountId': accountId});
+  }
+
+  /// Records [eventName] with [properties] for this account.
+  Future<void> recordEvent(String eventName, Map<String, dynamic> properties) =>
+      _invoke<void>('recordEvent', {'eventName': eventName, 'eventData': properties});
+
+  /// Logs a user in to this account (creates or switches its profile).
+  Future<void> onUserLogin(Map<String, dynamic> profile) =>
+      _invoke<void>('onUserLogin', {'profile': profile});
+
+  /// Pushes a profile update to this account.
+  Future<void> profileSet(Map<String, dynamic> profile) =>
+      _invoke<void>('profileSet', {'profile': profile});
+
+  /// This account's CleverTap ID.
+  Future<String?> getCleverTapID() => _invoke<String>('getCleverTapID', {});
+
+  // ---- Handlers.
+
   void setCleverTapProfileDidInitializeHandler(
           CleverTapProfileDidInitializeHandler handler) =>
       _setHandler('profileDidInitialize', 'CleverTapProfileDidInitialize', handler);

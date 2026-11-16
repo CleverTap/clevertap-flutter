@@ -865,6 +865,16 @@ class _MyAppState extends State<MyApp> {
                     _buildListTile("Create Instance With ID But No Flag",
                         createInstanceIdWithoutFlag,
                         "cleverTapId without useCustomCleverTapId: fails with EINVALID"),
+                    _buildListTile("Instance B: Record Event", instanceBRecordEvent,
+                        "Records 'Instance B Event' for TEST-ACC-B only"),
+                    _buildListTile("Instance B: User Login", instanceBUserLogin,
+                        "onUserLogin with a random identity, for TEST-ACC-B only"),
+                    _buildListTile("Instance B: Profile Set", instanceBProfileSet,
+                        "Sets Plan = gold on TEST-ACC-B only"),
+                    _buildListTile("Instance B: Get CleverTap ID", instanceBGetCleverTapID,
+                        "TEST-ACC-B's CleverTap ID"),
+                    _buildListTile("Unknown Instance: Get CleverTap ID", unknownInstanceGetCleverTapID,
+                        "An account that does not exist: a PlatformException"),
                     _buildListTile("Enable Personalization",
                         enablePersonalization, "Enables Personalization"),
                     _buildListTile("Disable Personalization",
@@ -1858,6 +1868,43 @@ class _MyAppState extends State<MyApp> {
     } on PlatformException catch (e) {
       showToast("$label: ${e.code}");
       print("MI -> $label: PlatformException(${e.code}, ${e.message})");
+    }
+  }
+
+  // Calls on account B's handle reach account B only. Create it first ("Create Instance").
+  CleverTapInstance get _instanceB => CleverTapPlugin.getInstance('TEST-ACC-B');
+
+  void instanceBRecordEvent() {
+    _instanceB.recordEvent('Instance B Event', {'source': 'example'});
+    showToast("Recorded 'Instance B Event' for TEST-ACC-B");
+    print("MI -> TEST-ACC-B: recordEvent 'Instance B Event'");
+  }
+
+  void instanceBUserLogin() {
+    final identity = 'b-user-${Random().nextInt(100000)}';
+    _instanceB.onUserLogin({'Identity': identity, 'Name': 'B User'});
+    showToast("TEST-ACC-B: onUserLogin $identity");
+    print("MI -> TEST-ACC-B: onUserLogin $identity");
+  }
+
+  void instanceBProfileSet() {
+    _instanceB.profileSet({'Plan': 'gold'});
+    showToast("TEST-ACC-B: profileSet Plan = gold");
+    print("MI -> TEST-ACC-B: profileSet Plan = gold");
+  }
+
+  void instanceBGetCleverTapID() async {
+    final id = await _instanceB.getCleverTapID();
+    showToast("TEST-ACC-B CleverTap ID: $id");
+    print("MI -> TEST-ACC-B: getCleverTapID $id");
+  }
+
+  void unknownInstanceGetCleverTapID() async {
+    try {
+      await CleverTapPlugin.getInstance('NO-SUCH-ACCOUNT').getCleverTapID();
+    } on PlatformException catch (e) {
+      showToast("Unknown account: ${e.message}");
+      print("MI -> NO-SUCH-ACCOUNT: PlatformException(${e.code}, ${e.message})");
     }
   }
 

@@ -372,4 +372,104 @@ void main() {
       expect(toNative, isEmpty);
     });
   });
+
+  group('Phase 5: methods on a handle', () {
+    tearDown(
+        () => messenger.setMockMethodCallHandler(dartToNative, (call) async {
+              toNative.add(call);
+              return call.method == 'createInstance' ? 'B' : null;
+            }));
+
+    test('each method sends the static method\'s arguments plus accountId',
+        () async {
+      final b = CleverTapPlugin.getInstance('B');
+      await b.recordEvent('Purchase', {'amount': 10});
+      await b.onUserLogin({'Identity': 'u1'});
+      await b.profileSet({'Plan': 'gold'});
+      await b.getCleverTapID();
+      await CleverTapPlugin.recordEvent('Purchase', {'amount': 10});
+      await CleverTapPlugin.onUserLogin({'Identity': 'u1'});
+      await CleverTapPlugin.profileSet({'Plan': 'gold'});
+      await CleverTapPlugin.getCleverTapID();
+      expect(toNative.map((c) => [c.method, c.arguments]).toList(), [
+        [
+          'recordEvent',
+          {
+            'eventName': 'Purchase',
+            'eventData': {'amount': 10},
+            'accountId': 'B'
+          }
+        ],
+        [
+          'onUserLogin',
+          {
+            'profile': {'Identity': 'u1'},
+            'accountId': 'B'
+          }
+        ],
+        [
+          'profileSet',
+          {
+            'profile': {'Plan': 'gold'},
+            'accountId': 'B'
+          }
+        ],
+        [
+          'getCleverTapID',
+          {'accountId': 'B'}
+        ],
+        // The static methods are unchanged: no accountId, so native uses the default account.
+        [
+          'recordEvent',
+          {
+            'eventName': 'Purchase',
+            'eventData': {'amount': 10}
+          }
+        ],
+        [
+          'onUserLogin',
+          {
+            'profile': {'Identity': 'u1'}
+          }
+        ],
+        [
+          'profileSet',
+          {
+            'profile': {'Plan': 'gold'}
+          }
+        ],
+        ['getCleverTapID', {}],
+      ]);
+    });
+
+    test('getCleverTapID returns the account\'s ID from native', () async {
+      messenger.setMockMethodCallHandler(
+          dartToNative,
+          (call) async => call.method == 'getCleverTapID'
+              ? 'id-of-${call.arguments['accountId']}'
+              : null);
+      expect(
+          await CleverTapPlugin.getInstance('B').getCleverTapID(), 'id-of-B');
+    });
+
+    test('an unknown account: a void call completes, a value call throws',
+        () async {
+      messenger.setMockMethodCallHandler(dartToNative, (call) async {
+        // What native answers for an account it does not have (Q5.1).
+        if (call.method == 'getCleverTapID') {
+          throw PlatformException(
+              code: 'DartToNative',
+              message: 'CleverTap instance not found for accountId: TYPO');
+        }
+        return null;
+      });
+      final typo = CleverTapPlugin.getInstance('TYPO');
+      await typo.recordEvent('X', {}); // completes normally
+      await expectLater(
+        typo.getCleverTapID(),
+        throwsA(isA<PlatformException>().having((e) => e.message, 'message',
+            'CleverTap instance not found for accountId: TYPO')),
+      );
+    });
+  });
 }

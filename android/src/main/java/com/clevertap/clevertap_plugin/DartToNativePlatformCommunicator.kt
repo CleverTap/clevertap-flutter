@@ -50,6 +50,15 @@ class DartToNativePlatformCommunicator(
 
         private const val ERROR_MSG: String = "CleverTap Instance is not initialized"
 
+        /**
+         * The accountId a CleverTapInstance (handle) call sends, or null for a static call. Read
+         * without a cast that could throw: anything that is not a non-empty String counts as absent,
+         * which means the default account, as before.
+         */
+        @VisibleForTesting
+        internal fun accountIdOf(arguments: Any?): String? =
+            ((arguments as? Map<*, *>)?.get("accountId") as? String)?.takeIf { it.isNotEmpty() }
+
         /** What Dart's startEmission asks for: an event, and the account whose handler was set. */
         internal data class StartEmissionRequest(val eventName: String, val accountId: String?)
 
@@ -379,7 +388,7 @@ class DartToNativePlatformCommunicator(
             }
 
             "getCleverTapID" -> {
-                getCleverTapID(result)
+                getCleverTapID(call, result)
             }
 
             "onUserLogin" -> {
@@ -1814,11 +1823,12 @@ class DartToNativePlatformCommunicator(
 
     private fun onUserLogin(call: MethodCall, result: MethodChannel.Result) {
         val profile: Map<String, Any> = Utils.dartMapToProfileMap(call.argument("profile"))
-        if (cleverTapAPI != null) {
-            cleverTapAPI.onUserLogin(profile)
+        val instance = instanceFor(call)
+        if (instance != null) {
+            instance.onUserLogin(profile)
             result.success(null)
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerVoidWithoutInstance(call, result)
         }
     }
 
@@ -1903,13 +1913,14 @@ class DartToNativePlatformCommunicator(
         }
     }
 
-    private fun getCleverTapID(result: MethodChannel.Result) {
-        if (cleverTapAPI != null) {
-            cleverTapAPI.getCleverTapID { cleverTapID ->
+    private fun getCleverTapID(call: MethodCall, result: MethodChannel.Result) {
+        val instance = instanceFor(call)
+        if (instance != null) {
+            instance.getCleverTapID { cleverTapID ->
                 CleverTapPlugin.runOnMainThread { result.success(cleverTapID) }
             }
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerValueWithoutInstance(call, result)
         }
     }
 
@@ -1956,11 +1967,12 @@ class DartToNativePlatformCommunicator(
 
     private fun profileSet(call: MethodCall, result: MethodChannel.Result) {
         val profile: Map<String, Any> = Utils.dartMapToProfileMap(call.argument("profile"))
-        if (cleverTapAPI != null) {
-            cleverTapAPI.pushProfile(profile)
+        val instance = instanceFor(call)
+        if (instance != null) {
+            instance.pushProfile(profile)
             result.success(null)
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerVoidWithoutInstance(call, result)
         }
     }
 
@@ -2108,12 +2120,46 @@ class DartToNativePlatformCommunicator(
     private fun recordEvent(call: MethodCall, result: MethodChannel.Result) {
         val eventData = call.argument<Map<String, Any>>("eventData")!!
         val eventName = call.argument<String>("eventName")
-        if (cleverTapAPI != null) {
-            this.cleverTapAPI.pushEvent(eventName, eventData)
+        val instance = instanceFor(call)
+        if (instance != null) {
+            instance.pushEvent(eventName, eventData)
             result.success(null)
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerVoidWithoutInstance(call, result)
         }
+    }
+
+    /**
+     * The instance a call addresses. A static CleverTapPlugin call sends no accountId and gets this
+     * engine's default instance, exactly as before. A CleverTapInstance (handle) call sends its
+     * accountId and gets that account through the registry, or null after the registry's one
+     * warning ("CleverTap instance not found for accountId: ...").
+     *
+     * Example: {"eventName": "Purchase", "eventData": {}} -> the default account;
+     * {"eventName": "Purchase", "eventData": {}, "accountId": "B"} -> account B, never the default.
+     */
+    private fun instanceFor(call: MethodCall): CleverTapAPI? {
+        val accountId = accountIdOf(call.arguments) ?: return cleverTapAPI
+        return CleverTapInstanceRegistry.resolve(context, accountId)
+    }
+
+    // No instance for a void call. A static call keeps its old answer (an error). A handle call
+    // completes normally: the registry already logged the warning, and apps usually do not await
+    // these calls, so an error would surface as an uncaught exception on every call (React Native
+    // parity: warn and do nothing).
+    private fun answerVoidWithoutInstance(call: MethodCall, result: MethodChannel.Result) {
+        if (accountIdOf(call.arguments) == null) {
+            result.error(TAG, ERROR_MSG, null)
+        } else {
+            result.success(null)
+        }
+    }
+
+    // No instance for a call that returns a value: always an error, naming the account for a
+    // handle call. The caller awaits it, so the error is delivered, not lost.
+    private fun answerValueWithoutInstance(call: MethodCall, result: MethodChannel.Result) {
+        val accountId = accountIdOf(call.arguments)
+        result.error(TAG, if (accountId == null) ERROR_MSG else "CleverTap instance not found for accountId: $accountId", null)
     }
 
     private fun recordScreenView(call: MethodCall, result: MethodChannel.Result) {
