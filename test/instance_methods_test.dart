@@ -25,6 +25,7 @@ void main() {
     'sessionGetUTMDetails',
     'getInboxMessageForId',
     'getDisplayUnitForId',
+    'getVariables',
   };
 
   final toNative = <MethodCall>[];
@@ -142,6 +143,23 @@ void main() {
     ['getPushNotificationPermissionStatus', () => CleverTapPlugin.getPushNotificationPermissionStatus(), () => b.getPushNotificationPermissionStatus()],
     ['getVariants', () => CleverTapPlugin.getVariants(), () => b.getVariants()],
     ['fetchInApps', () => CleverTapPlugin.fetchInApps(), () => b.fetchInApps()],
+    // Phase 6, second part.
+    ['enablePersonalization', () => CleverTapPlugin.enablePersonalization(), () => b.enablePersonalization()],
+    ['disablePersonalization', () => CleverTapPlugin.disablePersonalization(), () => b.disablePersonalization()],
+    ['suspendInAppNotifications', () => CleverTapPlugin.suspendInAppNotifications(), () => b.suspendInAppNotifications()],
+    ['resumeInAppNotifications', () => CleverTapPlugin.resumeInAppNotifications(), () => b.resumeInAppNotifications()],
+    ['initializeInbox', () => CleverTapPlugin.initializeInbox(), () => b.initializeInbox()],
+    ['showInbox', () => CleverTapPlugin.showInbox({'navBarTitle': 'T'}), () => b.showInbox({'navBarTitle': 'T'})],
+    ['dismissInbox', () => CleverTapPlugin.dismissInbox(), () => b.dismissInbox()],
+    ['promptPushPrimer', () => CleverTapPlugin.promptPushPrimer({'inAppType': 'alert', 'titleText': 'T'}), () => b.promptPushPrimer({'inAppType': 'alert', 'titleText': 'T'})],
+    ['unregisterPushPermissionNotificationResponseListener', () => CleverTapPlugin.unregisterPushPermissionNotificationResponseListener(), () => b.unregisterPushPermissionNotificationResponseListener()],
+    ['syncVariables', () => CleverTapPlugin.syncVariables(), () => b.syncVariables()],
+    ['syncVariablesinProd', () => CleverTapPlugin.syncVariablesinProd(true), () => b.syncVariablesinProd(true)],
+    ['fetchVariables', () => CleverTapPlugin.fetchVariables(), () => b.fetchVariables()],
+    ['defineVariables', () => CleverTapPlugin.defineVariables({'discount': 0}), () => b.defineVariables({'discount': 0})],
+    ['defineFileVariable', () => CleverTapPlugin.defineFileVariable('banner'), () => b.defineFileVariable('banner')],
+    ['getVariables', () => CleverTapPlugin.getVariables(), () => b.getVariables()],
+    ['getVariable', () => CleverTapPlugin.getVariable('discount'), () => b.getVariable('discount')],
   ];
 
   group('Phase 6: each handle method = the static method + accountId', () {
@@ -178,6 +196,103 @@ void main() {
           {'value': 'en_US', 'accountId': 'B'}
         ],
       ]);
+    });
+  });
+
+  group('Phase 6: bare-value methods, second part', () {
+    for (final c in <List<Object>>[
+      ['promptForPushNotification', true, () => CleverTapPlugin.promptForPushNotification(true), () => b.promptForPushNotification(true)],
+      ['clearInAppResources', false, () => CleverTapPlugin.clearInAppResources(false), () => b.clearInAppResources(false)],
+    ]) {
+      test(c[0] as String, () async {
+        await (c[2] as Future<Object?> Function())();
+        await (c[3] as Future<Object?> Function())();
+        expect(toNative.map((m) => [m.method, m.arguments]).toList(), [
+          [c[0], c[1]],
+          [
+            c[0],
+            {'value': c[1], 'accountId': 'B'}
+          ],
+        ]);
+      });
+    }
+  });
+
+  group('Phase 6: variables listeners on a handle', () {
+    Future<void> fromNative(String method, Object? arguments) async {
+      final data = const StandardMethodCodec()
+          .encodeMethodCall(MethodCall(method, arguments));
+      await messenger.handlePlatformMessage(
+          'clevertap_plugin/native_to_dart', data, (_) {});
+    }
+
+    Map<String, Object?> envelope(Object? payload, String accountId, bool isDefault) => {
+          '__ctEnvelope': true,
+          'accountId': accountId,
+          'isDefault': isDefault,
+          'payload': payload,
+        };
+
+    setUpAll(() => CleverTapPlugin()); // registers the native-to-Dart handler
+
+    test('each listener registers natively with the static arguments plus accountId', () {
+      final h = CleverTapPlugin.getInstance('L1');
+      h.onVariablesChanged((_) {});
+      h.onOneTimeVariablesChanged((_) {});
+      h.onValueChanged('discount', (_) {});
+      h.onVariablesChangedAndNoDownloadsPending((_) {});
+      h.onceVariablesChangedAndNoDownloadsPending((_) {});
+      h.onFileValueChanged('banner', (_) {});
+      expect(toNative.map((m) => [m.method, m.arguments]).toList(), [
+        ['onVariablesChanged', {'accountId': 'L1'}],
+        ['onOneTimeVariablesChanged', {'accountId': 'L1'}],
+        ['onValueChanged', {'name': 'discount', 'accountId': 'L1'}],
+        ['onVariablesChangedAndNoDownloadsPending', {'accountId': 'L1'}],
+        ['onceVariablesChangedAndNoDownloadsPending', {'accountId': 'L1'}],
+        ['onFileValueChanged', {'name': 'banner', 'accountId': 'L1'}],
+      ]);
+    });
+
+    test('B\'s change reaches every handler B added (a list, like the static API), and nobody else', () async {
+      final h = CleverTapPlugin.getInstance('L2');
+      final other = CleverTapPlugin.getInstance('L3');
+      final got = <String>[];
+      h.onVariablesChanged((v) => got.add('h1 ${v['discount']}'));
+      h.onVariablesChanged((v) => got.add('h2 ${v['discount']}'));
+      other.onVariablesChanged((v) => got.add('other'));
+      await fromNative('onVariablesChanged', envelope({'discount': 5}, 'L2', false));
+      expect(got, ['h1 5', 'h2 5']);
+    });
+
+    test('a throwing handler does not stop the next one', () async {
+      final h = CleverTapPlugin.getInstance('L4');
+      final got = <String>[];
+      h.onValueChanged('discount', (_) => throw StateError('app bug'));
+      h.onValueChanged('discount', (v) => got.add('ok $v'));
+      await fromNative('onValueChanged', envelope({'discount': 1}, 'L4', false));
+      expect(got, ['ok {discount: 1}']);
+    });
+
+    test('the default account\'s change reaches the static handlers and its handle', () async {
+      final got = <String>[];
+      CleverTapPlugin.onFileValueChanged('banner', (v) => got.add('static'));
+      CleverTapPlugin.getInstance('DEF6').onFileValueChanged('banner', (v) => got.add('handle'));
+      await fromNative('onFileValueChanged', envelope({'banner': 'x'}, 'DEF6', true));
+      expect(got, ['handle', 'static']);
+    });
+  });
+
+  group('F2: an unknown inbox message or display unit', () {
+    test('a null answer is an empty map, static and handle alike', () async {
+      messenger.setMockMethodCallHandler(dartToNative, (call) async => null);
+      addTearDown(() => messenger.setMockMethodCallHandler(dartToNative, (call) async {
+            toNative.add(call);
+            return mapAnswers.contains(call.method) ? {'k': 'v'} : null;
+          }));
+      expect(await CleverTapPlugin.getInboxMessageForId('no-such-id'), isEmpty);
+      expect(await b.getInboxMessageForId('no-such-id'), isEmpty);
+      expect(await CleverTapPlugin.getDisplayUnitForId('no-such-unit'), isEmpty);
+      expect(await b.getDisplayUnitForId('no-such-unit'), isEmpty);
     });
   });
 

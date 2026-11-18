@@ -4,12 +4,14 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.location.Location
 import android.os.Build
+import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import androidx.annotation.VisibleForTesting
 import com.clevertap.android.sdk.CleverTapAPI
 import com.clevertap.android.sdk.CleverTapInstanceConfig
 import com.clevertap.android.sdk.UTMDetail
+import com.clevertap.android.sdk.interfaces.OnInitCleverTapIDListener
 import com.clevertap.android.sdk.cryption.EncryptionLevel
 import com.clevertap.android.sdk.events.EventDetail
 import com.clevertap.android.sdk.inapp.callbacks.FetchInAppsCallback
@@ -31,6 +33,7 @@ import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import org.json.JSONException
 import org.json.JSONObject
 import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicBoolean
 
 @Suppress("DEPRECATION")
 class DartToNativePlatformCommunicator(
@@ -39,6 +42,8 @@ class DartToNativePlatformCommunicator(
 ) : MethodCallHandler {
 
     private val notificationExecutor = Executors.newSingleThreadExecutor()
+
+    private val mainHandler = Handler(Looper.getMainLooper())
 
     companion object {
         const val TAG = "DartToNative"
@@ -124,7 +129,24 @@ class DartToNativePlatformCommunicator(
 
         private const val KEY_EVENT_NAME: String = "eventName"
 
+        /** The default account's variables, by name (see [variablesFor]). */
         val variables: HashMap<String, Any> = java.util.HashMap()
+
+        /** Every other account's variables: account ID -> (name -> Var). See [variablesFor]. */
+        private val accountVariables: HashMap<String, HashMap<String, Any>> = java.util.HashMap()
+
+        /**
+         * The variables map of [accountId]: [variables] when it is the default account
+         * ([defaultAccountId]), otherwise that account's own map, created on first use.
+         * Example: "DEF" -> variables; "B" -> B's map, the same object every time.
+         */
+        @VisibleForTesting
+        internal fun variablesOf(accountId: String, defaultAccountId: String?): HashMap<String, Any> {
+            if (accountId == defaultAccountId) {
+                return variables
+            }
+            return accountVariables.getOrPut(accountId) { java.util.HashMap() }
+        }
 
         /**
          * Returns a copy of [value] that shares no Map, List or array with the original, so the
@@ -305,7 +327,7 @@ class DartToNativePlatformCommunicator(
             }
 
             "unregisterPushPermissionNotificationResponseListener" -> {
-                unregisterPushPermissionNotificationResponseListener(result)
+                unregisterPushPermissionNotificationResponseListener(call, result)
             }
 
             "setOptOut" -> {
@@ -321,11 +343,11 @@ class DartToNativePlatformCommunicator(
             }
 
             "enablePersonalization" -> {
-                setPersonalization(result, true)
+                setPersonalization(call, result, true)
             }
 
             "disablePersonalization" -> {
-                setPersonalization(result, false)
+                setPersonalization(call, result, false)
             }
 
             "recordScreenView" -> {
@@ -471,7 +493,7 @@ class DartToNativePlatformCommunicator(
             }
 
             "suspendInAppNotifications" -> {
-                suspendInAppNotifications(result)
+                suspendInAppNotifications(call, result)
             }
 
             "discardInAppNotifications" -> {
@@ -479,7 +501,7 @@ class DartToNativePlatformCommunicator(
             }
 
             "resumeInAppNotifications" -> {
-                resumeInAppNotifications(result)
+                resumeInAppNotifications(call, result)
             }
 
             "dismissPipInApp" -> {
@@ -487,7 +509,7 @@ class DartToNativePlatformCommunicator(
             }
 
             "initializeInbox" -> {
-                initializeInbox(result)
+                initializeInbox(call, result)
             }
 
             "showInbox" -> {
@@ -495,7 +517,7 @@ class DartToNativePlatformCommunicator(
             }
 
             "dismissInbox" -> {
-                dismissInbox(result)
+                dismissInbox(call, result)
             }
 
             "fetchInbox" -> {
@@ -551,11 +573,12 @@ class DartToNativePlatformCommunicator(
             }
 
             "syncVariables" -> {
-                syncVariables(result)
+                syncVariables(call, result)
             }
 
             "syncVariablesinProd" -> {
                 Log.d(TAG, "syncVariablesinProd$ERROR_IOS")
+                result.success(null) // answered, so an awaiting Dart Future completes
             }
 
             "defineVariables" -> {
@@ -567,7 +590,7 @@ class DartToNativePlatformCommunicator(
             }
 
             "fetchVariables" -> {
-                fetchVariables(result)
+                fetchVariables(call, result)
             }
 
             "getVariable" -> {
@@ -575,23 +598,23 @@ class DartToNativePlatformCommunicator(
             }
 
             "getVariables" -> {
-                getVariables(result)
+                getVariables(call, result)
             }
 
             "onVariablesChanged" -> {
-                onVariablesChanged()
+                onVariablesChanged(call)
             }
 
             "onOneTimeVariablesChanged" -> {
-                onOneTimeVariablesChanged()
+                onOneTimeVariablesChanged(call)
             }
 
             "onVariablesChangedAndNoDownloadsPending" -> {
-                onVariablesChangedAndNoDownloadsPending()
+                onVariablesChangedAndNoDownloadsPending(call)
             }
 
             "onceVariablesChangedAndNoDownloadsPending" -> {
-                onceVariablesChangedAndNoDownloadsPending()
+                onceVariablesChangedAndNoDownloadsPending(call)
             }
 
             "onValueChanged" -> {
@@ -688,10 +711,12 @@ class DartToNativePlatformCommunicator(
 
             "registerForPush" -> {
                 Log.d(TAG, "registerForPush$ERROR_IOS")
+                result.success(null) // answered, so an awaiting Dart Future completes
             }
 
             "getInitialUrl" -> {
                 Log.d(TAG, "getInitialUrl$ERROR_IOS")
+                result.success(null) // answered, so an awaiting Dart Future completes
             }
 
             "syncCustomTemplatesInProd", "syncCustomTemplates" -> {
@@ -833,54 +858,60 @@ class DartToNativePlatformCommunicator(
         }
     }
 
-    private fun syncVariables(result: MethodChannel.Result) {
-        if (cleverTapAPI != null) {
-            cleverTapAPI.syncVariables()
+    private fun syncVariables(call: MethodCall, result: MethodChannel.Result) {
+        val instance = instanceFor(call)
+        if (instance != null) {
+            instance.syncVariables()
             result.success(null)
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerVoidWithoutInstance(call, result)
         }
     }
 
     private fun defineVariables(call: MethodCall, result: MethodChannel.Result) {
-        if (cleverTapAPI != null) {
+        val instance = instanceFor(call)
+        if (instance != null) {
+            val accountVariables = variablesFor(instance)
             val variablesMap = call.argument<Map<String, Any>>("variables")!!
             for ((key, value) in variablesMap) {
-                variables[key] = cleverTapAPI.defineVariable<Any>(key, value)
+                accountVariables[key] = instance.defineVariable<Any>(key, value)
             }
             result.success(null)
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerVoidWithoutInstance(call, result)
         }
     }
 
     private fun defineFileVariable(call: MethodCall, result: MethodChannel.Result) {
-        if (cleverTapAPI != null) {
+        val instance = instanceFor(call)
+        if (instance != null) {
             val fileVar = call.argument<String>("fileVariable")
-            variables[fileVar!!] = cleverTapAPI.defineFileVariable(fileVar)
+            variablesFor(instance)[fileVar!!] = instance.defineFileVariable(fileVar)
             result.success(null)
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerVoidWithoutInstance(call, result)
         }
     }
 
-    private fun fetchVariables(result: MethodChannel.Result) {
-        if (cleverTapAPI != null) {
-            cleverTapAPI.fetchVariables { isSuccess ->
+    private fun fetchVariables(call: MethodCall, result: MethodChannel.Result) {
+        val instance = instanceFor(call)
+        if (instance != null) {
+            instance.fetchVariables { isSuccess ->
                 result.success(
                     isSuccess
                 )
             }
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerValueWithoutInstance(call, result)
         }
     }
 
     private fun getVariable(call: MethodCall, result: MethodChannel.Result) {
-        if (cleverTapAPI != null) {
+        val instance = instanceFor(call)
+        if (instance != null) {
             try {
                 val key = call.argument<String>("name")
-                result.success(getVariableValue(key!!))
+                result.success(getVariableValue(variablesFor(instance), key!!))
             } catch (e: Exception) {
                 result.error(
                     TAG,
@@ -889,14 +920,15 @@ class DartToNativePlatformCommunicator(
                 )
             }
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerValueWithoutInstance(call, result)
         }
     }
 
-    private fun getVariables(result: MethodChannel.Result) {
-        if (cleverTapAPI != null) {
+    private fun getVariables(call: MethodCall, result: MethodChannel.Result) {
+        val instance = instanceFor(call)
+        if (instance != null) {
             try {
-                result.success(getVariablesValues())
+                result.success(getVariablesValues(variablesFor(instance)))
             } catch (e: Exception) {
                 result.error(
                     TAG,
@@ -905,20 +937,22 @@ class DartToNativePlatformCommunicator(
                 )
             }
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerValueWithoutInstance(call, result)
         }
     }
 
-    // The six variables callbacks below are registered on this communicator's instance (the
-    // default account), so their events carry its accountId. Per-account variables: Phase 6.
-    private fun onVariablesChanged() {
-        if (cleverTapAPI != null) {
-            cleverTapAPI.addVariablesChangedCallback(object : VariablesChangedCallback() {
+    // The six variables callbacks below are registered on the call's account (the default account
+    // for a static call), read that account's variables and emit with its accountId.
+    private fun onVariablesChanged(call: MethodCall) {
+        val instance = instanceFor(call)
+        if (instance != null) {
+            val accountVariables = variablesFor(instance)
+            instance.addVariablesChangedCallback(object : VariablesChangedCallback() {
                 override fun variablesChanged() {
                     CleverTapEventEmitter.emit(
                         CleverTapEvent.CLEVERTAP_ON_VARIABLES_CHANGED,
-                        cleverTapAPI.accountId,
-                        getVariablesValues()
+                        instance.accountId,
+                        getVariablesValues(accountVariables)
                     )
                 }
             })
@@ -927,14 +961,16 @@ class DartToNativePlatformCommunicator(
         }
     }
 
-    private fun onOneTimeVariablesChanged() {
-        if (cleverTapAPI != null) {
-            cleverTapAPI.addOneTimeVariablesChangedCallback(object : VariablesChangedCallback() {
+    private fun onOneTimeVariablesChanged(call: MethodCall) {
+        val instance = instanceFor(call)
+        if (instance != null) {
+            val accountVariables = variablesFor(instance)
+            instance.addOneTimeVariablesChangedCallback(object : VariablesChangedCallback() {
                 override fun variablesChanged() {
                     CleverTapEventEmitter.emit(
                         CleverTapEvent.CLEVERTAP_ON_ONE_TIME_VARIABLES_CHANGED,
-                        cleverTapAPI.accountId,
-                        getVariablesValues()
+                        instance.accountId,
+                        getVariablesValues(accountVariables)
                     )
                 }
             })
@@ -943,15 +979,17 @@ class DartToNativePlatformCommunicator(
         }
     }
 
-    private fun onVariablesChangedAndNoDownloadsPending() {
-        if (cleverTapAPI != null) {
-            cleverTapAPI.onVariablesChangedAndNoDownloadsPending(object :
+    private fun onVariablesChangedAndNoDownloadsPending(call: MethodCall) {
+        val instance = instanceFor(call)
+        if (instance != null) {
+            val accountVariables = variablesFor(instance)
+            instance.onVariablesChangedAndNoDownloadsPending(object :
                 VariablesChangedCallback() {
                 override fun variablesChanged() {
                     CleverTapEventEmitter.emit(
                         CleverTapEvent.CLEVERTAP_ON_VARIABLES_CHANGED_AND_NO_DOWNLOADS_PENDING,
-                        cleverTapAPI.accountId,
-                        getVariablesValues()
+                        instance.accountId,
+                        getVariablesValues(accountVariables)
                     )
                 }
             })
@@ -960,15 +998,17 @@ class DartToNativePlatformCommunicator(
         }
     }
 
-    private fun onceVariablesChangedAndNoDownloadsPending() {
-        if (cleverTapAPI != null) {
-            cleverTapAPI.onceVariablesChangedAndNoDownloadsPending(object :
+    private fun onceVariablesChangedAndNoDownloadsPending(call: MethodCall) {
+        val instance = instanceFor(call)
+        if (instance != null) {
+            val accountVariables = variablesFor(instance)
+            instance.onceVariablesChangedAndNoDownloadsPending(object :
                 VariablesChangedCallback() {
                 override fun variablesChanged() {
                     CleverTapEventEmitter.emit(
                         CleverTapEvent.CLEVERTAP_ONCE_VARIABLES_CHANGED_AND_NO_DOWNLOADS_PENDING,
-                        cleverTapAPI.accountId,
-                        getVariablesValues()
+                        instance.accountId,
+                        getVariablesValues(accountVariables)
                     )
                 }
             })
@@ -979,15 +1019,21 @@ class DartToNativePlatformCommunicator(
 
     private fun onValueChanged(call: MethodCall) {
         val name = call.argument<String>("name")
-        if (variables.containsKey(name)) {
-            val `var` = variables[name] as Var<Any>?
+        val instance = instanceFor(call)
+        if (instance == null) {
+            Log.d(TAG, ERROR_MSG)
+            return
+        }
+        val accountVariables = variablesFor(instance)
+        if (accountVariables.containsKey(name)) {
+            val `var` = accountVariables[name] as Var<Any>?
             if (`var` != null) {
                 `var`.addValueChangedCallback(object : VariableCallback<Any?>() {
                     @SuppressLint("RestrictedApi")
                     override fun onValueChanged(variable: Var<Any?>) {
                         var variablesMap: Map<String, Any> = HashMap()
                         try {
-                            variablesMap = getVariableValueAsMap(name!!)
+                            variablesMap = getVariableValueAsMap(accountVariables, name!!)
                         } catch (e: Exception) {
                             Log.d(
                                 TAG,
@@ -995,7 +1041,7 @@ class DartToNativePlatformCommunicator(
                                 null
                             )
                         }
-                        CleverTapEventEmitter.emit(CleverTapEvent.CLEVERTAP_ON_VALUE_CHANGED, cleverTapAPI?.accountId, variablesMap)
+                        CleverTapEventEmitter.emit(CleverTapEvent.CLEVERTAP_ON_VALUE_CHANGED, instance.accountId, variablesMap)
                     }
                 })
             } else {
@@ -1012,15 +1058,21 @@ class DartToNativePlatformCommunicator(
 
     private fun onFileValueChanged(call: MethodCall) {
         val name = call.argument<String>("name")
-        if (variables.containsKey(name)) {
-            val `var` = variables[name] as Var<Any>?
+        val instance = instanceFor(call)
+        if (instance == null) {
+            Log.d(TAG, ERROR_MSG)
+            return
+        }
+        val accountVariables = variablesFor(instance)
+        if (accountVariables.containsKey(name)) {
+            val `var` = accountVariables[name] as Var<Any>?
             if (`var` != null) {
                 `var`.addFileReadyHandler(object : VariableCallback<Any?>() {
                     @SuppressLint("RestrictedApi")
                     override fun onValueChanged(variable: Var<Any?>) {
                         var variablesMap: Map<String, Any> = HashMap()
                         try {
-                            variablesMap = getVariableValueAsMap(name!!)
+                            variablesMap = getVariableValueAsMap(accountVariables, name!!)
                         } catch (e: Exception) {
                             Log.d(
                                 TAG,
@@ -1028,7 +1080,7 @@ class DartToNativePlatformCommunicator(
                                 null
                             )
                         }
-                        CleverTapEventEmitter.emit(CleverTapEvent.CLEVERTAP_ON_FILE_VALUE_CHANGED, cleverTapAPI?.accountId, variablesMap)
+                        CleverTapEventEmitter.emit(CleverTapEvent.CLEVERTAP_ON_FILE_VALUE_CHANGED, instance.accountId, variablesMap)
                     }
                 })
             } else {
@@ -1057,22 +1109,35 @@ class DartToNativePlatformCommunicator(
     }
 
     private fun clearInAppResources(call: MethodCall, result: MethodChannel.Result) {
-        val expiredOnly = call.arguments<Boolean>()!!
-        if (cleverTapAPI != null) {
-            cleverTapAPI.clearInAppResources(expiredOnly)
+        val expiredOnly = (scalarArgumentOf(call.arguments) as Boolean?)!!
+        val instance = instanceFor(call)
+        if (instance != null) {
+            instance.clearInAppResources(expiredOnly)
             result.success(null)
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerVoidWithoutInstance(call, result)
         }
     }
 
     /************************************************
      * Product Experience Remote Config methods ends
      */
+
+    /**
+     * The variables this plugin defined for [instance]'s account, by name. The default account uses
+     * [variables], the same map as before multi-instance; every other account gets its own map.
+     *
+     * Why: with one map, account B defining "discount" replaced the default account's "discount",
+     * and CleverTapPlugin.getVariable("discount") then returned B's value.
+     * Main thread only: the handlers run there, and the SDK posts variable callbacks there
+     * (Android SDK 8.5.0 CTVariables.java and Var.java use Utils.runOnUiThread).
+     */
+    private fun variablesFor(instance: CleverTapAPI): HashMap<String, Any> =
+        variablesOf(instance.accountId, cleverTapAPI?.accountId)
     @SuppressLint("RestrictedApi")
-    private fun getVariableValue(name: String): Any {
-        if (variables.containsKey(name)) {
-            val variable = variables[name] as Var<*>?
+    private fun getVariableValue(accountVariables: Map<String, Any>, name: String): Any {
+        if (accountVariables.containsKey(name)) {
+            val variable = accountVariables[name] as Var<*>?
             return variable!!.value()
         }
         throw IllegalArgumentException(
@@ -1080,9 +1145,9 @@ class DartToNativePlatformCommunicator(
         )
     }
 
-    private fun getVariablesValues(): Map<String, Any> {
+    private fun getVariablesValues(accountVariables: Map<String, Any>): Map<String, Any> {
         val variablesMapObject: MutableMap<String, Any> = java.util.HashMap()
-        for ((key, value) in variables) {
+        for ((key, value) in accountVariables) {
             val variable = value as Var<*>
 
             // Copy after addValue: addValue decides on the SDK's original object.
@@ -1096,9 +1161,9 @@ class DartToNativePlatformCommunicator(
     }
 
     @SuppressLint("RestrictedApi")
-    private fun getVariableValueAsMap(name: String): Map<String, Any> {
-        if (variables.containsKey(name)) {
-            val variable = variables[name] as Var<*>?
+    private fun getVariableValueAsMap(accountVariables: Map<String, Any>, name: String): Map<String, Any> {
+        if (accountVariables.containsKey(name)) {
+            val variable = accountVariables[name] as Var<*>?
             // Copy after addValue: addValue decides on the SDK's original object.
             @Suppress("UNCHECKED_CAST")
             return detachedCopy(
@@ -1423,22 +1488,24 @@ class DartToNativePlatformCommunicator(
 
     private fun promptPushPrimer(call: MethodCall, result: MethodChannel.Result) {
         val localInAppAttributeMap = call.arguments<Map<String, Any>>()!!
-        if (cleverTapAPI != null) {
+        val instance = instanceFor(call)
+        if (instance != null) {
             val jsonObject = Utils.localInAppFromMap(localInAppAttributeMap)
-            cleverTapAPI.promptPushPrimer(jsonObject)
+            instance.promptPushPrimer(jsonObject)
             result.success(null)
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerVoidWithoutInstance(call, result)
         }
     }
 
     private fun promptForPushNotification(call: MethodCall, result: MethodChannel.Result) {
-        val fallbackToSettings = call.arguments<Boolean>()!!
-        if (cleverTapAPI != null) {
-            cleverTapAPI.promptForPushPermission(fallbackToSettings)
+        val fallbackToSettings = (scalarArgumentOf(call.arguments) as Boolean?)!!
+        val instance = instanceFor(call)
+        if (instance != null) {
+            instance.promptForPushPermission(fallbackToSettings)
             result.success(null)
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerVoidWithoutInstance(call, result)
         }
     }
 
@@ -1451,12 +1518,18 @@ class DartToNativePlatformCommunicator(
         }
     }
 
-    private fun unregisterPushPermissionNotificationResponseListener(result: MethodChannel.Result) {
-        if (cleverTapAPI != null) {
-            cleverTapAPI.unregisterPushPermissionNotificationResponseListener(CleverTapListenerProxy)
+    private fun unregisterPushPermissionNotificationResponseListener(call: MethodCall, result: MethodChannel.Result) {
+        val instance = instanceFor(call)
+        if (instance != null) {
+            // The listener registered on this account is its own proxy (CleverTapListenerProxy.attachTo),
+            // and the SDK removes by identity. Passing the CleverTapListenerProxy object here removed
+            // nothing since Phase 3, so the events kept coming.
+            instance.unregisterPushPermissionNotificationResponseListener(
+                CleverTapListenerProxy.proxyFor(instance.accountId)
+            )
             result.success(null)
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerVoidWithoutInstance(call, result)
         }
     }
 
@@ -1684,14 +1757,11 @@ class DartToNativePlatformCommunicator(
         val unitId = call.argument<String>("unitId")
         val instance = instanceFor(call)
         if (instance != null) {
-            if (instance.getDisplayUnitForId(unitId) != null) {
-                val displayUnit: JSONObject? = instance.getDisplayUnitForId(unitId)?.jsonObject
-                if (displayUnit != null) {
-                    result.success(Utils.jsonToMap(displayUnit))
-                }
-            } else {
-                result.error(TAG, "Display Unit is NULL", null)
-            }
+            val displayUnit: JSONObject? = instance.getDisplayUnitForId(unitId)?.jsonObject
+            // null for an unknown unit (or one without JSON), as iOS answers; Dart turns it into {}.
+            // Before: an unknown unit answered an error (iOS: nil), and a unit without JSON never
+            // answered, so Dart's await waited forever.
+            result.success(displayUnit?.let { Utils.jsonToMap(it) })
         } else {
             answerValueWithoutInstance(call, result)
         }
@@ -1746,9 +1816,9 @@ class DartToNativePlatformCommunicator(
                 return
             }
             val inboxMessage: CTInboxMessage? = instance.getInboxMessageForId(messageId)
-            if (inboxMessage != null) {
-                result.success(Utils.jsonToMap(inboxMessage.data))
-            }
+            // null for an unknown messageId, as iOS (message.json is nil) and React Native answer;
+            // Dart turns it into {}. Before, this path never answered: Dart's await waited forever.
+            result.success(inboxMessage?.let { Utils.jsonToMap(it.data) })
         } else {
             answerValueWithoutInstance(call, result)
         }
@@ -1801,12 +1871,13 @@ class DartToNativePlatformCommunicator(
         }
     }
 
-    private fun suspendInAppNotifications(result: MethodChannel.Result) {
-        if (cleverTapAPI != null) {
-            cleverTapAPI.suspendInAppNotifications()
+    private fun suspendInAppNotifications(call: MethodCall, result: MethodChannel.Result) {
+        val instance = instanceFor(call)
+        if (instance != null) {
+            instance.suspendInAppNotifications()
             result.success(null)
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerVoidWithoutInstance(call, result)
         }
     }
 
@@ -1825,12 +1896,13 @@ class DartToNativePlatformCommunicator(
         }
     }
 
-    private fun resumeInAppNotifications(result: MethodChannel.Result) {
-        if (cleverTapAPI != null) {
-            cleverTapAPI.resumeInAppNotifications()
+    private fun resumeInAppNotifications(call: MethodCall, result: MethodChannel.Result) {
+        val instance = instanceFor(call)
+        if (instance != null) {
+            instance.resumeInAppNotifications()
             result.success(null)
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerVoidWithoutInstance(call, result)
         }
     }
 
@@ -1844,12 +1916,13 @@ class DartToNativePlatformCommunicator(
         }
     }
 
-    private fun initializeInbox(result: MethodChannel.Result) {
-        if (cleverTapAPI != null) {
-            cleverTapAPI.initializeInbox()
+    private fun initializeInbox(call: MethodCall, result: MethodChannel.Result) {
+        val instance = instanceFor(call)
+        if (instance != null) {
+            instance.initializeInbox()
             result.success(null)
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerVoidWithoutInstance(call, result)
         }
     }
 
@@ -1977,9 +2050,14 @@ class DartToNativePlatformCommunicator(
     private fun getCleverTapID(call: MethodCall, result: MethodChannel.Result) {
         val instance = instanceFor(call)
         if (instance != null) {
-            instance.getCleverTapID { cleverTapID ->
-                CleverTapPlugin.runOnMainThread { result.success(cleverTapID) }
-            }
+            instance.getCleverTapID(
+                SingleReplyCleverTapIDListener(
+                    // Posted, not run here: the SDK calls listeners while looping over its list,
+                    // and removing during that loop throws ConcurrentModificationException.
+                    remove = { listener -> mainHandler.post { instance.removeCleverTapIDListener(listener) } },
+                    reply = { cleverTapID -> CleverTapPlugin.runOnMainThread { result.success(cleverTapID) } },
+                )
+            )
         } else {
             answerValueWithoutInstance(call, result)
         }
@@ -2362,16 +2440,17 @@ class DartToNativePlatformCommunicator(
         }
     }
 
-    private fun setPersonalization(result: MethodChannel.Result, enable: Boolean) {
-        if (cleverTapAPI != null) {
+    private fun setPersonalization(call: MethodCall, result: MethodChannel.Result, enable: Boolean) {
+        val instance = instanceFor(call)
+        if (instance != null) {
             if (enable) {
-                cleverTapAPI.enablePersonalization()
+                instance.enablePersonalization()
             } else {
-                cleverTapAPI.disablePersonalization()
+                instance.disablePersonalization()
             }
             result.success(null)
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerVoidWithoutInstance(call, result)
         }
     }
 
@@ -2406,20 +2485,22 @@ class DartToNativePlatformCommunicator(
         val styleConfigMap = call.argument<Map<String, Any>>("styleConfig")!!
         val styleConfigJson = Utils.mapToJSONObject(styleConfigMap)
         val styleConfig = Utils.jsonToStyleConfig(styleConfigJson)
-        if (cleverTapAPI != null) {
-            cleverTapAPI.showAppInbox(styleConfig)
+        val instance = instanceFor(call)
+        if (instance != null) {
+            instance.showAppInbox(styleConfig)
             result.success(null)
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerVoidWithoutInstance(call, result)
         }
     }
 
-    private fun dismissInbox(result: MethodChannel.Result) {
-        if (cleverTapAPI != null) {
-            cleverTapAPI.dismissAppInbox()
+    private fun dismissInbox(call: MethodCall, result: MethodChannel.Result) {
+        val instance = instanceFor(call)
+        if (instance != null) {
+            instance.dismissAppInbox()
             result.success(null)
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerVoidWithoutInstance(call, result)
         }
     }
 
@@ -2592,6 +2673,31 @@ class DartToNativePlatformCommunicator(
         }
     }
 
+}
+
+/**
+ * Answers one getCleverTapID call exactly once.
+ *
+ * Why: the SDK keeps a getCleverTapID listener and calls it again when a new account's device ID is
+ * created (Android SDK 8.5.0 CleverTapAPI.deviceIDCreated -> CallbackManager.notifyCleverTapIDChanged).
+ * Example: createInstance(B), then getCleverTapID() on B at once: the listener runs with B's ID, and
+ * again a moment later. Flutter allows one reply per call, so the second reply threw
+ * "Reply already submitted" (caught and logged by CleverTapPlugin.runOnMainThread).
+ * Every call also asks to [remove] the listener, so the SDK does not keep it for the whole app run.
+ */
+internal class SingleReplyCleverTapIDListener(
+    private val remove: (OnInitCleverTapIDListener) -> Unit,
+    private val reply: (String?) -> Unit,
+) : OnInitCleverTapIDListener {
+
+    private val answered = AtomicBoolean(false)
+
+    override fun onInitCleverTapID(cleverTapID: String?) {
+        remove(this)
+        if (answered.compareAndSet(false, true)) {
+            reply(cleverTapID)
+        }
+    }
 }
 
 private fun interface TemplateContextAction {

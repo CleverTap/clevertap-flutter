@@ -1210,12 +1210,13 @@ class CleverTapPlugin {
         .invokeMethod('getUnreadInboxMessages', {});
   }
 
-  /// Returns a json string representation of CTInboxMessage for given messageId
+  /// Returns a json string representation of CTInboxMessage for given messageId.
+  /// An empty map when there is no message with that ID.
   static Future<Map<String, dynamic>> getInboxMessageForId(
       String messageId) async {
-    Map<dynamic, dynamic> response = await _dartToNativeMethodChannel
+    Map<dynamic, dynamic>? response = await _dartToNativeMethodChannel
         .invokeMethod('getInboxMessageForId', {'messageId': messageId});
-    return response.cast<String, dynamic>();
+    return (response ?? {}).cast<String, dynamic>();
   }
 
   /// Deletes the CTInboxMessage object for given messageId
@@ -1272,11 +1273,11 @@ class CleverTapPlugin {
     return null;
   }
 
-  ///Returns Display unit info as a Map
+  ///Returns Display unit info as a Map. An empty map when there is no unit with that ID.
   static Future<Map<String, dynamic>> getDisplayUnitForId(String unitId) async {
-    Map<dynamic, dynamic> response = await _dartToNativeMethodChannel
+    Map<dynamic, dynamic>? response = await _dartToNativeMethodChannel
         .invokeMethod('getDisplayUnitForId', {'unitId': unitId});
-    return response.cast<String, dynamic>();
+    return (response ?? {}).cast<String, dynamic>();
   }
 
   ///Raise Notification Viewed for Display Unit id passed
@@ -1710,6 +1711,9 @@ class CleverTapInstance {
   // This account's handlers, by the event's method name (as native sends it).
   final Map<String, Function> _handlers = {};
 
+  // This account's variables handlers, by the event's method name. Lists, like the static ones.
+  final Map<String, List<Function>> _variablesHandlers = {};
+
   /// Stores [handler] for [method] and, on Android, releases this account's events the native
   /// buffer held for it at start-up (`startEmission` with this account). Web has no per-account
   /// events, so there it only warns.
@@ -1730,6 +1734,10 @@ class CleverTapInstance {
   /// static handlers. Returns false when there is no handler for it. A handler that throws is
   /// reported and does not stop the static handlers for the same event.
   bool _deliver(String method, dynamic payload) {
+    final List<Function>? variablesHandlers = _variablesHandlers[method];
+    if (variablesHandlers != null) {
+      return _deliverToVariablesHandlers(method, variablesHandlers, payload);
+    }
     final Function? handler = _handlers[method];
     if (handler == null) {
       return false;
@@ -1776,6 +1784,37 @@ class CleverTapInstance {
     return true;
   }
 
+  /// Calls every variables handler of this account for [method], with the payload converted as for
+  /// the static ones. One that throws is reported and does not stop the others.
+  bool _deliverToVariablesHandlers(
+      String method, List<Function> handlers, dynamic payload) {
+    if (handlers.isEmpty) {
+      return false;
+    }
+    for (final handler in List.of(handlers)) {
+      try {
+        handler((payload as Map).cast<String, dynamic>());
+      } catch (error, stack) {
+        print("CleverTapPlugin: a $method handler for account $accountId threw: $error\n$stack");
+      }
+    }
+    return true;
+  }
+
+  /// Adds [handler] to this account's list for [method] and asks native to register the matching
+  /// callback on this account (as the static method does for the default account). Web has no
+  /// per-account variables, so there it only warns.
+  void _addVariablesHandler(
+      String method, Function handler, Map<String, dynamic> arguments) {
+    if (kIsWeb) {
+      print("CleverTapPlugin: account handles are not supported on Web; $method for $accountId is ignored");
+      return;
+    }
+    (_variablesHandlers[method] ??= []).add(handler);
+    CleverTapPlugin._dartToNativeMethodChannel
+        .invokeMethod(method, {...arguments, 'accountId': accountId});
+  }
+
   // ---- Methods. Each one sends today's arguments plus this handle's accountId; native routes the
   // call to this account only (never the default). A method is added here only once its native
   // side reads the accountId; otherwise it would silently reach the default account.
@@ -1793,14 +1832,16 @@ class CleverTapInstance {
   }
 
   /// [_invoke] for a method whose static version returns a non-nullable map: the same cast as the
-  /// static method. On Web, after [_invoke]'s warning, an empty map, since there is no value.
+  /// static method. A null answer becomes an empty map, as for the static getInboxMessageForId and
+  /// getDisplayUnitForId (an unknown ID); the other map methods never answer null. On Web, after
+  /// [_invoke]'s warning, an empty map, since there is no value.
   Future<Map<String, dynamic>> _invokeMap(String method, Map<String, dynamic> arguments) async {
     if (kIsWeb) {
       await _invoke(method, arguments);
       return {};
     }
-    Map<dynamic, dynamic> response = await _invoke(method, arguments);
-    return response.cast<String, dynamic>();
+    Map<dynamic, dynamic>? response = await _invoke(method, arguments);
+    return (response ?? {}).cast<String, dynamic>();
   }
 
   /// Records [eventName] with [properties] for this account.
@@ -2162,7 +2203,8 @@ class CleverTapInstance {
     return await _invoke('getUnreadInboxMessages', {});
   }
 
-  /// Returns a json string representation of CTInboxMessage for given messageId
+  /// Returns a json string representation of CTInboxMessage for given messageId.
+  /// An empty map when there is no message with that ID.
   Future<Map<String, dynamic>> getInboxMessageForId(
       String messageId) async {
     return _invokeMap('getInboxMessageForId', {'messageId': messageId});
@@ -2212,7 +2254,7 @@ class CleverTapInstance {
     return null;
   }
 
-  ///Returns Display unit info as a Map
+  ///Returns Display unit info as a Map. An empty map when there is no unit with that ID.
   Future<Map<String, dynamic>> getDisplayUnitForId(String unitId) async {
     return _invokeMap('getDisplayUnitForId', {'unitId': unitId});
   }
@@ -2381,6 +2423,135 @@ class CleverTapInstance {
   Future<bool?> fetchInApps() async {
     return await _invoke('fetchInApps', {});
   }
+
+  /// Enables the Profile/Events Read and Synchronization API
+  Future<void> enablePersonalization() async {
+    return await _invoke('enablePersonalization', {});
+  }
+
+  /// Disables the Profile/Events Read and Synchronization API
+  Future<void> disablePersonalization() async {
+    return await _invoke('disablePersonalization', {});
+  }
+
+  /// Suspends display of InApp Notifications.
+  /// The InApp Notifications are queued once this method is called
+  /// and will be displayed once resumeInAppNotifications() is called.
+  Future<void> suspendInAppNotifications() async {
+    return await _invoke('suspendInAppNotifications', {});
+  }
+
+  /// Resumes display of InApp Notifications.
+  /// If suspendInAppNotifications() was called previously, calling this method will instantly show
+  /// all queued InApp Notifications and also resume InApp Notifications on events raised after this
+  /// method is called.
+  /// If discardInAppNotifications() was called previously, calling this method will only resume
+  /// InApp Notifications on events raised after this method is called.
+  Future<void> resumeInAppNotifications() async {
+    return await _invoke('resumeInAppNotifications', {});
+  }
+
+  /// Initializes the inbox controller and sends a callback
+  Future<void> initializeInbox() async {
+    return await _invoke('initializeInbox', {});
+  }
+
+  /// Opens CTInboxActivity to display Inbox Messages
+  Future<void> showInbox(Map<String, dynamic> styleConfig) async {
+    return await _invoke('showInbox', {'styleConfig': styleConfig});
+  }
+
+  ///Dismisses the App Inbox screen
+  Future<void> dismissInbox() async {
+    return await _invoke('dismissInbox', {});
+  }
+
+  ///Creates a push primer asking user to enable push notification.
+  Future<void> promptPushPrimer(
+      Map<String, dynamic> pushPrimerJSON) async {
+    return await _invoke(
+        'promptPushPrimer', pushPrimerJSON);
+  }
+
+  ///Directly calls OS hard dialog for requesting push permission.
+  Future<void> promptForPushNotification(bool fallbackToSettings) async {
+    return await _invoke(
+        'promptForPushNotification', {'value': fallbackToSettings});
+  }
+
+  ///Only for Android - Unregisters PushPermissionNotificationResponseListener
+  Future<void>
+      unregisterPushPermissionNotificationResponseListener() async {
+    return await _invoke(
+        'unregisterPushPermissionNotificationResponseListener', {});
+  }
+
+  ///Uploads variables to the server. Requires Development/Debug build/configuration.
+  Future<void> syncVariables() async {
+    return await _invoke('syncVariables', {});
+  }
+
+  ///Uploads variables to the server.
+  /// * @param isProduction Provide `true` if variables must be sync in Production build/configuration.
+  Future<void> syncVariablesinProd(bool isProduction) async {
+    return await _invoke('syncVariablesinProd', {'isProduction': isProduction});
+  }
+
+  ///Forces variables to update from the server.
+  Future<bool?> fetchVariables() async {
+    return await _invoke('fetchVariables', {});
+  }
+
+  ///Create variables.
+  /// * @param {object} variables The JSON Object specifying the varibles to be created.
+  Future<void> defineVariables(Map<String, dynamic> variables) async {
+    return await _invoke('defineVariables', {'variables': variables});
+  }
+
+  ///Create File variable.
+  /// * @param {object} variables The JSON Object specifying the varibles to be created.
+  Future<void> defineFileVariable(String fileVariable) async {
+    return await _invoke('defineFileVariable', {'fileVariable': fileVariable});
+  }
+
+  ///Get all variables via a JSON object.
+  Future<Map<Object?, Object?>> getVariables() async {
+    return await _invoke<Map<Object?, Object?>>('getVariables', {}) ?? {};
+  }
+
+  ///Get a variable or a group for the specified name.
+  /// * @param {string} name - name.
+  Future<dynamic> getVariable(String name) async {
+    return await _invoke('getVariable', {'name': name});
+  }
+
+  Future<void> clearInAppResources(bool expiredOnly) async {
+    return await _invoke('clearInAppResources', {'value': expiredOnly});
+  }
+
+  // ---- Variables listeners. Like the static ones they are lists: each call adds a handler, and every
+  // handler runs for this account's changes, never for another account's.
+
+  void onVariablesChanged(CleverTapOnVariablesChangedHandler handler) =>
+      _addVariablesHandler('onVariablesChanged', handler, {});
+
+  void onOneTimeVariablesChanged(
+          CleverTapOnOneTimeVariablesChangedHandler handler) =>
+      _addVariablesHandler('onOneTimeVariablesChanged', handler, {});
+
+  void onValueChanged(String name, CleverTapOnValueChangedHandler handler) =>
+      _addVariablesHandler('onValueChanged', handler, {'name': name});
+
+  void onVariablesChangedAndNoDownloadsPending(
+          CleverTapOnVariablesChangedAndNoDownloadsPendingHandler handler) =>
+      _addVariablesHandler('onVariablesChangedAndNoDownloadsPending', handler, {});
+
+  void onceVariablesChangedAndNoDownloadsPending(
+          CleverTapOnceVariablesChangedAndNoDownloadsPendingHandler handler) =>
+      _addVariablesHandler('onceVariablesChangedAndNoDownloadsPending', handler, {});
+
+  void onFileValueChanged(String name, CleverTapOnFileValueChangedHandler handler) =>
+      _addVariablesHandler('onFileValueChanged', handler, {'name': name});
 
   // ---- Handlers.
 

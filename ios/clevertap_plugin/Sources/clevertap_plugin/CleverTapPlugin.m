@@ -112,7 +112,11 @@
 
 @property (strong, nonatomic) FlutterMethodChannel *dartToNativeMethodChannel;
 @property (strong, nonatomic) FlutterMethodChannel *nativeToDartMethodChannel;
-@property(nonatomic, strong) NSMutableDictionary *allVariables;
+// Every account's variables: account ID -> (name -> CTVar). See storeVariable:named:forAccount:.
+@property(nonatomic, strong) NSMutableDictionary<NSString *, NSMutableDictionary<NSString *, CTVar *> *> *variablesByAccount;
+// The account whose App Inbox showInbox opened. This plugin is the inbox delegate, and the tap
+// callbacks stamp their events with this account. nil until an inbox is shown.
+@property(nonatomic, copy, nullable) NSString *inboxAccountId;
 
 // Account lookup state (see resolveInstance:). Main queue only: every caller is a method-channel
 // handler or init, and Flutter runs both on the main thread.
@@ -164,7 +168,7 @@ static NSString *const kCleverTapErrorCodeCreateFailed = @"ECREATE";
     
     self = [super init];
     if (self) {
-        self.allVariables = [NSMutableDictionary dictionary];
+        self.variablesByAccount = [NSMutableDictionary dictionary];
         self.wiredAccountIds = [NSMutableSet set];
         self.instanceDelegates = [NSMutableDictionary dictionary];
         // Resolving the default account wires it, which sets its delegates (resolveInstance:).
@@ -301,7 +305,7 @@ static NSString *const kCleverTapErrorCodeCreateFailed = @"ECREATE";
     else if ([@"recordChargedEvent" isEqualToString:call.method])
         [self recordChargedEvent:call withResult:result];
     else if ([@"initializeInbox" isEqualToString:call.method])
-        [self initializeInbox];
+        [self initializeInbox:call withResult:result];
     else if ([@"showInbox" isEqualToString:call.method])
         [self showInbox:call withResult:result];
     else if ([@"onUserLogin" isEqualToString:call.method])
@@ -371,11 +375,11 @@ static NSString *const kCleverTapErrorCodeCreateFailed = @"ECREATE";
     else if ([@"sessionGetUTMDetails" isEqualToString:call.method])
         [self sessionGetUTMDetails:call withResult:result];
     else if ([@"suspendInAppNotifications" isEqualToString:call.method])
-        [self suspendInAppNotifications];
+        [self suspendInAppNotifications:call withResult:result];
     else if ([@"discardInAppNotifications" isEqualToString:call.method])
         [self discardInAppNotifications:call withResult:result];
     else if ([@"resumeInAppNotifications" isEqualToString:call.method])
-        [self resumeInAppNotifications];
+        [self resumeInAppNotifications:call withResult:result];
     else if ([@"dismissPipInApp" isEqualToString:call.method])
         [self dismissPipInApp:call withResult:result];
     else if ([@"fetchInbox" isEqualToString:call.method])
@@ -481,7 +485,7 @@ static NSString *const kCleverTapErrorCodeCreateFailed = @"ECREATE";
     else if ([@"getPushNotificationPermissionStatus" isEqualToString:call.method])
         [self getPushNotificationPermissionStatus:call withResult:result];
     else if ([@"syncVariables" isEqualToString:call.method])
-        [self syncVariables];
+        [self syncVariables:call withResult:result];
     else if ([@"syncVariablesinProd" isEqualToString:call.method])
         [self syncVariablesinProd:call withResult:result];
     else if ([@"fetchVariables" isEqualToString:call.method])
@@ -733,14 +737,26 @@ static CleverTapEncryptionLevel ctEncryptionLevelFromString(NSString *level) {
 #pragma mark - Personalization
 
 - (void)enablePersonalization:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    
-    [CleverTap enablePersonalization];
+    CleverTap *instance = [self instanceForCall:call];
+    // On the account's own config: immediate and per account, like Android. The class method only
+    // saves a setting that the SDK reads when it creates the default instance (the next launch).
+    instance.config.enablePersonalization = YES;
+    if ([self handleAccountIdOfCall:call] == nil) {
+        // A static call also saves it, so the next launch starts the same as before.
+        [CleverTap enablePersonalization];
+    }
     result(nil);
 }
 
 - (void)disablePersonalization:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    
-    [CleverTap disablePersonalization];
+    CleverTap *instance = [self instanceForCall:call];
+    // On the account's own config: immediate and per account, like Android. The class method only
+    // saves a setting that the SDK reads when it creates the default instance (the next launch).
+    instance.config.enablePersonalization = NO;
+    if ([self handleAccountIdOfCall:call] == nil) {
+        // A static call also saves it, so the next launch starts the same as before.
+        [CleverTap disablePersonalization];
+    }
     result(nil);
 }
 
@@ -1094,9 +1110,10 @@ static CleverTapEncryptionLevel ctEncryptionLevelFromString(NSString *level) {
 
 #pragma mark - InApp Notification Controls
 
-- (void)suspendInAppNotifications {
-    
-    [[CleverTap sharedInstance] suspendInAppNotifications];
+- (void)suspendInAppNotifications:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
+    [instance suspendInAppNotifications];
+    result(nil);
 }
 
 - (void)discardInAppNotifications:(FlutterMethodCall *)call withResult:(FlutterResult)result {
@@ -1110,9 +1127,10 @@ static CleverTapEncryptionLevel ctEncryptionLevelFromString(NSString *level) {
     result(nil);
 }
 
-- (void)resumeInAppNotifications {
-
-    [[CleverTap sharedInstance] resumeInAppNotifications];
+- (void)resumeInAppNotifications:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
+    [instance resumeInAppNotifications];
+    result(nil);
 }
 
 - (void)dismissPipInApp:(FlutterMethodCall *)call withResult:(FlutterResult)result {
@@ -1134,8 +1152,10 @@ static CleverTapEncryptionLevel ctEncryptionLevelFromString(NSString *level) {
 }
 
 - (void)clearInAppResources:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    BOOL expiredOnly = [call.arguments boolValue];
-    [[CleverTap sharedInstance] clearInAppResources: expiredOnly];
+    CleverTap *instance = [self instanceForCall:call];
+    BOOL expiredOnly = [[self scalarArgumentOfCall:call] boolValue];
+    [instance clearInAppResources: expiredOnly];
+    result(nil);
 }
 
 #pragma mark - Inbox
@@ -1233,18 +1253,20 @@ static CleverTapEncryptionLevel ctEncryptionLevelFromString(NSString *level) {
     result(@(res));
 }
 
-- (void)initializeInbox {
-    // Registered on the default account (main queue): its events carry that account's ID.
-    NSString *accountId = self.defaultInstance.config.accountId;
+- (void)initializeInbox:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
+    // Registered on the call's account (main queue): its events carry that account's ID.
+    NSString *accountId = instance.config.accountId;
 
-    [[CleverTap sharedInstance] initializeInboxWithCallback:^(BOOL success) {
+    [instance initializeInboxWithCallback:^(BOOL success) {
         if (success) {
             [self postNotificationWithName:kCleverTapInboxDidInitialize andBody:nil accountId:accountId];
-            [[CleverTap sharedInstance] registerInboxUpdatedBlock:^{
+            [instance registerInboxUpdatedBlock:^{
                 [self postNotificationWithName:kCleverTapInboxMessagesDidUpdate andBody:nil accountId:accountId];
             }];
         }
     }];
+    result(nil);
 }
 
 - (void)fetchInbox:(FlutterMethodCall *)call withResult:(FlutterResult)result {
@@ -1281,17 +1303,23 @@ static CleverTapEncryptionLevel ctEncryptionLevelFromString(NSString *level) {
     if ([styleConfig isKindOfClass:[NSNull class]]) {
         styleConfig = nil;
     }
-    CleverTapInboxViewController *inboxController = [[CleverTap sharedInstance] newInboxViewControllerWithConfig:[self _dictToInboxStyleConfig:styleConfig ? styleConfig : nil] andDelegate:(id <CleverTapInboxViewControllerDelegate>)self];
+    CleverTap *instance = [self instanceForCall:call];
+    CleverTapInboxViewController *inboxController = [instance newInboxViewControllerWithConfig:[self _dictToInboxStyleConfig:styleConfig ? styleConfig : nil] andDelegate:(id <CleverTapInboxViewControllerDelegate>)self];
     if (inboxController) {
+        // Remember whose inbox is on screen: the tap callbacks below stamp their events with it.
+        self.inboxAccountId = instance.config.accountId;
         UINavigationController *navigationController = [[UINavigationController alloc] initWithRootViewController:inboxController];
         UIWindow *keyWindow = [self ct_keyWindow];
         UIViewController *mainViewController = keyWindow.rootViewController;
         [mainViewController presentViewController:navigationController animated:YES completion:nil];
     }
+    result(nil);
 }
 
 - (void)dismissInbox:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    [[CleverTap sharedInstance]dismissAppInbox];
+    CleverTap *instance = [self instanceForCall:call];
+    [instance dismissAppInbox];
+    result(nil);
 }
 
 - (CleverTapInboxStyleConfig*)_dictToInboxStyleConfig: (NSDictionary *)dict {
@@ -1639,19 +1667,19 @@ static CleverTapEncryptionLevel ctEncryptionLevelFromString(NSString *level) {
     return _profile;
 }
 
-- (CTVar *)createVarForName:(NSString *)name andValue:(id)value {
+- (CTVar *)createVarForName:(NSString *)name andValue:(id)value instance:(CleverTap *)instance {
 
     if ([value isKindOfClass:[NSString class]]) {
-        return [[CleverTap sharedInstance]defineVar:name withString:value];
+        return [instance defineVar:name withString:value];
     }
     if ([value isKindOfClass:[NSDictionary class]]) {
-        return [[CleverTap sharedInstance]defineVar:name withDictionary:value];
+        return [instance defineVar:name withDictionary:value];
     }
     if ([value isKindOfClass:[NSNumber class]]) {
         if ([self isBoolNumber:value]) {
-            return [[CleverTap sharedInstance]defineVar:name withBool:[value boolValue]];
+            return [instance defineVar:name withBool:[value boolValue]];
         }
-        return [[CleverTap sharedInstance]defineVar:name withNumber:value];
+        return [instance defineVar:name withNumber:value];
     }
     return nil;
 }
@@ -1662,11 +1690,46 @@ static CleverTapEncryptionLevel ctEncryptionLevelFromString(NSString *level) {
     return (numID == boolID);
 }
 
-- (NSMutableDictionary *)getVariableValues {
+#pragma mark - Variables, one registry per account
+
+// One map per account, so account B defining "discount" does not replace the default account's
+// "discount" (with one map, CleverTapPlugin.getVariable('discount') returned B's value).
+// @synchronized like React Native: the iOS SDK can run a variable's value-changed blocks off the
+// main queue (iOS SDK 7.9.0 CTVar.m triggerValueChanged), while handlers write on the main queue.
+
+- (void)storeVariable:(CTVar *)var named:(NSString *)name forAccount:(nullable NSString *)accountId {
+    if (var == nil || name == nil || accountId == nil) {
+        return;
+    }
+    @synchronized (self.variablesByAccount) {
+        NSMutableDictionary<NSString *, CTVar *> *vars = self.variablesByAccount[accountId];
+        if (vars == nil) {
+            vars = [NSMutableDictionary dictionary];
+            self.variablesByAccount[accountId] = vars;
+        }
+        vars[name] = var;
+    }
+}
+
+- (nullable CTVar *)variableNamed:(id)name forAccount:(nullable NSString *)accountId {
+    if (![name isKindOfClass:[NSString class]] || accountId == nil) {
+        return nil;
+    }
+    @synchronized (self.variablesByAccount) {
+        return self.variablesByAccount[accountId][name];
+    }
+}
+
+- (NSMutableDictionary *)variableValuesForAccount:(nullable NSString *)accountId {
     NSMutableDictionary *varValues = [NSMutableDictionary dictionary];
-    [self.allVariables enumerateKeysAndObjectsUsingBlock:^(id  _Nonnull key, CTVar*  _Nonnull var, BOOL * _Nonnull stop) {
-        varValues[key] = var.value;
-    }];
+    if (accountId == nil) {
+        return varValues;
+    }
+    @synchronized (self.variablesByAccount) {
+        [self.variablesByAccount[accountId] enumerateKeysAndObjectsUsingBlock:^(id  _Nonnull key, CTVar*  _Nonnull var, BOOL * _Nonnull stop) {
+            varValues[key] = var.value;
+        }];
+    }
     return varValues;
 }
 
@@ -1861,12 +1924,17 @@ static CleverTapEncryptionLevel ctEncryptionLevelFromString(NSString *level) {
 #pragma mark - Delegates
 #pragma mark CleverTapInboxViewControllerDelegate
 
+/// The account whose inbox showInbox opened; the default account when none was opened through it.
+- (nullable NSString *)accountIdOfOpenInbox {
+    return self.inboxAccountId ?: self.defaultInstance.config.accountId;
+}
+
 - (void)messageButtonTappedWithCustomExtras:(NSDictionary *_Nullable)customExtras {
     NSMutableDictionary *body = [NSMutableDictionary new];
     if (customExtras != nil) {
         body = [NSMutableDictionary dictionaryWithDictionary:customExtras];
     }
-    [self postNotificationWithName:kCleverTapInboxMessageButtonTapped andBody:body accountId:self.defaultInstance.config.accountId];
+    [self postNotificationWithName:kCleverTapInboxMessageButtonTapped andBody:body accountId:[self accountIdOfOpenInbox]];
 }
 
 - (void)messageDidSelect:(CleverTapInboxMessage *_Nonnull)message atIndex:(int)index withButtonIndex:(int)buttonIndex {
@@ -1878,7 +1946,7 @@ static CleverTapEncryptionLevel ctEncryptionLevelFromString(NSString *level) {
     }
     body[@"contentPageIndex"] = @(index);
     body[@"buttonIndex"] = @(buttonIndex);
-    [self postNotificationWithName:kCleverTapInboxMessageTapped andBody:body accountId:self.defaultInstance.config.accountId];
+    [self postNotificationWithName:kCleverTapInboxMessageTapped andBody:body accountId:[self accountIdOfOpenInbox]];
 }
 
 #pragma mark - Push Notifications
@@ -1900,19 +1968,23 @@ static CleverTapEncryptionLevel ctEncryptionLevelFromString(NSString *level) {
 #pragma mark - Push Primer
 
 - (void)promptForPushNotification:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    BOOL isFallbackToSettings = [call.arguments boolValue];
-    [[CleverTap sharedInstance] promptForPushPermission: isFallbackToSettings];
+    CleverTap *instance = [self instanceForCall:call];
+    BOOL isFallbackToSettings = [[self scalarArgumentOfCall:call] boolValue];
+    [instance promptForPushPermission: isFallbackToSettings];
+    result(nil);
 }
 
 - (void)promptPushPrimer:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
     NSDictionary *json = call.arguments;
     BOOL isJSONInvalid = [self validatePushPrimerRequiredSettings:json];
     if (!isJSONInvalid) {
         CTLocalInApp *localInAppBuilder = [self buildLocalInApp:json];
-        [[CleverTap sharedInstance] promptPushPrimer:localInAppBuilder.getLocalInAppSettings];
+        [instance promptPushPrimer:localInAppBuilder.getLocalInAppSettings];
     } else {
         NSLog(@"CleverTapFlutter: Invalid Push Primer JSON received");
     }
+    result(nil);
 }
 
 - (void)getPushNotificationPermissionStatus:(FlutterMethodCall *)call withResult:(FlutterResult)result {
@@ -2006,16 +2078,24 @@ static CleverTapEncryptionLevel ctEncryptionLevelFromString(NSString *level) {
 
 #pragma mark - Product Experiences - syncVariables
 
-- (void)syncVariables {
-    [[CleverTap sharedInstance]syncVariables];
+- (void)syncVariables:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
+    [instance syncVariables];
+    result(nil);
 }
 
 - (void)syncVariablesinProd:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    [[CleverTap sharedInstance]syncVariables:[call.arguments[@"isProduction"] boolValue]];
+    CleverTap *instance = [self instanceForCall:call];
+    [instance syncVariables:[call.arguments[@"isProduction"] boolValue]];
+    result(nil);
 }
 
 - (void)fetchVariables:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    [[CleverTap sharedInstance]fetchVariables:^(BOOL success) {
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
+    [instance fetchVariables:^(BOOL success) {
         result(@(success));
     }];
 }
@@ -2028,11 +2108,13 @@ static CleverTapEncryptionLevel ctEncryptionLevelFromString(NSString *level) {
         return;
     }
 
+    CleverTap *instance = [self instanceForCall:call];
+    NSString *accountId = instance.config.accountId;
     [variables enumerateKeysAndObjectsUsingBlock:^(NSString*  _Nonnull key, id  _Nonnull value, BOOL * _Nonnull stop) {
-        CTVar *var = [self createVarForName:key andValue:value];
+        CTVar *var = [self createVarForName:key andValue:value instance:instance];
 
         if (var) {
-            self.allVariables[key] = var;
+            [self storeVariable:var named:key forAccount:accountId];
         }
     }];
     result(nil);
@@ -2042,43 +2124,55 @@ static CleverTapEncryptionLevel ctEncryptionLevelFromString(NSString *level) {
     NSString *fileVariable = call.arguments[@"fileVariable"];
     if (!fileVariable) return;
 
-    CTVar *fileVar = [[CleverTap sharedInstance] defineFileVar:fileVariable];
+    CleverTap *instance = [self instanceForCall:call];
+    CTVar *fileVar = [instance defineFileVar:fileVariable];
     if (fileVar) {
-        self.allVariables[fileVariable] = fileVar;
+        [self storeVariable:fileVar named:fileVariable forAccount:instance.config.accountId];
     }
     result(nil);
 }
 
 - (void)getVariables:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    NSMutableDictionary *varValues = [self getVariableValues];
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
+    NSMutableDictionary *varValues = [self variableValuesForAccount:instance.config.accountId];
     result(varValues);
 }
 
 - (void)getVariable:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    CTVar *var = self.allVariables[call.arguments[@"name"]];
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
+    CTVar *var = [self variableNamed:call.arguments[@"name"] forAccount:instance.config.accountId];
     result(var.value);
 }
 
 - (void)onVariablesChanged:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    // Registered on the default account (main queue): its events carry that account's ID.
-    NSString *accountId = self.defaultInstance.config.accountId;
-    [[CleverTap sharedInstance]onVariablesChanged:^{
-        [self postNotificationWithName:kCleverTapOnVariablesChanged andBody:[self getVariableValues] accountId:accountId];
+    CleverTap *instance = [self instanceForCall:call];
+    // Registered on the call's account (main queue): its events carry that account's ID and values.
+    NSString *accountId = instance.config.accountId;
+    [instance onVariablesChanged:^{
+        [self postNotificationWithName:kCleverTapOnVariablesChanged andBody:[self variableValuesForAccount:accountId] accountId:accountId];
     }];
 }
 
 - (void)onOneTimeVariablesChanged:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    // Registered on the default account (main queue): its events carry that account's ID.
-    NSString *accountId = self.defaultInstance.config.accountId;
-    [[CleverTap sharedInstance]onceVariablesChanged:^{
-        [self postNotificationWithName:kCleverTapOnOneTimeVariablesChanged andBody:[self getVariableValues] accountId:accountId];
+    CleverTap *instance = [self instanceForCall:call];
+    // Registered on the call's account (main queue): its events carry that account's ID and values.
+    NSString *accountId = instance.config.accountId;
+    [instance onceVariablesChanged:^{
+        [self postNotificationWithName:kCleverTapOnOneTimeVariablesChanged andBody:[self variableValuesForAccount:accountId] accountId:accountId];
     }];
 }
 
 - (void)onValueChanged:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    // Registered on the default account (main queue): its events carry that account's ID.
-    NSString *accountId = self.defaultInstance.config.accountId;
-    CTVar *var = self.allVariables[call.arguments[@"name"]];
+    CleverTap *instance = [self instanceForCall:call];
+    // Attached to the call's account's variable (main queue): its events carry that account's ID.
+    NSString *accountId = instance.config.accountId;
+    CTVar *var = [self variableNamed:call.arguments[@"name"] forAccount:accountId];
     if (var) {
         [var onValueChanged:^{
             NSDictionary *varResult = @{
@@ -2090,25 +2184,28 @@ static CleverTapEncryptionLevel ctEncryptionLevelFromString(NSString *level) {
 }
 
 - (void)onVariablesChangedAndNoDownloadsPending:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    // Registered on the default account (main queue): its events carry that account's ID.
-    NSString *accountId = self.defaultInstance.config.accountId;
-    [[CleverTap sharedInstance]onVariablesChangedAndNoDownloadsPending:^{
-        [self postNotificationWithName:kCleverTapOnVariablesChangedAndNoDownloadsPending andBody:[self getVariableValues] accountId:accountId];
+    CleverTap *instance = [self instanceForCall:call];
+    // Registered on the call's account (main queue): its events carry that account's ID and values.
+    NSString *accountId = instance.config.accountId;
+    [instance onVariablesChangedAndNoDownloadsPending:^{
+        [self postNotificationWithName:kCleverTapOnVariablesChangedAndNoDownloadsPending andBody:[self variableValuesForAccount:accountId] accountId:accountId];
     }];
 }
 
 - (void)onceVariablesChangedAndNoDownloadsPending:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    // Registered on the default account (main queue): its events carry that account's ID.
-    NSString *accountId = self.defaultInstance.config.accountId;
-    [[CleverTap sharedInstance]onceVariablesChangedAndNoDownloadsPending:^{
-        [self postNotificationWithName:kCleverTapOnceVariablesChangedAndNoDownloadsPending andBody:[self getVariableValues] accountId:accountId];
+    CleverTap *instance = [self instanceForCall:call];
+    // Registered on the call's account (main queue): its events carry that account's ID and values.
+    NSString *accountId = instance.config.accountId;
+    [instance onceVariablesChangedAndNoDownloadsPending:^{
+        [self postNotificationWithName:kCleverTapOnceVariablesChangedAndNoDownloadsPending andBody:[self variableValuesForAccount:accountId] accountId:accountId];
     }];
 }
 
 - (void)onFileValueChanged:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    // Registered on the default account (main queue): its events carry that account's ID.
-    NSString *accountId = self.defaultInstance.config.accountId;
-    CTVar *var = self.allVariables[call.arguments[@"name"]];
+    CleverTap *instance = [self instanceForCall:call];
+    // Attached to the call's account's variable (main queue): its events carry that account's ID.
+    NSString *accountId = instance.config.accountId;
+    CTVar *var = [self variableNamed:call.arguments[@"name"] forAccount:accountId];
     if (var) {
         [var onFileIsReady:^{
             NSDictionary *varFileResult = @{

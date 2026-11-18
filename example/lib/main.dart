@@ -875,6 +875,16 @@ class _MyAppState extends State<MyApp> {
                         "TEST-ACC-B's CleverTap ID"),
                     _buildListTile("Unknown Instance: Get CleverTap ID", unknownInstanceGetCleverTapID,
                         "An account that does not exist: a PlatformException"),
+                    _buildListTile("Instance B: Inbox", instanceBInbox,
+                        "Initializes TEST-ACC-B's inbox, then reads its message count"),
+                    _buildListTile("Variables In Both Accounts", variablesInBothAccounts,
+                        "Default and TEST-ACC-B define mi_discount (10 and 0); each reads its own"),
+                    _buildListTile("Instance B: Product Config", instanceBProductConfig,
+                        "Sets defaults and activates TEST-ACC-B's product config; its handler fires"),
+                    _buildListTile("Instance B: Disable Personalization", instanceBDisablePersonalization,
+                        "Then reads Plan on TEST-ACC-B: nothing comes back"),
+                    _buildListTile("Instance B: Enable Personalization", instanceBEnablePersonalization,
+                        "Then reads Plan on TEST-ACC-B"),
                     _buildListTile("Enable Personalization",
                         enablePersonalization, "Enables Personalization"),
                     _buildListTile("Disable Personalization",
@@ -1897,6 +1907,49 @@ class _MyAppState extends State<MyApp> {
     final id = await _instanceB.getCleverTapID();
     showToast("TEST-ACC-B CleverTap ID: $id");
     print("MI -> TEST-ACC-B: getCleverTapID $id");
+  }
+
+  void instanceBInbox() async {
+    _instanceB.setCleverTapInboxDidInitializeHandler(
+        () => print("MI -> TEST-ACC-B: inboxDidInitialize"));
+    await _instanceB.initializeInbox();
+    final count = await _instanceB.getInboxMessageCount();
+    showToast("TEST-ACC-B inbox: $count messages");
+    print("MI -> TEST-ACC-B: initializeInbox, getInboxMessageCount $count");
+  }
+
+  void variablesInBothAccounts() async {
+    await CleverTapPlugin.defineVariables({'mi_discount': 10});
+    await _instanceB.defineVariables({'mi_discount': 0});
+    final defaultValue = await CleverTapPlugin.getVariable('mi_discount');
+    final bValue = await _instanceB.getVariable('mi_discount');
+    showToast("mi_discount: default $defaultValue, TEST-ACC-B $bValue");
+    print("MI -> variables: default mi_discount = $defaultValue, TEST-ACC-B mi_discount = $bValue");
+  }
+
+  void instanceBProductConfig() async {
+    _instanceB.setCleverTapProductConfigActivatedHandler(
+        () => print("MI -> TEST-ACC-B: productConfigActivated"));
+    // ignore: deprecated_member_use
+    await _instanceB.setDefaultsMap({'mi_key': 'b-default'});
+    // ignore: deprecated_member_use
+    await _instanceB.activate();
+    showToast("TEST-ACC-B: product config activated");
+    print("MI -> TEST-ACC-B: setDefaultsMap + activate");
+  }
+
+  void instanceBDisablePersonalization() async {
+    await _instanceB.disablePersonalization();
+    final plan = await _instanceB.profileGetProperty('Plan');
+    showToast("TEST-ACC-B personalization off, Plan = $plan");
+    print("MI -> TEST-ACC-B: disablePersonalization, profileGetProperty Plan = $plan");
+  }
+
+  void instanceBEnablePersonalization() async {
+    await _instanceB.enablePersonalization();
+    final plan = await _instanceB.profileGetProperty('Plan');
+    showToast("TEST-ACC-B personalization on, Plan = $plan");
+    print("MI -> TEST-ACC-B: enablePersonalization, profileGetProperty Plan = $plan");
   }
 
   void unknownInstanceGetCleverTapID() async {
