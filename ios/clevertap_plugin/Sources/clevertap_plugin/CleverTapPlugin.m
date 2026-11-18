@@ -235,6 +235,30 @@ static NSString *const kCleverTapErrorCodeCreateFailed = @"ECREATE";
     return accountId == nil ? [CleverTap sharedInstance] : [self resolveInstance:accountId];
 }
 
+/// For a call that returns a value. A handle call whose account does not exist is answered here
+/// with an error naming the account, and this returns YES: the caller stops. A static call is never
+/// answered here (it returns NO), so it keeps its old answer, for example nil or 0.
+- (BOOL)answeredMissingAccountOfCall:(FlutterMethodCall *)call instance:(nullable CleverTap *)instance result:(FlutterResult)result {
+    NSString *accountId = [self handleAccountIdOfCall:call];
+    if (instance != nil || accountId == nil) {
+        return NO;
+    }
+    result([FlutterError errorWithCode:@"DartToNative"
+                               message:[NSString stringWithFormat:@"CleverTap instance not found for accountId: %@", accountId]
+                               details:nil]);
+    return YES;
+}
+
+/// The value of a method whose static call sends one bare value instead of a dictionary. A handle
+/// call must also send its accountId, so it sends {value, accountId}. Example: setLocale sends
+/// @"en_US" from CleverTapPlugin and {value: @"en_US", accountId: @"B"} from a handle.
+- (nullable id)scalarArgumentOfCall:(FlutterMethodCall *)call {
+    if ([call.arguments isKindOfClass:[NSDictionary class]]) {
+        return call.arguments[@"value"];
+    }
+    return call.arguments;
+}
+
 - (void)applicationDidLaunchWithOptions:(NSDictionary *)options {
 
     NSDictionary *notification = [options valueForKey:UIApplicationLaunchOptionsRemoteNotificationKey];
@@ -532,7 +556,8 @@ static NSString *const kCleverTapErrorCodeCreateFailed = @"ECREATE";
 
 
 - (void)unmute:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    [[CleverTap sharedInstance] unmute];
+    CleverTap *instance = [self instanceForCall:call];
+    [instance unmute];
     result(nil);
 }
 
@@ -561,8 +586,9 @@ static NSString *const kCleverTapErrorCodeCreateFailed = @"ECREATE";
 }
 
 - (void)setPushTokenAsString:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
     
-    [[CleverTap sharedInstance] setPushTokenAsString:call.arguments[@"token"]];
+    [instance setPushTokenAsString:call.arguments[@"token"]];
     result(nil);
 }
 
@@ -731,14 +757,16 @@ static CleverTapEncryptionLevel ctEncryptionLevelFromString(NSString *level) {
 }
 
 - (void)recordChargedEvent:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
     
-    [[CleverTap sharedInstance] recordChargedEventWithDetails:call.arguments[@"chargeDetails"] andItems:call.arguments[@"items"]];
+    [instance recordChargedEventWithDetails:call.arguments[@"chargeDetails"] andItems:call.arguments[@"items"]];
     result(nil);
 }
 
 - (void)recordScreenView:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
     
-    [[CleverTap sharedInstance] recordScreenView:call.arguments[@"screenName"]];
+    [instance recordScreenView:call.arguments[@"screenName"]];
     result(nil);
 }
 
@@ -755,56 +783,79 @@ static CleverTapEncryptionLevel ctEncryptionLevelFromString(NSString *level) {
 }
 
 - (void)setOptOut:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
     BOOL value = [call.arguments[@"value"] boolValue];
     if (call.arguments[@"allowSystemEvents"]) {
         BOOL allowSystemEvents = [call.arguments[@"allowSystemEvents"] boolValue];
-        [[CleverTap sharedInstance] setOptOut:value allowSystemEvents:allowSystemEvents];
+        [instance setOptOut:value allowSystemEvents:allowSystemEvents];
     } else {
-        [[CleverTap sharedInstance] setOptOut:value];
+        [instance setOptOut:value];
     }
     result(nil);
 }
 
 - (void)setOffline:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
     
-    [[CleverTap sharedInstance] setOffline:[call.arguments[@"value"] boolValue]];
+    [instance setOffline:[call.arguments[@"value"] boolValue]];
     result(nil);
 }
 
 - (void)enableDeviceNetworkInfoReporting:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
     
-    [[CleverTap sharedInstance] enableDeviceNetworkInfoReporting:[call.arguments[@"value"] boolValue]];
+    [instance enableDeviceNetworkInfoReporting:[call.arguments[@"value"] boolValue]];
     result(nil);
 }
 
 - (void)eventGetFirstTime:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
     
-    NSTimeInterval res = [[CleverTap sharedInstance] eventGetFirstTime:call.arguments[@"eventName"]];
+    NSTimeInterval res = [instance eventGetFirstTime:call.arguments[@"eventName"]];
     result(@(res));
 }
 
 - (void)eventGetLastTime:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
     
-    NSTimeInterval res = [[CleverTap sharedInstance] eventGetLastTime:call.arguments[@"eventName"]];
+    NSTimeInterval res = [instance eventGetLastTime:call.arguments[@"eventName"]];
     result(@(res));
 }
 
 - (void)eventGetOccurrences:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
     
-    int res = [[CleverTap sharedInstance] eventGetOccurrences:call.arguments[@"eventName"]];
+    int res = [instance eventGetOccurrences:call.arguments[@"eventName"]];
     result(@(res));
 }
 
 - (void)eventGetDetail:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
     
-    CleverTapEventDetail *detail = [[CleverTap sharedInstance] eventGetDetail:call.arguments[@"eventName"]];
+    CleverTapEventDetail *detail = [instance eventGetDetail:call.arguments[@"eventName"]];
     NSDictionary *res = [self _eventDetailToDict:detail];
     result(res);
 }
 
 - (void)getEventHistory:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
     
-    NSDictionary *history = [[CleverTap sharedInstance] userGetEventHistory];
+    NSDictionary *history = [instance userGetEventHistory];
     NSMutableDictionary *res = [NSMutableDictionary new];
     for (NSString *eventName in [history keyEnumerator]) {
         CleverTapEventDetail *detail = history[eventName];
@@ -815,15 +866,23 @@ static CleverTapEncryptionLevel ctEncryptionLevelFromString(NSString *level) {
 }
 
 - (void)getUserEventLog:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
     
-    CleverTapEventDetail *detail = [[CleverTap sharedInstance] getUserEventLog:call.arguments[@"eventName"]];
+    CleverTapEventDetail *detail = [instance getUserEventLog:call.arguments[@"eventName"]];
     NSDictionary *res = [self _eventDetailToDict:detail];
     result(res);
 }
 
 - (void)getUserEventLogHistory:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
     
-    NSDictionary *history = [[CleverTap sharedInstance] getUserEventLogHistory];
+    NSDictionary *history = [instance getUserEventLogHistory];
     NSMutableDictionary *res = [NSMutableDictionary new];
     for (NSString *eventName in [history keyEnumerator]) {
         CleverTapEventDetail *detail = history[eventName];
@@ -834,117 +893,150 @@ static CleverTapEncryptionLevel ctEncryptionLevelFromString(NSString *level) {
 }
 
 - (void)getUserEventLogCount:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
     
-    int res = [[CleverTap sharedInstance] getUserEventLogCount:call.arguments[@"eventName"]];
+    int res = [instance getUserEventLogCount:call.arguments[@"eventName"]];
     result(@(res));
 }
 
 - (void)setLocation:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
     
     double lat = [call.arguments[@"latitude"] doubleValue];
     double lon = [call.arguments[@"longitude"] doubleValue];
     CLLocationCoordinate2D coordinate = CLLocationCoordinate2DMake(lat,lon);
-    [[CleverTap sharedInstance] setLocation: coordinate];
+    [instance setLocation: coordinate];
     result(nil);
 }
 
 - (void)profileGetCleverTapAttributionIdentifier:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
     
-    result([[CleverTap sharedInstance] profileGetCleverTapAttributionIdentifier]);
+    result([instance profileGetCleverTapAttributionIdentifier]);
 }
 
 - (void)profileGetCleverTapID:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
     
-    result([[CleverTap sharedInstance] profileGetCleverTapID]);
+    result([instance profileGetCleverTapID]);
 }
 
 - (void)getCleverTapID:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     
     CleverTap *instance = [self instanceForCall:call];
-    NSString *accountId = [self handleAccountIdOfCall:call];
-    if (instance == nil && accountId != nil) {
-        // A value call: an error, naming the account (the static call keeps answering nil).
-        result([FlutterError errorWithCode:@"DartToNative"
-                                   message:[NSString stringWithFormat:@"CleverTap instance not found for accountId: %@", accountId]
-                                   details:nil]);
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
         return;
     }
     result([instance profileGetCleverTapID]);
 }
 
 - (void)profileGetProperty:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
     
-    result([[CleverTap sharedInstance] profileGet:call.arguments[@"propertyName"]]);
+    result([instance profileGet:call.arguments[@"propertyName"]]);
 }
 
 - (void)profileRemoveValueForKey:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
     
-    [[CleverTap sharedInstance] profileRemoveValueForKey:call.arguments[@"key"]];
+    [instance profileRemoveValueForKey:call.arguments[@"key"]];
     result(nil);
 }
 
 - (void)profileSetMultiValues:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
     
-    [[CleverTap sharedInstance] profileSetMultiValues:call.arguments[@"values"] forKey:call.arguments[@"key"]];
+    [instance profileSetMultiValues:call.arguments[@"values"] forKey:call.arguments[@"key"]];
     result(nil);
 }
 
 - (void)profileAddMultiValue:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
     
-    [[CleverTap sharedInstance] profileAddMultiValue:call.arguments[@"value"] forKey:call.arguments[@"key"]];
+    [instance profileAddMultiValue:call.arguments[@"value"] forKey:call.arguments[@"key"]];
     result(nil);
 }
 
 - (void)profileAddMultiValues:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    [[CleverTap sharedInstance] profileAddMultiValues:call.arguments[@"values"] forKey:call.arguments[@"key"]];
+    CleverTap *instance = [self instanceForCall:call];
+    [instance profileAddMultiValues:call.arguments[@"values"] forKey:call.arguments[@"key"]];
     result(nil);
 }
 
 - (void)profileRemoveMultiValue:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
     
-    [[CleverTap sharedInstance] profileRemoveMultiValue:call.arguments[@"value"] forKey:call.arguments[@"key"]];
+    [instance profileRemoveMultiValue:call.arguments[@"value"] forKey:call.arguments[@"key"]];
     result(nil);
 }
 
 - (void)profileRemoveMultiValues:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
     
-    [[CleverTap sharedInstance] profileRemoveMultiValues:call.arguments[@"values"] forKey:call.arguments[@"key"]];
+    [instance profileRemoveMultiValues:call.arguments[@"values"] forKey:call.arguments[@"key"]];
     result(nil);
 }
 
 - (void)profileIncrementValue:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
     
-    [[CleverTap sharedInstance] profileIncrementValueBy:call.arguments[@"value"] forKey:call.arguments[@"key"]];
+    [instance profileIncrementValueBy:call.arguments[@"value"] forKey:call.arguments[@"key"]];
     result(nil);
 }
 
 - (void)profileDecrementValue:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
     
-    [[CleverTap sharedInstance] profileDecrementValueBy:call.arguments[@"value"] forKey:call.arguments[@"key"]];
+    [instance profileDecrementValueBy:call.arguments[@"value"] forKey:call.arguments[@"key"]];
     result(nil);
 }
 
 - (void)pushInstallReferrer:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
     
-    [[CleverTap sharedInstance] pushInstallReferrerSource:call.arguments[@"source"] medium:call.arguments[@"medium"] campaign:call.arguments[@"campaign"]];
+    [instance pushInstallReferrerSource:call.arguments[@"source"] medium:call.arguments[@"medium"] campaign:call.arguments[@"campaign"]];
     result(nil);
 }
 
 - (void)sessionGetTimeElapsed:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
     
-    NSTimeInterval res = [[CleverTap sharedInstance] sessionGetTimeElapsed];
+    NSTimeInterval res = [instance sessionGetTimeElapsed];
     result(@(res));
 }
 
 - (void)sessionGetTotalVisits:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
     
-    int res = [[CleverTap sharedInstance] userGetTotalVisits];
+    int res = [instance userGetTotalVisits];
     result(@(res));
 }
 
 - (void)getUserAppLaunchCount:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
 
-    int res = [[CleverTap sharedInstance] getUserAppLaunchCount];
+    int res = [instance getUserAppLaunchCount];
     result(@(res));
 }
 
@@ -960,26 +1052,42 @@ static CleverTapEncryptionLevel ctEncryptionLevelFromString(NSString *level) {
 }
 
 - (void)sessionGetScreenCount:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
     
-    int res = [[CleverTap sharedInstance] userGetScreenCount];
+    int res = [instance userGetScreenCount];
     result(@(res));
 }
 
 - (void)sessionGetPreviousVisitTime:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
     
-    NSTimeInterval res = [[CleverTap sharedInstance] userGetPreviousVisitTime];
+    NSTimeInterval res = [instance userGetPreviousVisitTime];
     result(@(res));
 }
 
 - (void)getUserLastVisitTs:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
     
-    NSTimeInterval res = [[CleverTap sharedInstance] getUserLastVisitTs];
+    NSTimeInterval res = [instance getUserLastVisitTs];
     result(@(res));
 }
 
 - (void)sessionGetUTMDetails:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
     
-    CleverTapUTMDetail *detail = [[CleverTap sharedInstance] sessionGetUTMDetails];
+    CleverTapUTMDetail *detail = [instance sessionGetUTMDetails];
     NSDictionary *res = [self _utmDetailToDict:detail];
     result(res);
 }
@@ -992,11 +1100,12 @@ static CleverTapEncryptionLevel ctEncryptionLevelFromString(NSString *level) {
 }
 
 - (void)discardInAppNotifications:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
     NSNumber *dismissInAppIfVisible = call.arguments[@"dismissInAppIfVisible"];
     if (dismissInAppIfVisible != nil) {
-        [[CleverTap sharedInstance] discardInAppNotifications:[dismissInAppIfVisible boolValue]];
+        [instance discardInAppNotifications:[dismissInAppIfVisible boolValue]];
     } else {
-        [[CleverTap sharedInstance] discardInAppNotifications];
+        [instance discardInAppNotifications];
     }
     result(nil);
 }
@@ -1007,14 +1116,19 @@ static CleverTapEncryptionLevel ctEncryptionLevelFromString(NSString *level) {
 }
 
 - (void)dismissPipInApp:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    [[CleverTap sharedInstance] dismissPipInApp];
+    CleverTap *instance = [self instanceForCall:call];
+    [instance dismissPipInApp];
     result(nil);
 }
 
 #pragma mark - InApp Controls
 
 - (void)fetchInApps:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    [[CleverTap sharedInstance]fetchInApps:^(BOOL success) {
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
+    [instance fetchInApps:^(BOOL success) {
         result(@(success));
     }];
 }
@@ -1027,69 +1141,95 @@ static CleverTapEncryptionLevel ctEncryptionLevelFromString(NSString *level) {
 #pragma mark - Inbox
 
 - (void)pushInboxNotificationViewedEventForId:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
     
-    [[CleverTap sharedInstance] recordInboxNotificationViewedEventForID:call.arguments[@"messageId"]];
+    [instance recordInboxNotificationViewedEventForID:call.arguments[@"messageId"]];
     result(nil);
 }
 
 - (void)pushInboxNotificationClickedEventForId:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
     
-    [[CleverTap sharedInstance] recordInboxNotificationClickedEventForID:call.arguments[@"messageId"]];
+    [instance recordInboxNotificationClickedEventForID:call.arguments[@"messageId"]];
     result(nil);
 }
 
 - (void)markReadInboxMessageForId:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
     
-    [[CleverTap sharedInstance] markReadInboxMessageForID:call.arguments[@"messageId"]];
+    [instance markReadInboxMessageForID:call.arguments[@"messageId"]];
     result(nil);
 }
 
 - (void)markReadInboxMessagesForIds:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    [[CleverTap sharedInstance]markReadInboxMessagesForIDs:call.arguments[@"messageIds"]];
+    CleverTap *instance = [self instanceForCall:call];
+    [instance markReadInboxMessagesForIDs:call.arguments[@"messageIds"]];
     result(nil);
 }
 
 - (void)deleteInboxMessagesForIds:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    [[CleverTap sharedInstance]deleteInboxMessagesForIDs:call.arguments[@"messageIds"]];
+    CleverTap *instance = [self instanceForCall:call];
+    [instance deleteInboxMessagesForIDs:call.arguments[@"messageIds"]];
     result(nil);
 }
 
 - (void)deleteInboxMessageForId:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
     
-    [[CleverTap sharedInstance] deleteInboxMessageForID:call.arguments[@"messageId"]];
+    [instance deleteInboxMessageForID:call.arguments[@"messageId"]];
     result(nil);
 }
 
 - (void)getInboxMessageForId:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
     
-    CleverTapInboxMessage *message = [[CleverTap sharedInstance] getInboxMessageForId:call.arguments[@"messageId"]];
+    CleverTapInboxMessage *message = [instance getInboxMessageForId:call.arguments[@"messageId"]];
     NSDictionary *res = message.json;
     result(res);
 }
 
 - (void)getUnreadInboxMessages:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
     
-    NSArray *messages = [[CleverTap sharedInstance] getUnreadInboxMessages];
+    NSArray *messages = [instance getUnreadInboxMessages];
     NSArray *results = [self _cleverTapInboxMessagesToArray:messages];
     result(results);
 }
 
 - (void)getAllInboxMessages:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
     
-    NSArray *messages = [[CleverTap sharedInstance] getAllInboxMessages];
+    NSArray *messages = [instance getAllInboxMessages];
     NSArray *results = [self _cleverTapInboxMessagesToArray:messages];
     result(results);
 }
 
 - (void)getInboxMessageCount:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
     
-    int res = (int)[[CleverTap sharedInstance] getInboxMessageCount];
+    int res = (int)[instance getInboxMessageCount];
     result(@(res));
 }
 
 - (void)getInboxMessageUnreadCount:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
     
-    int res = (int)[[CleverTap sharedInstance] getInboxMessageUnreadCount];
+    int res = (int)[instance getInboxMessageUnreadCount];
     result(@(res));
 }
 
@@ -1108,12 +1248,17 @@ static CleverTapEncryptionLevel ctEncryptionLevelFromString(NSString *level) {
 }
 
 - (void)fetchInbox:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    [[CleverTap sharedInstance] fetchInboxWithCallback:nil];
+    CleverTap *instance = [self instanceForCall:call];
+    [instance fetchInboxWithCallback:nil];
     result(nil);
 }
 
 - (void)fetchInboxWithCallback:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    [[CleverTap sharedInstance] fetchInboxWithCallback:^(BOOL success) {
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
+    [instance fetchInboxWithCallback:^(BOOL success) {
         result(@(success));
     }];
 }
@@ -1225,110 +1370,149 @@ static CleverTapEncryptionLevel ctEncryptionLevelFromString(NSString *level) {
 #pragma mark - Native Display
 
 - (void)getAllDisplayUnits:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
     
-    NSArray<CleverTapDisplayUnit *> *displayUnits = [[CleverTap sharedInstance] getAllDisplayUnits];
+    NSArray<CleverTapDisplayUnit *> *displayUnits = [instance getAllDisplayUnits];
     NSArray *results = [self _cleverTapDisplayUnitToArray:displayUnits];
     result(results);
 }
 
 - (void)getDisplayUnitForId:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
     
-    CleverTapDisplayUnit *unit = [[CleverTap sharedInstance] getDisplayUnitForID:call.arguments[@"unitId"]];
+    CleverTapDisplayUnit *unit = [instance getDisplayUnitForID:call.arguments[@"unitId"]];
     NSDictionary *res = unit.json;
     result(res);
 }
 
 - (void)pushDisplayUnitViewedEvent:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
     
-    [[CleverTap sharedInstance] recordDisplayUnitViewedEventForID:call.arguments[@"unitId"]];
+    [instance recordDisplayUnitViewedEventForID:call.arguments[@"unitId"]];
     result(nil);
 }
 
 - (void)pushDisplayUnitClickedEvent:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
 
-    [[CleverTap sharedInstance] recordDisplayUnitClickedEventForID:call.arguments[@"unitId"]];
+    [instance recordDisplayUnitClickedEventForID:call.arguments[@"unitId"]];
     result(nil);
 }
 
 - (void)pushDisplayUnitElementClickedEvent:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
 
-    [[CleverTap sharedInstance] recordDisplayUnitElementClickedEventForID:call.arguments[@"unitId"] additionalProperties:call.arguments[@"additionalProperties"]];
+    [instance recordDisplayUnitElementClickedEventForID:call.arguments[@"unitId"] additionalProperties:call.arguments[@"additionalProperties"]];
     result(nil);
 }
 
 - (void)pushDisplayUnitElementViewedEvent:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
 
-    [[CleverTap sharedInstance] recordDisplayUnitElementViewedEventForID:call.arguments[@"unitId"] additionalProperties:call.arguments[@"additionalProperties"]];
+    [instance recordDisplayUnitElementViewedEventForID:call.arguments[@"unitId"] additionalProperties:call.arguments[@"additionalProperties"]];
     result(nil);
 }
 
 - (void)fetchNativeDisplayMeta:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
 
-    [[CleverTap sharedInstance] fetchNativeDisplayMeta];
+    [instance fetchNativeDisplayMeta];
     result(nil);
 }
 
 #pragma mark - Product Config
 
 - (void)fetch:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    [[[CleverTap sharedInstance] productConfig] fetch];
+    CleverTap *instance = [self instanceForCall:call];
+    [[instance productConfig] fetch];
     result(nil);
 }
 
 - (void)fetchWithMinimumFetchIntervalInSeconds:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
     int interval = [call.arguments[@"interval"] intValue];
-    [[[CleverTap sharedInstance] productConfig] fetchWithMinimumInterval:interval];
+    [[instance productConfig] fetchWithMinimumInterval:interval];
     result(nil);
 }
 
 - (void)setMinimumFetchIntervalInSeconds:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
     int interval = [call.arguments[@"interval"] intValue];
-    [[[CleverTap sharedInstance] productConfig] setMinimumFetchInterval:interval];
+    [[instance productConfig] setMinimumFetchInterval:interval];
     result(nil);
 }
 
 - (void)activate:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    [[[CleverTap sharedInstance] productConfig] activate];
+    CleverTap *instance = [self instanceForCall:call];
+    [[instance productConfig] activate];
     result(nil);
 }
 
 - (void)fetchAndActivate:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    [[[CleverTap sharedInstance] productConfig] fetchAndActivate];
+    CleverTap *instance = [self instanceForCall:call];
+    [[instance productConfig] fetchAndActivate];
     result(nil);
 }
 
 - (void)setDefaultsMap:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    [[[CleverTap sharedInstance] productConfig] setDefaults:call.arguments[@"defaults"]];
+    CleverTap *instance = [self instanceForCall:call];
+    [[instance productConfig] setDefaults:call.arguments[@"defaults"]];
     result(nil);
 }
 
 - (void)getLastFetchTimeStampInMillis:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    NSDate *date = [[[CleverTap sharedInstance] productConfig] getLastFetchTimeStamp];
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
+    NSDate *date = [[instance productConfig] getLastFetchTimeStamp];
     double interval = date.timeIntervalSince1970;
     result(@(interval));
 }
 
 - (void)getBoolean:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
     NSString *key = call.arguments[@"key"];
-    BOOL value = [[[[CleverTap sharedInstance] productConfig] get:key]boolValue];
+    BOOL value = [[[instance productConfig] get:key]boolValue];
     result(@(value));
 }
 
 - (void)getString:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
     NSString *key = call.arguments[@"key"];
-    NSString *value = [[[[CleverTap sharedInstance] productConfig] get:key]stringValue];
+    NSString *value = [[[instance productConfig] get:key]stringValue];
     result(value);
 }
 
 - (void)getLong:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
     NSString *key = call.arguments[@"key"];
-    long value = [[[[CleverTap sharedInstance] productConfig] get:key] numberValue].longValue;
+    long value = [[[instance productConfig] get:key] numberValue].longValue;
     result(@(value));
 }
 
 - (void)getDouble:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
     NSString *key = call.arguments[@"key"];
-    double value = [[[[CleverTap sharedInstance] productConfig] get:key]numberValue].doubleValue;
+    double value = [[[instance productConfig] get:key]numberValue].doubleValue;
     result(@(value));
 }
 
@@ -1336,9 +1520,13 @@ static CleverTapEncryptionLevel ctEncryptionLevelFromString(NSString *level) {
 #pragma mark - Feature Flag
 
 - (void)getFeatureFlag:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
     NSString *key = call.arguments[@"key"];
     BOOL defaultValue = [call.arguments[@"defaultValue"] boolValue];
-    BOOL value = [[[CleverTap sharedInstance] featureFlags] get:key withDefaultValue:defaultValue];
+    BOOL value = [[instance featureFlags] get:key withDefaultValue:defaultValue];
     result(@(value));
 }
 
@@ -1696,14 +1884,16 @@ static CleverTapEncryptionLevel ctEncryptionLevelFromString(NSString *level) {
 #pragma mark - Push Notifications
 
 - (void)pushNotificationViewedEvent:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
     
-    [[CleverTap sharedInstance] recordNotificationViewedEventWithData:call.arguments[@"notificationData"]];
+    [instance recordNotificationViewedEventWithData:call.arguments[@"notificationData"]];
     result(nil);
 }
 
 - (void)pushNotificationClickedEvent:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
     
-    [[CleverTap sharedInstance] recordNotificationClickedEventWithData:call.arguments[@"notificationData"]];
+    [instance recordNotificationClickedEventWithData:call.arguments[@"notificationData"]];
     result(nil);
 }
 
@@ -1726,7 +1916,11 @@ static CleverTapEncryptionLevel ctEncryptionLevelFromString(NSString *level) {
 }
 
 - (void)getPushNotificationPermissionStatus:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    [[CleverTap sharedInstance] getNotificationPermissionStatusWithCompletionHandler:^(UNAuthorizationStatus status) {
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
+    [instance getNotificationPermissionStatusWithCompletionHandler:^(UNAuthorizationStatus status) {
         BOOL isPushEnabled = YES;
         if (status == UNAuthorizationStatusNotDetermined || status == UNAuthorizationStatusDenied) {
             isPushEnabled = NO;
@@ -1926,13 +2120,18 @@ static CleverTapEncryptionLevel ctEncryptionLevelFromString(NSString *level) {
 }
 
 - (void)setLocale:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    NSLocale *locale = [[NSLocale alloc] initWithLocaleIdentifier:call.arguments];
-    [[CleverTap sharedInstance] setLocale:locale];
+    CleverTap *instance = [self instanceForCall:call];
+    NSLocale *locale = [[NSLocale alloc] initWithLocaleIdentifier:[self scalarArgumentOfCall:call]];
+    [instance setLocale:locale];
     result(nil);
 }
 
 - (void)getVariants:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    NSArray<NSDictionary<NSString *, id> *> *variants = [[CleverTap sharedInstance] variants];
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
+    NSArray<NSDictionary<NSString *, id> *> *variants = [instance variants];
     result(variants);
 }
 

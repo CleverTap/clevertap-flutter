@@ -59,6 +59,17 @@ class DartToNativePlatformCommunicator(
         internal fun accountIdOf(arguments: Any?): String? =
             ((arguments as? Map<*, *>)?.get("accountId") as? String)?.takeIf { it.isNotEmpty() }
 
+        /**
+         * The value of a method whose static call sends one bare value instead of a map. A handle call
+         * must also send its accountId, so it sends {"value": ..., "accountId": "B"} instead.
+         *
+         * Example: setLocale sends "en_US" from CleverTapPlugin and
+         * {"value": "en_US", "accountId": "B"} from a handle; both read as "en_US".
+         */
+        @VisibleForTesting
+        internal fun scalarArgumentOf(arguments: Any?): Any? =
+            if (arguments is Map<*, *>) arguments["value"] else arguments
+
         /** What Dart's startEmission asks for: an event, and the account whose handler was set. */
         internal data class StartEmissionRequest(val eventName: String, val accountId: String?)
 
@@ -214,7 +225,7 @@ class DartToNativePlatformCommunicator(
             }
 
             "getVariants" -> {
-                getVariants(result)
+                getVariants(call, result)
             }
 
             "setPushToken" -> {
@@ -290,7 +301,7 @@ class DartToNativePlatformCommunicator(
             }
 
             "getPushNotificationPermissionStatus" -> {
-                getPushNotificationPermissionStatus(result)
+                getPushNotificationPermissionStatus(call, result)
             }
 
             "unregisterPushPermissionNotificationResponseListener" -> {
@@ -346,25 +357,25 @@ class DartToNativePlatformCommunicator(
             }
 
             "getEventHistory" -> {
-                getEventHistory(result)
+                getEventHistory(call, result)
             }
 
             "getUserEventLog" -> {
                 val eventName = call.argument<String>(KEY_EVENT_NAME)
-                getUserEventLog(eventName, result)
+                getUserEventLog(call, eventName, result)
             }
             "getUserEventLogCount" -> {
                 val eventName = call.argument<String>(KEY_EVENT_NAME)
-                getUserEventLogCount(eventName, result)
+                getUserEventLogCount(call, eventName, result)
             }
             "getUserEventLogHistory" -> {
-                getUserEventLogHistory(result)
+                getUserEventLogHistory(call, result)
             }
             "getUserAppLaunchCount" -> {
-                getUserAppLaunchCount(result)
+                getUserAppLaunchCount(call, result)
             }
             "getUserLastVisitTs" -> {
-                getUserLastVisitTs(result)
+                getUserLastVisitTs(call, result)
             }
 
             "pushNotificationClickedEvent" -> {
@@ -380,11 +391,11 @@ class DartToNativePlatformCommunicator(
             }
 
             "profileGetCleverTapAttributionIdentifier" -> {
-                profileGetCleverTapAttributionIdentifier(result)
+                profileGetCleverTapAttributionIdentifier(call, result)
             }
 
             "profileGetCleverTapID" -> {
-                profileGetCleverTapID(result)
+                profileGetCleverTapID(call, result)
             }
 
             "getCleverTapID" -> {
@@ -440,23 +451,23 @@ class DartToNativePlatformCommunicator(
             }
 
             "sessionGetTimeElapsed" -> {
-                sessionGetTimeElapsed(result)
+                sessionGetTimeElapsed(call, result)
             }
 
             "sessionGetTotalVisits" -> {
-                sessionGetTotalVisits(result)
+                sessionGetTotalVisits(call, result)
             }
 
             "sessionGetScreenCount" -> {
-                sessionGetScreenCount(result)
+                sessionGetScreenCount(call, result)
             }
 
             "sessionGetPreviousVisitTime" -> {
-                sessionGetPreviousVisitTime(result)
+                sessionGetPreviousVisitTime(call, result)
             }
 
             "sessionGetUTMDetails" -> {
-                sessionGetUTMDetails(result)
+                sessionGetUTMDetails(call, result)
             }
 
             "suspendInAppNotifications" -> {
@@ -472,7 +483,7 @@ class DartToNativePlatformCommunicator(
             }
 
             "dismissPipInApp" -> {
-                dismissPipInApp(result)
+                dismissPipInApp(call, result)
             }
 
             "initializeInbox" -> {
@@ -488,27 +499,27 @@ class DartToNativePlatformCommunicator(
             }
 
             "fetchInbox" -> {
-                fetchInbox(result)
+                fetchInbox(call, result)
             }
 
             "fetchInboxWithCallback" -> {
-                fetchInboxWithCallback(result)
+                fetchInboxWithCallback(call, result)
             }
 
             "getInboxMessageCount" -> {
-                getInboxMessageCount(result)
+                getInboxMessageCount(call, result)
             }
 
             "getInboxMessageUnreadCount" -> {
-                getInboxMessageUnreadCount(result)
+                getInboxMessageUnreadCount(call, result)
             }
 
             "getAllInboxMessages" -> {
-                getAllInboxMessages(result)
+                getAllInboxMessages(call, result)
             }
 
             "getUnreadInboxMessages" -> {
-                getUnreadInboxMessages(result)
+                getUnreadInboxMessages(call, result)
             }
 
             "getInboxMessageForId" -> {
@@ -592,7 +603,7 @@ class DartToNativePlatformCommunicator(
             }
 
             "fetchInApps" -> {
-                fetchInApps(result)
+                fetchInApps(call, result)
             }
 
             "clearInAppResources" -> {
@@ -600,7 +611,7 @@ class DartToNativePlatformCommunicator(
             }
 
             "getAllDisplayUnits" -> {
-                getAllDisplayUnits(result)
+                getAllDisplayUnits(call, result)
             }
 
             "getDisplayUnitForId" -> {
@@ -620,7 +631,7 @@ class DartToNativePlatformCommunicator(
             }
 
             "fetchNativeDisplayMeta" -> {
-                fetchNativeDisplayMeta(result)
+                fetchNativeDisplayMeta(call, result)
             }
 
             "pushDisplayUnitElementClickedEvent" -> {
@@ -636,7 +647,7 @@ class DartToNativePlatformCommunicator(
             }
 
             "fetch" -> {
-                fetch(result)
+                fetch(call, result)
             }
 
             "fetchWithMinimumFetchIntervalInSeconds" -> {
@@ -644,11 +655,11 @@ class DartToNativePlatformCommunicator(
             }
 
             "activate" -> {
-                activate(result)
+                activate(call, result)
             }
 
             "fetchAndActivate" -> {
-                fetchAndActivate(result)
+                fetchAndActivate(call, result)
             }
 
             "setMinimumFetchIntervalInSeconds" -> {
@@ -656,7 +667,7 @@ class DartToNativePlatformCommunicator(
             }
 
             "getLastFetchTimeStampInMillis" -> {
-                getLastFetchTimeStampInMillis(result)
+                getLastFetchTimeStampInMillis(call, result)
             }
 
             "getString" -> {
@@ -766,7 +777,7 @@ class DartToNativePlatformCommunicator(
             }
 
             "unmute" -> {
-                unmute(result)
+                unmute(call, result)
             }
 
             else -> {
@@ -802,21 +813,23 @@ class DartToNativePlatformCommunicator(
     }
 
     private fun setLocale(call: MethodCall, result: MethodChannel.Result) {
-        val locale = call.arguments<String>()
-        if (cleverTapAPI != null) {
-            cleverTapAPI.setLocale(locale)
+        val locale = scalarArgumentOf(call.arguments) as String?
+        val instance = instanceFor(call)
+        if (instance != null) {
+            instance.setLocale(locale)
             result.success(null)
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerVoidWithoutInstance(call, result)
         }
     }
 
-    private fun getVariants(result: MethodChannel.Result) {
-        if (cleverTapAPI != null) {
-            val variants = cleverTapAPI.variants()
+    private fun getVariants(call: MethodCall, result: MethodChannel.Result) {
+        val instance = instanceFor(call)
+        if (instance != null) {
+            val variants = instance.variants()
             result.success(variants)
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerValueWithoutInstance(call, result)
         }
     }
 
@@ -1030,15 +1043,16 @@ class DartToNativePlatformCommunicator(
         }
     }
 
-    private fun fetchInApps(result: MethodChannel.Result) {
-        if (cleverTapAPI != null) {
-            cleverTapAPI.fetchInApps(object : FetchInAppsCallback {
+    private fun fetchInApps(call: MethodCall, result: MethodChannel.Result) {
+        val instance = instanceFor(call)
+        if (instance != null) {
+            instance.fetchInApps(object : FetchInAppsCallback {
                 override fun onInAppsFetched(isSuccess: Boolean) {
                     result.success(isSuccess)
                 }
             })
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerValueWithoutInstance(call, result)
         }
     }
 
@@ -1256,12 +1270,13 @@ class DartToNativePlatformCommunicator(
         else -> EncryptionLevel.NONE
     }
 
-    private fun activate(result: MethodChannel.Result) {
-        if (cleverTapAPI != null) {
-            cleverTapAPI.productConfig().activate()
+    private fun activate(call: MethodCall, result: MethodChannel.Result) {
+        val instance = instanceFor(call)
+        if (instance != null) {
+            instance.productConfig().activate()
             result.success(null)
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerVoidWithoutInstance(call, result)
         }
     }
 
@@ -1427,11 +1442,12 @@ class DartToNativePlatformCommunicator(
         }
     }
 
-    private fun getPushNotificationPermissionStatus(result: MethodChannel.Result) {
-        if (cleverTapAPI != null) {
-            result.success(cleverTapAPI.isPushPermissionGranted)
+    private fun getPushNotificationPermissionStatus(call: MethodCall, result: MethodChannel.Result) {
+        val instance = instanceFor(call)
+        if (instance != null) {
+            result.success(instance.isPushPermissionGranted)
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerValueWithoutInstance(call, result)
         }
     }
 
@@ -1445,160 +1461,180 @@ class DartToNativePlatformCommunicator(
     }
 
     private fun deleteInboxMessageForId(call: MethodCall, result: MethodChannel.Result) {
-        if (cleverTapAPI != null) {
+        val instance = instanceFor(call)
+        if (instance != null) {
             val messageId = call.argument<String>("messageId")
             if (messageId.isNullOrEmpty()) {
                 result.error(TAG, ERROR_MSG_ID, null)
                 return
             }
-            cleverTapAPI.deleteInboxMessage(messageId)
+            instance.deleteInboxMessage(messageId)
             result.success(null)
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerVoidWithoutInstance(call, result)
         }
     }
 
     private fun deleteInboxMessagesForIds(call: MethodCall, result: MethodChannel.Result) {
-        if (cleverTapAPI != null) {
+        val instance = instanceFor(call)
+        if (instance != null) {
             val messageIds = call.argument<ArrayList<String>>("messageIds")!!
-            cleverTapAPI.deleteInboxMessagesForIDs(messageIds)
+            instance.deleteInboxMessagesForIDs(messageIds)
             result.success(null)
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerVoidWithoutInstance(call, result)
         }
     }
 
     private fun markReadInboxMessageForId(call: MethodCall, result: MethodChannel.Result) {
-        if (cleverTapAPI != null) {
+        val instance = instanceFor(call)
+        if (instance != null) {
             val messageId = call.argument<String>("messageId")
             if (messageId.isNullOrEmpty()) {
                 result.error(TAG, ERROR_MSG_ID, null)
                 return
             }
-            cleverTapAPI.markReadInboxMessage(messageId)
+            instance.markReadInboxMessage(messageId)
             result.success(null)
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerVoidWithoutInstance(call, result)
         }
     }
 
     private fun markReadInboxMessagesForIds(call: MethodCall, result: MethodChannel.Result) {
-        if (cleverTapAPI != null) {
+        val instance = instanceFor(call)
+        if (instance != null) {
             val messageIds = call.argument<ArrayList<String>>("messageIds")!!
-            cleverTapAPI.markReadInboxMessagesForIDs(messageIds)
+            instance.markReadInboxMessagesForIDs(messageIds)
             result.success(null)
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerVoidWithoutInstance(call, result)
         }
     }
 
     private fun enableDeviceNetworkInfoReporting(call: MethodCall, result: MethodChannel.Result) {
         val value = call.argument<Boolean>("value")!!
-        if (cleverTapAPI != null) {
-            cleverTapAPI.enableDeviceNetworkInfoReporting(value)
+        val instance = instanceFor(call)
+        if (instance != null) {
+            instance.enableDeviceNetworkInfoReporting(value)
             result.success(null)
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerVoidWithoutInstance(call, result)
         }
     }
 
-    private fun getUserEventLog(eventName: String?, result: MethodChannel.Result) {
-        if (cleverTapAPI != null && eventName != null) {
-            val eventLog: UserEventLog? = cleverTapAPI.getUserEventLog(eventName)
+    private fun getUserEventLog(call: MethodCall, eventName: String?, result: MethodChannel.Result) {
+        val instance = instanceFor(call)
+        if (instance == null) {
+            answerValueWithoutInstance(call, result)
+        } else if (eventName != null) {
+            val eventLog: UserEventLog? = instance.getUserEventLog(eventName)
             result.success(Utils.eventLogToMap(eventLog))
         } else {
             result.error(TAG, ERROR_MSG, null)
         }
     }
 
-    private fun getUserEventLogCount(eventName: String?, result: MethodChannel.Result) {
-        if (cleverTapAPI != null && eventName != null) {
-            result.success(cleverTapAPI.getUserEventLogCount(eventName))
+    private fun getUserEventLogCount(call: MethodCall, eventName: String?, result: MethodChannel.Result) {
+        val instance = instanceFor(call)
+        if (instance == null) {
+            answerValueWithoutInstance(call, result)
+        } else if (eventName != null) {
+            result.success(instance.getUserEventLogCount(eventName))
         } else {
             result.error(TAG, ERROR_MSG, null)
         }
     }
 
-    private fun getUserEventLogHistory(result: MethodChannel.Result) {
-        if (cleverTapAPI != null) {
-            result.success(Utils.historyEventLogToMap(cleverTapAPI.userEventLogHistory))
+    private fun getUserEventLogHistory(call: MethodCall, result: MethodChannel.Result) {
+        val instance = instanceFor(call)
+        if (instance != null) {
+            result.success(Utils.historyEventLogToMap(instance.userEventLogHistory))
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerValueWithoutInstance(call, result)
         }
     }
 
-    private fun getUserAppLaunchCount(result: MethodChannel.Result) {
-        if (cleverTapAPI != null) {
-            result.success(cleverTapAPI.userAppLaunchCount)
+    private fun getUserAppLaunchCount(call: MethodCall, result: MethodChannel.Result) {
+        val instance = instanceFor(call)
+        if (instance != null) {
+            result.success(instance.userAppLaunchCount)
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerValueWithoutInstance(call, result)
         }
     }
 
-    private fun getUserLastVisitTs(result: MethodChannel.Result) {
-        if (cleverTapAPI != null) {
-            result.success(cleverTapAPI.userLastVisitTs)
+    private fun getUserLastVisitTs(call: MethodCall, result: MethodChannel.Result) {
+        val instance = instanceFor(call)
+        if (instance != null) {
+            result.success(instance.userLastVisitTs)
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerValueWithoutInstance(call, result)
         }
     }
 
     @Deprecated(message = "Deprecated Since v3.1.0")
     private fun eventGetDetail(call: MethodCall, result: MethodChannel.Result) {
         val eventName = call.argument<String>("eventName")
-        if (cleverTapAPI != null) {
-            val eventDetail: EventDetail = cleverTapAPI.getDetails(eventName)
+        val instance = instanceFor(call)
+        if (instance != null) {
+            val eventDetail: EventDetail = instance.getDetails(eventName)
             result.success(Utils.eventDetailToMap(eventDetail))
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerValueWithoutInstance(call, result)
         }
     }
 
     @Deprecated(message = "Deprecated Since v3.1.0")
     private fun eventGetFirstTime(call: MethodCall, result: MethodChannel.Result) {
         val eventName = call.argument<String>("eventName")
-        if (cleverTapAPI != null) {
-            result.success(cleverTapAPI.getFirstTime(eventName))
+        val instance = instanceFor(call)
+        if (instance != null) {
+            result.success(instance.getFirstTime(eventName))
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerValueWithoutInstance(call, result)
         }
     }
 
     @Deprecated(message = "Deprecated Since v3.1.0")
     private fun eventGetLastTime(call: MethodCall, result: MethodChannel.Result) {
         val eventName = call.argument<String>("eventName")
-        if (cleverTapAPI != null) {
-            result.success(cleverTapAPI.getLastTime(eventName))
+        val instance = instanceFor(call)
+        if (instance != null) {
+            result.success(instance.getLastTime(eventName))
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerValueWithoutInstance(call, result)
         }
     }
 
     @Deprecated(message = "Deprecated Since v3.1.0")
     private fun eventGetOccurrences(call: MethodCall, result: MethodChannel.Result) {
         val eventName = call.argument<String>("eventName")
-        if (cleverTapAPI != null) {
-            result.success(cleverTapAPI.getCount(eventName))
+        val instance = instanceFor(call)
+        if (instance != null) {
+            result.success(instance.getCount(eventName))
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerValueWithoutInstance(call, result)
         }
     }
 
-    private fun fetch(result: MethodChannel.Result) {
-        if (cleverTapAPI != null) {
-            cleverTapAPI.productConfig().fetch()
+    private fun fetch(call: MethodCall, result: MethodChannel.Result) {
+        val instance = instanceFor(call)
+        if (instance != null) {
+            instance.productConfig().fetch()
             result.success(null)
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerVoidWithoutInstance(call, result)
         }
     }
 
-    private fun fetchAndActivate(result: MethodChannel.Result) {
-        if (cleverTapAPI != null) {
-            cleverTapAPI.productConfig().fetchAndActivate()
+    private fun fetchAndActivate(call: MethodCall, result: MethodChannel.Result) {
+        val instance = instanceFor(call)
+        if (instance != null) {
+            instance.productConfig().fetchAndActivate()
             result.success(null)
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerVoidWithoutInstance(call, result)
         }
     }
 
@@ -1607,44 +1643,49 @@ class DartToNativePlatformCommunicator(
         result: MethodChannel.Result
     ) {
         val interval = call.argument<Int>("interval")!!
-        if (cleverTapAPI != null) {
-            cleverTapAPI.productConfig().fetch(interval.toLong())
+        val instance = instanceFor(call)
+        if (instance != null) {
+            instance.productConfig().fetch(interval.toLong())
             result.success(null)
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerVoidWithoutInstance(call, result)
         }
     }
 
-    private fun getAllDisplayUnits(result: MethodChannel.Result) {
-        if (cleverTapAPI != null) {
-            result.success(Utils.displayUnitListToArrayList(cleverTapAPI.allDisplayUnits))
+    private fun getAllDisplayUnits(call: MethodCall, result: MethodChannel.Result) {
+        val instance = instanceFor(call)
+        if (instance != null) {
+            result.success(Utils.displayUnitListToArrayList(instance.allDisplayUnits))
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerValueWithoutInstance(call, result)
         }
     }
 
-    private fun getAllInboxMessages(result: MethodChannel.Result) {
-        if (cleverTapAPI != null) {
-            result.success(Utils.inboxMessageListToArrayList(cleverTapAPI.getAllInboxMessages()))
+    private fun getAllInboxMessages(call: MethodCall, result: MethodChannel.Result) {
+        val instance = instanceFor(call)
+        if (instance != null) {
+            result.success(Utils.inboxMessageListToArrayList(instance.getAllInboxMessages()))
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerValueWithoutInstance(call, result)
         }
     }
 
     private fun getBoolean(call: MethodCall, result: MethodChannel.Result) {
         val key = call.argument<String>("key")
-        if (cleverTapAPI != null) {
-            result.success(cleverTapAPI.productConfig().getBoolean(key))
+        val instance = instanceFor(call)
+        if (instance != null) {
+            result.success(instance.productConfig().getBoolean(key))
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerValueWithoutInstance(call, result)
         }
     }
 
     private fun getDisplayUnitForId(call: MethodCall, result: MethodChannel.Result) {
         val unitId = call.argument<String>("unitId")
-        if (cleverTapAPI != null) {
-            if (cleverTapAPI.getDisplayUnitForId(unitId) != null) {
-                val displayUnit: JSONObject? = cleverTapAPI.getDisplayUnitForId(unitId)?.jsonObject
+        val instance = instanceFor(call)
+        if (instance != null) {
+            if (instance.getDisplayUnitForId(unitId) != null) {
+                val displayUnit: JSONObject? = instance.getDisplayUnitForId(unitId)?.jsonObject
                 if (displayUnit != null) {
                     result.success(Utils.jsonToMap(displayUnit))
                 }
@@ -1652,101 +1693,111 @@ class DartToNativePlatformCommunicator(
                 result.error(TAG, "Display Unit is NULL", null)
             }
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerValueWithoutInstance(call, result)
         }
     }
 
     private fun getDouble(call: MethodCall, result: MethodChannel.Result) {
         val key = call.argument<String>("key")
-        if (cleverTapAPI != null) {
-            result.success(cleverTapAPI.productConfig().getDouble(key))
+        val instance = instanceFor(call)
+        if (instance != null) {
+            result.success(instance.productConfig().getDouble(key))
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerValueWithoutInstance(call, result)
         }
     }
 
     @Deprecated(message = "Deprecated Since v3.1.0")
-    private fun getEventHistory(result: MethodChannel.Result) {
-        if (cleverTapAPI != null) {
-            result.success(Utils.historyEventDetailToMap(cleverTapAPI.history))
+    private fun getEventHistory(call: MethodCall, result: MethodChannel.Result) {
+        val instance = instanceFor(call)
+        if (instance != null) {
+            result.success(Utils.historyEventDetailToMap(instance.history))
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerValueWithoutInstance(call, result)
         }
     }
 
     private fun getFeatureFlag(call: MethodCall, result: MethodChannel.Result) {
         val key = call.argument<String>("key")
         val defaultValue = call.argument<Boolean>("defaultValue")!!
-        if (cleverTapAPI != null) {
-            result.success(cleverTapAPI.featureFlag().get(key, defaultValue))
+        val instance = instanceFor(call)
+        if (instance != null) {
+            result.success(instance.featureFlag().get(key, defaultValue))
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerValueWithoutInstance(call, result)
         }
     }
 
-    private fun getInboxMessageCount(result: MethodChannel.Result) {
-        if (cleverTapAPI != null) {
-            result.success(cleverTapAPI.inboxMessageCount)
+    private fun getInboxMessageCount(call: MethodCall, result: MethodChannel.Result) {
+        val instance = instanceFor(call)
+        if (instance != null) {
+            result.success(instance.inboxMessageCount)
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerValueWithoutInstance(call, result)
         }
     }
 
     private fun getInboxMessageForId(call: MethodCall, result: MethodChannel.Result) {
-        if (cleverTapAPI != null) {
+        val instance = instanceFor(call)
+        if (instance != null) {
             val messageId = call.argument<String>("messageId")
             if (messageId.isNullOrEmpty()) {
                 result.error(TAG, ERROR_MSG_ID, null)
                 return
             }
-            val inboxMessage: CTInboxMessage? = cleverTapAPI.getInboxMessageForId(messageId)
+            val inboxMessage: CTInboxMessage? = instance.getInboxMessageForId(messageId)
             if (inboxMessage != null) {
                 result.success(Utils.jsonToMap(inboxMessage.data))
             }
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerValueWithoutInstance(call, result)
         }
     }
 
-    private fun getInboxMessageUnreadCount(result: MethodChannel.Result) {
-        if (cleverTapAPI != null) {
-            result.success(cleverTapAPI.inboxMessageUnreadCount)
+    private fun getInboxMessageUnreadCount(call: MethodCall, result: MethodChannel.Result) {
+        val instance = instanceFor(call)
+        if (instance != null) {
+            result.success(instance.inboxMessageUnreadCount)
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerValueWithoutInstance(call, result)
         }
     }
 
-    private fun getLastFetchTimeStampInMillis(result: MethodChannel.Result) {
-        if (cleverTapAPI != null) {
-            result.success(cleverTapAPI.productConfig().lastFetchTimeStampInMillis)
+    private fun getLastFetchTimeStampInMillis(call: MethodCall, result: MethodChannel.Result) {
+        val instance = instanceFor(call)
+        if (instance != null) {
+            result.success(instance.productConfig().lastFetchTimeStampInMillis)
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerValueWithoutInstance(call, result)
         }
     }
 
     private fun getLong(call: MethodCall, result: MethodChannel.Result) {
         val key = call.argument<String>("key")
-        if (cleverTapAPI != null) {
-            result.success(cleverTapAPI.productConfig().getLong(key))
+        val instance = instanceFor(call)
+        if (instance != null) {
+            result.success(instance.productConfig().getLong(key))
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerValueWithoutInstance(call, result)
         }
     }
 
     private fun getString(call: MethodCall, result: MethodChannel.Result) {
         val key = call.argument<String>("key")
-        if (cleverTapAPI != null) {
-            result.success(cleverTapAPI.productConfig().getString(key))
+        val instance = instanceFor(call)
+        if (instance != null) {
+            result.success(instance.productConfig().getString(key))
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerValueWithoutInstance(call, result)
         }
     }
 
-    private fun getUnreadInboxMessages(result: MethodChannel.Result) {
-        if (cleverTapAPI != null) {
-            result.success(Utils.inboxMessageListToArrayList(cleverTapAPI.getUnreadInboxMessages()))
+    private fun getUnreadInboxMessages(call: MethodCall, result: MethodChannel.Result) {
+        val instance = instanceFor(call)
+        if (instance != null) {
+            result.success(Utils.inboxMessageListToArrayList(instance.getUnreadInboxMessages()))
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerValueWithoutInstance(call, result)
         }
     }
 
@@ -1760,16 +1811,17 @@ class DartToNativePlatformCommunicator(
     }
 
     private fun discardInAppNotifications(call: MethodCall, result: MethodChannel.Result) {
-        if (cleverTapAPI != null) {
+        val instance = instanceFor(call)
+        if (instance != null) {
             val dismissInAppIfVisible = call.argument<Boolean>("dismissInAppIfVisible")
             if (dismissInAppIfVisible != null) {
-                cleverTapAPI.discardInAppNotifications(dismissInAppIfVisible)
+                instance.discardInAppNotifications(dismissInAppIfVisible)
             } else {
-                cleverTapAPI.discardInAppNotifications()
+                instance.discardInAppNotifications()
             }
             result.success(null)
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerVoidWithoutInstance(call, result)
         }
     }
 
@@ -1782,12 +1834,13 @@ class DartToNativePlatformCommunicator(
         }
     }
 
-    private fun dismissPipInApp(result: MethodChannel.Result) {
-        if (cleverTapAPI != null) {
-            cleverTapAPI.dismissPipInApp()
+    private fun dismissPipInApp(call: MethodCall, result: MethodChannel.Result) {
+        val instance = instanceFor(call)
+        if (instance != null) {
+            instance.dismissPipInApp()
             result.success(null)
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerVoidWithoutInstance(call, result)
         }
     }
 
@@ -1800,24 +1853,26 @@ class DartToNativePlatformCommunicator(
         }
     }
 
-    private fun fetchInbox(result: MethodChannel.Result) {
-        if (cleverTapAPI != null) {
-            cleverTapAPI.fetchInbox()
+    private fun fetchInbox(call: MethodCall, result: MethodChannel.Result) {
+        val instance = instanceFor(call)
+        if (instance != null) {
+            instance.fetchInbox()
             result.success(null)
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerVoidWithoutInstance(call, result)
         }
     }
 
-    private fun fetchInboxWithCallback(result: MethodChannel.Result) {
-        if (cleverTapAPI != null) {
-            cleverTapAPI.fetchInbox(object : FetchInboxCallback {
+    private fun fetchInboxWithCallback(call: MethodCall, result: MethodChannel.Result) {
+        val instance = instanceFor(call)
+        if (instance != null) {
+            instance.fetchInbox(object : FetchInboxCallback {
                 override fun onInboxFetched(isSuccess: Boolean) {
                     result.success(isSuccess)
                 }
             })
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerValueWithoutInstance(call, result)
         }
     }
 
@@ -1856,60 +1911,66 @@ class DartToNativePlatformCommunicator(
     private fun profileAddMultiValue(call: MethodCall, result: MethodChannel.Result) {
         val key = call.argument<String>("key")
         val value = call.argument<String>("value")
-        if (cleverTapAPI != null) {
-            cleverTapAPI.addMultiValueForKey(key, value)
+        val instance = instanceFor(call)
+        if (instance != null) {
+            instance.addMultiValueForKey(key, value)
             result.success(null)
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerVoidWithoutInstance(call, result)
         }
     }
 
     private fun profileIncrementValue(call: MethodCall, result: MethodChannel.Result) {
         val key = call.argument<String>("key")
         val value = call.argument<Number>("value")
-        if (cleverTapAPI != null) {
-            cleverTapAPI.incrementValue(key, value)
+        val instance = instanceFor(call)
+        if (instance != null) {
+            instance.incrementValue(key, value)
             result.success(null)
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerVoidWithoutInstance(call, result)
         }
     }
 
     private fun profileDecrementValue(call: MethodCall, result: MethodChannel.Result) {
         val key = call.argument<String>("key")
         val value = call.argument<Number>("value")
-        if (cleverTapAPI != null) {
-            cleverTapAPI.decrementValue(key, value)
+        val instance = instanceFor(call)
+        if (instance != null) {
+            instance.decrementValue(key, value)
             result.success(null)
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerVoidWithoutInstance(call, result)
         }
     }
 
     private fun profileAddMultiValues(call: MethodCall, result: MethodChannel.Result) {
         val key = call.argument<String>("key")
         val values = call.argument<ArrayList<String>>("values")!!
-        if (cleverTapAPI != null) {
-            cleverTapAPI.addMultiValuesForKey(key, values)
+        val instance = instanceFor(call)
+        if (instance != null) {
+            instance.addMultiValuesForKey(key, values)
             result.success(null)
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerVoidWithoutInstance(call, result)
         }
     }
 
-    private fun profileGetCleverTapAttributionIdentifier(result: MethodChannel.Result) {
-        if (cleverTapAPI != null) {
-            result.success(cleverTapAPI.cleverTapAttributionIdentifier)
+    private fun profileGetCleverTapAttributionIdentifier(call: MethodCall, result: MethodChannel.Result) {
+        val instance = instanceFor(call)
+        if (instance != null) {
+            result.success(instance.cleverTapAttributionIdentifier)
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerValueWithoutInstance(call, result)
         }
     }
 
-    private fun profileGetCleverTapID(result: MethodChannel.Result) {
-        if (cleverTapAPI != null) {
-            result.success(cleverTapAPI.cleverTapID)
+    private fun profileGetCleverTapID(call: MethodCall, result: MethodChannel.Result) {
+        val instance = instanceFor(call)
+        if (instance != null) {
+            result.success(instance.cleverTapID)
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerValueWithoutInstance(call, result)
         }
     }
 
@@ -1926,42 +1987,46 @@ class DartToNativePlatformCommunicator(
 
     private fun profileGetProperty(call: MethodCall, result: MethodChannel.Result) {
         val propertyName = call.argument<String>("propertyName")
-        if (cleverTapAPI != null) {
-            result.success(cleverTapAPI.getProperty(propertyName))
+        val instance = instanceFor(call)
+        if (instance != null) {
+            result.success(instance.getProperty(propertyName))
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerValueWithoutInstance(call, result)
         }
     }
 
     private fun profileRemoveMultiValue(call: MethodCall, result: MethodChannel.Result) {
         val key = call.argument<String>("key")
         val value = call.argument<String>("value")
-        if (cleverTapAPI != null) {
-            cleverTapAPI.removeMultiValueForKey(key, value)
+        val instance = instanceFor(call)
+        if (instance != null) {
+            instance.removeMultiValueForKey(key, value)
             result.success(null)
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerVoidWithoutInstance(call, result)
         }
     }
 
     private fun profileRemoveMultiValues(call: MethodCall, result: MethodChannel.Result) {
         val key = call.argument<String>("key")
         val values = call.argument<ArrayList<String>>("values")!!
-        if (cleverTapAPI != null) {
-            cleverTapAPI.removeMultiValuesForKey(key, values)
+        val instance = instanceFor(call)
+        if (instance != null) {
+            instance.removeMultiValuesForKey(key, values)
             result.success(null)
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerVoidWithoutInstance(call, result)
         }
     }
 
     private fun profileRemoveValueForKey(call: MethodCall, result: MethodChannel.Result) {
         val key = call.argument<String>("key")
-        if (cleverTapAPI != null) {
-            cleverTapAPI.removeValueForKey(key)
+        val instance = instanceFor(call)
+        if (instance != null) {
+            instance.removeValueForKey(key)
             result.success(null)
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerVoidWithoutInstance(call, result)
         }
     }
 
@@ -1979,62 +2044,68 @@ class DartToNativePlatformCommunicator(
     private fun profileSetMultiValues(call: MethodCall, result: MethodChannel.Result) {
         val key = call.argument<String>("key")
         val values = call.argument<ArrayList<String>>("values")!!
-        if (cleverTapAPI != null) {
-            cleverTapAPI.setMultiValuesForKey(key, values)
+        val instance = instanceFor(call)
+        if (instance != null) {
+            instance.setMultiValuesForKey(key, values)
             result.success(null)
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerVoidWithoutInstance(call, result)
         }
     }
 
     private fun pushDisplayUnitClickedEvent(call: MethodCall, result: MethodChannel.Result) {
         val unitId = call.argument<String>("unitId")
-        if (cleverTapAPI != null) {
-            cleverTapAPI.pushDisplayUnitClickedEventForID(unitId)
+        val instance = instanceFor(call)
+        if (instance != null) {
+            instance.pushDisplayUnitClickedEventForID(unitId)
             result.success(null)
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerVoidWithoutInstance(call, result)
         }
     }
 
     private fun pushDisplayUnitElementClickedEvent(call: MethodCall, result: MethodChannel.Result) {
         val unitId = call.argument<String>("unitId")
         val additionalProperties = call.argument<HashMap<String, Any>>("additionalProperties")
-        if (cleverTapAPI != null) {
-            cleverTapAPI.pushDisplayUnitElementClickedEventForID(unitId, additionalProperties)
+        val instance = instanceFor(call)
+        if (instance != null) {
+            instance.pushDisplayUnitElementClickedEventForID(unitId, additionalProperties)
             result.success(null)
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerVoidWithoutInstance(call, result)
         }
     }
 
     private fun pushDisplayUnitElementViewedEvent(call: MethodCall, result: MethodChannel.Result) {
         val unitId = call.argument<String>("unitId")
         val additionalProperties = call.argument<HashMap<String, Any>>("additionalProperties")
-        if (cleverTapAPI != null) {
-            cleverTapAPI.pushDisplayUnitElementViewedEventForID(unitId, additionalProperties)
+        val instance = instanceFor(call)
+        if (instance != null) {
+            instance.pushDisplayUnitElementViewedEventForID(unitId, additionalProperties)
             result.success(null)
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerVoidWithoutInstance(call, result)
         }
     }
 
-    private fun fetchNativeDisplayMeta(result: MethodChannel.Result) {
-        if (cleverTapAPI != null) {
-            cleverTapAPI.fetchNativeDisplayMeta()
+    private fun fetchNativeDisplayMeta(call: MethodCall, result: MethodChannel.Result) {
+        val instance = instanceFor(call)
+        if (instance != null) {
+            instance.fetchNativeDisplayMeta()
             result.success(null)
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerVoidWithoutInstance(call, result)
         }
     }
 
     private fun pushDisplayUnitViewedEvent(call: MethodCall, result: MethodChannel.Result) {
         val unitId = call.argument<String>("unitId")
-        if (cleverTapAPI != null) {
-            cleverTapAPI.pushDisplayUnitViewedEventForID(unitId)
+        val instance = instanceFor(call)
+        if (instance != null) {
+            instance.pushDisplayUnitViewedEventForID(unitId)
             result.success(null)
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerVoidWithoutInstance(call, result)
         }
     }
 
@@ -2042,16 +2113,17 @@ class DartToNativePlatformCommunicator(
         call: MethodCall,
         result: MethodChannel.Result
     ) {
-        if (cleverTapAPI != null) {
+        val instance = instanceFor(call)
+        if (instance != null) {
             val messageId = call.argument<String>("messageId")
             if (messageId.isNullOrEmpty()) {
                 result.error(TAG, ERROR_MSG_ID, null)
                 return
             }
-            cleverTapAPI.pushInboxNotificationClickedEvent(messageId)
+            instance.pushInboxNotificationClickedEvent(messageId)
             result.success(null)
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerVoidWithoutInstance(call, result)
         }
     }
 
@@ -2059,16 +2131,17 @@ class DartToNativePlatformCommunicator(
         call: MethodCall,
         result: MethodChannel.Result
     ) {
-        if (cleverTapAPI != null) {
+        val instance = instanceFor(call)
+        if (instance != null) {
             val messageId = call.argument<String>("messageId")
             if (messageId.isNullOrEmpty()) {
                 result.error(TAG, ERROR_MSG_ID, null)
                 return
             }
-            cleverTapAPI.pushInboxNotificationViewedEvent(messageId)
+            instance.pushInboxNotificationViewedEvent(messageId)
             result.success(null)
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerVoidWithoutInstance(call, result)
         }
     }
 
@@ -2076,44 +2149,48 @@ class DartToNativePlatformCommunicator(
         val source = call.argument<String>("source")
         val medium = call.argument<String>("medium")
         val campaign = call.argument<String>("campaign")
-        if (cleverTapAPI != null) {
-            cleverTapAPI.pushInstallReferrer(source, medium, campaign)
+        val instance = instanceFor(call)
+        if (instance != null) {
+            instance.pushInstallReferrer(source, medium, campaign)
             result.success(null)
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerVoidWithoutInstance(call, result)
         }
     }
 
     private fun pushNotificationClickedEvent(call: MethodCall, result: MethodChannel.Result) {
         val extrasMap = call.argument<java.util.HashMap<String, Any>>("notificationData")!!
         val extras = Utils.mapToBundle(extrasMap)
-        if (cleverTapAPI != null) {
-            this.cleverTapAPI.pushNotificationClickedEvent(extras)
+        val instance = instanceFor(call)
+        if (instance != null) {
+            instance.pushNotificationClickedEvent(extras)
             result.success(null)
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerVoidWithoutInstance(call, result)
         }
     }
 
     private fun pushNotificationViewedEvent(call: MethodCall, result: MethodChannel.Result) {
         val extrasMap = call.argument<java.util.HashMap<String, Any>>("notificationData")!!
         val extras = Utils.mapToBundle(extrasMap)
-        if (cleverTapAPI != null) {
-            this.cleverTapAPI.pushNotificationViewedEvent(extras)
+        val instance = instanceFor(call)
+        if (instance != null) {
+            instance.pushNotificationViewedEvent(extras)
             result.success(null)
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerVoidWithoutInstance(call, result)
         }
     }
 
     private fun recordChargedEvent(call: MethodCall, result: MethodChannel.Result) {
         val chargeDetails = call.argument<java.util.HashMap<String, Any>>("chargeDetails")!!
         val items = call.argument<ArrayList<java.util.HashMap<String, Any>>>("items")!!
-        if (cleverTapAPI != null) {
-            cleverTapAPI.pushChargedEvent(chargeDetails, items)
+        val instance = instanceFor(call)
+        if (instance != null) {
+            instance.pushChargedEvent(chargeDetails, items)
             result.success(null)
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerVoidWithoutInstance(call, result)
         }
     }
 
@@ -2164,113 +2241,124 @@ class DartToNativePlatformCommunicator(
 
     private fun recordScreenView(call: MethodCall, result: MethodChannel.Result) {
         val name = call.argument<String>("screenName")
-        if (cleverTapAPI != null) {
-            cleverTapAPI.recordScreen(name)
+        val instance = instanceFor(call)
+        if (instance != null) {
+            instance.recordScreen(name)
             result.success(null)
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerVoidWithoutInstance(call, result)
         }
     }
 
     @Deprecated(message = "Deprecated Since v3.1.0")
-    private fun sessionGetPreviousVisitTime(result: MethodChannel.Result) {
-        if (cleverTapAPI != null) {
-            result.success(cleverTapAPI.previousVisitTime)
+    private fun sessionGetPreviousVisitTime(call: MethodCall, result: MethodChannel.Result) {
+        val instance = instanceFor(call)
+        if (instance != null) {
+            result.success(instance.previousVisitTime)
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerValueWithoutInstance(call, result)
         }
     }
 
-    private fun sessionGetScreenCount(result: MethodChannel.Result) {
-        if (cleverTapAPI != null) {
-            result.success(cleverTapAPI.screenCount)
+    private fun sessionGetScreenCount(call: MethodCall, result: MethodChannel.Result) {
+        val instance = instanceFor(call)
+        if (instance != null) {
+            result.success(instance.screenCount)
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerValueWithoutInstance(call, result)
         }
     }
 
-    private fun sessionGetTimeElapsed(result: MethodChannel.Result) {
-        if (cleverTapAPI != null) {
-            result.success(cleverTapAPI.getTimeElapsed())
+    private fun sessionGetTimeElapsed(call: MethodCall, result: MethodChannel.Result) {
+        val instance = instanceFor(call)
+        if (instance != null) {
+            result.success(instance.getTimeElapsed())
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerValueWithoutInstance(call, result)
         }
     }
 
     @Deprecated(message = "Deprecated Since v3.1.0")
-    private fun sessionGetTotalVisits(result: MethodChannel.Result) {
-        if (cleverTapAPI != null) {
-            result.success(cleverTapAPI.getTotalVisits())
+    private fun sessionGetTotalVisits(call: MethodCall, result: MethodChannel.Result) {
+        val instance = instanceFor(call)
+        if (instance != null) {
+            result.success(instance.getTotalVisits())
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerValueWithoutInstance(call, result)
         }
     }
 
-    private fun sessionGetUTMDetails(result: MethodChannel.Result) {
-        if (cleverTapAPI != null) {
-            val detail: UTMDetail = cleverTapAPI.getUTMDetails()
+    private fun sessionGetUTMDetails(call: MethodCall, result: MethodChannel.Result) {
+        val instance = instanceFor(call)
+        if (instance != null) {
+            val detail: UTMDetail = instance.getUTMDetails()
             result.success(Utils.utmDetailsToMap(detail))
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerValueWithoutInstance(call, result)
         }
     }
 
     private fun setDefaultsMap(call: MethodCall, result: MethodChannel.Result) {
         val defaults = call.argument<java.util.HashMap<String, Any>>("defaults")!!
-        if (cleverTapAPI != null) {
-            cleverTapAPI.productConfig().setDefaults(defaults)
+        val instance = instanceFor(call)
+        if (instance != null) {
+            instance.productConfig().setDefaults(defaults)
             result.success(null)
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerVoidWithoutInstance(call, result)
         }
     }
 
     private fun setLocation(call: MethodCall, result: MethodChannel.Result) {
         val lat = call.argument<Double>("latitude")!!
         val lon = call.argument<Double>("longitude")!!
-        if (cleverTapAPI != null) {
+        val instance = instanceFor(call)
+        if (instance != null) {
             val location = Location("CleverTapFlutter")
             location.latitude = lat
             location.longitude = lon
-            cleverTapAPI.location = location
+            instance.location = location
             result.success(null)
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerVoidWithoutInstance(call, result)
         }
     }
 
     private fun setMinimumFetchIntervalInSeconds(call: MethodCall, result: MethodChannel.Result) {
         val interval = call.argument<Int>("interval")!!
-        if (cleverTapAPI != null) {
-            cleverTapAPI.productConfig().setMinimumFetchIntervalInSeconds(interval.toLong())
+        val instance = instanceFor(call)
+        if (instance != null) {
+            instance.productConfig().setMinimumFetchIntervalInSeconds(interval.toLong())
             result.success(null)
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerVoidWithoutInstance(call, result)
         }
     }
 
     private fun setOffline(call: MethodCall, result: MethodChannel.Result) {
         val value = call.argument<Boolean>("value")!!
-        if (cleverTapAPI != null) {
-            cleverTapAPI.setOffline(value)
+        val instance = instanceFor(call)
+        if (instance != null) {
+            instance.setOffline(value)
             result.success(null)
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerVoidWithoutInstance(call, result)
         }
     }
 
     private fun setOptOut(call: MethodCall, result: MethodChannel.Result) {
         val value = call.argument<Boolean>("value")!!
         val allowSystemEvents = call.argument<Boolean>("allowSystemEvents")
-        if (cleverTapAPI != null) {
+        val instance = instanceFor(call)
+        if (instance != null) {
             if (allowSystemEvents != null) {
-                cleverTapAPI.setOptOut(value, allowSystemEvents)
+                instance.setOptOut(value, allowSystemEvents)
             } else {
-                cleverTapAPI.setOptOut(value)
+                instance.setOptOut(value)
             }
             result.success(null)
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerVoidWithoutInstance(call, result)
         }
     }
 
@@ -2289,11 +2377,12 @@ class DartToNativePlatformCommunicator(
 
     private fun setFCMPushToken(call: MethodCall, result: MethodChannel.Result) {
         val token = call.argument<String>("token")
-        if (cleverTapAPI != null) {
-            cleverTapAPI.pushFcmRegistrationId(token, true)
+        val instance = instanceFor(call)
+        if (instance != null) {
+            instance.pushFcmRegistrationId(token, true)
             result.success(null)
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerVoidWithoutInstance(call, result)
         }
     }
 
@@ -2304,11 +2393,12 @@ class DartToNativePlatformCommunicator(
             result.error(TAG, ERROR_MSG_PUSH_TYPE, null)
             return
         }
-        if (cleverTapAPI != null) {
-            cleverTapAPI.pushRegistrationToken(token, pushType, true)
+        val instance = instanceFor(call)
+        if (instance != null) {
+            instance.pushRegistrationToken(token, pushType, true)
             result.success(null)
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerVoidWithoutInstance(call, result)
         }
     }
 
@@ -2466,12 +2556,13 @@ class DartToNativePlatformCommunicator(
         ) { templateContext: CustomTemplateContext -> templateContext.toString() }
     }
 
-    private fun unmute(result: MethodChannel.Result) {
-        if (cleverTapAPI != null) {
-            cleverTapAPI.unmute()
+    private fun unmute(call: MethodCall, result: MethodChannel.Result) {
+        val instance = instanceFor(call)
+        if (instance != null) {
+            instance.unmute()
             result.success(null)
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerVoidWithoutInstance(call, result)
         }
     }
 

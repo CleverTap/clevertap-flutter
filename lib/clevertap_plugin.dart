@@ -1792,6 +1792,17 @@ class CleverTapInstance {
         .invokeMethod<T>(method, {...arguments, 'accountId': accountId});
   }
 
+  /// [_invoke] for a method whose static version returns a non-nullable map: the same cast as the
+  /// static method. On Web, after [_invoke]'s warning, an empty map, since there is no value.
+  Future<Map<String, dynamic>> _invokeMap(String method, Map<String, dynamic> arguments) async {
+    if (kIsWeb) {
+      await _invoke(method, arguments);
+      return {};
+    }
+    Map<dynamic, dynamic> response = await _invoke(method, arguments);
+    return response.cast<String, dynamic>();
+  }
+
   /// Records [eventName] with [properties] for this account.
   Future<void> recordEvent(String eventName, Map<String, dynamic> properties) =>
       _invoke<void>('recordEvent', {'eventName': eventName, 'eventData': properties});
@@ -1806,6 +1817,570 @@ class CleverTapInstance {
 
   /// This account's CleverTap ID.
   Future<String?> getCleverTapID() => _invoke<String>('getCleverTapID', {});
+
+  /// Set the FCM Token for Push Notifications
+  Future<void> setPushToken(String value) async {
+    return await _invoke('setPushToken', {'token': value});
+  }
+
+  /// Set the Token for Push Notifications for push providers other than FCM
+  Future<void> pushRegistrationToken(
+      String value, Map<String, String> pushType) async {
+    return await _invoke(
+        'pushRegistrationToken', {'token': value, 'pushType': pushType});
+  }
+
+  /// Use this method to manage the user's consent for event and profile tracking.
+  /// You must call this method separately for each active user profile.
+  ///
+  /// This method supports the following consent management scenarios:
+  ///
+  /// 1. **Complete Opt-Out (value = true, allowSystemEvents = false):**
+  ///    No events will be saved remotely or locally for the current user.
+  /// 2. **Full Opt-In (value = false):**
+  ///    All events (custom and system) will be tracked and saved. This is the default behavior.
+  /// 3. **Partial Opt-In (value = true, allowSystemEvents = true):**
+  ///    Only system-level CleverTap events will be tracked. Custom events will be filtered out.
+  ///
+  /// [value] Set to `true` to opt the user out of custom event tracking.
+  /// Set to `false` to opt the user into custom event tracking.
+  ///
+  /// [allowSystemEvents] Set to `true` to allow system-level CleverTap events.
+  /// Set to `false` to disallow system-level events. This value is only respected when `value` is `true`.
+  Future<void> setOptOut(bool value, [bool? allowSystemEvents]) async {
+    final Map<String, dynamic> args = {'value': value};
+
+    if (allowSystemEvents != null) {
+      args['allowSystemEvents'] = allowSystemEvents;
+    }
+
+    return await _invoke('setOptOut', args);
+  }
+
+  /// Sets the CleverTap SDK to offline
+  Future<void> setOffline(bool value) async {
+    return await _invoke('setOffline', {'value': value});
+  }
+
+  /// Enables Device & Networking Information Reporting to CleverTap
+  Future<void> enableDeviceNetworkInfoReporting(bool value) async {
+    return await _invoke('enableDeviceNetworkInfoReporting', {'value': value});
+  }
+
+  ///Record Notification Clicked event
+  Future<void> pushNotificationClickedEvent(
+      Map<String, dynamic> extras) async {
+    return await _invoke(
+        'pushNotificationClickedEvent', {'notificationData': extras});
+  }
+
+  ///Record Notification Viewed event
+  Future<void> pushNotificationViewedEvent(
+      Map<String, dynamic> extras) async {
+    return await _invoke(
+        'pushNotificationViewedEvent', {'notificationData': extras});
+  }
+
+  /// Record a Screen View event
+  Future<void> recordScreenView(String screenName) async {
+    return await _invoke('recordScreenView', {'screenName': screenName});
+  }
+
+  ///**
+  /// * Push Charged event, which describes a purchase made.
+  /// *
+  /// * @param chargeDetails A Map, with keys as strings, and values as String,
+  /// *                      Integer, Long,  Boolean}, Float, Double,
+  /// *                      java.util.Date, or Character
+  /// * @param items         A List which contains up to 15 Map objects,
+  /// *                      where each Map object describes a particular item purchased
+  ///
+  Future<void> recordChargedEvent(Map<String, dynamic> chargeDetails,
+      List<Map<String, dynamic>> items) async {
+    return await _invoke(
+        'recordChargedEvent', {'chargeDetails': chargeDetails, 'items': items});
+  }
+
+  /// Returns the timestamp of the first time the given event was raised
+  @Deprecated(
+      "This method is deprecated since 3.1.0. User getUserEventLog() instead")
+  Future<dynamic> eventGetFirstTime(String eventName) async {
+    return await _invoke('eventGetFirstTime', {'eventName': eventName});
+  }
+
+  /// Returns the timestamp of the last time the given event was raised
+  @Deprecated(
+      "This method is deprecated since 3.1.0. User getUserEventLog() instead")
+  Future<dynamic> eventGetLastTime(String eventName) async {
+    return await _invoke('eventGetLastTime', {'eventName': eventName});
+  }
+
+  /// Returns the total count of the specified event
+  @Deprecated(
+      "This method is deprecated since 3.1.0. User getUserEventLogCount() instead")
+  Future<int?> eventGetOccurrences(String eventName) async {
+    return await _invoke('eventGetOccurrences', {'eventName': eventName});
+  }
+
+  /// Returns a Map object for the particular event passed. EventDetail consists of event name, count, first time
+  //  and last time timestamp of the event.
+  @Deprecated(
+      "This method is deprecated since 3.1.0. User getUserEventLog() instead")
+  Future<Map<String, dynamic>> eventGetDetail(String eventName) async {
+    return _invokeMap('eventGetDetail', {'eventName': eventName});
+  }
+
+  /// Returns a Map of event names and corresponding event details of all the events raised
+  @Deprecated(
+      "This method is deprecated since 3.1.0. User getUserEventLogHistory() instead")
+  Future<Map<String, dynamic>> getEventHistory(String eventName) async {
+    return _invokeMap('getEventHistory', {'eventName': eventName});
+  }
+
+  /// Returns a Map object for the particular event passed. UserEventLog consists of eventName, normalizedEventName, count, deviceID, firstTime and lastTime timestamp of the event.
+  Future<Map<String, dynamic>> getUserEventLog(String eventName) async {
+    return _invokeMap('getUserEventLog', {'eventName': eventName});
+  }
+
+  /// Returns the total count of the specified event
+  Future<int?> getUserEventLogCount(String eventName) async {
+    return await _invoke('getUserEventLogCount', {'eventName': eventName});
+  }
+
+  /// Returns a Map of event names and corresponding UserEventLog of all the events raised
+  Future<Map<String, dynamic>> getUserEventLogHistory() async {
+    return _invokeMap('getUserEventLogHistory', {});
+  }
+
+  /// Returns the total number of times user has launched the app
+  Future<int?> getUserAppLaunchCount() async {
+    return await _invoke('getUserAppLaunchCount', {});
+  }
+
+  /// Returns the timestamp of user's last app visit
+  Future<num?> getUserLastVisitTs() async {
+    return await _invoke('getUserLastVisitTs', {});
+  }
+
+  /// Set the user profile location in CleverTap
+  Future<void> setLocation(double latitude, double longitude) async {
+    return await _invoke(
+        'setLocation', {'latitude': latitude, 'longitude': longitude});
+  }
+
+  /// Returns the user profile property value for the specified key.
+  Future<Object?> profileGetProperty(String propertyName) async {
+    return await _invoke('profileGetProperty', {'propertyName': propertyName});
+  }
+
+  /// Returns a unique CleverTap identifier suitable for use with install attribution providers.
+  @Deprecated(
+      "This method is deprecated since v1.3.0. Use getCleverTapID() instead")
+  Future<String?> profileGetCleverTapAttributionIdentifier() async {
+    return await _invoke('profileGetCleverTapAttributionIdentifier', {});
+  }
+
+  /// Returns a unique identifier by which CleverTap identifies this user.
+  @Deprecated(
+      "This method is deprecated since v1.3.0. Use getCleverTapID() instead")
+  Future<String?> profileGetCleverTapID() async {
+    return await _invoke('profileGetCleverTapID', {});
+  }
+
+  ///Remove the user profile property value specified by key from the user profile
+  Future<void> profileRemoveValueForKey(String key) async {
+    return await _invoke('profileRemoveValueForKey', {'key': key});
+  }
+
+  /// Set a collection of unique values as a multi-value user profile property, any existing value will be overwritten.
+  /// Max 100 values, on reaching 100 cap, oldest value(s) will be removed.
+  /// Values must be Strings and are limited to 512 characters.
+  Future<void> profileSetMultiValues(String key, List values) async {
+    return await _invoke('profileSetMultiValues', {'key': key, 'values': values});
+  }
+
+  /// Add a unique value to a multi-value user profile property
+  /// If the property does not exist it will be created
+  /// <p/>
+  /// Max 100 values, on reaching 100 cap, oldest value(s) will be removed.
+  /// Values must be Strings and are limited to 512 characters.
+  /// <p/>
+  /// If the key currently contains a scalar value, the key will be promoted to a multi-value property
+  /// with the current value cast to a string and the new value(s) added
+  Future<void> profileAddMultiValue(String key, String value) async {
+    return await _invoke('profileAddMultiValue', {'key': key, 'value': value});
+  }
+
+  ///Increment given num value. The value should be in positive range
+  Future<void> profileIncrementValue(String key, num value) async {
+    return await _invoke('profileIncrementValue', {'key': key, 'value': value});
+  }
+
+  ///Decrement given num value. The value should be in positive range
+  Future<void> profileDecrementValue(String key, num value) async {
+    return await _invoke('profileDecrementValue', {'key': key, 'value': value});
+  }
+
+  /// Add a collection of unique values to a multi-value user profile property
+  /// If the property does not exist it will be created
+  /// <p/>
+  /// Max 100 values, on reaching 100 cap, oldest value(s) will be removed.
+  /// Values must be Strings and are limited to 512 characters.
+  /// <p/>
+  /// If the key currently contains a scalar value, the key will be promoted to a multi-value property
+  /// with the current value cast to a string and the new value(s) added
+  Future<void> profileAddMultiValues(String key, List values) async {
+    return await _invoke('profileAddMultiValues', {'key': key, 'values': values});
+  }
+
+  /// Remove a unique value from a multi-value user profile property
+  /// <p/>
+  /// If the key currently contains a scalar value, prior to performing the remove operation
+  /// the key will be promoted to a multi-value property with the current value cast to a string.
+  /// If the multi-value property is empty after the remove operation, the key will be removed.
+  Future<void> profileRemoveMultiValue(String key, String value) async {
+    return await _invoke('profileRemoveMultiValue', {'key': key, 'value': value});
+  }
+
+  /// Remove a collection of unique values from a multi-value user profile property
+  /// <p/>
+  /// If the key currently contains a scalar value, prior to performing the remove operation
+  /// the key will be promoted to a multi-value property with the current value cast to a string.
+  /// If the multi-value property is empty after the remove operation, the key will be removed.
+  Future<void> profileRemoveMultiValues(String key, List values) async {
+    return await _invoke(
+        'profileRemoveMultiValues', {'key': key, 'values': values});
+  }
+
+  /// This method is used to push install referrer via UTM source, medium & campaign parameters
+  Future<void> pushInstallReferrer(
+      String source, String medium, String campaign) async {
+    return await _invoke('pushInstallReferrer',
+        {'source': source, 'medium': medium, 'campaign': campaign});
+  }
+
+  /// Returns the time elapsed by the user on the app
+  Future<dynamic> sessionGetTimeElapsed() async {
+    return await _invoke('sessionGetTimeElapsed', {});
+  }
+
+  /// Returns the total number of times the app has been launched
+  @Deprecated(
+      "This method is deprecated since 3.1.0. User getUserAppLaunchCount() instead")
+  Future<int?> sessionGetTotalVisits() async {
+    return await _invoke('sessionGetTotalVisits', {});
+  }
+
+  /// Returns the number of screens which have been displayed by the app
+  Future<int?> sessionGetScreenCount() async {
+    return await _invoke('sessionGetScreenCount', {});
+  }
+
+  /// Returns the timestamp of the previous visit
+  @Deprecated(
+      "This method is deprecated since 3.1.0. User getUserLastVisitTs() instead")
+  Future<dynamic> sessionGetPreviousVisitTime() async {
+    return await _invoke('sessionGetPreviousVisitTime', {});
+  }
+
+  /// Returns a Map of UTMDetail object which consists of UTM parameters like source, medium & campaign
+  Future<Map<String, dynamic>> sessionGetUTMDetails() async {
+    return _invokeMap('sessionGetUTMDetails', {});
+  }
+
+  /// Suspends the display of InApp Notifications and discards any new InApp Notifications to be shown
+  /// after this method is called.
+  /// The InApp Notifications will be displayed only once resumeInAppNotifications() is called.
+  ///
+  /// Parameters:
+  /// - [dismissInAppIfVisible]: If true, also dismisses any currently visible InApp notification.
+  ///   If false or not provided, only queued/future InApps are discarded.
+  Future<void> discardInAppNotifications(
+      {bool? dismissInAppIfVisible}) async {
+    final Map<String, dynamic> args = {};
+    if (dismissInAppIfVisible != null) {
+      args['dismissInAppIfVisible'] = dismissInAppIfVisible;
+    }
+    return await _invoke('discardInAppNotifications', args);
+  }
+
+  /// Dismisses the currently visible Picture-in-Picture (PIP) InApp Notification, if any.
+  ///
+  /// This is a no-op when no PIP InApp is visible. Other InApp Notification types are
+  /// never affected.
+  ///
+  /// Note: dismissing releases the InApp display slot, so the next queued InApp (if any)
+  /// may show immediately. To keep a screen free of all InApps, pair this with
+  /// suspendInAppNotifications() on screen entry and resumeInAppNotifications() on exit.
+  Future<void> dismissPipInApp() async {
+    return await _invoke('dismissPipInApp', {});
+  }
+
+  /// Resumes event tracking, overriding any active mute period.
+  Future<void> unmute() async {
+    return await _invoke('unmute', {});
+  }
+
+  /// Triggers an on-demand refresh of the App Inbox messages.
+  ///
+  /// This is a fire-and-forget call. To be notified of the refresh result,
+  /// use [fetchInboxWithCallback] instead.
+  ///
+  /// Note: the native SDK throttles this to one refresh every 5 minutes.
+  /// Calls made within that window are skipped.
+  Future<void> fetchInbox() async {
+    return await _invoke('fetchInbox', {});
+  }
+
+  /// Triggers an on-demand refresh of the App Inbox messages and returns the result.
+  ///
+  /// Note: the native SDK throttles this to one refresh every 5 minutes.
+  /// A call made within that window is skipped and completes with `false`.
+  ///
+  /// Returns: `true` if the inbox was refreshed successfully, `false` otherwise.
+  Future<bool?> fetchInboxWithCallback() async {
+    return await _invoke('fetchInboxWithCallback', {});
+  }
+
+  /// Returns the count of all inbox messages for the user
+  Future<int?> getInboxMessageCount() async {
+    return await _invoke('getInboxMessageCount', {});
+  }
+
+  /// Returns the count of total number of unread inbox messages for the user
+  Future<int?> getInboxMessageUnreadCount() async {
+    return await _invoke('getInboxMessageUnreadCount', {});
+  }
+
+  /// Returns a list of json string representation of all CTInboxMessage
+  Future<List?> getAllInboxMessages() async {
+    return await _invoke('getAllInboxMessages', {});
+  }
+
+  /// Returns a list of json string representation of unread CTInboxMessage
+  Future<List?> getUnreadInboxMessages() async {
+    return await _invoke('getUnreadInboxMessages', {});
+  }
+
+  /// Returns a json string representation of CTInboxMessage for given messageId
+  Future<Map<String, dynamic>> getInboxMessageForId(
+      String messageId) async {
+    return _invokeMap('getInboxMessageForId', {'messageId': messageId});
+  }
+
+  /// Deletes the CTInboxMessage object for given messageId
+  Future<void> deleteInboxMessageForId(String messageId) async {
+    return await _invoke('deleteInboxMessageForId', {'messageId': messageId});
+  }
+
+  /// Deletes the CTInboxMessage objects for given messageIds
+  Future<void> deleteInboxMessagesForIds(List<String> messageIds) async {
+    return await _invoke('deleteInboxMessagesForIds', {'messageIds': messageIds});
+  }
+
+  /// Marks the given messageId of CTInboxMessage object as read
+  Future<void> markReadInboxMessageForId(String messageId) async {
+    return await _invoke('markReadInboxMessageForId', {'messageId': messageId});
+  }
+
+  /// Marks the given messageIds of CTInboxMessage objects as read
+  Future<void> markReadInboxMessagesForIds(
+      List<String> messageIds) async {
+    return await _invoke(
+        'markReadInboxMessagesForIds', {'messageIds': messageIds});
+  }
+
+  /// Pushes the Notification Clicked event for App Inbox to CleverTap.
+  Future<void> pushInboxNotificationClickedEventForId(
+      String messageId) async {
+    return await _invoke(
+        'pushInboxNotificationClickedEventForId', {'messageId': messageId});
+  }
+
+  /// Pushes the Notification Viewed event for App Inbox to CleverTap.
+  Future<void> pushInboxNotificationViewedEventForId(
+      String messageId) async {
+    return await _invoke(
+        'pushInboxNotificationViewedEventForId', {'messageId': messageId});
+  }
+
+  ///Returns a List of Display units as a Map
+  Future<List?> getAllDisplayUnits() async {
+    if (kIsWeb || Platform.isAndroid || Platform.isIOS) {
+      return await _invoke('getAllDisplayUnits', {});
+    }
+    return null;
+  }
+
+  ///Returns Display unit info as a Map
+  Future<Map<String, dynamic>> getDisplayUnitForId(String unitId) async {
+    return _invokeMap('getDisplayUnitForId', {'unitId': unitId});
+  }
+
+  ///Raise Notification Viewed for Display Unit id passed
+  Future<void> pushDisplayUnitViewedEvent(String unitId) async {
+    return await _invoke('pushDisplayUnitViewedEvent', {'unitId': unitId});
+  }
+
+  ///Raise Notification Clicked for Display Unit id passed
+  Future<void> pushDisplayUnitClickedEvent(String unitId) async {
+    return await _invoke('pushDisplayUnitClickedEvent', {'unitId': unitId});
+  }
+
+  /// Raise Notification Clicked event for a specific element of a Display Unit,
+  /// enriched with additional properties.
+  ///
+  /// Parameters:
+  /// - [unitId]: Unique id of the Display Unit
+  /// - [additionalProperties]: Additional key-value properties to attach to the event
+  Future<void> pushDisplayUnitElementClickedEvent(
+      String unitId, Map<String, dynamic> additionalProperties) async {
+    return await _invoke(
+        'pushDisplayUnitElementClickedEvent', {
+      'unitId': unitId,
+      'additionalProperties': additionalProperties
+    });
+  }
+
+  /// Raise Notification Viewed event for a specific element of a Display Unit,
+  /// enriched with additional properties.
+  ///
+  /// Parameters:
+  /// - [unitId]: Unique id of the Display Unit
+  /// - [additionalProperties]: Additional key-value properties to attach to the event
+  Future<void> pushDisplayUnitElementViewedEvent(
+      String unitId, Map<String, dynamic> additionalProperties) async {
+    return await _invoke(
+        'pushDisplayUnitElementViewedEvent', {
+      'unitId': unitId,
+      'additionalProperties': additionalProperties
+    });
+  }
+
+  /// Requests fresh Native Display frequency-cap rules mid-session.
+  Future<void> fetchNativeDisplayMeta() async {
+    return await _invoke('fetchNativeDisplayMeta', {});
+  }
+
+  ///Returns boolean value of Feature Flag
+  @Deprecated(
+      "This method is deprecated since v1.3.0. Use getCleverTapID() instead")
+  Future<bool?> getFeatureFlag(String key, bool defaultValue) async {
+    return await _invoke(
+        'getFeatureFlag', {'key': key, 'defaultValue': defaultValue});
+  }
+
+  ///Sets Default Values for Product Config using the passed Map
+  @Deprecated(
+      "This method is deprecated since version 1.7.0 and will be removed in the future versions of this SDK.")
+  Future<void> setDefaultsMap(Map<String, dynamic> defaults) async {
+    return await _invoke('setDefaultsMap', {'defaults': defaults});
+  }
+
+  ///Fetches the Product Configs from CleverTap
+  @Deprecated(
+      "This method is deprecated since version 1.7.0 and will be removed in the future versions of this SDK.")
+  Future<void> fetch() async {
+    return await _invoke('fetch', {});
+  }
+
+  ///Fetches Product configs, adhering to the specified minimum fetch interval in seconds.
+  @Deprecated(
+      "This method is deprecated since version 1.7.0 and will be removed in the future versions of this SDK.")
+  Future<void> fetchWithMinimumIntervalInSeconds(int interval) async {
+    return await _invoke(
+        'fetchWithMinimumFetchIntervalInSeconds', {'interval': interval});
+  }
+
+  ///Activates the most recently fetched Product configs
+  @Deprecated(
+      "This method is deprecated since version 1.7.0 and will be removed in the future versions of this SDK.")
+  Future<void> activate() async {
+    return await _invoke('activate', {});
+  }
+
+  ///Fetches and then activates the fetched Product configs.
+  @Deprecated(
+      "This method is deprecated since version 1.7.0 and will be removed in the future versions of this SDK.")
+  Future<void> fetchAndActivate() async {
+    return await _invoke('fetchAndActivate', {});
+  }
+
+  ///Sets the minimum interval between successive fetch calls.
+  @Deprecated(
+      "This method is deprecated since version 1.7.0 and will be removed in the future versions of this SDK.")
+  Future<void> setMinimumFetchIntervalInSeconds(int interval) async {
+    return await _invoke(
+        'setMinimumFetchIntervalInSeconds', {'interval': interval});
+  }
+
+  ///Returns the last fetched timestamp in millis.
+  @Deprecated(
+      "This method is deprecated since version 1.7.0 and will be removed in the future versions of this SDK.")
+  Future<int?> getLastFetchTimeStampInMillis() async {
+    return await _invoke('getLastFetchTimeStampInMillis', {});
+  }
+
+  ///Returns the parameter value for the given key as a String.
+  @Deprecated(
+      "This method is deprecated since version 1.7.0 and will be removed in the future versions of this SDK.")
+  Future<String?> getProductConfigString(String key) async {
+    return await _invoke('getString', {'key': key});
+  }
+
+  ///Returns the parameter value for the given key as a boolean.
+  @Deprecated(
+      "This method is deprecated since version 1.7.0 and will be removed in the future versions of this SDK.")
+  Future<bool?> getProductConfigBoolean(String key) async {
+    return await _invoke('getBoolean', {'key': key});
+  }
+
+  ///Returns the parameter value for the given key as a long (int for Dart).
+  @Deprecated(
+      "This method is deprecated since version 1.7.0 and will be removed in the future versions of this SDK.")
+  Future<int?> getProductConfigLong(String key) async {
+    return await _invoke('getLong', {'key': key});
+  }
+
+  ///Returns the parameter value for the given key as a double.
+  @Deprecated(
+      "This method is deprecated since version 1.7.0 and will be removed in the future versions of this SDK.")
+  Future<double?> getProductConfigDouble(String key) async {
+    return await _invoke('getDouble', {'key': key});
+  }
+
+  ///Deletes all activated, fetched and defaults configs as well as all Product Config settings.
+  @Deprecated(
+      "This method is deprecated since version 1.7.0 and will be removed in the future versions of this SDK.")
+  Future<void> resetProductConfig() async {
+    return await _invoke('reset', {});
+  }
+
+  ///Returns true if push permission is enabled.
+  Future<bool?> getPushNotificationPermissionStatus() async {
+    return await _invoke('getPushNotificationPermissionStatus', {});
+  }
+
+  ///Sets the user locale.
+  Future<void> setLocale(Locale locale) async {
+    String localeString = locale.toString();
+    return await _invoke('setLocale', {'value': localeString});
+  }
+
+  /// Returns experiment variant information for the current user.
+  ///
+  /// Each dictionary in the returned list contains details about an assigned A/B test variant,
+  /// with common keys like "name", "abTestId", and "abTestName".
+  ///
+  /// Returns: A list of variant dictionaries, or empty list if no variants are assigned.
+  Future<List?> getVariants() async {
+    return await _invoke('getVariants', {});
+  }
+
+  ///Fetch Client Side In-Apps
+  Future<bool?> fetchInApps() async {
+    return await _invoke('fetchInApps', {});
+  }
 
   // ---- Handlers.
 

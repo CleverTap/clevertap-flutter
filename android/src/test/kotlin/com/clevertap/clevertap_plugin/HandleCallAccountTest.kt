@@ -1,6 +1,7 @@
 package com.clevertap.clevertap_plugin
 
 import com.clevertap.clevertap_plugin.DartToNativePlatformCommunicator.Companion.accountIdOf
+import com.clevertap.clevertap_plugin.DartToNativePlatformCommunicator.Companion.scalarArgumentOf
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -26,5 +27,16 @@ class HandleCallAccountTest {
         assertNull(accountIdOf(hashMapOf("accountId" to 42)))
         assertNull(accountIdOf(hashMapOf("accountId" to "")))
         assertNull(accountIdOf(hashMapOf("accountId" to null)))
+    }
+
+    // setLocale, clearInAppResources and promptForPushNotification send one bare value from a static
+    // call. A handle call wraps it: {"value": ..., "accountId": "B"}. Both must read the same value.
+    @Test
+    fun scalarArgument_staticSendsTheValue_handleWrapsIt() {
+        assertEquals("en_US", scalarArgumentOf("en_US"))
+        assertEquals("en_US", scalarArgumentOf(hashMapOf("value" to "en_US", "accountId" to "B")))
+        assertEquals(true, scalarArgumentOf(true))
+        assertEquals(true, scalarArgumentOf(hashMapOf("value" to true, "accountId" to "B")))
+        assertNull(scalarArgumentOf(null))
     }
 }
