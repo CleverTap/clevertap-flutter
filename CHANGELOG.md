@@ -1,6 +1,6 @@
 ## CHANGE LOG
 
-### Version 4.3.1 *(19 November 2026)*
+### Version 4.4.0 *(19 November 2026)*
 -------------------------------------------
 **What's new**
 
@@ -14,7 +14,7 @@
   * Fixes a `TransactionTooLargeException` crash when a full-screen custom HTML In-App with a very large payload is shown.
   * Re-shows a full-screen In-App after the app is killed and reopened, if its time to live has not passed, without counting a second `Notification Viewed`.
   * Fixes an app start crash (`NoSuchMethodException: androidx.work.impl.WorkDatabase_Impl.<init>`) in minified release builds made with AGP 9.
-  * Fixes SSL pinning (`CLEVERTAP_SSL_PINNING`) silently falling back to normal HTTPS. If you use pinning with a custom proxy or handshake domain, make sure its certificate chains to an Amazon Trust Services root, or SDK requests will fail.
+  * Fixes SSL pinning (`CLEVERTAP_SSL_PINNING`) silently falling back to normal HTTPS. If you use pinning with a custom proxy or handshake domain, make sure its certificate chains to an Amazon Trust Services root, or SDK requests will fail. If pinning cannot be set up on a device, the SDK logs an error and uses normal HTTPS.
   * Adds compatibility with WorkManager 2.9.1 through 2.10.2.
 
 ### Version 4.3.0 *(23 October 2026)*
