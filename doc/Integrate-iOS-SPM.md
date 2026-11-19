@@ -1,11 +1,11 @@
 ## 📦 iOS Integration via Swift Package Manager (SPM)
 
-Flutter introduced Swift Package Manager support as an **opt-in** feature in Flutter 3.24, and it became the **default** package manager in Flutter 3.44. The CleverTap Flutter plugin from v4.2.0 ships a `Package.swift` alongside its podspec, so both package managers resolve the same native SDK version (`CleverTap-iOS-SDK 7.8.1`).
+Flutter introduced Swift Package Manager support as an **opt-in** feature in Flutter 3.24, and it became the **default** package manager in Flutter 3.44. The CleverTap Flutter plugin from v4.2.0 ships a `Package.swift` alongside its podspec, so both package managers resolve the same native SDK version (`CleverTap-iOS-SDK 7.9.1`).
 
 > **Minimum requirements for SPM integration**
 > - Flutter 3.24+ (opt-in) - enabled by default from Flutter 3.44
 > - Xcode 15+ (required for `swift-tools-version: 5.9`)
-> - iOS deployment target: 13.0+
+> - iOS deployment target: 15.0+
 >
 > If you are on Flutter < 3.24, the plugin continues to work via CocoaPods - no action required.
 
@@ -107,8 +107,8 @@ These guards ensure your app compiles correctly regardless of which package mana
 
 | | CocoaPods | SPM |
 |---|---|---|
-| SDK version pinned | `7.8.1` | `7.8.1` |
-| Deployment target | `9.0` | `13.0` |
+| SDK version pinned | `7.9.1` | `7.9.1` |
+| Deployment target | `15.0` | `15.0` |
 | Opt-in required | No | Yes on Flutter 3.24–3.43; default from 3.44 |
 
 Both package managers resolve the same CleverTap iOS SDK version to ensure no drift between the two integration paths.
@@ -120,6 +120,6 @@ Both package managers resolve the same CleverTap iOS SDK version to ensure no dr
 - **Xcode doesn't resolve the package**: Run `flutter pub get`, then in Xcode go to **File → Packages → Resolve Package Versions**.
 - **Automatic migration didn't add the package**: In Xcode, add it manually - **Package Dependencies → Add Local…** → select `ios/Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage` and add it to the `Runner` target. Then under **Product → Scheme → Edit Scheme → Build → Pre-actions**, add a Run Script (with build settings from `Runner`): `"$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh" prepare`.
 - **Duplicate symbol errors**: Don't use both CocoaPods and SPM for the same plugin at once. If a `Podfile` exists and SPM is enabled, Flutter prefers SPM for plugins that support it.
-- **Build fails with missing headers**: Verify your deployment target is `13.0` or higher in both your Xcode project and `Podfile`/`Package.swift`.
+- **Build fails with missing headers**: Verify your deployment target is `15.0` or higher in both your Xcode project and `Podfile`/`Package.swift`.
 - **Stale CocoaPods references after migrating**: If the build still runs `[CP]` Pods build phases (or duplicate-embeds a framework) for a plugin that has moved to SPM, run `pod deintegrate` in your app's `ios/` directory, then `flutter clean && flutter build ios` so Flutter re-integrates cleanly. Use this only as a recovery step - it is not part of the normal migration flow. Flutter regenerates the CocoaPods integration on every build, so a manual `pod deintegrate` is otherwise undone on the next build.
 - **"Plugin clevertap_plugin has a Package.swift but is missing a dependency on FlutterFramework"**: This warning appears on Flutter 3.44 and later, which generates a `FlutterFramework` SPM package and expects plugins to declare an explicit dependency on it. The current `Package.swift` omits this dependency for compatibility with Flutter 3.24-3.43, where `FlutterFramework` is not generated. The build still succeeds because Flutter headers are resolved via framework search paths at build time.

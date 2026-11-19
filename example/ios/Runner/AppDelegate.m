@@ -19,13 +19,18 @@
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
     [CleverTapPluginCustomTemplates registerCustomTemplates:@"templates", nil];
-    [GeneratedPluginRegistrant registerWithRegistry:self];
     UNUserNotificationCenter *center = [UNUserNotificationCenter currentNotificationCenter];
     center.delegate = self;
     // Override point for customization after application launch.
     [[CleverTapPlugin sharedInstance] applicationDidLaunchWithOptions:launchOptions];
     [CleverTap autoIntegrate]; // integrate CleverTap SDK using the autoIntegrate option
     return [super application:application didFinishLaunchingWithOptions:launchOptions];
+}
+
+// Under the UIScene lifecycle the engine backing the storyboard's FlutterViewController
+// is created at scene-connect time, after didFinishLaunchingWithOptions has returned.
+- (void)didInitializeImplicitFlutterEngine:(NSObject<FlutterImplicitEngineBridge> *)engineBridge {
+    [GeneratedPluginRegistrant registerWithRegistry:engineBridge.pluginRegistry];
 }
 
 - (void)userNotificationCenter:(UNUserNotificationCenter *)center willPresentNotification:(UNNotification *)notification withCompletionHandler:(void (^)(UNNotificationPresentationOptions options))completionHandler{

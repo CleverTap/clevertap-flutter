@@ -21,7 +21,7 @@ Pod::Spec.new do |s|
   s.source_files             = 'clevertap_plugin/Sources/clevertap_plugin/**/*.{h,m}'
   s.public_header_files      = 'clevertap_plugin/Sources/clevertap_plugin/include/clevertap_plugin/*.h'
   s.dependency               'Flutter'
-  s.dependency               'CleverTap-iOS-SDK', '7.9.0'
-  s.ios.deployment_target    = '9.0'
+  s.dependency               'CleverTap-iOS-SDK', '7.9.1'
+  s.ios.deployment_target    = '15.0'
 end
 

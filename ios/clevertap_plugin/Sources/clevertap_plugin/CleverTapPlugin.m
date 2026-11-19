@@ -908,14 +908,25 @@ static NSDateFormatter *dateFormatter;
 
 - (UIWindow *)ct_keyWindow {
 
-    if (@available(iOS 11.0, *)) {
-        for (UIWindow *window in [UIApplication sharedApplication].windows) {
-            if (window.isKeyWindow) {
-                return window;
-            }
+    UIWindow *fallback = nil;
+    for (UIScene *scene in [UIApplication sharedApplication].connectedScenes) {
+        if (![scene isKindOfClass:[UIWindowScene class]]) {
+            continue;
+        }
+        UIWindow *keyWindow = ((UIWindowScene *)scene).keyWindow;
+        if (!keyWindow) {
+            continue;
+        }
+        // A backgrounded scene's key window would present off-screen, so only
+        // settle for one if no foreground scene turns up.
+        if (scene.activationState == UISceneActivationStateForegroundActive) {
+            return keyWindow;
+        }
+        if (!fallback) {
+            fallback = keyWindow;
         }
     }
-    return [[UIApplication sharedApplication] keyWindow];
+    return fallback;
 }
 
 - (void)showInbox:(FlutterMethodCall *)call withResult:(FlutterResult)result {

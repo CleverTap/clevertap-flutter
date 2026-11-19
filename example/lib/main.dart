@@ -15,6 +15,25 @@ import 'custom_template.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
+const Color ctBlue = Color(0xFF1565C0);
+const Color ctBlueDark = Color(0xFF0B3C70);
+const Color ctBlueTint = Color(0xFFDCE8F7);
+const Color ctSurface = Color(0xFFF4F8FD);
+const Color ctInk = Color(0xFF16222E);
+const Color ctInkMuted = Color(0xFF6B7F92);
+
+final ThemeData ctTheme = ThemeData(
+  useMaterial3: true,
+  colorScheme: ColorScheme.fromSeed(seedColor: ctBlue),
+  scaffoldBackgroundColor: ctSurface,
+  dividerColor: Colors.transparent,
+  appBarTheme: const AppBarTheme(
+    backgroundColor: ctBlueDark,
+    foregroundColor: Colors.white,
+    elevation: 0,
+  ),
+);
+
 final int TEST_RUN_APP_DELAY = 0;
 final int CLEVERTAP_LISTENER_ATTACH_DELAY = 0;
 final bool testWithWorkManager = false;
@@ -56,6 +75,7 @@ void main() async {
     runApp(MaterialApp(
       navigatorKey: navigatorKey,
       title: 'Home Page',
+      theme: ctTheme,
       home: MyApp(),
     ));
     print("CleverTapPlugin main POSTTT runapp");
@@ -471,10 +491,31 @@ class _MyAppState extends State<MyApp> {
   }
 
   Widget _buildExpansionTile(String title, List<Widget> children) {
-    return Card(
-      color: Colors.lightBlueAccent.shade100,
+    return Container(
+      margin: const EdgeInsets.fromLTRB(12, 6, 12, 0),
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: ctBlueTint),
+      ),
       child: ExpansionTile(
-        title: Text(title, style: TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(title,
+            style: const TextStyle(
+                fontWeight: FontWeight.w600, fontSize: 15, color: ctBlueDark)),
+        leading: Container(
+          width: 34,
+          height: 34,
+          decoration: BoxDecoration(
+            color: ctBlueTint,
+            borderRadius: BorderRadius.circular(9),
+          ),
+          child: const Icon(Icons.bolt_rounded, size: 19, color: ctBlue),
+        ),
+        iconColor: ctBlue,
+        collapsedIconColor: ctBlue,
+        backgroundColor: ctSurface,
+        childrenPadding: const EdgeInsets.only(bottom: 8),
         children: children,
       ),
     );
@@ -482,15 +523,29 @@ class _MyAppState extends State<MyApp> {
 
   Widget _buildListTile(String title, VoidCallback onTap,
       [String subtitle = ""]) {
-    return Card(
-      color: Colors.grey.shade300,
-      child: Padding(
-        padding: const EdgeInsets.all(4.0),
-        child: ListTile(
-          title: Text(title),
-          subtitle: subtitle.isNotEmpty ? Text(subtitle) : null,
-          onTap: onTap,
-        ),
+    return Container(
+      margin: const EdgeInsets.fromLTRB(12, 4, 12, 4),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: ctBlueTint),
+      ),
+      child: ListTile(
+        dense: true,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        title: Text(title,
+            style: const TextStyle(
+                fontSize: 14, fontWeight: FontWeight.w500, color: ctInk)),
+        subtitle: subtitle.isNotEmpty
+            ? Padding(
+                padding: const EdgeInsets.only(top: 3),
+                child: Text(subtitle,
+                    style: const TextStyle(fontSize: 12, color: ctInkMuted)),
+              )
+            : null,
+        trailing: const Icon(Icons.chevron_right_rounded,
+            size: 20, color: ctBlue),
+        onTap: onTap,
       ),
     );
   }
@@ -587,10 +642,11 @@ class _MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {
     return StyledToast(
       child: MaterialApp(
+        theme: ctTheme,
         home: Scaffold(
             appBar: AppBar(
-              title: const Text('CleverTap Plugin Example App'),
-              backgroundColor: Colors.red.shade800,
+              title: const Text('CleverTap Plugin',
+                  style: TextStyle(fontWeight: FontWeight.w600)),
               actions: kIsWeb
                   ? [
                       Padding(
@@ -598,7 +654,7 @@ class _MyAppState extends State<MyApp> {
                         child: NotificationButton(
                           child: Icon(
                             Icons.notifications,
-                            color: Colors.black,
+                            color: Colors.white,
                           ),
                         ),
                       ),
@@ -606,18 +662,56 @@ class _MyAppState extends State<MyApp> {
                   : null,
             ),
             body: ListView(
+              padding: const EdgeInsets.only(bottom: 24),
               children: <Widget>[
-                Card(
-                  color: Colors.orange,
-                  child: Padding(
-                    padding: const EdgeInsets.all(0.0),
-                    child: ListTile(
-                      dense: true,
-                      trailing: Icon(Icons.warning),
-                      title: Text(
-                          "NOTE : All CleverTap functions are listed below"),
-                      subtitle: Text(
-                          "Please check console logs for more info after tapping below"),
+                Container(
+                  padding: const EdgeInsets.fromLTRB(20, 18, 20, 26),
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [ctBlueDark, ctBlue],
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: const [
+                      Text("Example App",
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 26,
+                              fontWeight: FontWeight.w700)),
+                      SizedBox(height: 6),
+                      Text(
+                          "Every CleverTap API is grouped below. Tap one and watch the console logs.",
+                          style: TextStyle(
+                              color: Color(0xFFC6DCF5),
+                              fontSize: 13,
+                              height: 1.4)),
+                    ],
+                  ),
+                ),
+                Transform.translate(
+                  offset: const Offset(0, -14),
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 12),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: ctBlueTint),
+                    ),
+                    child: Row(
+                      children: const [
+                        Icon(Icons.terminal_rounded, size: 20, color: ctBlue),
+                        SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                              "Results print to the console, not the screen.",
+                              style:
+                                  TextStyle(fontSize: 13, color: ctInkMuted)),
+                        ),
+                      ],
                     ),
                   ),
                 ),
