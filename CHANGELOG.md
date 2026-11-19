@@ -1,6 +1,6 @@
 ## CHANGE LOG
 
-### Version 4.3.1 *(19 November 2026)*
+### Version 4.4.0 *(19 November 2026)*
 -------------------------------------------
 **What's new**
 
