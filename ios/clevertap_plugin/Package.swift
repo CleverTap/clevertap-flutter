@@ -10,6 +10,7 @@ let package = Package(
         .library(name: "clevertap-plugin", targets: ["clevertap_plugin"])
     ],
     dependencies: [
+        .package(name: "FlutterFramework", path: "../FlutterFramework"),
         .package(
             url: "https://github.com/CleverTap/clevertap-ios-sdk",
             exact: "7.9.0"
@@ -19,6 +20,7 @@ let package = Package(
         .target(
             name: "clevertap_plugin",
             dependencies: [
+                .product(name: "FlutterFramework", package: "FlutterFramework"),
                 .product(name: "CleverTapSDK", package: "clevertap-ios-sdk")
             ],
             cSettings: [
