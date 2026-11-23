@@ -12,6 +12,22 @@ void main() {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
   const dartToNative = MethodChannel('clevertap_plugin/dart_to_native');
 
+  /// The callbackId each static variables registration sent (doc section 11). Native sends the
+  /// variables events as `{__ctCallbackId: id, values: map}`, and only that registration runs.
+  final callbackIds = <String, String>{};
+  const variablesEvents = {
+    'onVariablesChanged',
+    'onOneTimeVariablesChanged',
+    'onValueChanged',
+    'onVariablesChangedAndNoDownloadsPending',
+    'onceVariablesChangedAndNoDownloadsPending',
+    'onFileValueChanged',
+  };
+  // The once registrations run only once; each test registers its own handler again (below).
+  Object? nativePayload(String method, Object? payload) => variablesEvents.contains(method)
+      ? {'__ctCallbackId': callbackIds[method], 'values': payload}
+      : payload;
+
   /// What each handler received, as `[methodName, value]`.
   final received = <List<Object?>>[];
   void record(String method, Object? value) => received.add([method, value]);
@@ -129,7 +145,13 @@ void main() {
 
   setUpAll(() {
     // Native side of Dart-to-native calls (setLibrary, handler registrations): answer success.
-    messenger.setMockMethodCallHandler(dartToNative, (call) async => null);
+    messenger.setMockMethodCallHandler(dartToNative, (call) async {
+      final args = call.arguments;
+      if (args is Map && args['callbackId'] is String) {
+        callbackIds[call.method] = args['callbackId'] as String;
+      }
+      return null;
+    });
     final plugin = CleverTapPlugin();
     plugin.setCleverTapInAppNotificationDismissedHandler(
         (m) => record('inAppNotificationDismissed', m));
@@ -166,13 +188,9 @@ void main() {
     plugin.setCleverTapPushPermissionResponseReceivedHandler(
         (b) => record('pushPermissionResponseReceived', b));
     CleverTapPlugin.onVariablesChanged((m) => record('onVariablesChanged', m));
-    CleverTapPlugin.onOneTimeVariablesChanged(
-        (m) => record('onOneTimeVariablesChanged', m));
     CleverTapPlugin.onValueChanged('v', (m) => record('onValueChanged', m));
     CleverTapPlugin.onVariablesChangedAndNoDownloadsPending(
         (m) => record('onVariablesChangedAndNoDownloadsPending', m));
-    CleverTapPlugin.onceVariablesChangedAndNoDownloadsPending(
-        (m) => record('onceVariablesChangedAndNoDownloadsPending', m));
     CleverTapPlugin.onFileValueChanged(
         'f', (m) => record('onFileValueChanged', m));
     plugin.setCleverTapCustomTemplatePresentHandler(
@@ -183,7 +201,14 @@ void main() {
         (n) => record('customTemplateClose', n));
   });
 
-  setUp(() => received.clear());
+  setUp(() {
+    received.clear();
+    // A once handler runs only once, so register fresh ones for every test.
+    CleverTapPlugin.onOneTimeVariablesChanged(
+        (m) => record('onOneTimeVariablesChanged', m));
+    CleverTapPlugin.onceVariablesChangedAndNoDownloadsPending(
+        (m) => record('onceVariablesChangedAndNoDownloadsPending', m));
+  });
 
   test('all 26 events are covered', () {
     expect(cases.length, 26);
@@ -197,7 +222,7 @@ void main() {
     test(
         '$method: default-account envelope reaches the static handler unchanged',
         () async {
-      await fromNative(method, envelope(payload));
+      await fromNative(method, envelope(nativePayload(method, payload)));
       expect(
           received,
           expected == null
@@ -210,7 +235,7 @@ void main() {
     test(
         '$method: unknown-account envelope (accountId null) is treated as default',
         () async {
-      await fromNative(method, envelope(payload, accountId: null));
+      await fromNative(method, envelope(nativePayload(method, payload), accountId: null));
       expect(
           received,
           expected == null
@@ -224,14 +249,14 @@ void main() {
         '$method: another account\'s envelope does not reach the static handler',
         () async {
       await fromNative(
-          method, envelope(payload, accountId: 'B', isDefault: false));
+          method, envelope(nativePayload(method, payload), accountId: 'B', isDefault: false));
       expect(received, isEmpty);
     });
 
     test(
         '$method: a value without the envelope still reaches the static handler',
         () async {
-      await fromNative(method, payload);
+      await fromNative(method, nativePayload(method, payload));
       expect(
           received,
           expected == null

@@ -218,24 +218,25 @@ void main() {
     }
   });
 
-  group('Phase 6: variables listeners on a handle', () {
-    Future<void> fromNative(String method, Object? arguments) async {
-      final data = const StandardMethodCodec()
-          .encodeMethodCall(MethodCall(method, arguments));
+  group('Variables listeners: one native callback per registration (doc section 11)', () {
+    Future<void> fire(String method, String callbackId, Object values,
+        {String accountId = 'DEF6', bool isDefault = true}) async {
+      final data = const StandardMethodCodec().encodeMethodCall(MethodCall(method, {
+        '__ctEnvelope': true,
+        'accountId': accountId,
+        'isDefault': isDefault,
+        'payload': {'__ctCallbackId': callbackId, 'values': values},
+      }));
       await messenger.handlePlatformMessage(
           'clevertap_plugin/native_to_dart', data, (_) {});
     }
 
-    Map<String, Object?> envelope(Object? payload, String accountId, bool isDefault) => {
-          '__ctEnvelope': true,
-          'accountId': accountId,
-          'isDefault': isDefault,
-          'payload': payload,
-        };
+    // The callbackId native received for the n-th registration in this test.
+    String idOf(int n) => (toNative[n].arguments as Map)['callbackId'] as String;
 
     setUpAll(() => CleverTapPlugin()); // registers the native-to-Dart handler
 
-    test('each listener registers natively with the static arguments plus accountId', () {
+    test('each registration sends its arguments, a unique callbackId and (handle) the accountId', () {
       final h = CleverTapPlugin.getInstance('L1');
       h.onVariablesChanged((_) {});
       h.onOneTimeVariablesChanged((_) {});
@@ -243,42 +244,117 @@ void main() {
       h.onVariablesChangedAndNoDownloadsPending((_) {});
       h.onceVariablesChangedAndNoDownloadsPending((_) {});
       h.onFileValueChanged('banner', (_) {});
-      expect(toNative.map((m) => [m.method, m.arguments]).toList(), [
+      CleverTapPlugin.onValueChanged('discount', (_) {});
+      final sent = toNative.map((m) => [m.method, Map.of(m.arguments as Map)..remove('callbackId')]).toList();
+      expect(sent, [
         ['onVariablesChanged', {'accountId': 'L1'}],
         ['onOneTimeVariablesChanged', {'accountId': 'L1'}],
         ['onValueChanged', {'name': 'discount', 'accountId': 'L1'}],
         ['onVariablesChangedAndNoDownloadsPending', {'accountId': 'L1'}],
         ['onceVariablesChangedAndNoDownloadsPending', {'accountId': 'L1'}],
         ['onFileValueChanged', {'name': 'banner', 'accountId': 'L1'}],
+        ['onValueChanged', {'name': 'discount'}], // static: no accountId, the default account
       ]);
+      final ids = [for (var n = 0; n < 7; n++) idOf(n)];
+      expect(ids.toSet(), hasLength(7));
+      expect(ids, everyElement(matches(RegExp(r'^[0-9a-z]+-[0-9]+$'))));
     });
 
-    test('B\'s change reaches every handler B added (a list, like the static API), and nobody else', () async {
+    test('two different handlers, one change: each runs once (before: a, b, a, b)', () async {
       final h = CleverTapPlugin.getInstance('L2');
-      final other = CleverTapPlugin.getInstance('L3');
       final got = <String>[];
-      h.onVariablesChanged((v) => got.add('h1 ${v['discount']}'));
-      h.onVariablesChanged((v) => got.add('h2 ${v['discount']}'));
-      other.onVariablesChanged((v) => got.add('other'));
-      await fromNative('onVariablesChanged', envelope({'discount': 5}, 'L2', false));
-      expect(got, ['h1 5', 'h2 5']);
+      h.onVariablesChanged((v) => got.add('a ${v['discount']}'));
+      h.onVariablesChanged((v) => got.add('b ${v['discount']}'));
+      // One change: the SDK calls each of the two native callbacks once.
+      await fire('onVariablesChanged', idOf(0), {'discount': 5}, accountId: 'L2', isDefault: false);
+      await fire('onVariablesChanged', idOf(1), {'discount': 5}, accountId: 'L2', isDefault: false);
+      expect(got, ['a 5', 'b 5']);
     });
 
-    test('a throwing handler does not stop the next one', () async {
+    test('the same handler added twice runs twice per change (core SDK parity)', () async {
+      final got = <String>[];
+      void h1(Map<String, dynamic> _) => got.add('h1');
+      CleverTapPlugin.onVariablesChanged(h1);
+      CleverTapPlugin.onVariablesChanged(h1);
+      await fire('onVariablesChanged', idOf(0), {'v': 1});
+      await fire('onVariablesChanged', idOf(1), {'v': 1});
+      expect(got, ['h1', 'h1']);
+    });
+
+    test('a once handler runs once; a later once handler does not rerun the earlier one', () async {
+      final got = <String>[];
+      CleverTapPlugin.onOneTimeVariablesChanged((_) => got.add('h1'));
+      await fire('onOneTimeVariablesChanged', idOf(0), {'v': 1});
+      await fire('onOneTimeVariablesChanged', idOf(0), {'v': 1}); // never expected from native; still once
+      CleverTapPlugin.onOneTimeVariablesChanged((_) => got.add('h2'));
+      await fire('onOneTimeVariablesChanged', idOf(1), {'v': 1}); // the SDK runs h2's callback at once
+      expect(got, ['h1', 'h2']);
+      expect(CleverTapPlugin.cleverTapOnOneTimeVariablesChangedHandlers, isEmpty,
+          reason: 'a once handler leaves the public list after it runs');
+    });
+
+    test('a throwing once handler does not run again; a throwing persistent one keeps running', () async {
+      var onceRuns = 0, persistentRuns = 0;
       final h = CleverTapPlugin.getInstance('L4');
-      final got = <String>[];
-      h.onValueChanged('discount', (_) => throw StateError('app bug'));
-      h.onValueChanged('discount', (v) => got.add('ok $v'));
-      await fromNative('onValueChanged', envelope({'discount': 1}, 'L4', false));
-      expect(got, ['ok {discount: 1}']);
+      h.onceVariablesChangedAndNoDownloadsPending((_) {
+        onceRuns++;
+        throw StateError('app bug');
+      });
+      h.onVariablesChangedAndNoDownloadsPending((_) {
+        persistentRuns++;
+        throw StateError('app bug');
+      });
+      for (var i = 0; i < 2; i++) {
+        await fire('onceVariablesChangedAndNoDownloadsPending', idOf(0), {}, accountId: 'L4', isDefault: false);
+        await fire('onVariablesChangedAndNoDownloadsPending', idOf(1), {}, accountId: 'L4', isDefault: false);
+      }
+      expect(onceRuns, 1);
+      expect(persistentRuns, 2);
     });
 
-    test('the default account\'s change reaches the static handlers and its handle', () async {
+    test('onValueChanged: a handler sees only its own variable', () async {
       final got = <String>[];
-      CleverTapPlugin.onFileValueChanged('banner', (v) => got.add('static'));
-      CleverTapPlugin.getInstance('DEF6').onFileValueChanged('banner', (v) => got.add('handle'));
-      await fromNative('onFileValueChanged', envelope({'banner': 'x'}, 'DEF6', true));
-      expect(got, ['handle', 'static']);
+      final h = CleverTapPlugin.getInstance('L5');
+      h.onValueChanged('a', (v) => got.add('a-handler $v'));
+      h.onValueChanged('b', (v) => got.add('b-handler $v'));
+      await fire('onValueChanged', idOf(1), {'b': 2}, accountId: 'L5', isDefault: false); // only b changed
+      expect(got, ['b-handler {b: 2}']);
+    });
+
+    test('an unknown ID (another engine, or from before a hot restart) runs nothing', () async {
+      final got = <String>[];
+      CleverTapPlugin.onFileValueChanged('banner', (_) => got.add('h'));
+      await fire('onFileValueChanged', 'oldsession-1', {'banner': 'x'});
+      expect(got, isEmpty);
+    });
+
+    test('clearing a public static list stops those handlers, as before', () async {
+      final got = <String>[];
+      CleverTapPlugin.onVariablesChangedAndNoDownloadsPending((_) => got.add('h'));
+      await fire('onVariablesChangedAndNoDownloadsPending', idOf(0), {});
+      CleverTapPlugin.cleverTapOnVariablesChangedAndNoDownloadsPendingHandlers.clear();
+      await fire('onVariablesChangedAndNoDownloadsPending', idOf(0), {});
+      expect(got, ['h']);
+    });
+
+    test('an ID arriving under another account runs nothing', () async {
+      final got = <String>[];
+      CleverTapPlugin.onVariablesChanged((_) => got.add('static'));
+      CleverTapPlugin.getInstance('L7').onVariablesChanged((_) => got.add('L7'));
+      await fire('onVariablesChanged', idOf(0), {}, accountId: 'B', isDefault: false); // static's ID, B's account
+      await fire('onVariablesChanged', idOf(1), {}, accountId: 'L8', isDefault: false); // L7's ID, L8's account
+      expect(got, isEmpty);
+      await fire('onVariablesChanged', idOf(0), {}); // the default account
+      await fire('onVariablesChanged', idOf(1), {}, accountId: 'L7', isDefault: false);
+      expect(got, ['static', 'L7']);
+    });
+
+    test('the handler receives exactly the values map, as before', () async {
+      Map<String, dynamic>? got;
+      CleverTapPlugin.getInstance('L6').onVariablesChanged((v) => got = v);
+      await fire('onVariablesChanged', idOf(0), {'discount': 10, 'theme': {'color': 'red'}},
+          accountId: 'L6', isDefault: false);
+      expect(got, {'discount': 10, 'theme': {'color': 'red'}});
     });
   });
 

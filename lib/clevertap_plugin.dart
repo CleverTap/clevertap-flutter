@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:ui';
 import 'dart:io';
+import 'dart:math' show Random;
 
 import 'package:clevertap_plugin/clevertap_plugin_web_wrapper.dart';
 import 'package:clevertap_plugin/src/types.dart';
@@ -148,6 +149,92 @@ class CleverTapPlugin {
   /// (CleverTapEventEmitter.ENVELOPE_MARKER on Android, CleverTapPlugin.m on iOS).
   static const String _envelopeMarker = '__ctEnvelope';
 
+  // ---- Variables listeners: one native SDK callback per registration.
+  //
+  // Each onX(handler) call gets an ID and its own native callback, which sends the ID back with
+  // every event, and only that registration's handler runs. This is how the native SDKs behave:
+  // one run per registration per change. Before, every native callback ran every handler in the
+  // list. Example: onVariablesChanged(a) and onVariablesChanged(b), then one change: a, b
+  // (before: a, b, a, b). A once handler runs once (before: again whenever another once handler
+  // was added), and onValueChanged('x', h) sees only x's changes (before: every variable's).
+
+  /// The six variables events; native sends their payload as `{__ctCallbackId: id, values: map}`.
+  static const Set<String> _variablesEvents = {
+    'onVariablesChanged',
+    'onOneTimeVariablesChanged',
+    'onValueChanged',
+    'onVariablesChangedAndNoDownloadsPending',
+    'onceVariablesChangedAndNoDownloadsPending',
+    'onFileValueChanged',
+  };
+
+  /// The key of a variables event's registration ID inside its payload.
+  static const String _callbackIdKey = '__ctCallbackId';
+
+  // Differs on every Dart start. Native callbacks survive a hot restart; one left from before it
+  // sends an ID of the old session, which matches no registration and is ignored.
+  static final String _variablesSession =
+      DateTime.now().microsecondsSinceEpoch.toRadixString(36) +
+          Random().nextInt(1 << 30).toRadixString(36);
+  static int _variablesCount = 0;
+  static final Map<String, _VariablesRegistration> _variablesRegistrations = {};
+
+  /// Stores [handler] under a new ID and asks native for one SDK callback that sends that ID
+  /// back. Example: `onValueChanged {name: discount, callbackId: k3f9q2-7, accountId: B}`.
+  /// [staticList] is the public list a static registration also lives in; null for a handle.
+  static void _registerVariablesHandler(
+      String method, Function handler, Map<String, dynamic> arguments,
+      {required bool once, List<Function>? staticList, String? accountId}) {
+    final String callbackId = '$_variablesSession-${++_variablesCount}';
+    _variablesRegistrations[callbackId] =
+        _VariablesRegistration(handler, once, staticList, accountId);
+    _dartToNativeMethodChannel.invokeMethod(method, {
+      ...arguments,
+      'callbackId': callbackId,
+      if (accountId != null) 'accountId': accountId,
+    });
+  }
+
+  /// Runs the one handler a variables event belongs to, with the same map as before. An unknown
+  /// ID (another Flutter engine's, or from before a hot restart) is ignored, and so is an event
+  /// whose account is not the registration's (a static registration belongs to the default).
+  static void _deliverVariablesEvent(
+      String method, dynamic payload, String? accountId, bool isDefault) {
+    final Object? callbackId = payload is Map ? payload[_callbackIdKey] : null;
+    final _VariablesRegistration? registration =
+        _variablesRegistrations[callbackId];
+    if (registration == null) {
+      return;
+    }
+    final bool sameAccount = registration.accountId == null
+        ? isDefault
+        : registration.accountId == accountId;
+    if (!sameAccount) {
+      return;
+    }
+    if (registration.once) {
+      // Removed before it runs, so a handler that throws cannot run again.
+      _variablesRegistrations.remove(callbackId);
+    }
+    final List<Function>? staticList = registration.staticList;
+    if (staticList != null) {
+      if (!staticList.contains(registration.handler)) {
+        // The app took the handler out of the public list: it stops, as before.
+        _variablesRegistrations.remove(callbackId);
+        return;
+      }
+      if (registration.once) {
+        staticList.remove(registration.handler);
+      }
+    }
+    try {
+      final Map<dynamic, dynamic> values = (payload as Map)['values'];
+      registration.handler(values.cast<String, dynamic>());
+    } catch (error, stack) {
+      print("CleverTapPlugin: a $method handler threw: $error\n$stack");
+    }
+  }
+
   Future _platformCallHandler(MethodCall call) async {
     print("_platformCallHandler call ${call.method} ${call.arguments}");
     // Open the envelope. The marker key keeps an app-defined payload that happens to contain
@@ -160,6 +247,11 @@ class CleverTapPlugin {
       accountId = payload['accountId'];
       isDefault = payload['isDefault'] == true;
       payload = payload['payload'];
+    }
+    if (_variablesEvents.contains(call.method)) {
+      // Routed by registration ID, which already belongs to one account.
+      _deliverVariablesEvent(call.method, payload, accountId, isDefault);
+      return;
     }
     // The account's handle, if the app made one and set a handler for this event. For the
     // default account this is in addition to the static handlers below.
@@ -245,51 +337,6 @@ class CleverTapPlugin {
       case "pushPermissionResponseReceived":
         bool accepted = payload;
         cleverTapPushPermissionResponseReceivedHandler(accepted);
-        break;
-      case "onVariablesChanged":
-        Map<dynamic, dynamic> args = payload;
-        cleverTapOnVariablesChangedHandlers
-            .forEach((cleverTapOnVariablesChangedHandler) {
-          cleverTapOnVariablesChangedHandler(args.cast<String, dynamic>());
-        });
-        break;
-      case "onOneTimeVariablesChanged":
-        Map<dynamic, dynamic> args = payload;
-        cleverTapOnOneTimeVariablesChangedHandlers
-            .forEach((cleverTapOnOneTimeVariablesChangedHandler) {
-          cleverTapOnOneTimeVariablesChangedHandler(
-              args.cast<String, dynamic>());
-        });
-        break;
-      case "onValueChanged":
-        Map<dynamic, dynamic> args = payload;
-        cleverTapOnValueChangedHandlers
-            .forEach((cleverTapOnValueChangedHandler) {
-          cleverTapOnValueChangedHandler(args.cast<String, dynamic>());
-        });
-        break;
-      case "onVariablesChangedAndNoDownloadsPending":
-        Map<dynamic, dynamic> args = payload;
-        cleverTapOnVariablesChangedAndNoDownloadsPendingHandlers
-            .forEach((cleverTapOnVariablesChangedAndNoDownloadsPendingHandler) {
-          cleverTapOnVariablesChangedAndNoDownloadsPendingHandler(
-              args.cast<String, dynamic>());
-        });
-        break;
-      case "onceVariablesChangedAndNoDownloadsPending":
-        Map<dynamic, dynamic> args = payload;
-        cleverTapOnceVariablesChangedAndNoDownloadsPendingHandlers.forEach(
-            (cleverTapOnceVariablesChangedAndNoDownloadsPendingHandler) {
-          cleverTapOnceVariablesChangedAndNoDownloadsPendingHandler(
-              args.cast<String, dynamic>());
-        });
-        break;
-      case "onFileValueChanged":
-        Map<dynamic, dynamic> args = payload;
-        cleverTapOnFileValueChangedHandlers
-            .forEach((cleverTapOnFileValueChangedHandler) {
-          cleverTapOnFileValueChangedHandler(args.cast<String, dynamic>());
-        });
         break;
       case "customTemplatePresent":
         String templateName = payload;
@@ -1524,7 +1571,8 @@ class CleverTapPlugin {
   static void onVariablesChanged(CleverTapOnVariablesChangedHandler handler) {
     if (!kIsWeb) {
       cleverTapOnVariablesChangedHandlers.add(handler);
-      _dartToNativeMethodChannel.invokeMethod('onVariablesChanged', {});
+      _registerVariablesHandler('onVariablesChanged', handler, {},
+          once: false, staticList: cleverTapOnVariablesChangedHandlers);
     } else {
       CleverTapPluginWeb.onVariablesChanged(handler);
     }
@@ -1533,14 +1581,16 @@ class CleverTapPlugin {
   static void onOneTimeVariablesChanged(
       CleverTapOnOneTimeVariablesChangedHandler handler) {
     cleverTapOnOneTimeVariablesChangedHandlers.add(handler);
-    _dartToNativeMethodChannel.invokeMethod('onOneTimeVariablesChanged', {});
+    _registerVariablesHandler('onOneTimeVariablesChanged', handler, {},
+        once: true, staticList: cleverTapOnOneTimeVariablesChangedHandlers);
   }
 
   static void onValueChanged(
       String name, CleverTapOnValueChangedHandler handler) {
     if (!kIsWeb) {
       cleverTapOnValueChangedHandlers.add(handler);
-      _dartToNativeMethodChannel.invokeMethod('onValueChanged', {'name': name});
+      _registerVariablesHandler('onValueChanged', handler, {'name': name},
+          once: false, staticList: cleverTapOnValueChangedHandlers);
     } else {
       CleverTapPluginWeb.onValueChanged(name, handler);
     }
@@ -1549,22 +1599,22 @@ class CleverTapPlugin {
   static void onVariablesChangedAndNoDownloadsPending(
       CleverTapOnVariablesChangedAndNoDownloadsPendingHandler handler) {
     cleverTapOnVariablesChangedAndNoDownloadsPendingHandlers.add(handler);
-    _dartToNativeMethodChannel
-        .invokeMethod('onVariablesChangedAndNoDownloadsPending', {});
+    _registerVariablesHandler('onVariablesChangedAndNoDownloadsPending', handler, {},
+        once: false, staticList: cleverTapOnVariablesChangedAndNoDownloadsPendingHandlers);
   }
 
   static void onceVariablesChangedAndNoDownloadsPending(
       CleverTapOnceVariablesChangedAndNoDownloadsPendingHandler handler) {
     cleverTapOnceVariablesChangedAndNoDownloadsPendingHandlers.add(handler);
-    _dartToNativeMethodChannel
-        .invokeMethod('onceVariablesChangedAndNoDownloadsPending', {});
+    _registerVariablesHandler('onceVariablesChangedAndNoDownloadsPending', handler, {},
+        once: true, staticList: cleverTapOnceVariablesChangedAndNoDownloadsPendingHandlers);
   }
 
   static void onFileValueChanged(
       String name, CleverTapOnFileValueChangedHandler handler) {
     cleverTapOnFileValueChangedHandlers.add(handler);
-    _dartToNativeMethodChannel
-        .invokeMethod('onFileValueChanged', {'name': name});
+    _registerVariablesHandler('onFileValueChanged', handler, {'name': name},
+        once: false, staticList: cleverTapOnFileValueChangedHandlers);
   }
 
   ///Sets the user locale.
@@ -1711,9 +1761,6 @@ class CleverTapInstance {
   // This account's handlers, by the event's method name (as native sends it).
   final Map<String, Function> _handlers = {};
 
-  // This account's variables handlers, by the event's method name. Lists, like the static ones.
-  final Map<String, List<Function>> _variablesHandlers = {};
-
   /// Stores [handler] for [method] and, on Android, releases this account's events the native
   /// buffer held for it at start-up (`startEmission` with this account). Web has no per-account
   /// events, so there it only warns.
@@ -1734,10 +1781,6 @@ class CleverTapInstance {
   /// static handlers. Returns false when there is no handler for it. A handler that throws is
   /// reported and does not stop the static handlers for the same event.
   bool _deliver(String method, dynamic payload) {
-    final List<Function>? variablesHandlers = _variablesHandlers[method];
-    if (variablesHandlers != null) {
-      return _deliverToVariablesHandlers(method, variablesHandlers, payload);
-    }
     final Function? handler = _handlers[method];
     if (handler == null) {
       return false;
@@ -1784,35 +1827,17 @@ class CleverTapInstance {
     return true;
   }
 
-  /// Calls every variables handler of this account for [method], with the payload converted as for
-  /// the static ones. One that throws is reported and does not stop the others.
-  bool _deliverToVariablesHandlers(
-      String method, List<Function> handlers, dynamic payload) {
-    if (handlers.isEmpty) {
-      return false;
-    }
-    for (final handler in List.of(handlers)) {
-      try {
-        handler((payload as Map).cast<String, dynamic>());
-      } catch (error, stack) {
-        print("CleverTapPlugin: a $method handler for account $accountId threw: $error\n$stack");
-      }
-    }
-    return true;
-  }
-
-  /// Adds [handler] to this account's list for [method] and asks native to register the matching
-  /// callback on this account (as the static method does for the default account). Web has no
+  /// Registers [handler] for this account's variables event [method]: one native callback of
+  /// its own, on this account (see CleverTapPlugin._registerVariablesHandler). Web has no
   /// per-account variables, so there it only warns.
-  void _addVariablesHandler(
-      String method, Function handler, Map<String, dynamic> arguments) {
+  void _addVariablesHandler(String method, Function handler,
+      Map<String, dynamic> arguments, {required bool once}) {
     if (kIsWeb) {
       print("CleverTapPlugin: account handles are not supported on Web; $method for $accountId is ignored");
       return;
     }
-    (_variablesHandlers[method] ??= []).add(handler);
-    CleverTapPlugin._dartToNativeMethodChannel
-        .invokeMethod(method, {...arguments, 'accountId': accountId});
+    CleverTapPlugin._registerVariablesHandler(method, handler, arguments,
+        once: once, accountId: accountId);
   }
 
   // ---- Methods. Each one sends today's arguments plus this handle's accountId; native routes the
@@ -2529,29 +2554,29 @@ class CleverTapInstance {
     return await _invoke('clearInAppResources', {'value': expiredOnly});
   }
 
-  // ---- Variables listeners. Like the static ones they are lists: each call adds a handler, and every
-  // handler runs for this account's changes, never for another account's.
+  // ---- Variables listeners. Like the native SDK: each call registers one callback on this account,
+  // and each runs once per change (a once handler only once). Never for another account's changes.
 
   void onVariablesChanged(CleverTapOnVariablesChangedHandler handler) =>
-      _addVariablesHandler('onVariablesChanged', handler, {});
+      _addVariablesHandler('onVariablesChanged', handler, {}, once: false);
 
   void onOneTimeVariablesChanged(
           CleverTapOnOneTimeVariablesChangedHandler handler) =>
-      _addVariablesHandler('onOneTimeVariablesChanged', handler, {});
+      _addVariablesHandler('onOneTimeVariablesChanged', handler, {}, once: true);
 
   void onValueChanged(String name, CleverTapOnValueChangedHandler handler) =>
-      _addVariablesHandler('onValueChanged', handler, {'name': name});
+      _addVariablesHandler('onValueChanged', handler, {'name': name}, once: false);
 
   void onVariablesChangedAndNoDownloadsPending(
           CleverTapOnVariablesChangedAndNoDownloadsPendingHandler handler) =>
-      _addVariablesHandler('onVariablesChangedAndNoDownloadsPending', handler, {});
+      _addVariablesHandler('onVariablesChangedAndNoDownloadsPending', handler, {}, once: false);
 
   void onceVariablesChangedAndNoDownloadsPending(
           CleverTapOnceVariablesChangedAndNoDownloadsPendingHandler handler) =>
-      _addVariablesHandler('onceVariablesChangedAndNoDownloadsPending', handler, {});
+      _addVariablesHandler('onceVariablesChangedAndNoDownloadsPending', handler, {}, once: true);
 
   void onFileValueChanged(String name, CleverTapOnFileValueChangedHandler handler) =>
-      _addVariablesHandler('onFileValueChanged', handler, {'name': name});
+      _addVariablesHandler('onFileValueChanged', handler, {'name': name}, once: false);
 
   // ---- Handlers.
 
@@ -2631,4 +2656,17 @@ class CleverTapInstance {
 
   @override
   String toString() => 'CleverTapInstance{accountId: $accountId}';
+}
+
+/// One variables-listener registration. For a static registration, [staticList] is the public
+/// CleverTapPlugin list the handler was also added to: apps may edit those lists (there is no
+/// remove API), so a static handler runs only while it is still in its list. [accountId] is the
+/// handle's account; null for a static registration (the default account).
+class _VariablesRegistration {
+  final Function handler;
+  final bool once;
+  final List<Function>? staticList;
+  final String? accountId;
+
+  _VariablesRegistration(this.handler, this.once, this.staticList, this.accountId);
 }

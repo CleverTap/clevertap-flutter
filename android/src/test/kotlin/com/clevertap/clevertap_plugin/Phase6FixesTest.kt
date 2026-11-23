@@ -3,6 +3,7 @@ package com.clevertap.clevertap_plugin
 import com.clevertap.android.sdk.interfaces.OnInitCleverTapIDListener
 import com.clevertap.clevertap_plugin.DartToNativePlatformCommunicator.Companion.variables
 import com.clevertap.clevertap_plugin.DartToNativePlatformCommunicator.Companion.variablesOf
+import com.clevertap.clevertap_plugin.DartToNativePlatformCommunicator.Companion.variablesPayload
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotSame
 import org.junit.Assert.assertSame
@@ -47,5 +48,16 @@ class Phase6FixesTest {
         assertEquals(listOf<String?>("id-1"), replies)
         assertEquals(3, removed.size)
         assertSame(listener, removed[0])
+    }
+
+    // Each variables event names the Dart registration it belongs to; Dart runs only that handler.
+    @Test
+    fun variablesPayload_carriesTheRegistrationId_andTheUnchangedValues() {
+        val values = mapOf("discount" to 10)
+        val payload = variablesPayload("k3f9q2-7", values)
+        assertEquals(listOf("__ctCallbackId", "values"), payload.keys.toList())
+        assertEquals("k3f9q2-7", payload["__ctCallbackId"])
+        assertSame("the values object is passed through unchanged", values, payload["values"])
+        assertEquals(mapOf("__ctCallbackId" to null, "values" to null), variablesPayload(null, null))
     }
 }

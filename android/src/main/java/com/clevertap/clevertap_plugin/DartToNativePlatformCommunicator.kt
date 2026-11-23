@@ -71,6 +71,16 @@ class DartToNativePlatformCommunicator(
          * Example: setLocale sends "en_US" from CleverTapPlugin and
          * {"value": "en_US", "accountId": "B"} from a handle; both read as "en_US".
          */
+        /**
+         * A variables event's payload: the registration ID Dart sent with onVariablesChanged etc.,
+         * and the values as before. Dart runs only the handler of that registration, so each
+         * handler runs once per change, as with the native SDK.
+         * Example: {"__ctCallbackId": "k3f9q2-7", "values": {"discount": 10}}.
+         */
+        @VisibleForTesting
+        internal fun variablesPayload(callbackId: String?, values: Any?): Map<String, Any?> =
+            linkedMapOf("__ctCallbackId" to callbackId, "values" to values)
+
         @VisibleForTesting
         internal fun scalarArgumentOf(arguments: Any?): Any? =
             if (arguments is Map<*, *>) arguments["value"] else arguments
@@ -945,6 +955,7 @@ class DartToNativePlatformCommunicator(
     // for a static call), read that account's variables and emit with its accountId.
     private fun onVariablesChanged(call: MethodCall) {
         val instance = instanceFor(call)
+        val callbackId = call.argument<String>("callbackId")
         if (instance != null) {
             val accountVariables = variablesFor(instance)
             instance.addVariablesChangedCallback(object : VariablesChangedCallback() {
@@ -952,7 +963,7 @@ class DartToNativePlatformCommunicator(
                     CleverTapEventEmitter.emit(
                         CleverTapEvent.CLEVERTAP_ON_VARIABLES_CHANGED,
                         instance.accountId,
-                        getVariablesValues(accountVariables)
+                        variablesPayload(callbackId, getVariablesValues(accountVariables))
                     )
                 }
             })
@@ -963,6 +974,7 @@ class DartToNativePlatformCommunicator(
 
     private fun onOneTimeVariablesChanged(call: MethodCall) {
         val instance = instanceFor(call)
+        val callbackId = call.argument<String>("callbackId")
         if (instance != null) {
             val accountVariables = variablesFor(instance)
             instance.addOneTimeVariablesChangedCallback(object : VariablesChangedCallback() {
@@ -970,7 +982,7 @@ class DartToNativePlatformCommunicator(
                     CleverTapEventEmitter.emit(
                         CleverTapEvent.CLEVERTAP_ON_ONE_TIME_VARIABLES_CHANGED,
                         instance.accountId,
-                        getVariablesValues(accountVariables)
+                        variablesPayload(callbackId, getVariablesValues(accountVariables))
                     )
                 }
             })
@@ -981,6 +993,7 @@ class DartToNativePlatformCommunicator(
 
     private fun onVariablesChangedAndNoDownloadsPending(call: MethodCall) {
         val instance = instanceFor(call)
+        val callbackId = call.argument<String>("callbackId")
         if (instance != null) {
             val accountVariables = variablesFor(instance)
             instance.onVariablesChangedAndNoDownloadsPending(object :
@@ -989,7 +1002,7 @@ class DartToNativePlatformCommunicator(
                     CleverTapEventEmitter.emit(
                         CleverTapEvent.CLEVERTAP_ON_VARIABLES_CHANGED_AND_NO_DOWNLOADS_PENDING,
                         instance.accountId,
-                        getVariablesValues(accountVariables)
+                        variablesPayload(callbackId, getVariablesValues(accountVariables))
                     )
                 }
             })
@@ -1000,6 +1013,7 @@ class DartToNativePlatformCommunicator(
 
     private fun onceVariablesChangedAndNoDownloadsPending(call: MethodCall) {
         val instance = instanceFor(call)
+        val callbackId = call.argument<String>("callbackId")
         if (instance != null) {
             val accountVariables = variablesFor(instance)
             instance.onceVariablesChangedAndNoDownloadsPending(object :
@@ -1008,7 +1022,7 @@ class DartToNativePlatformCommunicator(
                     CleverTapEventEmitter.emit(
                         CleverTapEvent.CLEVERTAP_ONCE_VARIABLES_CHANGED_AND_NO_DOWNLOADS_PENDING,
                         instance.accountId,
-                        getVariablesValues(accountVariables)
+                        variablesPayload(callbackId, getVariablesValues(accountVariables))
                     )
                 }
             })
@@ -1019,6 +1033,7 @@ class DartToNativePlatformCommunicator(
 
     private fun onValueChanged(call: MethodCall) {
         val name = call.argument<String>("name")
+        val callbackId = call.argument<String>("callbackId")
         val instance = instanceFor(call)
         if (instance == null) {
             Log.d(TAG, ERROR_MSG)
@@ -1041,7 +1056,7 @@ class DartToNativePlatformCommunicator(
                                 null
                             )
                         }
-                        CleverTapEventEmitter.emit(CleverTapEvent.CLEVERTAP_ON_VALUE_CHANGED, instance.accountId, variablesMap)
+                        CleverTapEventEmitter.emit(CleverTapEvent.CLEVERTAP_ON_VALUE_CHANGED, instance.accountId, variablesPayload(callbackId, variablesMap))
                     }
                 })
             } else {
@@ -1058,6 +1073,7 @@ class DartToNativePlatformCommunicator(
 
     private fun onFileValueChanged(call: MethodCall) {
         val name = call.argument<String>("name")
+        val callbackId = call.argument<String>("callbackId")
         val instance = instanceFor(call)
         if (instance == null) {
             Log.d(TAG, ERROR_MSG)
@@ -1080,7 +1096,7 @@ class DartToNativePlatformCommunicator(
                                 null
                             )
                         }
-                        CleverTapEventEmitter.emit(CleverTapEvent.CLEVERTAP_ON_FILE_VALUE_CHANGED, instance.accountId, variablesMap)
+                        CleverTapEventEmitter.emit(CleverTapEvent.CLEVERTAP_ON_FILE_VALUE_CHANGED, instance.accountId, variablesPayload(callbackId, variablesMap))
                     }
                 })
             } else {

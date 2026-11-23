@@ -1720,6 +1720,18 @@ static CleverTapEncryptionLevel ctEncryptionLevelFromString(NSString *level) {
     }
 }
 
+/// Posts a variables event. Its userInfo stays the values, exactly as before (the notification
+/// names are public in CleverTapPlugin.h, so app code may observe them). The account and the
+/// registration ID Dart sent with onVariablesChanged etc. ride in `object`; emitVariablesEvent:
+/// passes the ID to Dart, which runs only that registration's handler (one run per change, as
+/// with the native SDK).
+- (void)postVariablesNotificationWithName:(NSString *)name values:(nullable NSDictionary *)values accountId:(nullable NSString *)accountId callbackId:(nullable id)callbackId {
+    NSMutableDictionary *source = [NSMutableDictionary dictionary];
+    source[@"accountId"] = accountId;
+    source[@"callbackId"] = callbackId;
+    [[NSNotificationCenter defaultCenter] postNotificationName:name object:[source copy] userInfo:values];
+}
+
 - (NSMutableDictionary *)variableValuesForAccount:(nullable NSString *)accountId {
     NSMutableDictionary *varValues = [NSMutableDictionary dictionary];
     if (accountId == nil) {
@@ -1738,6 +1750,20 @@ static CleverTapEncryptionLevel ctEncryptionLevelFromString(NSString *level) {
 - (void)emitEventInternal:(NSNotification *)notification {
     dispatch_async(dispatch_get_main_queue(), ^{
         [self.nativeToDartMethodChannel invokeMethod:notification.name arguments:[self envelopeForNotification:notification payload:notification.userInfo]];
+    });
+}
+
+/// Sends a variables event as {__ctCallbackId: id, values: <userInfo>} in the account's envelope
+/// (see postVariablesNotificationWithName:values:accountId:callbackId:).
+- (void)emitVariablesEvent:(NSNotification *)notification {
+    NSDictionary *source = [notification.object isKindOfClass:[NSDictionary class]] ? notification.object : nil;
+    NSString *accountId = [source[@"accountId"] isKindOfClass:[NSString class]] ? source[@"accountId"] : nil;
+    NSDictionary *payload = @{
+        @"__ctCallbackId": source[@"callbackId"] ?: [NSNull null],
+        @"values": notification.userInfo ?: [NSNull null],
+    };
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [self.nativeToDartMethodChannel invokeMethod:notification.name arguments:[self envelopeForAccountId:accountId payload:payload]];
     });
 }
 
@@ -1853,32 +1879,32 @@ static CleverTapEncryptionLevel ctEncryptionLevelFromString(NSString *level) {
                                                object:nil];
 
     [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(emitEventInternal:)
+                                             selector:@selector(emitVariablesEvent:)
                                                  name:kCleverTapOnVariablesChanged
                                                object:nil];
 
     [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(emitEventInternal:)
+                                             selector:@selector(emitVariablesEvent:)
                                                  name:kCleverTapOnOneTimeVariablesChanged
                                                object:nil];
 
     [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(emitEventInternal:)
+                                             selector:@selector(emitVariablesEvent:)
                                                  name:kCleverTapOnVariablesChangedAndNoDownloadsPending
                                                object:nil];
 
     [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(emitEventInternal:)
+                                             selector:@selector(emitVariablesEvent:)
                                                  name:kCleverTapOnceVariablesChangedAndNoDownloadsPending
                                                object:nil];       
 
     [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(emitEventInternal:)
+                                             selector:@selector(emitVariablesEvent:)
                                                  name:kCleverTapOnFileValueChanged
                                                object:nil];
     
     [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(emitEventInternal:)
+                                             selector:@selector(emitVariablesEvent:)
                                                  name:kCleverTapOnValueChanged
                                                object:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self
@@ -1912,6 +1938,10 @@ static CleverTapEncryptionLevel ctEncryptionLevelFromString(NSString *level) {
 /// events went before. The marker matches _envelopeMarker in lib/clevertap_plugin.dart.
 - (NSDictionary *)envelopeForNotification:(NSNotification *)notification payload:(id)payload {
     NSString *accountId = [notification.object isKindOfClass:[NSString class]] ? notification.object : nil;
+    return [self envelopeForAccountId:accountId payload:payload];
+}
+
+- (NSDictionary *)envelopeForAccountId:(nullable NSString *)accountId payload:(id)payload {
     BOOL isDefault = accountId == nil || [accountId isEqualToString:self.defaultInstance.config.accountId];
     return @{
         @"__ctEnvelope": @YES,
@@ -2154,8 +2184,9 @@ static CleverTapEncryptionLevel ctEncryptionLevelFromString(NSString *level) {
     CleverTap *instance = [self instanceForCall:call];
     // Registered on the call's account (main queue): its events carry that account's ID and values.
     NSString *accountId = instance.config.accountId;
+    id callbackId = call.arguments[@"callbackId"];
     [instance onVariablesChanged:^{
-        [self postNotificationWithName:kCleverTapOnVariablesChanged andBody:[self variableValuesForAccount:accountId] accountId:accountId];
+        [self postVariablesNotificationWithName:kCleverTapOnVariablesChanged values:[self variableValuesForAccount:accountId] accountId:accountId callbackId:callbackId];
     }];
 }
 
@@ -2163,8 +2194,9 @@ static CleverTapEncryptionLevel ctEncryptionLevelFromString(NSString *level) {
     CleverTap *instance = [self instanceForCall:call];
     // Registered on the call's account (main queue): its events carry that account's ID and values.
     NSString *accountId = instance.config.accountId;
+    id callbackId = call.arguments[@"callbackId"];
     [instance onceVariablesChanged:^{
-        [self postNotificationWithName:kCleverTapOnOneTimeVariablesChanged andBody:[self variableValuesForAccount:accountId] accountId:accountId];
+        [self postVariablesNotificationWithName:kCleverTapOnOneTimeVariablesChanged values:[self variableValuesForAccount:accountId] accountId:accountId callbackId:callbackId];
     }];
 }
 
@@ -2172,13 +2204,14 @@ static CleverTapEncryptionLevel ctEncryptionLevelFromString(NSString *level) {
     CleverTap *instance = [self instanceForCall:call];
     // Attached to the call's account's variable (main queue): its events carry that account's ID.
     NSString *accountId = instance.config.accountId;
+    id callbackId = call.arguments[@"callbackId"];
     CTVar *var = [self variableNamed:call.arguments[@"name"] forAccount:accountId];
     if (var) {
         [var onValueChanged:^{
             NSDictionary *varResult = @{
                 var.name: var.value
             };
-            [self postNotificationWithName:kCleverTapOnValueChanged andBody:varResult accountId:accountId];
+            [self postVariablesNotificationWithName:kCleverTapOnValueChanged values:varResult accountId:accountId callbackId:callbackId];
         }];
     }
 }
@@ -2187,8 +2220,9 @@ static CleverTapEncryptionLevel ctEncryptionLevelFromString(NSString *level) {
     CleverTap *instance = [self instanceForCall:call];
     // Registered on the call's account (main queue): its events carry that account's ID and values.
     NSString *accountId = instance.config.accountId;
+    id callbackId = call.arguments[@"callbackId"];
     [instance onVariablesChangedAndNoDownloadsPending:^{
-        [self postNotificationWithName:kCleverTapOnVariablesChangedAndNoDownloadsPending andBody:[self variableValuesForAccount:accountId] accountId:accountId];
+        [self postVariablesNotificationWithName:kCleverTapOnVariablesChangedAndNoDownloadsPending values:[self variableValuesForAccount:accountId] accountId:accountId callbackId:callbackId];
     }];
 }
 
@@ -2196,8 +2230,9 @@ static CleverTapEncryptionLevel ctEncryptionLevelFromString(NSString *level) {
     CleverTap *instance = [self instanceForCall:call];
     // Registered on the call's account (main queue): its events carry that account's ID and values.
     NSString *accountId = instance.config.accountId;
+    id callbackId = call.arguments[@"callbackId"];
     [instance onceVariablesChangedAndNoDownloadsPending:^{
-        [self postNotificationWithName:kCleverTapOnceVariablesChangedAndNoDownloadsPending andBody:[self variableValuesForAccount:accountId] accountId:accountId];
+        [self postVariablesNotificationWithName:kCleverTapOnceVariablesChangedAndNoDownloadsPending values:[self variableValuesForAccount:accountId] accountId:accountId callbackId:callbackId];
     }];
 }
 
@@ -2205,13 +2240,14 @@ static CleverTapEncryptionLevel ctEncryptionLevelFromString(NSString *level) {
     CleverTap *instance = [self instanceForCall:call];
     // Attached to the call's account's variable (main queue): its events carry that account's ID.
     NSString *accountId = instance.config.accountId;
+    id callbackId = call.arguments[@"callbackId"];
     CTVar *var = [self variableNamed:call.arguments[@"name"] forAccount:accountId];
     if (var) {
         [var onFileIsReady:^{
             NSDictionary *varFileResult = @{
                 var.name: var.value
             };
-            [self postNotificationWithName:kCleverTapOnFileValueChanged andBody:varFileResult accountId:accountId];
+            [self postVariablesNotificationWithName:kCleverTapOnFileValueChanged values:varFileResult accountId:accountId callbackId:callbackId];
         }];
     }
 }
