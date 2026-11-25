@@ -16,6 +16,7 @@
 #import "CleverTapPlugin.h"
 #import "CleverTapPluginInstanceConfigRequest.h"
 #import "CleverTapPluginInstanceDelegate.h"
+#import "CleverTapPluginLaunchConfig.h"
 #import "CleverTapPlugin+Internal.h"
 
 #if __has_include(<CleverTapSDK/CleverTap+Inbox.h>)
@@ -273,6 +274,55 @@ static NSString *const kCleverTapErrorCodeCreateFailed = @"ECREATE";
     if (notification && [[CleverTap sharedInstance] isCleverTapNotification:notification]) {
         self.launchNotification = notification;
     }
+}
+
+- (void)applicationDidLaunchWithOptions:(NSDictionary *)options launchConfigs:(NSArray<CleverTapPluginLaunchConfig *> *)launchConfigs {
+    if (![NSThread isMainThread]) {
+        // The SDK's account map has no lock, and resolveInstance: is main-queue only. Moving the
+        // work to main keeps one object per account, but a tap that opened the app may be missed.
+        NSLog(@"CleverTapFlutter: applicationDidLaunchWithOptions:launchConfigs: must be called on the main thread, in didFinishLaunchingWithOptions. Moving it to the main thread.");
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self applicationDidLaunchWithOptions:options launchConfigs:launchConfigs];
+        });
+        return;
+    }
+    // The default account was created and wired when the plugin started (init).
+    NSString *defaultAccountId = self.defaultInstance.config.accountId;
+    for (id item in launchConfigs) {
+        if (![item isKindOfClass:[CleverTapPluginLaunchConfig class]]) {
+            NSLog(@"CleverTapFlutter: a launch config is not a CleverTapPluginLaunchConfig; skipped.");
+            continue;
+        }
+        CleverTapPluginLaunchConfig *launchConfig = item;
+        NSString *accountId = launchConfig.config.accountId;
+        if (accountId.length == 0) {
+            NSLog(@"CleverTapFlutter: a launch config has no account ID; skipped.");
+            continue;
+        }
+        if ([accountId isEqualToString:defaultAccountId]) {
+            NSLog(@"CleverTapFlutter: launch config %@ is the default account (Info.plist), which already exists; skipped.", accountId);
+            continue;
+        }
+        // Creation can throw: custom template producers run inside it, and a duplicate template
+        // name raises. One bad account must not crash app launch or stop the others.
+        @try {
+            if (launchConfig.cleverTapID != nil && !launchConfig.config.useCustomCleverTapId) {
+                NSLog(@"CleverTapFlutter: launch config %@ has a CleverTap ID but useCustomCleverTapId is NO; the SDK will ignore the ID.", accountId);
+            }
+            CleverTap *instance = launchConfig.cleverTapID != nil
+                ? [CleverTap instanceWithConfig:launchConfig.config andCleverTapID:launchConfig.cleverTapID]
+                : [CleverTap instanceWithConfig:launchConfig.config];
+            if (instance == nil) {
+                NSLog(@"CleverTapFlutter: launch config %@: the SDK created no instance.", accountId);
+                continue;
+            }
+            // Delegate and library stamp, exactly as for a Dart createInstance.
+            [self resolveInstance:accountId];
+        } @catch (NSException *exception) {
+            NSLog(@"CleverTapFlutter: launch config %@ could not be created; the other accounts continue: %@", accountId, exception);
+        }
+    }
+    [self applicationDidLaunchWithOptions:options];
 }
 
 - (void)sceneWillConnectWithOptions:(UISceneConnectionOptions *)connectionOptions API_AVAILABLE(ios(13.0)) {
@@ -626,6 +676,20 @@ static NSString *const kCleverTapErrorCodeCreateFailed = @"ECREATE";
     }
     [[CleverTap sharedInstance] setLibrary:call.arguments[@"libName"]];
     [[CleverTap sharedInstance] setCustomSdkVersion:call.arguments[@"libName"] version:[call.arguments[@"libVersion"]intValue]];
+    // Accounts wired before this call (launch accounts are wired in didFinishLaunching, before
+    // Dart runs) were never stamped: resolveInstance: stamps only once the name is known. The
+    // library name is per account in the SDK, so without this B's events went out without "lib".
+    if (self.libraryName != nil) {
+        NSString *defaultAccountId = self.defaultInstance.config.accountId;
+        for (NSString *accountId in [self.wiredAccountIds allObjects]) {
+            if ([accountId isEqualToString:defaultAccountId]) {
+                continue; // stamped just above
+            }
+            CleverTap *instance = [CleverTap getGlobalInstance:accountId];
+            [instance setLibrary:self.libraryName];
+            [instance setCustomSdkVersion:self.libraryName version:self.libraryVersion];
+        }
+    }
     // This handler never answered before. Dart does not await setLibrary, so nothing waited, but
     // every method call must be answered once.
     result(nil);

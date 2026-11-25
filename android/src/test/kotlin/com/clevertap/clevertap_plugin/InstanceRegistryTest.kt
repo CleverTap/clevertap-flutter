@@ -27,16 +27,24 @@ class InstanceRegistryTest {
         val wired: MutableList<Pair<String?, CleverTapLibrary?>> =
             Collections.synchronizedList(mutableListOf())
         val warnings: MutableList<String> = Collections.synchronizedList(mutableListOf())
+        val stamped: MutableList<Pair<String?, CleverTapLibrary>> =
+            Collections.synchronizedList(mutableListOf())
 
         override fun default(context: Unit): FakeInstance? {
             defaultCalls.incrementAndGet()
             return defaultInstance
         }
 
-        override fun global(context: Unit, accountId: String): FakeInstance? = known[accountId]
+        // Like the SDK: getGlobalInstance also finds the default account by its ID.
+        override fun global(context: Unit, accountId: String): FakeInstance? =
+            known[accountId] ?: defaultInstance?.takeIf { it.accountId == accountId }
         override fun accountIdOf(instance: FakeInstance): String? = instance.accountId
         override fun wire(instance: FakeInstance, library: CleverTapLibrary?) {
             wired.add(instance.accountId to library)
+        }
+
+        override fun stamp(instance: FakeInstance, library: CleverTapLibrary) {
+            stamped.add(instance.accountId to library)
         }
 
         override fun warn(message: String) {
@@ -134,13 +142,34 @@ class InstanceRegistryTest {
         val registry = InstanceRegistry(source)
 
         registry.resolve(Unit, null) // wired before Dart's setLibrary arrives: no version yet
-        registry.rememberLibrary("Flutter", 40300)
-        registry.resolve(Unit, "B") // wired after: gets the version
+        registry.rememberLibrary(Unit, "Flutter", 40300) // stamps D now
+        registry.resolve(Unit, "B") // wired after: gets the version when wired
 
-        assertEquals(
-            listOf("D" to null, "B" to CleverTapLibrary("Flutter", 40300)),
-            source.wired,
+        val flutter = CleverTapLibrary("Flutter", 40300)
+        assertEquals(listOf("D" to null, "B" to flutter), source.wired)
+        assertEquals(listOf("D" to flutter), source.stamped)
+    }
+
+    // Phase 8: a launch account is wired in Application.onCreate, before Dart's setLibrary.
+    // Before the fix it never got the version; now setLibrary stamps every account wired so far.
+    @Test
+    fun launchAccountWiredBeforeSetLibrary_isStampedWhenSetLibraryArrives() {
+        val source = FakeSource(
+            defaultInstance = FakeInstance("D"),
+            known = ConcurrentHashMap(mapOf("B" to FakeInstance("B"), "C" to FakeInstance("C"))),
         )
+        val registry = InstanceRegistry(source)
+
+        registry.resolve(Unit, "B") // launch account, no version known yet
+        registry.resolve(Unit, null)
+        registry.rememberLibrary(Unit, "Flutter", 40500)
+
+        val flutter = CleverTapLibrary("Flutter", 40500)
+        assertEquals(setOf("B" to flutter, "D" to flutter), source.stamped.toSet())
+        assertEquals("C was never wired, so it is not stamped", 2, source.stamped.size)
+
+        registry.rememberLibrary(Unit, "Flutter", 40501) // a hot restart sends it again
+        assertEquals(4, source.stamped.size)
     }
 
     @Test

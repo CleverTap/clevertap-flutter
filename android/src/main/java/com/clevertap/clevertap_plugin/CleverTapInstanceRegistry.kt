@@ -26,6 +26,9 @@ internal interface InstanceSource<C, T : Any> {
     /** Runs once per account, the first time it is resolved. */
     fun wire(instance: T, library: CleverTapLibrary?)
 
+    /** Stamps the wrapper name and version on [instance]. */
+    fun stamp(instance: T, library: CleverTapLibrary)
+
     fun warn(message: String)
 }
 
@@ -85,9 +88,19 @@ internal class InstanceRegistry<C, T : Any>(private val source: InstanceSource<C
         return instance
     }
 
-    /** Remembers the wrapper version, so accounts wired after Dart's setLibrary report it too. */
-    fun rememberLibrary(name: String?, version: Int) {
-        library = CleverTapLibrary(name, version)
+    /**
+     * Remembers the wrapper version and stamps it on every account wired so far. Accounts wired
+     * later get it in [resolve]. Why both: a launch account (Phase 8) is wired in
+     * Application.onCreate, before Dart sends setLibrary. Example: B wired at 0.1 s, setLibrary at
+     * 1.5 s: without this loop B never got the version.
+     */
+    fun rememberLibrary(context: C, name: String?, version: Int) {
+        val remembered = CleverTapLibrary(name, version)
+        library = remembered
+        // A snapshot: an account wired during the loop reads the new library in resolve().
+        for (accountId in wiredAccountIds.toList()) {
+            source.global(context, accountId)?.let { source.stamp(it, remembered) }
+        }
     }
 
     /**
@@ -128,14 +141,18 @@ internal object CleverTapInstanceRegistry {
 
         @SuppressLint("RestrictedApi")
         override fun wire(instance: CleverTapAPI, library: CleverTapLibrary?) {
-            instance.setLibrary("Flutter")
-            if (library != null) {
-                instance.setCustomSdkVersion(library.name, library.version)
-            }
+            // The name always; the version once Dart has sent it (else rememberLibrary stamps it).
+            if (library != null) stamp(instance, library) else instance.setLibrary("Flutter")
             // The account's own listener, so its events reach Dart tagged with its ID. This is the
             // only attach for a created account. The default account is also re-attached on every
             // engine attach in CleverTapPlugin.setupPlugin, as before.
             CleverTapListenerProxy.attachToInstance(instance)
+        }
+
+        @SuppressLint("RestrictedApi")
+        override fun stamp(instance: CleverTapAPI, library: CleverTapLibrary) {
+            instance.setLibrary("Flutter")
+            instance.setCustomSdkVersion(library.name, library.version)
         }
 
         override fun warn(message: String) {
@@ -147,7 +164,8 @@ internal object CleverTapInstanceRegistry {
     fun resolve(context: Context, accountId: String?): CleverTapAPI? = registry.resolve(context, accountId)
 
     @JvmStatic
-    fun rememberLibrary(name: String?, version: Int) = registry.rememberLibrary(name, version)
+    fun rememberLibrary(context: Context, name: String?, version: Int) =
+        registry.rememberLibrary(context, name, version)
 
     @JvmStatic
     fun isWired(accountId: String): Boolean = registry.isWired(accountId)

@@ -250,6 +250,7 @@ class DartToNativePlatformCommunicator(
                         callbackHandle
                     )
                 }
+                result.success(null) // answered, so the Dart Future completes (it never did)
             }
 
             "setLocale" -> {
@@ -1235,8 +1236,9 @@ class DartToNativePlatformCommunicator(
     private fun setLibrary(call: MethodCall, result: MethodChannel.Result) {
         val libName = call.argument<String>("libName")
         val libVersion = call.argument<Int>("libVersion")!!
-        // Remembered even when there is no default account, so accounts created later report it.
-        CleverTapInstanceRegistry.rememberLibrary(libName, libVersion)
+        // Remembered even when there is no default account, so accounts created later report it,
+        // and stamped on the accounts wired already (launch accounts are wired before Dart runs).
+        CleverTapInstanceRegistry.rememberLibrary(context, libName, libVersion)
         cleverTapAPI?.setCustomSdkVersion(libName, libVersion)
         // Always success: remembering the version above is this call's job, and it worked. An app
         // with no AndroidManifest.xml account (every account created from Dart) used to get an
