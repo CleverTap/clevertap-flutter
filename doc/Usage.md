@@ -1,5 +1,7 @@
 # Example Usage
 
+> **Several CleverTap accounts in one app?** Every method below on `CleverTapPlugin` uses your default account (`AndroidManifest.xml` / `Info.plist`). For other accounts, see [Multi-Instance](MultiInstance.md).
+
 ## User Profiles
 
 #### Update User Profile(Push Profile)
@@ -350,16 +352,24 @@ Add the following code in the `onNewIntent()` method of the Launcher `FlutterAct
 ```kotlin
 class MainActivity : FlutterActivity() {
 
-override fun onNewIntent(intent: Intent?) {
-   super.onNewIntent(intent)
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
 
-   // On Android 12 and above, inform the notification click to get the pushClickedPayloadReceived callback on dart side.
-   if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-       cleverTapDefaultInstance?.pushNotificationClickedEvent(intent!!.extras)
-   }
- }
+        // On Android 12 and above, inform the notification click to get the pushClickedPayloadReceived callback on dart side.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val extras = intent.extras ?: return
+            // Send the click to the account the push belongs to. A push without wzrk_acct_id
+            // belongs to the default account, so a one-account app behaves exactly as before.
+            val accountId = extras.getString("wzrk_acct_id")
+            val instance = if (accountId != null) CleverTapAPI.getGlobalInstance(this, accountId)
+                           else CleverTapAPI.getDefaultInstance(this)
+            instance?.pushNotificationClickedEvent(extras)
+        }
+    }
 }
 ```
+
+Why not always the default instance: with [several accounts](MultiInstance.md), the default account refuses a push that belongs to another account, so that account's click would be lost.
 
 #### **[Android Platform] Handle Notification Clicks When the App Is Killed**
 The CleverTap Plugin provides two ways to handle user interactions with notifications, depending on whether the app needs to perform UI or non-UI operations.

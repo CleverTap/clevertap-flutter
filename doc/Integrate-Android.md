@@ -121,3 +121,7 @@
     ```
 
 If you're upgrading to CleverTap Flutter SDK v1.2.0 and above, please find the [CHANGELOG related to CleverTap Android SDK here](https://github.com/CleverTap/clevertap-android-sdk/blob/master/docs/CTV4CHANGES.md).
+
+### Several CleverTap accounts
+
+The account in `AndroidManifest.xml` is your default account. To send data to more accounts from one app, see [Multi-Instance](MultiInstance.md). An extra account that sends push notifications must be created in `Application.onCreate` with a [launch config](MultiInstance.md#android), so its push is shown even when the app was killed.

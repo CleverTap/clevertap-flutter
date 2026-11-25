@@ -1,5 +1,43 @@
 ## CHANGE LOG
 
+### Version 4.5.0 *(30 November 2026)*
+-------------------------------------------
+**What's new**
+
+* **[Android and iOS Platform]**
+  * Adds multi-instance support: one app can send to several CleverTap accounts at the same time. `CleverTapPlugin` keeps using the default account from `AndroidManifest.xml` / `Info.plist`, exactly as before. Each additional account gets a `CleverTapInstance` handle with the same methods and event handlers, and every call and event on a handle belongs to that account only. See [Multi-Instance](doc/MultiInstance.md).
+  * Adds launch configs, which create additional accounts natively at app start. Use them for any account that sends push notifications, so its push is shown and its tap reaches it even when the app was killed.
+  * Custom templates and app functions work on every account. Definitions stay app-wide; each account presents its own.
+
+**API changes**
+* **[Android and iOS Platform]**
+  * New API: `CleverTapPlugin.createInstance(CleverTapInstanceConfig config)` - Creates an additional account and returns its `CleverTapInstance` handle. Throws a `PlatformException` with code `EINVALID` (a config field is wrong) or `ECREATE` (the SDK could not create the account).
+  * New API: `CleverTapPlugin.getInstance(String accountId)` - Returns the handle for an account that already exists (for example a launch-config account).
+  * New classes: `CleverTapInstance`, `CleverTapInstanceConfig`, `CleverTapAndroidConfig`, `CleverTapIosConfig`, `CleverTapPushProvider`, and the enums `CleverTapLogLevel` and `CleverTapEncryptionLevel`.
+* **[Android Platform]**
+  * New API: `CleverTapPlugin.createLaunchInstances(Context, List<CleverTapLaunchConfig>)` and the `CleverTapApplication.launchConfigs()` hook - Create accounts in `Application.onCreate`.
+* **[iOS Platform]**
+  * New API: `-[CleverTapPlugin applicationDidLaunchWithOptions:launchConfigs:]` with `CleverTapPluginLaunchConfig` - Creates accounts in `didFinishLaunchingWithOptions`.
+
+**Bug Fixes**
+* **[Android Platform]**
+  * Fixes a possible `NoSuchElementException` crash and lost early events when CleverTap events were sent from several threads.
+  * Fixes `setCleverTapPushAmpPayloadReceivedHandler` never being called.
+  * Fixes `getCleverTapID` sometimes answering twice and leaving a listener behind.
+  * Fixes `customTemplateContextToString` always throwing a `PlatformException`.
+  * Fixes `syncVariablesinProd`, `registerForPush`, `getInitialUrl` and `registerKilledStateNotificationClickedHandler` never completing their `Future`.
+  * Fixes an uncaught `PlatformException` at every launch when `AndroidManifest.xml` has no CleverTap account.
+* **[iOS Platform]**
+  * Fixes `setCleverTapProfileSyncHandler` never being called.
+  * Fixes `setCleverTapInAppNotificationShowHandler` never being called.
+  * Fixes app functions calling the custom template handler instead of `setCleverTapCustomFunctionPresentHandler`. If your app handled app functions inside its template handler, move that code to the function handler.
+  * Fixes `initializeInbox`, `showInbox`, `dismissInbox`, `suspendInAppNotifications`, `resumeInAppNotifications`, `promptPushPrimer`, `promptForPushNotification`, `syncVariables`, `syncVariablesinProd` and `clearInAppResources` never completing their `Future`.
+  * `enablePersonalization` and `disablePersonalization` now take effect immediately, as on Android. Before, they applied at the next app launch.
+* **[Android and iOS Platform]**
+  * Fixes variables callbacks running too often: each `onVariablesChanged` (and the other variables callbacks) now runs once per change, as in the native SDKs. Before, with two callbacks each one ran twice, a `onOneTimeVariablesChanged` callback could run again, and `onValueChanged('a')` also ran for other variables.
+  * Fixes `getInboxMessageForId` and `getDisplayUnitForId` with an unknown ID: both now return an empty map. Before, Android never answered (inbox) or threw (display unit), and iOS threw a `TypeError`.
+  * Fixes variables callbacks never being called in an app that registers them (for example `CleverTapPlugin.onVariablesChanged`) without ever creating a `CleverTapPlugin()` object.
+
 ### Version 4.4.0 *(19 November 2026)*
 -------------------------------------------
 **What's new**

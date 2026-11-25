@@ -132,14 +132,14 @@ and
 Templates must be registered within the native applications:
 
 ### For Android
-Call `CleverTapCustomTemplates.registerCustomTemplates` in your `Application.onCreate` method.
+Call `ClevertapCustomTemplates.registerCustomTemplates` in your `Application.onCreate` method.
  - If you are extending `CleverTapApplication` or otherwise add these lines before calling `super.onCreate()`:
 ```java
 public class MainApplication extends CleverTapApplication {
     @Override
     public void onCreate() {
         ActivityLifecycleCallback.register(this);
-        CleverTapCustomTemplates.registerCustomTemplates(this, "templates.json");
+        ClevertapCustomTemplates.registerCustomTemplates(this, "templates.json");
         super.onCreate();
     }
 }
@@ -165,6 +165,14 @@ If your app uses the `UIScene` lifecycle, also notify the plugin of the cold-lau
     [[CleverTapPlugin sharedInstance] sceneWillConnectWithOptions:connectionOptions];
 }
 ```
+
+### Several CleverTap accounts
+
+With [several accounts](MultiInstance.md), the registered templates are the same for every account, but each account presents its own campaigns:
+
+- Register templates before any account is created (as shown above, before `super.onCreate()` and before `applicationDidLaunchWithOptions:`). An account created earlier never gets them. This includes [launch-config accounts](MultiInstance.md#create-accounts-at-app-start-launch-configs).
+- Account B's template reaches only B's handle. Use B's handle to read its arguments and to mark it presented or dismissed: `b.setCleverTapCustomTemplatePresentHandler(...)`, `b.customTemplateGetStringArg(...)`, `b.customTemplateSetDismissed(...)`.
+- Two templates with the same name make account creation fail (`ECREATE` from `createInstance`).
 
 ## Syncing in-app templates to the dashboard
 

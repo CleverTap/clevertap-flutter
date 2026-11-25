@@ -182,8 +182,9 @@ static NSString *const kCleverTapErrorCodeCreateFailed = @"ECREATE";
 /// Finds the CleverTap instance for an account.
 /// accountId == nil: the default slot (the Info.plist account).
 /// accountId != nil: that account's instance, or nil after ONE warning naming the ID.
-/// We keep no map of instances: the SDK has one, and getGlobalInstance: can bring an account back
-/// from disk on a cold start, so a copy here could only drift.
+/// We keep no map of instances: the SDK has one, so a copy here could only drift. (getGlobalInstance:
+/// can also rebuild an account from its archived config, but only while the SDK has no instance at
+/// all; with an Info.plist account the default always exists first.)
 - (nullable CleverTap *)resolveInstance:(nullable NSString *)accountId {
     if (![NSThread isMainThread]) {
         // Never expected: the state below is main-queue only. Log loudly, do not crash the app.

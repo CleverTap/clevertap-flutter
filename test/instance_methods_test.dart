@@ -34,10 +34,14 @@ void main() {
       toNative.add(call);
       return mapAnswers.contains(call.method) ? {'k': 'v'} : null;
     });
+    // Starts the plugin (one setLibrary) before the tests count calls. Same handle as `b` below.
+    CleverTapPlugin.getInstance('B');
   });
   setUp(toNative.clear);
 
-  final b = CleverTapPlugin.getInstance('B');
+  // Lazy: getInstance starts the plugin (it sends setLibrary), so it must run after setUpAll
+  // installs the mock native side.
+  late final CleverTapInstance b = CleverTapPlugin.getInstance('B');
   final extras = {'wzrk_id': 'n1'};
   final pushType = {'type': 'hps', 'prefKey': 'hps_token'};
 

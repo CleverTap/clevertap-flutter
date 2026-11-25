@@ -38,8 +38,10 @@ internal interface InstanceSource<C, T : Any> {
  * - `accountId == null`: the default slot (the AndroidManifest.xml account).
  * - `accountId != null`: that account's instance, or null after ONE warning naming the ID.
  *
- * We keep no map of instances: the SDK has one, and it can bring an account back from disk on a
- * cold start (`fromAccountId` -> `createInstanceIfAvailable`), so a copy here could only drift.
+ * We keep no map of instances: the SDK has one, so a copy here could only drift. (The SDK can also
+ * rebuild an account from the config saved on disk, but only while it has no instance at all:
+ * `fromAccountId` -> `createInstanceIfAvailable` when `instances == null`. With a manifest
+ * account the default always exists first, so in practice an account exists only once created.)
  * We keep only the default pointer, which accounts are wired, and the wrapper version.
  *
  * Today every caller runs on the main thread (Flutter delivers method calls there). The fields

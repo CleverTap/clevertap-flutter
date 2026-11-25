@@ -2,6 +2,7 @@ package com.example.clevertap_plugin_example;
 
 import android.content.Intent;
 import android.os.Build;
+import android.os.Bundle;
 
 import androidx.annotation.NonNull;
 
@@ -17,9 +18,18 @@ public class MainActivity extends FlutterFragmentActivity {
 
         // On Android 12 and above, inform the notification click to get the above mentioned callback on dart side.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            CleverTapAPI cleverTapDefaultInstance = CleverTapAPI.getDefaultInstance(this);
-            if (cleverTapDefaultInstance != null) {
-                cleverTapDefaultInstance.pushNotificationClickedEvent(intent.getExtras());
+            Bundle extras = intent.getExtras();
+            if (extras == null) {
+                return;
+            }
+            // Send the click to the account the push belongs to (doc/MultiInstance.md). A push
+            // without wzrk_acct_id belongs to the default account.
+            String accountId = extras.getString("wzrk_acct_id");
+            CleverTapAPI instance = accountId != null
+                    ? CleverTapAPI.getGlobalInstance(this, accountId)
+                    : CleverTapAPI.getDefaultInstance(this);
+            if (instance != null) {
+                instance.pushNotificationClickedEvent(extras);
             }
         }
     }

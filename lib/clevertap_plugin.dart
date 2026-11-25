@@ -83,7 +83,7 @@ class CleverTapPlugin {
   static const libName = 'Flutter';
 
   static const libVersion =
-      40400; // If the current version is X.X.X then pass as X0X0X
+      40500; // If the current version is X.X.X then pass as X0X0X
 
   CleverTapPlugin._internal() {
     /// Set the CleverTap Flutter library name and the current version for version tracking
@@ -124,7 +124,9 @@ class CleverTapPlugin {
   // One handle per account ID, for the life of the app: the handle holds that account's handlers.
   static final Map<String, CleverTapInstance> _instances = {};
 
-  /// The handle for [accountId]. Always the same object for the same ID, and it never calls native.
+  /// The handle for [accountId]. Always the same object for the same ID. The first call in the app
+  /// starts the plugin (as [createInstance] and `CleverTapPlugin()` do): Dart starts receiving native
+  /// events and sends the wrapper version. Later calls never call native.
   ///
   /// Use it for an account that already exists: one created earlier with [createInstance], or the
   /// default account (`AndroidManifest.xml` / `Info.plist`). A handle's handlers receive only that
@@ -141,6 +143,10 @@ class CleverTapPlugin {
     if (accountId.isEmpty) {
       throw ArgumentError.value(accountId, 'accountId', 'must not be empty');
     }
+    // Start the plugin. Its constructor is where Dart starts listening for native events. Without
+    // this, an app that only uses handles (for example a launch-config account reached with
+    // getInstance, and no CleverTapPlugin() anywhere) received no events at all.
+    _clevertapPlugin;
     return _instances.putIfAbsent(accountId, () => CleverTapInstance._(accountId));
   }
 
@@ -185,6 +191,10 @@ class CleverTapPlugin {
   static void _registerVariablesHandler(
       String method, Function handler, Map<String, dynamic> arguments,
       {required bool once, List<Function>? staticList, String? accountId}) {
+    // A variables callback arrives as a native event, which Dart receives only once the plugin is
+    // started. An app may register CleverTapPlugin.onVariablesChanged without ever calling
+    // CleverTapPlugin(), and its callbacks were then lost.
+    _clevertapPlugin;
     final String callbackId = '$_variablesSession-${++_variablesCount}';
     _variablesRegistrations[callbackId] =
         _VariablesRegistration(handler, once, staticList, accountId);
