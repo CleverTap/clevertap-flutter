@@ -29,7 +29,7 @@ void main() {
         'payload': payload,
       };
 
-  // The 17 handle events: [method, payload as native sends it, value the handler receives,
+  // The 20 handle events: [method, payload as native sends it, value the handler receives,
   // native event name armed on Android, setter].
   final inApp = {'wzrk_id': 'c1'};
   final events = <List<Object?>>[
@@ -190,6 +190,31 @@ void main() {
       (CleverTapInstance h, void Function(Object?) r) =>
           h.setCleverTapPushAmpPayloadReceivedHandler((m) => r(m))
     ],
+    // Phase 7: custom templates. The payload is the bare template name, as for the static handlers.
+    [
+      'customTemplatePresent',
+      'Spin',
+      'Spin',
+      'CleverTapCustomTemplatePresent',
+      (CleverTapInstance h, void Function(Object?) r) =>
+          h.setCleverTapCustomTemplatePresentHandler((n) => r(n))
+    ],
+    [
+      'customFunctionPresent',
+      'OpenWallet',
+      'OpenWallet',
+      'CleverTapCustomFunctionPresent',
+      (CleverTapInstance h, void Function(Object?) r) =>
+          h.setCleverTapCustomFunctionPresentHandler((n) => r(n))
+    ],
+    [
+      'customTemplateClose',
+      'Spin',
+      'Spin',
+      'CleverTapCustomTemplateClose',
+      (CleverTapInstance h, void Function(Object?) r) =>
+          h.setCleverTapCustomTemplateCloseHandler((n) => r(n))
+    ],
   ];
 
   late CleverTapPlugin plugin;
@@ -227,7 +252,7 @@ void main() {
     });
   });
 
-  group('routing, all 17 handle events', () {
+  group('routing, all 20 handle events', () {
     for (final e in events) {
       final method = e[0] as String;
       final payload = e[1];

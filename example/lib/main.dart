@@ -885,6 +885,8 @@ class _MyAppState extends State<MyApp> {
                         "Then reads Plan on TEST-ACC-B: nothing comes back"),
                     _buildListTile("Instance B: Enable Personalization", instanceBEnablePersonalization,
                         "Then reads Plan on TEST-ACC-B"),
+                    _buildListTile("Instance B: Custom Templates", instanceBCustomTemplates,
+                        "Sets TEST-ACC-B's template handlers, syncs, and asks B for a template it is not showing"),
                     _buildListTile("Enable Personalization",
                         enablePersonalization, "Enables Personalization"),
                     _buildListTile("Disable Personalization",
@@ -1950,6 +1952,41 @@ class _MyAppState extends State<MyApp> {
     final plan = await _instanceB.profileGetProperty('Plan');
     showToast("TEST-ACC-B personalization on, Plan = $plan");
     print("MI -> TEST-ACC-B: enablePersonalization, profileGetProperty Plan = $plan");
+  }
+
+  // TEST-ACC-B gets the same templates.json as the default account, but presents its own
+  // campaigns. These handlers run only for B's templates; each call below acts on B's template.
+  void instanceBCustomTemplates() async {
+    final b = _instanceB;
+    b.setCleverTapCustomTemplatePresentHandler((name) async {
+      final text = await b.customTemplateGetStringArg(name, 'string');
+      final context = await b.customTemplateContextToString(name);
+      print("MI -> TEST-ACC-B: customTemplatePresent $name, string = $text, context = $context");
+      await b.customTemplateSetPresented(name);
+      await b.customTemplateSetDismissed(name);
+      print("MI -> TEST-ACC-B: $name presented and dismissed");
+    });
+    b.setCleverTapCustomFunctionPresentHandler((name) async {
+      final text = await b.customTemplateGetStringArg(name, 'string');
+      print("MI -> TEST-ACC-B: customFunctionPresent $name, string = $text");
+      // A function is done once it has run. Until it is dismissed, the SDK keeps B's later
+      // in-app messages waiting.
+      await b.customTemplateSetPresented(name);
+      await b.customTemplateSetDismissed(name);
+    });
+    b.setCleverTapCustomTemplateCloseHandler((name) {
+      print("MI -> TEST-ACC-B: customTemplateClose $name");
+      b.customTemplateSetDismissed(name);
+    });
+    await b.syncCustomTemplates();
+    print("MI -> TEST-ACC-B: syncCustomTemplates sent");
+    try {
+      // B is not showing it, even if the default account is: B's own answer.
+      await b.customTemplateSetDismissed('Example template');
+    } on PlatformException catch (e) {
+      showToast("TEST-ACC-B: ${e.message}");
+      print("MI -> TEST-ACC-B: customTemplateSetDismissed -> PlatformException(${e.code}, ${e.message})");
+    }
   }
 
   void unknownInstanceGetCleverTapID() async {

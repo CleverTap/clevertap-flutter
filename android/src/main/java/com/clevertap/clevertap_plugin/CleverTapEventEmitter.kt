@@ -34,8 +34,8 @@ import java.util.concurrent.Executors
  * payloads built on the SDK thread are safely visible to the worker. Callers never wait: posting
  * only enqueues.
  *
- * ACCOUNTS. Every event carries the account it came from (null when unknown, for example custom
- * templates, which are registered app-wide). Dart receives it wrapped:
+ * ACCOUNTS. Every event carries the account it came from (null when unknown, for example an event
+ * sent through the one-argument [emit] by older code). Dart receives it wrapped:
  * `{"__ctEnvelope": true, "accountId": "B", "isDefault": false, "payload": <today's value>}`.
  * Buffers hold each payload with its account. Arming an account ([startEmission] with an
  * accountId) releases only that account's held payloads (plus unknown-account ones), so the
@@ -169,8 +169,8 @@ object CleverTapEventEmitter {
     }
 
     /**
-     * Emit an event whose account is not known (for example custom templates, registered
-     * app-wide). Dart routes it like a default-account event, which is today's behavior.
+     * Emit an event whose account is not known. Dart routes it like a default-account event,
+     * which is where such events always went. The plugin's own events all name their account.
      */
     @JvmStatic
     fun emit(event: CleverTapEvent, params: Any?) {

@@ -2271,20 +2271,25 @@ static CleverTapEncryptionLevel ctEncryptionLevelFromString(NSString *level) {
 #pragma mark - Custom Code Templates
 
 - (void)syncCustomTemplates:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    [[CleverTap sharedInstance] syncCustomTemplates];
+    [[self instanceForCall:call] syncCustomTemplates];
     result(nil);
 }
 
 - (void)syncCustomTemplatesInProd:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     BOOL isProduction = [call.arguments[@"isProduction"] boolValue];
-    [[CleverTap sharedInstance] syncCustomTemplates:isProduction];
+    [[self instanceForCall:call] syncCustomTemplates:isProduction];
     result(nil);
 }
 
 - (void)customTemplateSetDismissed:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    NSString *templateName = call.arguments;
+    // A bare name from CleverTapPlugin, {value, accountId} from a handle.
+    NSString *templateName = [self scalarArgumentOfCall:call];
     
-    CTTemplateContext *context = [[CleverTap sharedInstance] activeContextForTemplate:templateName];
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
+    CTTemplateContext *context = [instance activeContextForTemplate:templateName];
     if (context) {
         [context dismissed];
         result(nil);
@@ -2296,9 +2301,14 @@ static CleverTapEncryptionLevel ctEncryptionLevelFromString(NSString *level) {
 }
 
 - (void)customTemplateSetPresented:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    NSString *templateName = call.arguments;
+    // A bare name from CleverTapPlugin, {value, accountId} from a handle.
+    NSString *templateName = [self scalarArgumentOfCall:call];
     
-    CTTemplateContext *context = [[CleverTap sharedInstance] activeContextForTemplate:templateName];
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
+    CTTemplateContext *context = [instance activeContextForTemplate:templateName];
     if (context) {
         [context presented];
         result(nil);
@@ -2313,7 +2323,11 @@ static CleverTapEncryptionLevel ctEncryptionLevelFromString(NSString *level) {
     NSString *templateName = call.arguments[@"templateName"];
     NSString *argName = call.arguments[@"argName"];
     
-    CTTemplateContext *context = [[CleverTap sharedInstance] activeContextForTemplate:templateName];
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
+    CTTemplateContext *context = [instance activeContextForTemplate:templateName];
     if (context) {
         [context triggerActionNamed:argName];
         result(nil);
@@ -2328,7 +2342,11 @@ static CleverTapEncryptionLevel ctEncryptionLevelFromString(NSString *level) {
     NSString *templateName = call.arguments[@"templateName"];
     NSString *argName = call.arguments[@"argName"];
     
-    CTTemplateContext *context = [[CleverTap sharedInstance] activeContextForTemplate:templateName];
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
+    CTTemplateContext *context = [instance activeContextForTemplate:templateName];
     if (context) {
         NSString *str = [context stringNamed:argName];
         result(str ? str : [NSNull null]);
@@ -2343,7 +2361,11 @@ static CleverTapEncryptionLevel ctEncryptionLevelFromString(NSString *level) {
     NSString *templateName = call.arguments[@"templateName"];
     NSString *argName = call.arguments[@"argName"];
     
-    CTTemplateContext *context = [[CleverTap sharedInstance] activeContextForTemplate:templateName];
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
+    CTTemplateContext *context = [instance activeContextForTemplate:templateName];
     if (context) {
         NSNumber *number = [context numberNamed:argName];
         result(number ? number : [NSNull null]);
@@ -2358,7 +2380,11 @@ static CleverTapEncryptionLevel ctEncryptionLevelFromString(NSString *level) {
     NSString *templateName = call.arguments[@"templateName"];
     NSString *argName = call.arguments[@"argName"];
     
-    CTTemplateContext *context = [[CleverTap sharedInstance] activeContextForTemplate:templateName];
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
+    CTTemplateContext *context = [instance activeContextForTemplate:templateName];
     if (context) {
         NSNumber *boolean = [NSNumber numberWithBool:[context boolNamed:argName]];
         result(boolean);
@@ -2373,7 +2399,11 @@ static CleverTapEncryptionLevel ctEncryptionLevelFromString(NSString *level) {
     NSString *templateName = call.arguments[@"templateName"];
     NSString *argName = call.arguments[@"argName"];
     
-    CTTemplateContext *context = [[CleverTap sharedInstance] activeContextForTemplate:templateName];
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
+    CTTemplateContext *context = [instance activeContextForTemplate:templateName];
     if (context) {
         NSString *filePath = [context fileNamed:argName];
         result(filePath ? filePath : [NSNull null]);
@@ -2388,7 +2418,11 @@ static CleverTapEncryptionLevel ctEncryptionLevelFromString(NSString *level) {
     NSString *templateName = call.arguments[@"templateName"];
     NSString *argName = call.arguments[@"argName"];
     
-    CTTemplateContext *context = [[CleverTap sharedInstance] activeContextForTemplate:templateName];
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
+    CTTemplateContext *context = [instance activeContextForTemplate:templateName];
     if (context) {
         NSDictionary *dictionary = [context dictionaryNamed:argName];
         result(dictionary ? dictionary : [NSNull null]);
@@ -2402,14 +2436,18 @@ static CleverTapEncryptionLevel ctEncryptionLevelFromString(NSString *level) {
 - (void)customTemplateContextToString:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     NSString *templateName = call.arguments[@"templateName"];
     
-    if (![CleverTap sharedInstance]) {
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
+    if (!instance) {
         result([FlutterError errorWithCode:@"CustomTemplateError"
                                     message:@"CleverTap is not initialized"
                                     details:nil]);
         return;
     }
     
-    CTTemplateContext *context = [[CleverTap sharedInstance] activeContextForTemplate:templateName];
+    CTTemplateContext *context = [instance activeContextForTemplate:templateName];
     if (!context) {
         result([FlutterError errorWithCode:@"CustomTemplateError"
                                     message:[NSString stringWithFormat:@"Custom template: %@ is not currently being presented", templateName]

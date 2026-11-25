@@ -730,23 +730,25 @@ class DartToNativePlatformCommunicator(
             }
 
             "syncCustomTemplatesInProd", "syncCustomTemplates" -> {
-                syncCustomTemplates(result)
+                syncCustomTemplates(call, result)
             }
 
             "customTemplateSetDismissed" -> {
-                val templateName = call.arguments<String>()
-                customTemplateSetDismissed(templateName, result)
+                // A bare name from CleverTapPlugin, {value, accountId} from a handle.
+                val templateName = scalarArgumentOf(call.arguments) as? String
+                customTemplateSetDismissed(call, templateName, result)
             }
 
             "customTemplateSetPresented" -> {
-                val templateName = call.arguments<String>()
-                customTemplateSetPresented(templateName, result)
+                val templateName = scalarArgumentOf(call.arguments) as? String
+                customTemplateSetPresented(call, templateName, result)
             }
 
             "customTemplateRunAction" -> {
                 val templateName = call.argument<String>(KEY_TEMPLATE_NAME_CC)
                 val argumentName = call.argument<String>(KEY_TEMPLATE_ARGUMENT_CC)
                 customTemplateRunAction(
+                    call = call,
                     templateName = templateName,
                     argName = argumentName,
                     result = result
@@ -757,6 +759,7 @@ class DartToNativePlatformCommunicator(
                 val templateName = call.argument<String>(KEY_TEMPLATE_NAME_CC)
                 val argumentName = call.argument<String>(KEY_TEMPLATE_ARGUMENT_CC)
                 customTemplateGetStringArg(
+                    call = call,
                     templateName = templateName,
                     argName = argumentName,
                     result = result
@@ -767,6 +770,7 @@ class DartToNativePlatformCommunicator(
                 val templateName = call.argument<String>(KEY_TEMPLATE_NAME_CC)
                 val argumentName = call.argument<String>(KEY_TEMPLATE_ARGUMENT_CC)
                 customTemplateGetNumberArg(
+                    call = call,
                     templateName = templateName,
                     argName = argumentName,
                     result = result
@@ -777,6 +781,7 @@ class DartToNativePlatformCommunicator(
                 val templateName = call.argument<String>(KEY_TEMPLATE_NAME_CC)
                 val argumentName = call.argument<String>(KEY_TEMPLATE_ARGUMENT_CC)
                 customTemplateGetBooleanArg(
+                    call = call,
                     templateName = templateName,
                     argName = argumentName,
                     result = result
@@ -787,6 +792,7 @@ class DartToNativePlatformCommunicator(
                 val templateName = call.argument<String>(KEY_TEMPLATE_NAME_CC)
                 val argumentName = call.argument<String>(KEY_TEMPLATE_ARGUMENT_CC)
                 customTemplateGetFileArg(
+                    call = call,
                     templateName = templateName,
                     argName = argumentName,
                     result = result
@@ -797,6 +803,7 @@ class DartToNativePlatformCommunicator(
                 val templateName = call.argument<String>(KEY_TEMPLATE_NAME_CC)
                 val argumentName = call.argument<String>(KEY_TEMPLATE_ARGUMENT_CC)
                 customTemplateGetObjectArg(
+                    call = call,
                     templateName = templateName,
                     argName = argumentName,
                     result = result
@@ -804,8 +811,11 @@ class DartToNativePlatformCommunicator(
             }
 
             "customTemplateContextToString" -> {
-                val templateName = call.arguments<String>()
+                // Dart sends {templateName}. Reading the whole argument as a String threw a
+                // ClassCastException on every call, from the first version until Phase 7.
+                val templateName = call.argument<String>(KEY_TEMPLATE_NAME_CC)
                 customTemplateContextToString(
+                    call = call,
                     templateName = templateName,
                     result = result
                 )
@@ -2520,17 +2530,19 @@ class DartToNativePlatformCommunicator(
         }
     }
 
-    private fun syncCustomTemplates(result: MethodChannel.Result) {
-        if (cleverTapAPI != null) {
-            cleverTapAPI.syncRegisteredInAppTemplates()
+    private fun syncCustomTemplates(call: MethodCall, result: MethodChannel.Result) {
+        val instance = instanceFor(call)
+        if (instance != null) {
+            instance.syncRegisteredInAppTemplates()
             result.success(null)
         } else {
-            result.error(TAG, ERROR_MSG, null)
+            answerVoidWithoutInstance(call, result)
         }
     }
 
-    private fun customTemplateSetDismissed(templateName: String?, result: MethodChannel.Result) {
+    private fun customTemplateSetDismissed(call: MethodCall, templateName: String?, result: MethodChannel.Result) {
         resolveWithTemplateContext(
+            call,
             templateName,
             result
         ) { templateContext: CustomTemplateContext ->
@@ -2539,8 +2551,9 @@ class DartToNativePlatformCommunicator(
         }
     }
 
-    private fun customTemplateSetPresented(templateName: String?, result: MethodChannel.Result) {
+    private fun customTemplateSetPresented(call: MethodCall, templateName: String?, result: MethodChannel.Result) {
         resolveWithTemplateContext(
+            call,
             templateName,
             result
         ) { templateContext: CustomTemplateContext ->
@@ -2550,11 +2563,13 @@ class DartToNativePlatformCommunicator(
     }
 
     private fun customTemplateRunAction(
+        call: MethodCall,
         templateName: String?,
         argName: String?,
         result: MethodChannel.Result
     ) {
         resolveWithTemplateContext(
+            call,
             templateName,
             result
         ) { customTemplateContext: CustomTemplateContext ->
@@ -2571,11 +2586,13 @@ class DartToNativePlatformCommunicator(
     }
 
     private fun customTemplateGetStringArg(
+        call: MethodCall,
         templateName: String?,
         argName: String?,
         result: MethodChannel.Result
     ) {
         resolveWithTemplateContext(
+            call,
             templateName,
             result
         ) { templateContext: CustomTemplateContext ->
@@ -2586,11 +2603,13 @@ class DartToNativePlatformCommunicator(
     }
 
     private fun customTemplateGetNumberArg(
+        call: MethodCall,
         templateName: String?,
         argName: String?,
         result: MethodChannel.Result
     ) {
         resolveWithTemplateContext(
+            call,
             templateName,
             result
         ) { templateContext: CustomTemplateContext ->
@@ -2601,11 +2620,13 @@ class DartToNativePlatformCommunicator(
     }
 
     private fun customTemplateGetBooleanArg(
+        call: MethodCall,
         templateName: String?,
         argName: String?,
         result: MethodChannel.Result
     ) {
         resolveWithTemplateContext(
+            call,
             templateName,
             result
         ) { templateContext: CustomTemplateContext ->
@@ -2616,11 +2637,13 @@ class DartToNativePlatformCommunicator(
     }
 
     private fun customTemplateGetFileArg(
+        call: MethodCall,
         templateName: String?,
         argName: String?,
         result: MethodChannel.Result
     ) {
         resolveWithTemplateContext(
+            call,
             templateName,
             result
         ) { templateContext: CustomTemplateContext ->
@@ -2631,11 +2654,13 @@ class DartToNativePlatformCommunicator(
     }
 
     private fun customTemplateGetObjectArg(
+        call: MethodCall,
         templateName: String?,
         argName: String?,
         result: MethodChannel.Result
     ) {
         resolveWithTemplateContext(
+            call,
             templateName,
             result
         ) { templateContext: CustomTemplateContext ->
@@ -2646,8 +2671,9 @@ class DartToNativePlatformCommunicator(
         }
     }
 
-    private fun customTemplateContextToString(templateName: String?, result: MethodChannel.Result) {
+    private fun customTemplateContextToString(call: MethodCall, templateName: String?, result: MethodChannel.Result) {
         resolveWithTemplateContext(
+            call,
             templateName,
             result
         ) { templateContext: CustomTemplateContext -> templateContext.toString() }
@@ -2663,14 +2689,23 @@ class DartToNativePlatformCommunicator(
         }
     }
 
+    // Looks the template up in the call's account: the default for CleverTapPlugin, the handle's
+    // account otherwise. Each account keeps its own shown templates, so B's "Spin" is found only
+    // through B. A handle whose account does not exist gets an error naming it.
     private fun resolveWithTemplateContext(
+        call: MethodCall,
         templateName: String?,
         result: MethodChannel.Result,
         action: TemplateContextAction?
     ) {
-        if (templateName != null && cleverTapAPI != null) {
+        val instance = instanceFor(call)
+        if (instance == null) {
+            answerValueWithoutInstance(call, result)
+            return
+        }
+        if (templateName != null) {
             val templateContext: CustomTemplateContext? =
-                cleverTapAPI.getActiveContextForTemplate(templateName)
+                instance.getActiveContextForTemplate(templateName)
             if (templateContext != null && action != null) {
                 result.success(action.execute(templateContext))
             } else {

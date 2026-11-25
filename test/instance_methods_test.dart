@@ -160,6 +160,16 @@ void main() {
     ['defineFileVariable', () => CleverTapPlugin.defineFileVariable('banner'), () => b.defineFileVariable('banner')],
     ['getVariables', () => CleverTapPlugin.getVariables(), () => b.getVariables()],
     ['getVariable', () => CleverTapPlugin.getVariable('discount'), () => b.getVariable('discount')],
+    // Phase 7: custom templates.
+    ['syncCustomTemplates', () => CleverTapPlugin.syncCustomTemplates(), () => b.syncCustomTemplates()],
+    ['syncCustomTemplatesInProd', () => CleverTapPlugin.syncCustomTemplatesInProd(true), () => b.syncCustomTemplatesInProd(true)],
+    ['customTemplateRunAction', () => CleverTapPlugin.customTemplateRunAction('Spin', 'go'), () => b.customTemplateRunAction('Spin', 'go')],
+    ['customTemplateGetStringArg', () => CleverTapPlugin.customTemplateGetStringArg('Spin', 'title'), () => b.customTemplateGetStringArg('Spin', 'title')],
+    ['customTemplateGetNumberArg', () => CleverTapPlugin.customTemplateGetNumberArg('Spin', 'n'), () => b.customTemplateGetNumberArg('Spin', 'n')],
+    ['customTemplateGetBooleanArg', () => CleverTapPlugin.customTemplateGetBooleanArg('Spin', 'on'), () => b.customTemplateGetBooleanArg('Spin', 'on')],
+    ['customTemplateGetFileArg', () => CleverTapPlugin.customTemplateGetFileArg('Spin', 'img'), () => b.customTemplateGetFileArg('Spin', 'img')],
+    ['customTemplateGetObjectArg', () => CleverTapPlugin.customTemplateGetObjectArg('Spin', 'map'), () => b.customTemplateGetObjectArg('Spin', 'map')],
+    ['customTemplateContextToString', () => CleverTapPlugin.customTemplateContextToString('Spin'), () => b.customTemplateContextToString('Spin')],
   ];
 
   group('Phase 6: each handle method = the static method + accountId', () {
@@ -203,6 +213,9 @@ void main() {
     for (final c in <List<Object>>[
       ['promptForPushNotification', true, () => CleverTapPlugin.promptForPushNotification(true), () => b.promptForPushNotification(true)],
       ['clearInAppResources', false, () => CleverTapPlugin.clearInAppResources(false), () => b.clearInAppResources(false)],
+      // Phase 7: the static call sends the bare template name.
+      ['customTemplateSetDismissed', 'Spin', () => CleverTapPlugin.customTemplateSetDismissed('Spin'), () => b.customTemplateSetDismissed('Spin')],
+      ['customTemplateSetPresented', 'Spin', () => CleverTapPlugin.customTemplateSetPresented('Spin'), () => b.customTemplateSetPresented('Spin')],
     ]) {
       test(c[0] as String, () async {
         await (c[2] as Future<Object?> Function())();

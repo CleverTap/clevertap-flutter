@@ -376,13 +376,13 @@ class CleverTapPlugin {
   }
 
   void setCleverTapCustomFunctionPresentHandler(
-      CleverTapCustomTemplateCloseHandler handler) {
+      CleverTapCustomFunctionPresentHandler handler) {
     invokeStartEmission('CleverTapCustomFunctionPresent');
     cleverTapCustomFunctionPresentHandler = handler;
   }
 
   void setCleverTapCustomTemplateCloseHandler(
-      CleverTapCustomFunctionPresentHandler handler) {
+      CleverTapCustomTemplateCloseHandler handler) {
     invokeStartEmission('CleverTapCustomTemplateClose');
     cleverTapCustomTemplateCloseHandler = handler;
   }
@@ -1818,6 +1818,11 @@ class CleverTapInstance {
         case "pushPermissionResponseReceived":
           handler(payload as bool);
           break;
+        case "customTemplatePresent":
+        case "customFunctionPresent":
+        case "customTemplateClose":
+          handler(payload as String);
+          break;
         default:
           return false;
       }
@@ -2578,6 +2583,81 @@ class CleverTapInstance {
   void onFileValueChanged(String name, CleverTapOnFileValueChangedHandler handler) =>
       _addVariablesHandler('onFileValueChanged', handler, {'name': name}, once: false);
 
+  // ---- Custom templates. The definitions are app-wide (registered once, natively), but each
+  // account presents its own: these act on the template this account is showing. Example: A and B
+  // both show "Spin"; b.customTemplateSetDismissed('Spin') dismisses B's only.
+
+  /// Uploads the custom templates and app functions to this account's dashboard (debug builds).
+  Future<void> syncCustomTemplates() async {
+    return await _invoke('syncCustomTemplates', {});
+  }
+
+  /// Like [syncCustomTemplates]; on iOS [isProduction] allows a release build to sync.
+  Future<void> syncCustomTemplatesInProd(bool isProduction) async {
+    return await _invoke(
+        'syncCustomTemplatesInProd', {'isProduction': isProduction});
+  }
+
+  /// Tells this account that the app closed [templateName]. The static method sends the bare
+  /// name; a handle must also send its accountId, so it sends {value, accountId}.
+  Future<void> customTemplateSetDismissed(String templateName) async {
+    return await _invoke('customTemplateSetDismissed', {'value': templateName});
+  }
+
+  /// Tells this account that the app is showing [templateName].
+  Future<void> customTemplateSetPresented(String templateName) async {
+    return await _invoke('customTemplateSetPresented', {'value': templateName});
+  }
+
+  /// Runs the action argument [argName] of this account's [templateName].
+  Future<void> customTemplateRunAction(
+      String templateName, String argName) async {
+    return await _invoke(
+        'customTemplateRunAction',
+        {'templateName': templateName, 'argName': argName});
+  }
+
+  Future<String?> customTemplateGetStringArg(
+      String templateName, String argName) async {
+    return await _invoke(
+        'customTemplateGetStringArg',
+        {'templateName': templateName, 'argName': argName});
+  }
+
+  Future<num?> customTemplateGetNumberArg(
+      String templateName, String argName) async {
+    return await _invoke(
+        'customTemplateGetNumberArg',
+        {'templateName': templateName, 'argName': argName});
+  }
+
+  Future<bool?> customTemplateGetBooleanArg(
+      String templateName, String argName) async {
+    return await _invoke(
+        'customTemplateGetBooleanArg',
+        {'templateName': templateName, 'argName': argName});
+  }
+
+  Future<String?> customTemplateGetFileArg(
+      String templateName, String argName) async {
+    return await _invoke(
+        'customTemplateGetFileArg',
+        {'templateName': templateName, 'argName': argName});
+  }
+
+  Future<Object?> customTemplateGetObjectArg(
+      String templateName, String argName) async {
+    return await _invoke(
+        'customTemplateGetObjectArg',
+        {'templateName': templateName, 'argName': argName});
+  }
+
+  Future<String?> customTemplateContextToString(
+      String templateName) async {
+    return await _invoke(
+        'customTemplateContextToString', {'templateName': templateName});
+  }
+
   // ---- Handlers.
 
   void setCleverTapProfileDidInitializeHandler(
@@ -2646,6 +2726,21 @@ class CleverTapInstance {
   void setCleverTapPushAmpPayloadReceivedHandler(
           CleverTapPushAmpPayloadReceivedHandler handler) =>
       _setHandler('pushAmpPayloadReceived', 'CleverTapPushAmpPayloadReceived', handler);
+
+  /// Runs when this account presents a custom template. Only this account's templates.
+  void setCleverTapCustomTemplatePresentHandler(
+          CleverTapCustomTemplatePresentHandler handler) =>
+      _setHandler('customTemplatePresent', 'CleverTapCustomTemplatePresent', handler);
+
+  /// Runs when this account presents an app function.
+  void setCleverTapCustomFunctionPresentHandler(
+          CleverTapCustomFunctionPresentHandler handler) =>
+      _setHandler('customFunctionPresent', 'CleverTapCustomFunctionPresent', handler);
+
+  /// Runs when the close action of this account's custom template is triggered.
+  void setCleverTapCustomTemplateCloseHandler(
+          CleverTapCustomTemplateCloseHandler handler) =>
+      _setHandler('customTemplateClose', 'CleverTapCustomTemplateClose', handler);
 
   @override
   bool operator ==(Object other) =>
