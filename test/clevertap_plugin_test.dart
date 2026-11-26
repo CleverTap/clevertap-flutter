@@ -253,15 +253,16 @@ void main() {
     });
   });
 
-  // getAllDisplayUnits() returns null unless Platform.isAndroid/isIOS, which is
-  // never true when unit tests run on a desktop host, so skip it there.
+  // getAllDisplayUnits() returns null unless Platform.isAndroid/isIOS, so the
+  // expected result depends on the host the tests run on.
   test('testing getAllDisplayUnits method', () async {
-    await CleverTapPlugin.getAllDisplayUnits().then((unitList) {
+    final unitList = await CleverTapPlugin.getAllDisplayUnits();
+    if (Platform.isAndroid || Platform.isIOS) {
       expect(unitList, testList);
-    });
-  }, skip: !(Platform.isAndroid || Platform.isIOS)
-      ? 'Requires an Android/iOS host (Platform check in plugin)'
-      : false);
+    } else {
+      expect(unitList, isNull);
+    }
+  });
 
   test('testing getDisplayUnitForId method', () async {
     await CleverTapPlugin.getDisplayUnitForId(mockString).then((unitMap) {

@@ -2,9 +2,10 @@ import 'package:clevertap_plugin/clevertap_plugin.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-/// Verifies the Dart -> native contract: for each public method, the exact
-/// native method name and argument map that is sent over the channel.
-/// Native code is not exercised; the channel is mocked.
+/// Verifies the Dart -> native contract for the most used public methods (events,
+/// user profile, inbox, push, in-app): the exact native method name and argument
+/// map that is sent over the channel. Methods that are not listed here are not
+/// covered. Native code is not exercised; the channel is mocked.
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   const channel = MethodChannel('clevertap_plugin/dart_to_native');
