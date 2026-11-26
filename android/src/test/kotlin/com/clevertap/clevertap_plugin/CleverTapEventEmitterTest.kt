@@ -6,6 +6,7 @@ import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.StandardMethodCodec
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -53,6 +54,10 @@ class CleverTapEventEmitterTest {
 
     @Before
     fun setUp() {
+        // The tests rely on these two events behaving differently.
+        assertTrue("$bufferable must be bufferable", bufferable.bufferable)
+        assertFalse("$immediate must not be bufferable", immediate.bufferable)
+
         messenger = RecordingMessenger()
         CleverTapPlugin.nativeToDartMethodChannelSet.clear()
         CleverTapPlugin.nativeToDartMethodChannelSet.add(

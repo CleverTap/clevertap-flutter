@@ -6,13 +6,13 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * The strings returned by [EventNameMapper] are the method names the Dart side
- * listens on (native_to_dart channel). Changing one silently breaks callbacks.
+ * The strings returned by [EventNameMapper] are the method names sent to Dart on
+ * the native_to_dart channel. Changing one silently breaks the Dart callback.
  */
 class EventNameMapperTest {
 
     @Test
-    fun `maps known events to the Dart callback names`() {
+    fun `maps every event to the expected Dart callback name`() {
         val expected = mapOf(
             CleverTapEvent.CLEVERTAP_PROFILE_DID_INITIALIZE to "profileDidInitialize",
             CleverTapEvent.CLEVERTAP_PROFILE_SYNC to "profileDataUpdated",
@@ -25,11 +25,27 @@ class EventNameMapperTest {
             CleverTapEvent.CLEVERTAP_ON_INBOX_MESSAGE_CLICK to "onInboxMessageClick",
             CleverTapEvent.CLEVERTAP_ON_INAPP_BUTTON_CLICK to "onInAppButtonClick",
             CleverTapEvent.CLEVERTAP_ON_DISPLAY_UNITS_LOADED to "onDisplayUnitsLoaded",
+            CleverTapEvent.CLEVERTAP_FEATURE_FLAGS_DID_UPDATE to "featureFlagsUpdated",
+            CleverTapEvent.CLEVERTAP_PRODUCT_CONFIG_DID_INITIALIZE to "productConfigInitialized",
+            CleverTapEvent.CLEVERTAP_PRODUCT_CONFIG_DID_FETCH to "productConfigFetched",
+            CleverTapEvent.CLEVERTAP_PRODUCT_CONFIG_DID_ACTIVATE to "productConfigActivated",
             CleverTapEvent.CLEVERTAP_PUSH_NOTIFICATION_CLICKED to "pushClickedPayloadReceived",
             CleverTapEvent.CLEVERTAP_ON_PUSH_PERMISSION_RESPONSE to "pushPermissionResponseReceived",
-            CleverTapEvent.CLEVERTAP_ON_PUSH_AMP_PAYLOAD_RECEIVED to "pushAmpPayloadReceived",
             CleverTapEvent.CLEVERTAP_ON_VARIABLES_CHANGED to "onVariablesChanged",
+            CleverTapEvent.CLEVERTAP_ON_ONE_TIME_VARIABLES_CHANGED to "onOneTimeVariablesChanged",
             CleverTapEvent.CLEVERTAP_ON_VALUE_CHANGED to "onValueChanged",
+            CleverTapEvent.CLEVERTAP_CUSTOM_TEMPLATE_PRESENT to "customTemplatePresent",
+            CleverTapEvent.CLEVERTAP_CUSTOM_FUNCTION_PRESENT to "customFunctionPresent",
+            CleverTapEvent.CLEVERTAP_CUSTOM_TEMPLATE_CLOSE to "customTemplateClose",
+            CleverTapEvent.CLEVERTAP_ON_FILE_VALUE_CHANGED to "onFileValueChanged",
+            CleverTapEvent.CLEVERTAP_ON_VARIABLES_CHANGED_AND_NO_DOWNLOADS_PENDING to "onVariablesChangedAndNoDownloadsPending",
+            CleverTapEvent.CLEVERTAP_ONCE_VARIABLES_CHANGED_AND_NO_DOWNLOADS_PENDING to "onceVariablesChangedAndNoDownloadsPending",
+            CleverTapEvent.CLEVERTAP_ON_PUSH_AMP_PAYLOAD_RECEIVED to "pushAmpPayloadReceived",
+        )
+        // The table above must list every real event, so a new event cannot be added unnoticed.
+        assertEquals(
+            CleverTapEvent.values().filter { it != CleverTapEvent.CLEVERTAP_UNKNOWN }.toSet(),
+            expected.keys
         )
         expected.forEach { (event, name) ->
             assertEquals("wrong mapping for $event", name, EventNameMapper.fromCleverTapEvent(event))

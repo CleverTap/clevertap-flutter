@@ -58,7 +58,7 @@ class UtilsTest {
     }
 
     @Test
-    fun `dartMapToProfileMap keeps key names and size for an empty map`() {
+    fun `dartMapToProfileMap returns an empty map for an empty input`() {
         assertTrue(Utils.dartMapToProfileMap(emptyMap()).isEmpty())
     }
 
@@ -185,6 +185,10 @@ class UtilsTest {
             )
         )
         assertNotNull(pushType)
+        assertEquals("fcm", pushType!!.type)
+        assertEquals("fcm_token", pushType.tokenPrefKey)
+        assertEquals("com.example.Cls", pushType.ctProviderClassName)
+        assertEquals("com.example.Sdk", pushType.messagingSDKClassName)
     }
 
     @Test
