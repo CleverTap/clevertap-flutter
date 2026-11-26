@@ -1,10 +1,12 @@
+import 'dart:io' show Platform;
+
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:clevertap_plugin/clevertap_plugin.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-  const MethodChannel channel = MethodChannel('clevertap_plugin');
+  const MethodChannel channel = MethodChannel('clevertap_plugin/dart_to_native');
 
   Map<dynamic, dynamic> testMap = new Map();
   testMap.putIfAbsent("key1", () => "val1");
@@ -64,7 +66,8 @@ void main() {
 
   /// Cannot call Android/iOS code so have to mock return values here
   setUp(() {
-    channel.setMockMethodCallHandler((MethodCall methodCall) async {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (MethodCall methodCall) async {
       switch (methodCall.method) {
         case "eventGetOccurrences":
           return 1;
@@ -125,7 +128,8 @@ void main() {
 
   /// Clean up
   tearDown(() {
-    channel.setMockMethodCallHandler(null);
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, null);
   });
 
   test('testing eventGetOccurences method', () async {
@@ -249,10 +253,15 @@ void main() {
     });
   });
 
+  // getAllDisplayUnits() returns null unless Platform.isAndroid/isIOS, so the
+  // expected result depends on the host the tests run on.
   test('testing getAllDisplayUnits method', () async {
-    await CleverTapPlugin.getAllDisplayUnits().then((unitList) {
+    final unitList = await CleverTapPlugin.getAllDisplayUnits();
+    if (Platform.isAndroid || Platform.isIOS) {
       expect(unitList, testList);
-    });
+    } else {
+      expect(unitList, isNull);
+    }
   });
 
   test('testing getDisplayUnitForId method', () async {
