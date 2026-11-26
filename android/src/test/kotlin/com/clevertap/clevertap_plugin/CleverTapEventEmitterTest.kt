@@ -205,11 +205,17 @@ class CleverTapEventEmitterTest {
         assertEquals(listOf<Any?>(null), args())
     }
 
+    // The exception is caught inside CleverTapPlugin.runOnMainThread, which sits
+    // between the emitter and the channel. This test covers the whole path: a
+    // channel failure must not crash, and later events must still go out.
     @Test
-    fun `failure while sending is swallowed and does not crash`() {
+    fun `a failing channel does not crash and later events still go out`() {
         messenger.failOnSend = true
+        CleverTapEventEmitter.emit(immediate, "lost") // must not throw
 
-        // must not throw
-        CleverTapEventEmitter.emit(immediate, "x")
+        messenger.failOnSend = false
+        CleverTapEventEmitter.emit(immediate, "delivered")
+
+        assertEquals(listOf<Any?>("delivered"), args())
     }
 }
