@@ -6,13 +6,24 @@ on:
       - 'android/**'
       - 'example/android/**'
       - 'pubspec.yaml'
+      - 'example/pubspec.yaml'
+      - '.github/workflows/android-unit-tests.yml'
+  # Test merged code too, so a bad merge shows up right away.
+  push:
+    branches: [ develop, master ]
+    paths:
+      - 'android/**'
+      - 'example/android/**'
+      - 'pubspec.yaml'
+      - 'example/pubspec.yaml'
       - '.github/workflows/android-unit-tests.yml'
   workflow_dispatch:
 
-# Cancel the old run when a new commit is pushed
+# Cancel the old run when a new commit is pushed to a PR.
+# Runs on develop and master are never cancelled, so every merge keeps its result.
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -42,11 +53,21 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      # build.gradle also holds the plugin and SDK versions, so hashing the whole
+      # file would change the cache key on every release. Use only the Robolectric
+      # version.
+      - name: Get Robolectric version
+        id: robolectric
+        run: |
+          version=$(grep -oE 'robolectric:[0-9.]+' android/build.gradle | head -1 | cut -d: -f2)
+          echo "Robolectric version: $version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
       - name: Cache Robolectric android-all jars
         uses: actions/cache@v4
         with:
           path: ~/.m2/repository/org/robolectric
-          key: robolectric-${{ runner.os }}-${{ hashFiles('android/build.gradle') }}
+          key: robolectric-${{ runner.os }}-${{ steps.robolectric.outputs.version }}
           restore-keys: |
             robolectric-${{ runner.os }}-
 
@@ -64,10 +85,24 @@ jobs:
         run: ./gradlew :clevertap_plugin:testDebugUnitTest
         working-directory: example/android
 
+      # Gradle exits 0 when there are no test sources, so check that tests ran.
+      - name: Check that tests ran
+        run: |
+          total=$(cat example/build/clevertap_plugin/test-results/testDebugUnitTest/*.xml 2>/dev/null | grep -o '<testsuite [^>]*tests="[0-9]*"' | grep -o 'tests="[0-9]*"' | grep -o '[0-9]*' | awk '{s+=$1} END{print s+0}')
+          echo "Android unit tests that ran: $total"
+          if [ "$total" -eq 0 ]; then
+            echo "::error::No Android unit tests ran"
+            exit 1
+          fi
+
+      # The example app sets the build folder of each module to example/build/<module>.
       - name: Upload test reports
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: android-unit-test-reports
-          path: android/build/reports/tests/
+          path: |
+            example/build/clevertap_plugin/reports/tests/
+            example/build/clevertap_plugin/test-results/
+          if-no-files-found: warn
           retention-days: 5
