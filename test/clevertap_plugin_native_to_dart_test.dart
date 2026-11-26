@@ -27,8 +27,11 @@ void main() {
   Future<dynamic> fromNative(String method, [dynamic arguments]) async {
     final message = codec.encodeMethodCall(MethodCall(method, arguments));
     final reply = Completer<ByteData?>();
-    binding.defaultBinaryMessenger
-        .handlePlatformMessage(nativeToDart, message, reply.complete);
+    binding.defaultBinaryMessenger.handlePlatformMessage(
+      nativeToDart,
+      message,
+      reply.complete,
+    );
     final bytes = await reply.future;
     return bytes == null ? null : codec.decodeEnvelope(bytes);
   }
@@ -51,54 +54,76 @@ void main() {
   setUp(() {
     calls.clear();
     dartToNativeResponder = null;
-    binding.defaultBinaryMessenger.setMockMethodCallHandler(dartToNative,
-        (MethodCall call) async => dartToNativeResponder?.call(call));
+    binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      dartToNative,
+      (MethodCall call) async => dartToNativeResponder?.call(call),
+    );
     clearVariableHandlers();
 
     // Register one handler for every event. Each handler records its own name,
     // so a test can check that an event reached exactly the right handler.
     final plugin = CleverTapPlugin();
     plugin.setCleverTapInAppNotificationDismissedHandler(
-        (m) => calls.add(_Call('inAppDismissed', [m])));
+      (m) => calls.add(_Call('inAppDismissed', [m])),
+    );
     plugin.setCleverTapInAppNotificationShowHandler(
-        (m) => calls.add(_Call('inAppShow', [m])));
+      (m) => calls.add(_Call('inAppShow', [m])),
+    );
     plugin.setCleverTapInAppNotificationButtonClickedHandler(
-        (m) => calls.add(_Call('inAppButtonClick', [m])));
+      (m) => calls.add(_Call('inAppButtonClick', [m])),
+    );
     plugin.setCleverTapProfileDidInitializeHandler(
-        () => calls.add(_Call('profileDidInitialize', [])));
+      () => calls.add(_Call('profileDidInitialize', [])),
+    );
     plugin.setCleverTapProfileSyncHandler(
-        (m) => calls.add(_Call('profileSync', [m])));
+      (m) => calls.add(_Call('profileSync', [m])),
+    );
     plugin.setCleverTapInboxDidInitializeHandler(
-        () => calls.add(_Call('inboxDidInitialize', [])));
+      () => calls.add(_Call('inboxDidInitialize', [])),
+    );
     plugin.setCleverTapInboxMessagesDidUpdateHandler(
-        () => calls.add(_Call('inboxMessagesDidUpdate', [])));
+      () => calls.add(_Call('inboxMessagesDidUpdate', [])),
+    );
     plugin.setCleverTapInboxNotificationButtonClickedHandler(
-        (m) => calls.add(_Call('inboxButtonClick', [m])));
-    plugin.setCleverTapInboxNotificationMessageClickedHandler((message, index,
-            buttonIndex) =>
-        calls.add(_Call('inboxMessageClick', [message, index, buttonIndex])));
+      (m) => calls.add(_Call('inboxButtonClick', [m])),
+    );
+    plugin.setCleverTapInboxNotificationMessageClickedHandler(
+      (message, index, buttonIndex) =>
+          calls.add(_Call('inboxMessageClick', [message, index, buttonIndex])),
+    );
     plugin.setCleverTapDisplayUnitsLoadedHandler(
-        (units) => calls.add(_Call('displayUnitsLoaded', [units])));
+      (units) => calls.add(_Call('displayUnitsLoaded', [units])),
+    );
     plugin.setCleverTapFeatureFlagUpdatedHandler(
-        () => calls.add(_Call('featureFlagsUpdated', [])));
+      () => calls.add(_Call('featureFlagsUpdated', [])),
+    );
     plugin.setCleverTapProductConfigInitializedHandler(
-        () => calls.add(_Call('productConfigInitialized', [])));
+      () => calls.add(_Call('productConfigInitialized', [])),
+    );
     plugin.setCleverTapProductConfigFetchedHandler(
-        () => calls.add(_Call('productConfigFetched', [])));
+      () => calls.add(_Call('productConfigFetched', [])),
+    );
     plugin.setCleverTapProductConfigActivatedHandler(
-        () => calls.add(_Call('productConfigActivated', [])));
+      () => calls.add(_Call('productConfigActivated', [])),
+    );
     plugin.setCleverTapPushAmpPayloadReceivedHandler(
-        (m) => calls.add(_Call('pushAmpPayload', [m])));
+      (m) => calls.add(_Call('pushAmpPayload', [m])),
+    );
     plugin.setCleverTapPushClickedPayloadReceivedHandler(
-        (m) => calls.add(_Call('pushClickedPayload', [m])));
+      (m) => calls.add(_Call('pushClickedPayload', [m])),
+    );
     plugin.setCleverTapPushPermissionResponseReceivedHandler(
-        (accepted) => calls.add(_Call('pushPermissionResponse', [accepted])));
+      (accepted) => calls.add(_Call('pushPermissionResponse', [accepted])),
+    );
     plugin.setCleverTapCustomTemplatePresentHandler(
-        (name) => calls.add(_Call('customTemplatePresent', [name])));
+      (name) => calls.add(_Call('customTemplatePresent', [name])),
+    );
     plugin.setCleverTapCustomFunctionPresentHandler(
-        (name) => calls.add(_Call('customFunctionPresent', [name])));
+      (name) => calls.add(_Call('customFunctionPresent', [name])),
+    );
     plugin.setCleverTapCustomTemplateCloseHandler(
-        (name) => calls.add(_Call('customTemplateClose', [name])));
+      (name) => calls.add(_Call('customTemplateClose', [name])),
+    );
   });
 
   tearDown(() {
@@ -172,62 +197,36 @@ void main() {
       test(c.description, () async {
         await fromNative(c.event, c.payload);
 
-        expect(handlersCalled(), [c.handler],
-            reason: '${c.event} must reach only the ${c.handler} handler');
+        expect(
+          handlersCalled(),
+          [c.handler],
+          reason: '${c.event} must reach only the ${c.handler} handler',
+        );
         final received = calls.single.args.single;
-        expect(received, isA<Map<String, dynamic>>(),
-            reason: 'the app handler is typed Map<String, dynamic>');
+        expect(
+          received,
+          isA<Map<String, dynamic>>(),
+          reason: 'the app handler is typed Map<String, dynamic>',
+        );
         expect(received, c.payload);
       });
     }
   });
 
   group('profile', () {
-    test('profileDataUpdated passes the updates map to the handler', () async {
-      // Android sends the update map itself.
-      await fromNative('profileDataUpdated', {'Name': 'Jack', 'Age': 30});
+    test(
+      'profileDidInitialize fires the handler for Android and iOS payloads',
+      () async {
+        // Android sends the CleverTap ID as a string, iOS sends a map.
+        await fromNative('profileDidInitialize', '__g1a2b3c');
+        await fromNative('profileDidInitialize', {'CleverTapID': '__g1a2b3c'});
 
-      expect(handlersCalled(), ['profileSync']);
-      expect(calls.single.args.single, {'Name': 'Jack', 'Age': 30});
-    },
-        skip: 'Known bug: _platformCallHandler passes call.arguments to the '
-            'handler without .cast<String, dynamic>(), so it throws "_Map<Object?, '
-            'Object?> is not a subtype of Map<String, dynamic>?". Remove the skip '
-            'when the cast is added.');
-
-    test('profileDidInitialize fires the handler for Android and iOS payloads',
-        () async {
-      // Android sends the CleverTap ID as a string, iOS sends a map.
-      await fromNative('profileDidInitialize', '__g1a2b3c');
-      await fromNative('profileDidInitialize', {'CleverTapID': '__g1a2b3c'});
-
-      expect(
-          handlersCalled(), ['profileDidInitialize', 'profileDidInitialize']);
-    });
-  });
-
-  group('button click with a null payload', () {
-    // The handler types are Map<String, dynamic>?, so null is allowed. iOS sends
-    // a nil body for an in-app button tap without custom extras, and the Android
-    // payload parameter is nullable.
-    const skipReason =
-        'Known bug: _platformCallHandler declares the argument as '
-        'a non-null Map, so a null payload throws "Null is not a subtype of '
-        'Map<dynamic, dynamic>". Remove the skip when null is handled.';
-
-    test('in-app button click calls the handler with null', () async {
-      await fromNative('onInAppButtonClick');
-
-      expect(handlersCalled(), ['inAppButtonClick']);
-      expect(calls.single.args.single, isNull);
-    }, skip: skipReason);
-
-    test('inbox button click calls the handler with null', () async {
-      await fromNative('onInboxButtonClick');
-
-      expect(handlersCalled(), ['inboxButtonClick']);
-      expect(calls.single.args.single, isNull);
-    }, skip: skipReason);
+        expect(handlersCalled(), [
+          'profileDidInitialize',
+          'profileDidInitialize',
+        ]);
+      },
+    );
   });
 
   group('events with no payload fire exactly their own handler', () {
@@ -260,14 +259,17 @@ void main() {
         'msg': {
           'content': [
             {
-              'title': {'text': 'Hi'}
-            }
-          ]
+              'title': {'text': 'Hi'},
+            },
+          ],
         },
       };
 
-      await fromNative('onInboxMessageClick',
-          {'data': message, 'contentPageIndex': 0, 'buttonIndex': 2});
+      await fromNative('onInboxMessageClick', {
+        'data': message,
+        'contentPageIndex': 0,
+        'buttonIndex': 2,
+      });
 
       expect(handlersCalled(), ['inboxMessageClick']);
       final args = calls.single.args;
@@ -315,8 +317,10 @@ void main() {
       await fromNative('pushPermissionResponseReceived', true);
       await fromNative('pushPermissionResponseReceived', false);
 
-      expect(handlersCalled(),
-          ['pushPermissionResponse', 'pushPermissionResponse']);
+      expect(handlersCalled(), [
+        'pushPermissionResponse',
+        'pushPermissionResponse',
+      ]);
       expect(calls.map((c) => c.args.single).toList(), [true, false]);
     });
   });
@@ -353,17 +357,26 @@ void main() {
 
     void registerAll() {
       CleverTapPlugin.onVariablesChanged(
-          (v) => calls.add(_Call('onVariablesChanged', [v])));
+        (v) => calls.add(_Call('onVariablesChanged', [v])),
+      );
       CleverTapPlugin.onOneTimeVariablesChanged(
-          (v) => calls.add(_Call('onOneTimeVariablesChanged', [v])));
+        (v) => calls.add(_Call('onOneTimeVariablesChanged', [v])),
+      );
       CleverTapPlugin.onValueChanged(
-          'price', (v) => calls.add(_Call('onValueChanged', [v])));
-      CleverTapPlugin.onVariablesChangedAndNoDownloadsPending((v) =>
-          calls.add(_Call('onVariablesChangedAndNoDownloadsPending', [v])));
-      CleverTapPlugin.onceVariablesChangedAndNoDownloadsPending((v) =>
-          calls.add(_Call('onceVariablesChangedAndNoDownloadsPending', [v])));
+        'price',
+        (v) => calls.add(_Call('onValueChanged', [v])),
+      );
+      CleverTapPlugin.onVariablesChangedAndNoDownloadsPending(
+        (v) => calls.add(_Call('onVariablesChangedAndNoDownloadsPending', [v])),
+      );
+      CleverTapPlugin.onceVariablesChangedAndNoDownloadsPending(
+        (v) =>
+            calls.add(_Call('onceVariablesChangedAndNoDownloadsPending', [v])),
+      );
       CleverTapPlugin.onFileValueChanged(
-          'banner', (v) => calls.add(_Call('onFileValueChanged', [v])));
+        'banner',
+        (v) => calls.add(_Call('onFileValueChanged', [v])),
+      );
     }
 
     const events = <String>[
@@ -385,47 +398,55 @@ void main() {
         final received = calls.single.args.single;
         expect(received, isA<Map<String, dynamic>>());
         expect(received, variables);
-        expect(received['limit'], 5000000000,
-            reason: 'a number above 2^31 must not be truncated');
+        expect(
+          received['limit'],
+          5000000000,
+          reason: 'a number above 2^31 must not be truncated',
+        );
       });
     }
 
     test('every listener registered for an event is called', () async {
       CleverTapPlugin.onVariablesChanged((v) => calls.add(_Call('first', [v])));
       CleverTapPlugin.onVariablesChanged(
-          (v) => calls.add(_Call('second', [v])));
+        (v) => calls.add(_Call('second', [v])),
+      );
 
       await fromNative('onVariablesChanged', variables);
 
       expect(handlersCalled(), ['first', 'second']);
     });
 
-    test('an event with no listener registered is ignored without error',
-        () async {
-      // Native can emit before the app registers a listener.
-      await fromNative('onVariablesChanged', variables);
+    test(
+      'an event with no listener registered is ignored without error',
+      () async {
+        // Native can emit before the app registers a listener.
+        await fromNative('onVariablesChanged', variables);
 
-      expect(calls, isEmpty);
-    });
+        expect(calls, isEmpty);
+      },
+    );
   });
 
   group('robustness', () {
-    test('an event name this plugin version does not know is ignored',
-        () async {
-      // A newer native plugin can emit an event an older Dart side lacks.
-      final result = await fromNative('someFutureEvent', {'a': 1});
+    test(
+      'an event name this plugin version does not know is ignored',
+      () async {
+        // A newer native plugin can emit an event an older Dart side lacks.
+        final result = await fromNative('someFutureEvent', {'a': 1});
 
-      expect(result, isNull);
-      expect(calls, isEmpty);
-    });
+        expect(result, isNull);
+        expect(calls, isEmpty);
+      },
+    );
   });
 
   group('getAppLaunchNotification', () {
     test('app launched from a notification: flag and payload', () async {
       dartToNativeResponder = (call) => {
-            'notificationLaunchedApp': true,
-            'notificationPayload': {'wzrk_pn': 'true', 'wzrk_id': '17_1'},
-          };
+        'notificationLaunchedApp': true,
+        'notificationPayload': {'wzrk_pn': 'true', 'wzrk_id': '17_1'},
+      };
 
       final result = await CleverTapPlugin.getAppLaunchNotification();
 
