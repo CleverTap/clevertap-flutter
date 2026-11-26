@@ -7,10 +7,11 @@ on:
     branches: [ develop, master ]
   workflow_dispatch:
 
-# Cancel the old run when a new commit is pushed
+# Cancel the old run when a new commit is pushed to a PR.
+# Runs on develop and master are never cancelled, so every merge keeps its result.
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
