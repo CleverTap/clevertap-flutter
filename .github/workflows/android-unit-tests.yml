@@ -1,0 +1,73 @@
+name: Android Unit Tests
+
+on:
+  pull_request:
+    paths:
+      - 'android/**'
+      - 'example/android/**'
+      - 'pubspec.yaml'
+      - '.github/workflows/android-unit-tests.yml'
+  workflow_dispatch:
+
+# Cancel the old run when a new commit is pushed
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  android-unit-tests:
+    name: Android unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout the code from Repo
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.41.9
+          cache: true
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Cache Robolectric android-all jars
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository/org/robolectric
+          key: robolectric-${{ runner.os }}-${{ hashFiles('android/build.gradle') }}
+          restore-keys: |
+            robolectric-${{ runner.os }}-
+
+      - name: Get packages
+        run: flutter pub get
+        working-directory: example
+
+      # The Gradle wrapper and local.properties are not committed. Flutter creates
+      # them, and --config-only does that without building the app.
+      - name: Generate Gradle files
+        run: flutter build apk --debug --config-only
+        working-directory: example
+
+      - name: Run Android unit tests
+        run: ./gradlew :clevertap_plugin:testDebugUnitTest
+        working-directory: example/android
+
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-unit-test-reports
+          path: android/build/reports/tests/
+          retention-days: 5
