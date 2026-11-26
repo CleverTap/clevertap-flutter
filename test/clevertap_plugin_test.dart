@@ -1,10 +1,12 @@
+import 'dart:io' show Platform;
+
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:clevertap_plugin/clevertap_plugin.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-  const MethodChannel channel = MethodChannel('clevertap_plugin');
+  const MethodChannel channel = MethodChannel('clevertap_plugin/dart_to_native');
 
   Map<dynamic, dynamic> testMap = new Map();
   testMap.putIfAbsent("key1", () => "val1");
@@ -249,11 +251,15 @@ void main() {
     });
   });
 
+  // getAllDisplayUnits() returns null unless Platform.isAndroid/isIOS, which is
+  // never true when unit tests run on a desktop host, so skip it there.
   test('testing getAllDisplayUnits method', () async {
     await CleverTapPlugin.getAllDisplayUnits().then((unitList) {
       expect(unitList, testList);
     });
-  });
+  }, skip: !(Platform.isAndroid || Platform.isIOS)
+      ? 'Requires an Android/iOS host (Platform check in plugin)'
+      : false);
 
   test('testing getDisplayUnitForId method', () async {
     await CleverTapPlugin.getDisplayUnitForId(mockString).then((unitMap) {
