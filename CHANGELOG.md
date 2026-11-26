@@ -27,6 +27,8 @@
   * Fixes `customTemplateContextToString` always throwing a `PlatformException`.
   * Fixes `syncVariablesinProd`, `registerForPush`, `getInitialUrl` and `registerKilledStateNotificationClickedHandler` never completing their `Future`.
   * Fixes an uncaught `PlatformException` at every launch when `AndroidManifest.xml` has no CleverTap account.
+  * Fixes an app crash (`IllegalStateException: Reply already submitted`) on every push rendered with `createNotification` when `AndroidManifest.xml` has no CleverTap account, and when the payload passed to `createNotification` is not valid JSON.
+  * `processPushNotification` now works when `AndroidManifest.xml` has no CleverTap account. Before, it returned an error and the push was not processed.
 * **[iOS Platform]**
   * Fixes `setCleverTapProfileSyncHandler` never being called.
   * Fixes `setCleverTapInAppNotificationShowHandler` never being called.

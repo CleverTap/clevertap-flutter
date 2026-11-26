@@ -1378,35 +1378,41 @@ class DartToNativePlatformCommunicator(
      */
     private fun renderNotification(call: MethodCall, result: MethodChannel.Result) {
         val extras = call.argument<String>("extras")
-        if (cleverTapAPI == null) {
-            result.error(TAG, ERROR_MSG, null)
-        }
-        try {
-            Log.d(TAG, "renderNotification Android")
-            // Check if we're on the main thread. Needed since plugins like FCM provide on message received on the main thread
-            if (Looper.myLooper() == Looper.getMainLooper()) {
-                // We're on the main thread, execute on a background thread
-                notificationExecutor.execute {
-                    processNotification(extras, result)
-                }
-            } else {
+        // No default-account check: the SDK finds the account from the push itself (wzrk_acct_id,
+        // PushNotificationHandler.onMessageReceived -> getGlobalInstance). The old check answered an
+        // error but did not return, so processNotification answered a second time on the executor
+        // thread, where Flutter's "Reply already submitted" crashed the app on every push when there
+        // was no default account (since 739c475).
+        Log.d(TAG, "renderNotification Android")
+        // Check if we're on the main thread. Needed since plugins like FCM provide on message received on the main thread
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            // We're on the main thread, execute on a background thread
+            notificationExecutor.execute {
                 processNotification(extras, result)
             }
+        } else {
+            processNotification(extras, result)
+        }
+    }
+
+    // Answers exactly once, and catches everything itself: on the executor thread nothing else
+    // would, and an uncaught exception there crashes the app. Example: a payload that is not JSON.
+    private fun processNotification(extras: String?, result: MethodChannel.Result) {
+        val isSuccess = try {
+            val messageBundle = Utils.stringToBundle(extras)
+            PushNotificationHandler.getPushNotificationHandler()
+                .onMessageReceived(context, messageBundle, PushConstants.FCM.type)
         } catch (e: JSONException) {
             result.error(
                 TAG,
                 "Unable to render notification due to JSONException - " + e.localizedMessage,
                 null
             )
-        } catch (e: Exception) {
-            result.error(TAG, e.localizedMessage, null)
+            return
+        } catch (t: Throwable) {
+            result.error(TAG, t.localizedMessage, null)
+            return
         }
-    }
-
-    private fun processNotification(extras: String?, result: MethodChannel.Result) {
-        val messageBundle = Utils.stringToBundle(extras)
-        val isSuccess = PushNotificationHandler.getPushNotificationHandler()
-            .onMessageReceived(context, messageBundle, PushConstants.FCM.type)
 
         if (isSuccess) {
             result.success(null)
@@ -1990,23 +1996,23 @@ class DartToNativePlatformCommunicator(
 
     private fun processPushNotification(call: MethodCall, result: MethodChannel.Result) {
         val extras = call.argument<Map<String?, Any?>>("extras")!!
-        if (cleverTapAPI != null) {
-            try {
-                CleverTapAPI.processPushNotification(
-                    context,
-                    Utils.jsonToBundle(JSONObject(extras))
-                )
-            } catch (e: JSONException) {
-                result.error(
-                    TAG,
-                    "Unable to render notification due to JSONException - " + e.localizedMessage,
-                    null
-                )
-            }
-            result.success(null)
-        } else {
-            result.error(TAG, ERROR_MSG, null)
+        // No default-account check: CleverTapAPI.processPushNotification is static and finds the
+        // account from the push (fromBundle). An app with no default account used to get an error
+        // here, and the push was not processed.
+        try {
+            CleverTapAPI.processPushNotification(
+                context,
+                Utils.jsonToBundle(JSONObject(extras))
+            )
+        } catch (e: JSONException) {
+            result.error(
+                TAG,
+                "Unable to render notification due to JSONException - " + e.localizedMessage,
+                null
+            )
+            return // answered once; it used to answer success as well
         }
+        result.success(null)
     }
 
     private fun profileAddMultiValue(call: MethodCall, result: MethodChannel.Result) {
