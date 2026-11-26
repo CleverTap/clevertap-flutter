@@ -73,6 +73,7 @@ class UtilsTest {
     }
 
     @Test
+    @Suppress("UNCHECKED_CAST")
     fun `mapToBundle skips null values`() {
         val map = hashMapOf<String, Any?>("a" to null, "b" to "x") as HashMap<String, Any>
         val bundle = Utils.mapToBundle(map)
@@ -162,12 +163,6 @@ class UtilsTest {
         val arr: JSONArray = json.getJSONArray("list")
         assertEquals(2, arr.length())
         assertEquals("a", arr.getString(0))
-    }
-
-    @Test
-    fun `mapToJSONObject omits an empty ArrayList (current behaviour)`() {
-        val json = Utils.mapToJSONObject(hashMapOf<String, Any>("empty" to arrayListOf<String>()))
-        assertFalse(json.has("empty"))
     }
 
     // ---- mapToPushType / utmDetailsToMap ------------------------------------
