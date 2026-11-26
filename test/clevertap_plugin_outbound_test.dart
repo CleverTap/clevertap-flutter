@@ -8,6 +8,8 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   const channel = MethodChannel('clevertap_plugin/dart_to_native');
+  final messenger =
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
 
   final List<MethodCall> calls = [];
   dynamic Function(MethodCall call)? responder;
@@ -15,13 +17,13 @@ void main() {
   setUp(() {
     calls.clear();
     responder = null;
-    channel.setMockMethodCallHandler((MethodCall call) async {
+    messenger.setMockMethodCallHandler(channel, (MethodCall call) async {
       calls.add(call);
       return responder?.call(call);
     });
   });
 
-  tearDown(() => channel.setMockMethodCallHandler(null));
+  tearDown(() => messenger.setMockMethodCallHandler(channel, null));
 
   /// Asserts exactly one call was made with the given method and arguments.
   void expectCall(String method, dynamic arguments) {
@@ -52,8 +54,8 @@ void main() {
         {'Category': 'toys', 'Quantity': 2},
       ];
       await CleverTapPlugin.recordChargedEvent(details, items);
-      expectCall('recordChargedEvent',
-          {'chargeDetails': details, 'items': items});
+      expectCall(
+          'recordChargedEvent', {'chargeDetails': details, 'items': items});
     });
 
     test('recordScreenView sends screenName', () async {
@@ -119,9 +121,12 @@ void main() {
     test('profileIncrementValue keeps int and double types', () async {
       await CleverTapPlugin.profileIncrementValue('Score', 5);
       expectCall('profileIncrementValue', {'key': 'Score', 'value': 5});
+      // 5 == 5.0 in Dart, so check the runtime type as well.
+      expect(calls.single.arguments['value'], isA<int>());
       calls.clear();
       await CleverTapPlugin.profileIncrementValue('Score', 1.5);
       expectCall('profileIncrementValue', {'key': 'Score', 'value': 1.5});
+      expect(calls.single.arguments['value'], isA<double>());
     });
 
     test('profileDecrementValue sends key and value', () async {
@@ -169,8 +174,7 @@ void main() {
     test('discardInAppNotifications sends dismissInAppIfVisible', () async {
       await CleverTapPlugin.discardInAppNotifications(
           dismissInAppIfVisible: true);
-      expectCall(
-          'discardInAppNotifications', {'dismissInAppIfVisible': true});
+      expectCall('discardInAppNotifications', {'dismissInAppIfVisible': true});
     });
   });
 
@@ -217,12 +221,10 @@ void main() {
 
     test('inbox clicked / viewed events send messageId', () async {
       await CleverTapPlugin.pushInboxNotificationClickedEventForId('m1');
-      expectCall(
-          'pushInboxNotificationClickedEventForId', {'messageId': 'm1'});
+      expectCall('pushInboxNotificationClickedEventForId', {'messageId': 'm1'});
       calls.clear();
       await CleverTapPlugin.pushInboxNotificationViewedEventForId('m1');
-      expectCall(
-          'pushInboxNotificationViewedEventForId', {'messageId': 'm1'});
+      expectCall('pushInboxNotificationViewedEventForId', {'messageId': 'm1'});
     });
   });
 
@@ -256,8 +258,8 @@ void main() {
   group('errors', () {
     test('PlatformException from native propagates to the caller', () async {
       responder = (_) => throw PlatformException(code: 'ERR', message: 'boom');
-      expect(
-        () => CleverTapPlugin.recordEvent('E', {}),
+      await expectLater(
+        CleverTapPlugin.recordEvent('E', {}),
         throwsA(isA<PlatformException>()
             .having((e) => e.code, 'code', 'ERR')
             .having((e) => e.message, 'message', 'boom')),

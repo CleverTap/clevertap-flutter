@@ -66,7 +66,8 @@ void main() {
 
   /// Cannot call Android/iOS code so have to mock return values here
   setUp(() {
-    channel.setMockMethodCallHandler((MethodCall methodCall) async {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (MethodCall methodCall) async {
       switch (methodCall.method) {
         case "eventGetOccurrences":
           return 1;
@@ -127,7 +128,8 @@ void main() {
 
   /// Clean up
   tearDown(() {
-    channel.setMockMethodCallHandler(null);
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, null);
   });
 
   test('testing eventGetOccurences method', () async {
