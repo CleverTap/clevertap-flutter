@@ -1,7 +1,9 @@
-name: Unit Tests
+name: Flutter Unit Tests
 
 on:
   pull_request:
+    branches: [ develop, master ]
+  push:
     branches: [ develop, master ]
   workflow_dispatch:
 
@@ -17,6 +19,7 @@ jobs:
   flutter-tests:
     name: Flutter unit tests
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout the code from Repo
         uses: actions/checkout@v4
