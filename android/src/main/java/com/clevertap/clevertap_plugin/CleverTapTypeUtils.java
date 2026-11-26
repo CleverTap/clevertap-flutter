@@ -24,7 +24,7 @@ public class CleverTapTypeUtils {
                     jsonObject.put(key, null);
                 } else if (value instanceof Boolean) {
                     jsonObject.put(key, value);
-                } else if (value instanceof Integer) {
+                } else if (value instanceof Integer || value instanceof Long) {
                     jsonObject.put(key, value);
                 }
                 else if (value instanceof Float || value instanceof Double) {
@@ -70,7 +70,7 @@ public class CleverTapTypeUtils {
                 map.put(key, value);
             } else if (value instanceof Double) {
                 map.put(key, value);
-            } else if (value instanceof Integer) {
+            } else if (value instanceof Integer || value instanceof Long) {
                 map.put(key, value);
             } else if (value instanceof String) {
                 map.put(key, value);
@@ -93,7 +93,7 @@ public class CleverTapTypeUtils {
                         jsonArray.put(JSONObject.NULL);
                     } else if (value instanceof Boolean) {
                         jsonArray.put(value);
-                    }else if (value instanceof Integer) {
+                    }else if (value instanceof Integer || value instanceof Long) {
                         jsonArray.put(value);
                     }
                     else if (value instanceof Float || value instanceof Double) {
