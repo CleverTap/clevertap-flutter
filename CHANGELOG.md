@@ -22,7 +22,7 @@
 **Bug Fixes**
 * **[Android Platform]**
   * Fixes a possible `NoSuchElementException` crash and lost early events when CleverTap events were sent from several threads.
-  * Fixes `setCleverTapPushAmpPayloadReceivedHandler` never being called.
+  * Fixes `setCleverTapPushAmpPayloadReceivedHandler` never being called. Setting it now means your handler draws Push Amplification notifications (for example with `createNotification`); apps that do not set it keep SDK drawing, as before.
   * Fixes `getCleverTapID` sometimes answering twice and leaving a listener behind.
   * Fixes `customTemplateContextToString` always throwing a `PlatformException`.
   * Fixes `syncVariablesinProd`, `registerForPush`, `getInitialUrl` and `registerKilledStateNotificationClickedHandler` never completing their `Future`.

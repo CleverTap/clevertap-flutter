@@ -535,7 +535,31 @@ CleverTapPlugin.createNotification(data);
 
 ## Custom Push Amplification
 
+#### [Android Platform] Handle Push Amplification payloads yourself
+
+Push Amplification is CleverTap's backup delivery: when Firebase fails to deliver a push, the SDK fetches it on its next server call. By default the SDK draws that notification itself, and you need no code.
+
+Set `setCleverTapPushAmpPayloadReceivedHandler` only if you want to handle these payloads yourself. **Setting it means the SDK no longer draws them: your handler must draw the notification**, for example with `createNotification`:
+
+```Dart
+_clevertapPlugin.setCleverTapPushAmpPayloadReceivedHandler(pushAmpPayloadReceived);
+
+void pushAmpPayloadReceived(Map<String, dynamic> payload) {
+  // Your logic here, then draw the notification. Skip this line and the user sees nothing.
+  CleverTapPlugin.createNotification(jsonEncode(payload));
+}
+```
+
+| Your app | Who draws a Push Amplification notification |
+|---|---|
+| Sets no handler | The SDK |
+| Sets the handler | Your handler. The SDK only passes the payload to it. |
+
+A payload that arrives before your handler is set is drawn by the SDK. Example: one fetched by the app's first server call, before your Dart code has run.
+
 #### Process Push Notification
+
+If your app renders pushes from its own Firebase receiver, call this with each CleverTap push. It does not draw anything: it records the push ID, so the SDK does not show the same push again when Push Amplification fetches it.
 
 ```Dart
  CleverTapPlugin.processPushNotification(data);

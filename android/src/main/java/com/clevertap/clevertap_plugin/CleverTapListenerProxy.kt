@@ -62,6 +62,26 @@ object CleverTapListenerProxy : AccountListenerProxy(null) {
         }
     }
 
+    /**
+     * Sends [instance]'s Push Amp payloads to Dart. Called only when Dart sets a Push Amp handler
+     * for this account, never in [attachToInstance].
+     *
+     * Why opt-in: with this listener set, the SDK no longer draws Push Amp notifications; it only
+     * hands the payload over, and the app must draw it (Android SDK 8.6.0
+     * PushAmpResponse.java:113-118). Native apps opt in by calling setCTPushAmpListener themselves.
+     * Example: an app with no Push Amp handler keeps "50% off today" drawn by the SDK, as in 4.4.0.
+     * Set for every account, the notification was drawn by nobody.
+     */
+    @JvmStatic
+    fun attachPushAmpListener(instance: CleverTapAPI) {
+        val accountId = instance.accountId
+        if (accountId == null) {
+            Log.e(LOG_TAG, "Cannot attach the Push Amp listener: the instance has no accountId")
+            return
+        }
+        instance.setCTPushAmpListener(proxyFor(accountId))
+    }
+
     /** The proxy for [accountId]: created once, then the same object every time. */
     internal fun proxyFor(accountId: String): AccountListenerProxy =
         proxies[accountId] ?: AccountListenerProxy(accountId).let { created ->
@@ -95,9 +115,7 @@ open class AccountListenerProxy internal constructor(private val accountId: Stri
         instance.setDisplayUnitListener(this)
         instance.setCTProductConfigListener(this)
         instance.setCTFeatureFlagsListener(this)
-        // Registered again: plugin 3.0.0 to 4.3.0 implemented this listener but never registered
-        // it, so setCleverTapPushAmpPayloadReceivedHandler received nothing on Android.
-        instance.setCTPushAmpListener(this)
+        // ⚠️ NOT the Push Amp listener: see CleverTapListenerProxy.attachPushAmpListener.
     }
 
     // SyncListener

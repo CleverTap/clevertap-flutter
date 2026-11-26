@@ -376,6 +376,7 @@ Native messages appear in Logcat (Android) or the Xcode console (iOS). Dart mess
 | No `destroyInstance` | An account lives as long as the app process. Neither native SDK can remove one. |
 | Killed-app pushes for Dart-created accounts | Not shown (Android) or not tapped through (iOS). Use launch configs. |
 | `onKilledStateNotificationClicked` (Android) | Runs for the default account's pushes only. Other accounts' taps reach their handle's `setCleverTapPushClickedPayloadReceivedHandler`. |
+| Push Amplification handler (Android) | Per account. Setting `setCleverTapPushAmpPayloadReceivedHandler` on B's handle means your handler draws B's Push Amplification notifications; accounts without the handler keep SDK drawing. See [Custom Push Amplification](Usage.md#custom-push-amplification). |
 | iOS once-callbacks for variables | With iOS SDK 7.9.0, `onOneTimeVariablesChanged` and `onceVariablesChangedAndNoDownloadsPending` registered before the values arrive run only for the first account that registers one. Registered after the values arrived, they run for every account. This is a bug in the iOS SDK. |
 | One visual in-app at a time | The native SDKs show one in-app at a time for the whole app, across accounts. Another account's in-app waits. |
 

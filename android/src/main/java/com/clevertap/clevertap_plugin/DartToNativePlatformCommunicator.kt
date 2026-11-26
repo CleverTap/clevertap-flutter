@@ -848,6 +848,13 @@ class DartToNativePlatformCommunicator(
             return
         }
 
+        // Setting a Push Amp handler is the app's opt-in to draw Push Amp notifications itself, so
+        // only then does the account get the listener (see attachPushAmpListener). A missing
+        // account has nothing to attach to; the handler simply never fires.
+        if (ctEvent == CleverTapEvent.CLEVERTAP_ON_PUSH_AMP_PAYLOAD_RECEIVED) {
+            instanceFor(call)?.let { CleverTapListenerProxy.attachPushAmpListener(it) }
+        }
+
         // One call on purpose: "stop buffering" and "send what was held" must run as one step,
         // or an event emitted between them is left in a disabled buffer and lost.
         if (request.accountId == null) {

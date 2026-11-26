@@ -495,7 +495,11 @@ class CleverTapPlugin {
     cleverTapProductConfigActivatedHandler = handler;
   }
 
-  /// Define a method to handle Push Amplification payload
+  /// Define a method to handle Push Amplification payload (Android only).
+  ///
+  /// Setting it means the SDK no longer draws Push Amplification notifications
+  /// for the default account: [handler] must draw them, for example with
+  /// [createNotification]. Without a handler, the SDK draws them.
   void setCleverTapPushAmpPayloadReceivedHandler(
       CleverTapPushAmpPayloadReceivedHandler handler) {
     invokeStartEmission('CleverTapPushAmpPayloadReceived');
@@ -2733,6 +2737,9 @@ class CleverTapInstance {
           CleverTapPushPermissionResponseReceivedHandler handler) =>
       _setHandler('pushPermissionResponseReceived', 'CleverTapPushPermissionResponseReceived', handler);
 
+  /// Android only. Setting it means the SDK no longer draws this account's
+  /// Push Amplification notifications: [handler] must draw them, for example
+  /// with [CleverTapPlugin.createNotification].
   void setCleverTapPushAmpPayloadReceivedHandler(
           CleverTapPushAmpPayloadReceivedHandler handler) =>
       _setHandler('pushAmpPayloadReceived', 'CleverTapPushAmpPayloadReceived', handler);
