@@ -32,6 +32,7 @@
 * **[iOS Platform]**
   * Fixes `setCleverTapProfileSyncHandler` never being called.
   * Fixes `setCleverTapInAppNotificationShowHandler` never being called.
+  * Fixes `fetchInApps`, `fetchInboxWithCallback`, `fetchVariables` and `getPushNotificationPermissionStatus` never completing when `Info.plist` has no CleverTap account. They now fail with a `PlatformException`, as on Android.
   * Fixes app functions calling the custom template handler instead of `setCleverTapCustomFunctionPresentHandler`. If your app handled app functions inside its template handler, move that code to the function handler.
   * Fixes `initializeInbox`, `showInbox`, `dismissInbox`, `suspendInAppNotifications`, `resumeInAppNotifications`, `promptPushPrimer`, `promptForPushNotification`, `syncVariables`, `syncVariablesinProd` and `clearInAppResources` never completing their `Future`.
   * `enablePersonalization` and `disablePersonalization` now take effect immediately, as on Android. Before, they applied at the next app launch.

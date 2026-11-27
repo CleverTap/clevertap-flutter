@@ -291,6 +291,22 @@ static NSString *const kCleverTapErrorCodeCreateFailed = @"ECREATE";
     return YES;
 }
 
+/// For a call that answers Dart from inside an SDK callback block. Like
+/// answeredMissingAccountOfCall:, and a static call with no default account is answered too, with
+/// Android's error. Why: [nil fetchInApps:^{...}] does nothing, so the block that answers Dart never
+/// ran and `await CleverTapPlugin.fetchInApps()` waited forever. Example: no Info.plist account,
+/// only launch account B: the static call fails at once; it is never sent to B.
+- (BOOL)answeredMissingInstanceOfCall:(FlutterMethodCall *)call instance:(nullable CleverTap *)instance result:(FlutterResult)result {
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return YES;
+    }
+    if (instance != nil) {
+        return NO;
+    }
+    result([FlutterError errorWithCode:@"DartToNative" message:@"CleverTap Instance is not initialized" details:nil]);
+    return YES;
+}
+
 /// The value of a method whose static call sends one bare value instead of a dictionary. A handle
 /// call must also send its accountId, so it sends {value, accountId}. Example: setLocale sends
 /// @"en_US" from CleverTapPlugin and {value: @"en_US", accountId: @"B"} from a handle.
@@ -1244,7 +1260,7 @@ static CleverTapEncryptionLevel ctEncryptionLevelFromString(NSString *level) {
 
 - (void)fetchInApps:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     CleverTap *instance = [self instanceForCall:call];
-    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+    if ([self answeredMissingInstanceOfCall:call instance:instance result:result]) {
         return;
     }
     [instance fetchInApps:^(BOOL success) {
@@ -1378,7 +1394,7 @@ static CleverTapEncryptionLevel ctEncryptionLevelFromString(NSString *level) {
 
 - (void)fetchInboxWithCallback:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     CleverTap *instance = [self instanceForCall:call];
-    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+    if ([self answeredMissingInstanceOfCall:call instance:instance result:result]) {
         return;
     }
     [instance fetchInboxWithCallback:^(BOOL success) {
@@ -2120,7 +2136,7 @@ static CleverTapEncryptionLevel ctEncryptionLevelFromString(NSString *level) {
 
 - (void)getPushNotificationPermissionStatus:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     CleverTap *instance = [self instanceForCall:call];
-    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+    if ([self answeredMissingInstanceOfCall:call instance:instance result:result]) {
         return;
     }
     [instance getNotificationPermissionStatusWithCompletionHandler:^(UNAuthorizationStatus status) {
@@ -2223,7 +2239,7 @@ static CleverTapEncryptionLevel ctEncryptionLevelFromString(NSString *level) {
 
 - (void)fetchVariables:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     CleverTap *instance = [self instanceForCall:call];
-    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+    if ([self answeredMissingInstanceOfCall:call instance:instance result:result]) {
         return;
     }
     [instance fetchVariables:^(BOOL success) {
