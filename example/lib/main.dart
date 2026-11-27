@@ -1958,26 +1958,38 @@ class _MyAppState extends State<MyApp> {
   // campaigns. These handlers run only for B's templates; each call below acts on B's template.
   void instanceBCustomTemplates() async {
     final b = _instanceB;
-    b.setCleverTapCustomTemplatePresentHandler((name) async {
-      final text = await b.customTemplateGetStringArg(name, 'string');
-      final context = await b.customTemplateContextToString(name);
-      print("MI -> TEST-ACC-B: customTemplatePresent $name, string = $text, context = $context");
-      await b.customTemplateSetPresented(name);
-      await b.customTemplateSetDismissed(name);
-      print("MI -> TEST-ACC-B: $name presented and dismissed");
-    });
-    b.setCleverTapCustomFunctionPresentHandler((name) async {
-      final text = await b.customTemplateGetStringArg(name, 'string');
-      print("MI -> TEST-ACC-B: customFunctionPresent $name, string = $text");
-      // A function is done once it has run. Until it is dismissed, the SDK keeps B's later
-      // in-app messages waiting.
-      await b.customTemplateSetPresented(name);
-      await b.customTemplateSetDismissed(name);
-    });
-    b.setCleverTapCustomTemplateCloseHandler((name) {
-      print("MI -> TEST-ACC-B: customTemplateClose $name");
-      b.customTemplateSetDismissed(name);
-    });
+    // Every template call fails with a PlatformException once B's template is no longer active.
+    // Example: the SDK closes "Spin" while the present handler is still awaiting its arguments;
+    // the close handler dismisses it, then the present handler's setPresented fails. The plugin
+    // does not await handlers, so an uncaught failure shows as "Unhandled Exception".
+    Future<void> safely(String name, Future<void> Function() steps) async {
+      try {
+        await steps();
+      } on PlatformException catch (e) {
+        print("MI -> TEST-ACC-B: $name is no longer active -> ${e.code}, ${e.message}");
+      }
+    }
+
+    b.setCleverTapCustomTemplatePresentHandler((name) => safely(name, () async {
+          final text = await b.customTemplateGetStringArg(name, 'string');
+          final context = await b.customTemplateContextToString(name);
+          print("MI -> TEST-ACC-B: customTemplatePresent $name, string = $text, context = $context");
+          await b.customTemplateSetPresented(name);
+          await b.customTemplateSetDismissed(name);
+          print("MI -> TEST-ACC-B: $name presented and dismissed");
+        }));
+    b.setCleverTapCustomFunctionPresentHandler((name) => safely(name, () async {
+          final text = await b.customTemplateGetStringArg(name, 'string');
+          print("MI -> TEST-ACC-B: customFunctionPresent $name, string = $text");
+          // A function is done once it has run. Until it is dismissed, the SDK keeps B's later
+          // in-app messages waiting.
+          await b.customTemplateSetPresented(name);
+          await b.customTemplateSetDismissed(name);
+        }));
+    b.setCleverTapCustomTemplateCloseHandler((name) => safely(name, () async {
+          print("MI -> TEST-ACC-B: customTemplateClose $name");
+          await b.customTemplateSetDismissed(name);
+        }));
     await b.syncCustomTemplates();
     print("MI -> TEST-ACC-B: syncCustomTemplates sent");
     try {
