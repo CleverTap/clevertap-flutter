@@ -224,6 +224,19 @@ static NSString *const kCleverTapErrorCodeCreateFailed = @"ECREATE";
     return instance;
 }
 
+/// The default account's ID. Looks again while none is known: an app may set its credentials in
+/// code after the plugin started, so init found no default. Example: GeneratedPluginRegistrant,
+/// then [CleverTap setCredentialsWithAccountID:@"ACC-A" ...]. Saved only at init, ACC-A's events
+/// went out with isDefault = NO and Dart dropped them. Main queue only (like resolveInstance:).
+/// Logs nothing here: it runs for every event. While there are no credentials the SDK returns nil
+/// and logs that only once.
+- (nullable NSString *)currentDefaultAccountId {
+    if (self.defaultInstance == nil && [CleverTap sharedInstance] != nil) {
+        [self resolveInstance:nil]; // saves and wires it: delegates, library stamp
+    }
+    return self.defaultInstance.config.accountId;
+}
+
 /// The accountId a CleverTapInstance (handle) call sends, or nil for a static call. Anything that
 /// is not a non-empty string counts as absent (the default account, as before).
 - (nullable NSString *)handleAccountIdOfCall:(FlutterMethodCall *)call {
@@ -238,7 +251,11 @@ static NSString *const kCleverTapErrorCodeCreateFailed = @"ECREATE";
 /// as before. A handle call: that account, or nil after the registry's warning; never the default.
 - (nullable CleverTap *)instanceForCall:(FlutterMethodCall *)call {
     NSString *accountId = [self handleAccountIdOfCall:call];
-    return accountId == nil ? [CleverTap sharedInstance] : [self resolveInstance:accountId];
+    if (accountId == nil) {
+        [self currentDefaultAccountId]; // wires a default whose credentials were set after init
+        return [CleverTap sharedInstance];
+    }
+    return [self resolveInstance:accountId];
 }
 
 /// For a call that returns a value. A handle call whose account does not exist is answered here
@@ -287,8 +304,8 @@ static NSString *const kCleverTapErrorCodeCreateFailed = @"ECREATE";
         });
         return;
     }
-    // The default account was created and wired when the plugin started (init).
-    NSString *defaultAccountId = self.defaultInstance.config.accountId;
+    // The default account, wired at init or once its credentials exist (currentDefaultAccountId).
+    NSString *defaultAccountId = [self currentDefaultAccountId];
     for (id item in launchConfigs) {
         if (![item isKindOfClass:[CleverTapPluginLaunchConfig class]]) {
             NSLog(@"CleverTapFlutter: a launch config is not a CleverTapPluginLaunchConfig; skipped.");
@@ -681,7 +698,7 @@ static NSString *const kCleverTapErrorCodeCreateFailed = @"ECREATE";
     // Dart runs) were never stamped: resolveInstance: stamps only once the name is known. The
     // library name is per account in the SDK, so without this B's events went out without "lib".
     if (self.libraryName != nil) {
-        NSString *defaultAccountId = self.defaultInstance.config.accountId;
+        NSString *defaultAccountId = [self currentDefaultAccountId];
         for (NSString *accountId in [self.wiredAccountIds allObjects]) {
             if ([accountId isEqualToString:defaultAccountId]) {
                 continue; // stamped just above
@@ -1999,15 +2016,15 @@ static CleverTapEncryptionLevel ctEncryptionLevelFromString(NSString *level) {
 }
 
 /// The value Dart receives: {__ctEnvelope: true, accountId, isDefault, payload}. Main queue only
-/// (it reads defaultInstance). An unknown account (nil) counts as default, which is where those
-/// events went before. The marker matches _envelopeMarker in lib/clevertap_plugin.dart.
+/// (it reads currentDefaultAccountId). An unknown account (nil) counts as default, which is where
+/// those events went before. The marker matches _envelopeMarker in lib/clevertap_plugin.dart.
 - (NSDictionary *)envelopeForNotification:(NSNotification *)notification payload:(id)payload {
     NSString *accountId = [notification.object isKindOfClass:[NSString class]] ? notification.object : nil;
     return [self envelopeForAccountId:accountId payload:payload];
 }
 
 - (NSDictionary *)envelopeForAccountId:(nullable NSString *)accountId payload:(id)payload {
-    BOOL isDefault = accountId == nil || [accountId isEqualToString:self.defaultInstance.config.accountId];
+    BOOL isDefault = accountId == nil || [accountId isEqualToString:[self currentDefaultAccountId]];
     return @{
         @"__ctEnvelope": @YES,
         @"accountId": accountId ?: [NSNull null],
@@ -2021,7 +2038,7 @@ static CleverTapEncryptionLevel ctEncryptionLevelFromString(NSString *level) {
 
 /// The account whose inbox showInbox opened; the default account when none was opened through it.
 - (nullable NSString *)accountIdOfOpenInbox {
-    return self.inboxAccountId ?: self.defaultInstance.config.accountId;
+    return self.inboxAccountId ?: [self currentDefaultAccountId];
 }
 
 - (void)messageButtonTappedWithCustomExtras:(NSDictionary *_Nullable)customExtras {
