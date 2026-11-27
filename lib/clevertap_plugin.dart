@@ -12,6 +12,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
 import 'src/clevertap_callback_dispatcher.dart';
+import 'src/platform.dart';
 
 export 'src/types.dart';
 export 'src/instance_config.dart';
@@ -372,9 +373,8 @@ class CleverTapPlugin {
    * failed
    */
   void invokeStartEmission(String name) {
-    // defaultTargetPlatform gives the same answer as Platform.isAndroid on a device, and tests can
-    // change it (debugDefaultTargetPlatformOverride).
-    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+    // The real OS (isAndroidHost), as in 4.4.0: only Android has the native event buffer.
+    if (isAndroidHost()) {
       _dartToNativeMethodChannel.invokeMethod('startEmission', name);
     }
   }
@@ -1785,7 +1785,7 @@ class CleverTapInstance {
       return;
     }
     _handlers[method] = handler;
-    if (defaultTargetPlatform == TargetPlatform.android) {
+    if (isAndroidHost()) {
       CleverTapPlugin._dartToNativeMethodChannel.invokeMethod(
           'startEmission', {'event': nativeEvent, 'accountId': accountId});
     }

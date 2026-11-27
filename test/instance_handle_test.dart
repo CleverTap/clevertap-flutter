@@ -1,4 +1,5 @@
 import 'package:clevertap_plugin/clevertap_plugin.dart';
+import 'package:clevertap_plugin/src/platform.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -360,10 +361,14 @@ void main() {
   });
 
   group('Android arms the native buffer for the handle\'s account', () {
-    tearDown(() => debugDefaultTargetPlatformOverride = null);
+    final realIsAndroidHost = isAndroidHost;
+    tearDown(() {
+      isAndroidHost = realIsAndroidHost;
+      debugDefaultTargetPlatformOverride = null;
+    });
 
     test('every setter sends startEmission {event, accountId}', () {
-      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      isAndroidHost = () => true;
       final b = CleverTapPlugin.getInstance('B');
       for (final e in events) {
         (e[4] as void Function(CleverTapInstance, void Function(Object?)))(
@@ -383,14 +388,39 @@ void main() {
     test(
         'the static setters still send the plain event name (the default account)',
         () {
-      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      isAndroidHost = () => true;
       plugin.setCleverTapProfileDidInitializeHandler(() {});
       expect(toNative.single.method, 'startEmission');
       expect(toNative.single.arguments, 'CleverTapProfileDidInitialize');
     });
 
     test('iOS sends nothing (it has no native buffer)', () {
+      isAndroidHost = () => false;
+      CleverTapPlugin.getInstance('B')
+          .setCleverTapProfileDidInitializeHandler(() {});
+      plugin.setCleverTapProfileDidInitializeHandler(() {});
+      expect(toNative, isEmpty);
+    });
+
+    // The real OS decides, not debugDefaultTargetPlatformOverride (a debug-only look preview).
+    // Example: an Android phone previewing the iOS look must still arm, or its events are dropped.
+    test('previewing another platform\'s look does not change arming', () {
+      isAndroidHost = () => true;
       debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+      CleverTapPlugin.getInstance('B')
+          .setCleverTapProfileDidInitializeHandler(() {});
+      plugin.setCleverTapProfileDidInitializeHandler(() {});
+      expect(toNative.map((c) => [c.method, c.arguments]).toList(), [
+        [
+          'startEmission',
+          {'event': 'CleverTapProfileDidInitialize', 'accountId': 'B'}
+        ],
+        ['startEmission', 'CleverTapProfileDidInitialize'],
+      ]);
+
+      toNative.clear();
+      isAndroidHost = () => false;
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
       CleverTapPlugin.getInstance('B')
           .setCleverTapProfileDidInitializeHandler(() {});
       plugin.setCleverTapProfileDidInitializeHandler(() {});
