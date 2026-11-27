@@ -21,7 +21,7 @@ To get started, sign up [here](https://clevertap.com/live-product-demo/).
 
 ```yaml
 dependencies:
-  clevertap_plugin: 4.4.0
+  clevertap_plugin: 4.5.0
 ```
 
 - Run `flutter packages get` to install the SDK
@@ -39,6 +39,7 @@ See our [Technical Documentation for Android](doc/Integrate-Android.md) and [Tec
 ## 📑 Documentation & Example
 
 - Checkout our [CleverTap Flutter Usage documentation](doc/Usage.md)
+- Several CleverTap accounts in one app: [Multi-Instance](doc/MultiInstance.md)
 - Checkout our [Example Dart project](./example)
 
 ## 📲 CleverTap Push Templates SDK (Available only for Android OS)

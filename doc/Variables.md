@@ -55,6 +55,17 @@ From version `3.0.0` onwards, the following callbacks are also supported:
 - `onceVariablesChangedAndNoDownloadsPending`
 - `onFileValueChanged`
 
+From version `4.5.0`, each callback you register runs once per change, as in the native SDKs:
+
+| You register | One change arrives | Runs |
+|---|---|---|
+| `onVariablesChanged(a)` and `onVariablesChanged(b)` | Values updated | `a` once, `b` once |
+| The same handler twice | Values updated | That handler twice |
+| `onOneTimeVariablesChanged(h)` | Values updated, then updated again | `h` once in total |
+| `onValueChanged('discount', h)` | Values updated | `h` for `discount` only (before 4.5.0 it also received other variables) |
+
+With [several accounts](MultiInstance.md#variables-per-account), each account has its own variables, and the same callbacks on an account's handle run only for that account.
+
 
 ## Status of Variables Fetch Request
 

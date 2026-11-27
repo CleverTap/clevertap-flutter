@@ -9,6 +9,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:clevertap_plugin/clevertap_plugin.dart';
 import 'package:example/deeplink_page.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_styled_toast/flutter_styled_toast.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'custom_template.dart';
@@ -854,6 +855,38 @@ class _MyAppState extends State<MyApp> {
                 ]),
                 if (!kIsWeb)
                   _buildExpansionTile("Multi-Instance", [
+                    _buildListTile("Create Instance", createInstanceB,
+                        "Creates account TEST-ACC-B (region eu1)"),
+                    _buildListTile("Create Same Instance Again",
+                        createInstanceBAgain,
+                        "Same account, different token: the new config is ignored"),
+                    _buildListTile("Create Instance With Empty ID",
+                        createInstanceEmptyId, "Fails with EINVALID"),
+                    _buildListTile("Create Instance With ID But No Flag",
+                        createInstanceIdWithoutFlag,
+                        "cleverTapId without useCustomCleverTapId: fails with EINVALID"),
+                    _buildListTile("Instance B: Record Event", instanceBRecordEvent,
+                        "Records 'Instance B Event' for TEST-ACC-B only"),
+                    _buildListTile("Instance B: User Login", instanceBUserLogin,
+                        "onUserLogin with a random identity, for TEST-ACC-B only"),
+                    _buildListTile("Instance B: Profile Set", instanceBProfileSet,
+                        "Sets Plan = gold on TEST-ACC-B only"),
+                    _buildListTile("Instance B: Get CleverTap ID", instanceBGetCleverTapID,
+                        "TEST-ACC-B's CleverTap ID"),
+                    _buildListTile("Unknown Instance: Get CleverTap ID", unknownInstanceGetCleverTapID,
+                        "An account that does not exist: a PlatformException"),
+                    _buildListTile("Instance B: Inbox", instanceBInbox,
+                        "Initializes TEST-ACC-B's inbox, then reads its message count"),
+                    _buildListTile("Variables In Both Accounts", variablesInBothAccounts,
+                        "Default and TEST-ACC-B define mi_discount (10 and 0); each reads its own"),
+                    _buildListTile("Instance B: Product Config", instanceBProductConfig,
+                        "Sets defaults and activates TEST-ACC-B's product config; its handler fires"),
+                    _buildListTile("Instance B: Disable Personalization", instanceBDisablePersonalization,
+                        "Then reads Plan on TEST-ACC-B: nothing comes back"),
+                    _buildListTile("Instance B: Enable Personalization", instanceBEnablePersonalization,
+                        "Then reads Plan on TEST-ACC-B"),
+                    _buildListTile("Instance B: Custom Templates", instanceBCustomTemplates,
+                        "Sets TEST-ACC-B's template handlers, syncs, and asks B for a template it is not showing"),
                     _buildListTile("Enable Personalization",
                         enablePersonalization, "Enables Personalization"),
                     _buildListTile("Disable Personalization",
@@ -1833,6 +1866,172 @@ class _MyAppState extends State<MyApp> {
     showToast("PIP InApp notification dismissed (if visible)");
     print("InApp -> dismissPipInApp called");
   }
+
+  Future<void> _createInstance(String label, CleverTapInstanceConfig config) async {
+    try {
+      final instance = await CleverTapPlugin.createInstance(config);
+      // Set the account's handlers right away, before any other await, to receive its first events.
+      instance.setCleverTapProfileDidInitializeHandler(
+          () => print("MI -> ${instance.accountId}: profileDidInitialize"));
+      instance.setCleverTapInAppNotificationShowHandler(
+          (map) => print("MI -> ${instance.accountId}: inAppNotificationShow $map"));
+      showToast("$label: created ${instance.accountId}");
+      print("MI -> $label: created $instance");
+    } on PlatformException catch (e) {
+      showToast("$label: ${e.code}");
+      print("MI -> $label: PlatformException(${e.code}, ${e.message})");
+    }
+  }
+
+  // Calls on account B's handle reach account B only. Create it first ("Create Instance").
+  CleverTapInstance get _instanceB => CleverTapPlugin.getInstance('TEST-ACC-B');
+
+  void instanceBRecordEvent() {
+    _instanceB.recordEvent('Instance B Event', {'source': 'example'});
+    showToast("Recorded 'Instance B Event' for TEST-ACC-B");
+    print("MI -> TEST-ACC-B: recordEvent 'Instance B Event'");
+  }
+
+  void instanceBUserLogin() {
+    final identity = 'b-user-${Random().nextInt(100000)}';
+    _instanceB.onUserLogin({'Identity': identity, 'Name': 'B User'});
+    showToast("TEST-ACC-B: onUserLogin $identity");
+    print("MI -> TEST-ACC-B: onUserLogin $identity");
+  }
+
+  void instanceBProfileSet() {
+    _instanceB.profileSet({'Plan': 'gold'});
+    showToast("TEST-ACC-B: profileSet Plan = gold");
+    print("MI -> TEST-ACC-B: profileSet Plan = gold");
+  }
+
+  void instanceBGetCleverTapID() async {
+    final id = await _instanceB.getCleverTapID();
+    showToast("TEST-ACC-B CleverTap ID: $id");
+    print("MI -> TEST-ACC-B: getCleverTapID $id");
+  }
+
+  void instanceBInbox() async {
+    _instanceB.setCleverTapInboxDidInitializeHandler(
+        () => print("MI -> TEST-ACC-B: inboxDidInitialize"));
+    await _instanceB.initializeInbox();
+    final count = await _instanceB.getInboxMessageCount();
+    showToast("TEST-ACC-B inbox: $count messages");
+    print("MI -> TEST-ACC-B: initializeInbox, getInboxMessageCount $count");
+  }
+
+  void variablesInBothAccounts() async {
+    await CleverTapPlugin.defineVariables({'mi_discount': 10});
+    await _instanceB.defineVariables({'mi_discount': 0});
+    final defaultValue = await CleverTapPlugin.getVariable('mi_discount');
+    final bValue = await _instanceB.getVariable('mi_discount');
+    showToast("mi_discount: default $defaultValue, TEST-ACC-B $bValue");
+    print("MI -> variables: default mi_discount = $defaultValue, TEST-ACC-B mi_discount = $bValue");
+  }
+
+  void instanceBProductConfig() async {
+    _instanceB.setCleverTapProductConfigActivatedHandler(
+        () => print("MI -> TEST-ACC-B: productConfigActivated"));
+    // ignore: deprecated_member_use
+    await _instanceB.setDefaultsMap({'mi_key': 'b-default'});
+    // ignore: deprecated_member_use
+    await _instanceB.activate();
+    showToast("TEST-ACC-B: product config activated");
+    print("MI -> TEST-ACC-B: setDefaultsMap + activate");
+  }
+
+  void instanceBDisablePersonalization() async {
+    await _instanceB.disablePersonalization();
+    final plan = await _instanceB.profileGetProperty('Plan');
+    showToast("TEST-ACC-B personalization off, Plan = $plan");
+    print("MI -> TEST-ACC-B: disablePersonalization, profileGetProperty Plan = $plan");
+  }
+
+  void instanceBEnablePersonalization() async {
+    await _instanceB.enablePersonalization();
+    final plan = await _instanceB.profileGetProperty('Plan');
+    showToast("TEST-ACC-B personalization on, Plan = $plan");
+    print("MI -> TEST-ACC-B: enablePersonalization, profileGetProperty Plan = $plan");
+  }
+
+  // TEST-ACC-B gets the same templates.json as the default account, but presents its own
+  // campaigns. These handlers run only for B's templates; each call below acts on B's template.
+  void instanceBCustomTemplates() async {
+    final b = _instanceB;
+    // Every template call fails with a PlatformException once B's template is no longer active.
+    // Example: the SDK closes "Spin" while the present handler is still awaiting its arguments;
+    // the close handler dismisses it, then the present handler's setPresented fails. The plugin
+    // does not await handlers, so an uncaught failure shows as "Unhandled Exception".
+    Future<void> safely(String name, Future<void> Function() steps) async {
+      try {
+        await steps();
+      } on PlatformException catch (e) {
+        print("MI -> TEST-ACC-B: $name is no longer active -> ${e.code}, ${e.message}");
+      }
+    }
+
+    b.setCleverTapCustomTemplatePresentHandler((name) => safely(name, () async {
+          final text = await b.customTemplateGetStringArg(name, 'string');
+          final context = await b.customTemplateContextToString(name);
+          print("MI -> TEST-ACC-B: customTemplatePresent $name, string = $text, context = $context");
+          await b.customTemplateSetPresented(name);
+          await b.customTemplateSetDismissed(name);
+          print("MI -> TEST-ACC-B: $name presented and dismissed");
+        }));
+    b.setCleverTapCustomFunctionPresentHandler((name) => safely(name, () async {
+          final text = await b.customTemplateGetStringArg(name, 'string');
+          print("MI -> TEST-ACC-B: customFunctionPresent $name, string = $text");
+          // A function is done once it has run. Until it is dismissed, the SDK keeps B's later
+          // in-app messages waiting.
+          await b.customTemplateSetPresented(name);
+          await b.customTemplateSetDismissed(name);
+        }));
+    b.setCleverTapCustomTemplateCloseHandler((name) => safely(name, () async {
+          print("MI -> TEST-ACC-B: customTemplateClose $name");
+          await b.customTemplateSetDismissed(name);
+        }));
+    await b.syncCustomTemplates();
+    print("MI -> TEST-ACC-B: syncCustomTemplates sent");
+    try {
+      // B is not showing it, even if the default account is: B's own answer.
+      await b.customTemplateSetDismissed('Example template');
+    } on PlatformException catch (e) {
+      showToast("TEST-ACC-B: ${e.message}");
+      print("MI -> TEST-ACC-B: customTemplateSetDismissed -> PlatformException(${e.code}, ${e.message})");
+    }
+  }
+
+  void unknownInstanceGetCleverTapID() async {
+    try {
+      await CleverTapPlugin.getInstance('NO-SUCH-ACCOUNT').getCleverTapID();
+    } on PlatformException catch (e) {
+      showToast("Unknown account: ${e.message}");
+      print("MI -> NO-SUCH-ACCOUNT: PlatformException(${e.code}, ${e.message})");
+    }
+  }
+
+  void createInstanceB() => _createInstance(
+      "Create Instance",
+      const CleverTapInstanceConfig(
+          accountId: 'TEST-ACC-B',
+          accountToken: 'TEST-TOKEN-B',
+          region: 'eu1',
+          logLevel: CleverTapLogLevel.verbose));
+
+  void createInstanceBAgain() => _createInstance(
+      "Create Same Instance Again",
+      const CleverTapInstanceConfig(
+          accountId: 'TEST-ACC-B', accountToken: 'A-DIFFERENT-TOKEN'));
+
+  void createInstanceEmptyId() => _createInstance("Create Instance With Empty ID",
+      const CleverTapInstanceConfig(accountId: '', accountToken: 'TEST-TOKEN-B'));
+
+  void createInstanceIdWithoutFlag() => _createInstance(
+      "Create Instance With ID But No Flag",
+      const CleverTapInstanceConfig(
+          accountId: 'TEST-ACC-C',
+          accountToken: 'TEST-TOKEN-C',
+          cleverTapId: 'my-user-42'));
 
   void enablePersonalization() {
     CleverTapPlugin.enablePersonalization();

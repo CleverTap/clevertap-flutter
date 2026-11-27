@@ -21,6 +21,10 @@ NS_ASSUME_NONNULL_BEGIN
 /// when a Custom Template `onCloseClicked:` is called.
 @interface CleverTapPluginTemplatePresenter : NSObject <CTTemplatePresenter>
 
+/// A presenter for one account: its notifications carry that account's ID, so Dart sends them to
+/// that account's handlers. `init` keeps the old behavior (no account: the default handlers).
+- (instancetype)initWithAccountId:(nullable NSString *)accountId;
+
 @end
 
 NS_ASSUME_NONNULL_END

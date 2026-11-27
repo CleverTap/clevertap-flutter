@@ -1,5 +1,5 @@
 group = 'com.clevertap.clevertap_plugin'
-version = '4.4.0'
+version = '4.5.0'
 
 buildscript {
     ext.kotlin_version = "1.8.22"
@@ -52,6 +52,12 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
+    }
+
+    // JVM unit tests call code that logs through android.util.Log; return defaults instead
+    // of throwing "Method ... not mocked".
+    testOptions {
+        unitTests.returnDefaultValues = true
     }
 
     sourceSets {

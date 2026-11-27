@@ -3,6 +3,7 @@
 static NSString *const kCleverTapProfileDidInitialize                      = @"profileDidInitialize";
 static NSString *const kCleverTapProfileSync                               = @"profileDataUpdated";
 static NSString *const kCleverTapInAppNotificationDismissed                = @"inAppNotificationDismissed";
+static NSString *const kCleverTapInAppNotificationShow                     = @"inAppNotificationShow";
 static NSString *const kCleverTapInboxDidInitialize                        = @"inboxDidInitialize";
 static NSString *const kCleverTapInboxMessagesDidUpdate                    = @"inboxMessagesDidUpdate";
 static NSString *const kCleverTapDisplayUnitsLoaded                        = @"onDisplayUnitsLoaded";
@@ -27,11 +28,26 @@ static NSString *const kCleverTapCustomTemplateClose                       = @"c
 
 
 
+@class CleverTapPluginLaunchConfig;
+
 @interface CleverTapPlugin : NSObject <FlutterPlugin>
 
 + (instancetype)sharedInstance;
 
 - (void)applicationDidLaunchWithOptions:(NSDictionary *)options;
+
+/// The same as `applicationDidLaunchWithOptions:`, and first creates extra accounts, so a push
+/// tap that opens the app reaches its account. Call it in `didFinishLaunchingWithOptions`.
+///
+/// ```
+/// CleverTapInstanceConfig *insurance = [[CleverTapInstanceConfig alloc] initWithAccountId:@"INS-ID" accountToken:@"INS-TOKEN"];
+/// [[CleverTapPlugin sharedInstance] applicationDidLaunchWithOptions:launchOptions
+///     launchConfigs:@[[[CleverTapPluginLaunchConfig alloc] initWithConfig:insurance]]];
+/// ```
+///
+/// One account that fails (for example a bad template definition) is logged and skipped; the
+/// others are still created.
+- (void)applicationDidLaunchWithOptions:(NSDictionary *)options launchConfigs:(NSArray<CleverTapPluginLaunchConfig *> *)launchConfigs;
 - (void)sceneWillConnectWithOptions:(UISceneConnectionOptions *)connectionOptions API_AVAILABLE(ios(13.0));
 - (void)postNotificationWithName:(NSString *)name andBody:(NSDictionary *)body;
 

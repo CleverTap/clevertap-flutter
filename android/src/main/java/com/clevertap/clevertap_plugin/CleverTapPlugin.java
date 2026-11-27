@@ -11,8 +11,9 @@ import androidx.annotation.NonNull;
 import com.clevertap.android.sdk.CleverTapAPI;
 
 import java.lang.ref.WeakReference;
-import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 import io.flutter.embedding.engine.plugins.FlutterPlugin;
 import io.flutter.embedding.engine.plugins.activity.ActivityAware;
@@ -38,7 +39,11 @@ public class CleverTapPlugin implements ActivityAware, FlutterPlugin {
 
     private DartToNativePlatformCommunicator dartToNativePlatformCommunicator;
 
-    public static final Set<MethodChannel> nativeToDartMethodChannelSet = new HashSet<>();
+    // Thread-safe on purpose: engines are added/removed on the main thread (onAttachedToEngine /
+    // onDetachedFromEngine) while invokeMethodOnUiThread loops over the set on whatever thread
+    // emits - a HashSet there threw ConcurrentModificationException and the event was lost for
+    // every engine. Each loop walks a snapshot, and writes (engine attach/detach) are rare.
+    public static final Set<MethodChannel> nativeToDartMethodChannelSet = new CopyOnWriteArraySet<>();
 
     private static final Handler mainHandler = new Handler(Looper.getMainLooper());
 
@@ -110,7 +115,7 @@ public class CleverTapPlugin implements ActivityAware, FlutterPlugin {
         nativeToDartMethodChannelSet.add(lastNativeToDartMethodChannel);
 
         this.context = context.getApplicationContext();
-        CleverTapAPI cleverTapAPI = CleverTapAPI.getDefaultInstance(this.context);
+        CleverTapAPI cleverTapAPI = CleverTapInstanceRegistry.resolve(this.context, null);
         this.dartToNativePlatformCommunicator = new DartToNativePlatformCommunicator(context, cleverTapAPI);
         this.dartToNativeMethodChannel.setMethodCallHandler(dartToNativePlatformCommunicator);
         if (cleverTapAPI != null) {
@@ -134,6 +139,38 @@ public class CleverTapPlugin implements ActivityAware, FlutterPlugin {
                 runOnMainThread(() -> channel.invokeMethod(methodName, obj));
             }
         }
+    }
+
+    /**
+     * Creates extra CleverTap accounts at app start, so each one's push is shown and its tap is
+     * handled even when the app was killed. Call it in {@code Application.onCreate()}, after
+     * {@code ClevertapCustomTemplates.registerCustomTemplates} if you use custom templates. Dart then
+     * uses {@code CleverTapPlugin.getInstance(accountId)}.
+     *
+     * <pre>
+     * CleverTapInstanceConfig insurance = CleverTapInstanceConfig.createInstance(this, "INS-ID", "INS-TOKEN", "eu1");
+     * CleverTapPlugin.createLaunchInstances(this, Collections.singletonList(new CleverTapLaunchConfig(insurance)));
+     * </pre>
+     *
+     * One account that fails (for example a bad template definition) is logged and skipped; the
+     * others are still created. Apps that extend {@link CleverTapApplication} can override
+     * {@code launchConfigs()} instead.
+     */
+    public static void createLaunchInstances(@NonNull Context context, List<CleverTapLaunchConfig> launchConfigs) {
+        if (context == null || launchConfigs == null || launchConfigs.isEmpty()) {
+            return;
+        }
+        final Context appContext = context.getApplicationContext() != null ? context.getApplicationContext() : context;
+        if (Looper.getMainLooper() != Looper.myLooper()) {
+            // The SDK creates accounts with an unlocked get-new-put and re-enters it on main, so
+            // creating off main can build two objects for one account (Phase 2). Moving the work to
+            // main avoids that, but the accounts are then not ready before the first activity.
+            Log.e(TAG, "createLaunchInstances must be called on the main thread, in Application.onCreate(). "
+                    + "Moving it to the main thread; a push that opened the app may be missed.");
+            mainHandler.post(() -> CleverTapLaunchInstances.INSTANCE.create(appContext, launchConfigs));
+            return;
+        }
+        CleverTapLaunchInstances.INSTANCE.create(appContext, launchConfigs);
     }
 
     public static void runOnMainThread(final Runnable runnable) {

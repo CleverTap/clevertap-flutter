@@ -7,7 +7,17 @@
 #import "CleverTap.h"
 #endif
 
+#if __has_include(<CleverTapSDK/CleverTapInstanceConfig.h>)
+#import <CleverTapSDK/CleverTapInstanceConfig.h>
+#else
+#import "CleverTapInstanceConfig.h"
+#endif
+
 #import "CleverTapPlugin.h"
+#import "CleverTapPluginInstanceConfigRequest.h"
+#import "CleverTapPluginInstanceDelegate.h"
+#import "CleverTapPluginLaunchConfig.h"
+#import "CleverTapPlugin+Internal.h"
 
 #if __has_include(<CleverTapSDK/CleverTap+Inbox.h>)
 #import <CleverTapSDK/CleverTap+Inbox.h>
@@ -99,15 +109,32 @@
 #import "CTTemplateContext.h"
 #endif
 
-@interface CleverTapPlugin () <CleverTapSyncDelegate, CleverTapInAppNotificationDelegate, CleverTapDisplayUnitDelegate, CleverTapInboxViewControllerDelegate, CleverTapProductConfigDelegate, CleverTapFeatureFlagsDelegate, CleverTapPushNotificationDelegate, CleverTapPushPermissionDelegate>
+@interface CleverTapPlugin () <CleverTapInboxViewControllerDelegate>
 
 @property (strong, nonatomic) FlutterMethodChannel *dartToNativeMethodChannel;
 @property (strong, nonatomic) FlutterMethodChannel *nativeToDartMethodChannel;
-@property(nonatomic, strong) NSMutableDictionary *allVariables;
+// Every account's variables: account ID -> (name -> CTVar). See storeVariable:named:forAccount:.
+@property(nonatomic, strong) NSMutableDictionary<NSString *, NSMutableDictionary<NSString *, CTVar *> *> *variablesByAccount;
+// Account lookup state (see resolveInstance:). Main queue only: every caller is a method-channel
+// handler or init, and Flutter runs both on the main thread.
+@property(nonatomic, strong, nullable) CleverTap *defaultInstance;
+@property(nonatomic, strong) NSMutableSet<NSString *> *wiredAccountIds;
+// Each account's SDK delegate. The SDK holds delegates weakly, so this dictionary is what keeps
+// them alive for the app's lifetime. Main queue only, like the other registry state.
+@property(nonatomic, strong) NSMutableDictionary<NSString *, CleverTapPluginInstanceDelegate *> *instanceDelegates;
+// Remembered from Dart's setLibrary, so accounts wired later report the wrapper version too.
+@property(nonatomic, copy, nullable) NSString *libraryName;
+@property(nonatomic, assign) int libraryVersion;
 
 @end
 
 static NSDateFormatter *dateFormatter;
+
+/// createInstance error codes, the same as the React Native SDK and the Android side. Apps can
+/// switch on PlatformException.code, so these strings must never change.
+/// EINVALID: the config is unacceptable. ECREATE: the SDK could not create the account.
+static NSString *const kCleverTapErrorCodeInvalidConfig = @"EINVALID";
+static NSString *const kCleverTapErrorCodeCreateFailed = @"ECREATE";
 
 @implementation CleverTapPlugin
 
@@ -138,18 +165,152 @@ static NSDateFormatter *dateFormatter;
     
     self = [super init];
     if (self) {
-        self.allVariables = [NSMutableDictionary dictionary];
-        CleverTap *clevertap = [CleverTap sharedInstance];
-        [clevertap setSyncDelegate:self];
-        [clevertap setInAppNotificationDelegate:self];
-        [clevertap setDisplayUnitDelegate:self];
-        [[clevertap productConfig] setDelegate:self];
-        [[clevertap featureFlags] setDelegate:self];
-        [clevertap setPushNotificationDelegate:self];
-        [clevertap setPushPermissionDelegate:self];
+        self.variablesByAccount = [NSMutableDictionary dictionary];
+        self.wiredAccountIds = [NSMutableSet set];
+        self.instanceDelegates = [NSMutableDictionary dictionary];
+        // Resolving the default account wires it, which sets its delegates (resolveInstance:).
+        [self resolveInstance:nil];
         [self addObservers];
     }
     return self;
+}
+
+/// Finds the CleverTap instance for an account.
+/// accountId == nil: the default slot (the Info.plist account).
+/// accountId != nil: that account's instance, or nil after ONE warning naming the ID.
+/// We keep no map of instances: the SDK has one, so a copy here could only drift. (getGlobalInstance:
+/// can also rebuild an account from its archived config, but only while the SDK has no instance at
+/// all; with an Info.plist account the default always exists first.)
+- (nullable CleverTap *)resolveInstance:(nullable NSString *)accountId {
+    if (![NSThread isMainThread]) {
+        // Never expected: the state below is main-queue only. Log loudly, do not crash the app.
+        NSLog(@"CleverTapFlutter: resolveInstance: called off the main thread, please report this.");
+    }
+    CleverTap *instance;
+    if (accountId == nil) {
+        // Saved only when found, so a missing Info.plist account is looked up again next time.
+        if (self.defaultInstance == nil) {
+            self.defaultInstance = [CleverTap sharedInstance];
+        }
+        instance = self.defaultInstance;
+    } else {
+        instance = [CleverTap getGlobalInstance:accountId];
+    }
+    if (instance == nil) {
+        if (accountId == nil) {
+            NSLog(@"CleverTapFlutter: CleverTap default instance not found. Add CleverTapAccountID and CleverTapToken to Info.plist.");
+        } else {
+            NSLog(@"CleverTapFlutter: CleverTap instance not found for accountId: %@. Call ignored. Check the ID, and create the instance before using it.", accountId);
+        }
+        return nil;
+    }
+    NSString *key = instance.config.accountId;
+    if (key != nil && ![self.wiredAccountIds containsObject:key]) {
+        [self.wiredAccountIds addObject:key];
+        if (self.libraryName != nil) {
+            [instance setLibrary:self.libraryName];
+            [instance setCustomSdkVersion:self.libraryName version:self.libraryVersion];
+        }
+        // The account's own delegate, so its events reach Dart tagged with its ID. Kept in the
+        // dictionary because the SDK holds delegates weakly.
+        CleverTapPluginInstanceDelegate *delegate = [[CleverTapPluginInstanceDelegate alloc] initWithAccountId:key];
+        self.instanceDelegates[key] = delegate;
+        [delegate attachToInstance:instance];
+    }
+    return instance;
+}
+
+/// The default account's ID. Looks again while none is known: an app may set its credentials in
+/// code after the plugin started, so init found no default. Example: GeneratedPluginRegistrant,
+/// then [CleverTap setCredentialsWithAccountID:@"ACC-A" ...]. Saved only at init, ACC-A's events
+/// went out with isDefault = NO and Dart dropped them. Main queue only (like resolveInstance:).
+/// Logs nothing here: it runs for every event. While there are no credentials the SDK returns nil
+/// and logs that only once.
+- (nullable NSString *)currentDefaultAccountId {
+    if (self.defaultInstance == nil && [CleverTap sharedInstance] != nil) {
+        [self resolveInstance:nil]; // saves and wires it: delegates, library stamp
+    }
+    return self.defaultInstance.config.accountId;
+}
+
+/// Any account's instance: the default if there is one, else any account this plugin wired. For
+/// isCleverTapNotification:, which looks only at key prefixes (W$, wzrk_), so every account gives
+/// the same answer (iOS SDK 7.9.0 CleverTap.m:1669). Example: no Info.plist account, B from a
+/// launch config: B answers, where the default (nil) said NO and a launch push was missed.
+/// Main queue only (reads wiredAccountIds).
+- (nullable CleverTap *)anyInstance {
+    CleverTap *instance = [CleverTap sharedInstance];
+    if (instance != nil) {
+        return instance;
+    }
+    for (NSString *accountId in self.wiredAccountIds) {
+        instance = [CleverTap getGlobalInstance:accountId];
+        if (instance != nil) {
+            return instance;
+        }
+    }
+    return nil;
+}
+
+/// The accountId a CleverTapInstance (handle) call sends, or nil for a static call. Anything that
+/// is not a non-empty string counts as absent (the default account, as before).
+- (nullable NSString *)handleAccountIdOfCall:(FlutterMethodCall *)call {
+    if (![call.arguments isKindOfClass:[NSDictionary class]]) {
+        return nil;
+    }
+    id accountId = call.arguments[@"accountId"];
+    return ([accountId isKindOfClass:[NSString class]] && [accountId length] > 0) ? accountId : nil;
+}
+
+/// The instance a call addresses. A static call (no accountId): [CleverTap sharedInstance], exactly
+/// as before. A handle call: that account, or nil after the registry's warning; never the default.
+- (nullable CleverTap *)instanceForCall:(FlutterMethodCall *)call {
+    NSString *accountId = [self handleAccountIdOfCall:call];
+    if (accountId == nil) {
+        [self currentDefaultAccountId]; // wires a default whose credentials were set after init
+        return [CleverTap sharedInstance];
+    }
+    return [self resolveInstance:accountId];
+}
+
+/// For a call that returns a value. A handle call whose account does not exist is answered here
+/// with an error naming the account, and this returns YES: the caller stops. A static call is never
+/// answered here (it returns NO), so it keeps its old answer, for example nil or 0.
+- (BOOL)answeredMissingAccountOfCall:(FlutterMethodCall *)call instance:(nullable CleverTap *)instance result:(FlutterResult)result {
+    NSString *accountId = [self handleAccountIdOfCall:call];
+    if (instance != nil || accountId == nil) {
+        return NO;
+    }
+    result([FlutterError errorWithCode:@"DartToNative"
+                               message:[NSString stringWithFormat:@"CleverTap instance not found for accountId: %@", accountId]
+                               details:nil]);
+    return YES;
+}
+
+/// For a call that answers Dart from inside an SDK callback block. Like
+/// answeredMissingAccountOfCall:, and a static call with no default account is answered too, with
+/// Android's error. Why: [nil fetchInApps:^{...}] does nothing, so the block that answers Dart never
+/// ran and `await CleverTapPlugin.fetchInApps()` waited forever. Example: no Info.plist account,
+/// only launch account B: the static call fails at once; it is never sent to B.
+- (BOOL)answeredMissingInstanceOfCall:(FlutterMethodCall *)call instance:(nullable CleverTap *)instance result:(FlutterResult)result {
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return YES;
+    }
+    if (instance != nil) {
+        return NO;
+    }
+    result([FlutterError errorWithCode:@"DartToNative" message:@"CleverTap Instance is not initialized" details:nil]);
+    return YES;
+}
+
+/// The value of a method whose static call sends one bare value instead of a dictionary. A handle
+/// call must also send its accountId, so it sends {value, accountId}. Example: setLocale sends
+/// @"en_US" from CleverTapPlugin and {value: @"en_US", accountId: @"B"} from a handle.
+- (nullable id)scalarArgumentOfCall:(FlutterMethodCall *)call {
+    if ([call.arguments isKindOfClass:[NSDictionary class]]) {
+        return call.arguments[@"value"];
+    }
+    return call.arguments;
 }
 
 - (void)applicationDidLaunchWithOptions:(NSDictionary *)options {
@@ -159,9 +320,58 @@ static NSDateFormatter *dateFormatter;
         self.launchDeepLink = notification[@"wzrk_dl"];
         NSLog(@"CleverTapFlutter: setting launch deeplink: %@", self.launchDeepLink);
     }
-    if (notification && [[CleverTap sharedInstance] isCleverTapNotification:notification]) {
+    if (notification && [[self anyInstance] isCleverTapNotification:notification]) {
         self.launchNotification = notification;
     }
+}
+
+- (void)applicationDidLaunchWithOptions:(NSDictionary *)options launchConfigs:(NSArray<CleverTapPluginLaunchConfig *> *)launchConfigs {
+    if (![NSThread isMainThread]) {
+        // The SDK's account map has no lock, and resolveInstance: is main-queue only. Moving the
+        // work to main keeps one object per account, but a tap that opened the app may be missed.
+        NSLog(@"CleverTapFlutter: applicationDidLaunchWithOptions:launchConfigs: must be called on the main thread, in didFinishLaunchingWithOptions. Moving it to the main thread.");
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self applicationDidLaunchWithOptions:options launchConfigs:launchConfigs];
+        });
+        return;
+    }
+    // The default account, wired at init or once its credentials exist (currentDefaultAccountId).
+    NSString *defaultAccountId = [self currentDefaultAccountId];
+    for (id item in launchConfigs) {
+        if (![item isKindOfClass:[CleverTapPluginLaunchConfig class]]) {
+            NSLog(@"CleverTapFlutter: a launch config is not a CleverTapPluginLaunchConfig; skipped.");
+            continue;
+        }
+        CleverTapPluginLaunchConfig *launchConfig = item;
+        NSString *accountId = launchConfig.config.accountId;
+        if (accountId.length == 0) {
+            NSLog(@"CleverTapFlutter: a launch config has no account ID; skipped.");
+            continue;
+        }
+        if ([accountId isEqualToString:defaultAccountId]) {
+            NSLog(@"CleverTapFlutter: launch config %@ is the default account (Info.plist), which already exists; skipped.", accountId);
+            continue;
+        }
+        // Creation can throw: custom template producers run inside it, and a duplicate template
+        // name raises. One bad account must not crash app launch or stop the others.
+        @try {
+            if (launchConfig.cleverTapID != nil && !launchConfig.config.useCustomCleverTapId) {
+                NSLog(@"CleverTapFlutter: launch config %@ has a CleverTap ID but useCustomCleverTapId is NO; the SDK will ignore the ID.", accountId);
+            }
+            CleverTap *instance = launchConfig.cleverTapID != nil
+                ? [CleverTap instanceWithConfig:launchConfig.config andCleverTapID:launchConfig.cleverTapID]
+                : [CleverTap instanceWithConfig:launchConfig.config];
+            if (instance == nil) {
+                NSLog(@"CleverTapFlutter: launch config %@: the SDK created no instance.", accountId);
+                continue;
+            }
+            // Delegate and library stamp, exactly as for a Dart createInstance.
+            [self resolveInstance:accountId];
+        } @catch (NSException *exception) {
+            NSLog(@"CleverTapFlutter: launch config %@ could not be created; the other accounts continue: %@", accountId, exception);
+        }
+    }
+    [self applicationDidLaunchWithOptions:options];
 }
 
 - (void)sceneWillConnectWithOptions:(UISceneConnectionOptions *)connectionOptions API_AVAILABLE(ios(13.0)) {
@@ -174,7 +384,7 @@ static NSDateFormatter *dateFormatter;
                 self.launchDeepLink = userInfo[@"wzrk_dl"];
                 NSLog(@"CleverTapFlutter: setting launch deeplink (scene): %@", self.launchDeepLink);
             }
-            if (userInfo && [[CleverTap sharedInstance] isCleverTapNotification:userInfo]) {
+            if (userInfo && [[self anyInstance] isCleverTapNotification:userInfo]) {
                 self.launchNotification = userInfo;
             }
         }
@@ -194,7 +404,7 @@ static NSDateFormatter *dateFormatter;
     else if ([@"recordChargedEvent" isEqualToString:call.method])
         [self recordChargedEvent:call withResult:result];
     else if ([@"initializeInbox" isEqualToString:call.method])
-        [self initializeInbox];
+        [self initializeInbox:call withResult:result];
     else if ([@"showInbox" isEqualToString:call.method])
         [self showInbox:call withResult:result];
     else if ([@"onUserLogin" isEqualToString:call.method])
@@ -264,11 +474,11 @@ static NSDateFormatter *dateFormatter;
     else if ([@"sessionGetUTMDetails" isEqualToString:call.method])
         [self sessionGetUTMDetails:call withResult:result];
     else if ([@"suspendInAppNotifications" isEqualToString:call.method])
-        [self suspendInAppNotifications];
+        [self suspendInAppNotifications:call withResult:result];
     else if ([@"discardInAppNotifications" isEqualToString:call.method])
         [self discardInAppNotifications:call withResult:result];
     else if ([@"resumeInAppNotifications" isEqualToString:call.method])
-        [self resumeInAppNotifications];
+        [self resumeInAppNotifications:call withResult:result];
     else if ([@"dismissPipInApp" isEqualToString:call.method])
         [self dismissPipInApp:call withResult:result];
     else if ([@"fetchInbox" isEqualToString:call.method])
@@ -363,6 +573,10 @@ static NSDateFormatter *dateFormatter;
         result(nil);
     else if ([@"setLibrary" isEqualToString:call.method])
         [self setLibrary:call withResult:result];
+    else if ([@"createInstance" isEqualToString:call.method])
+        [self createInstance:call withResult:result];
+    else if ([@"getDefaultAccountId" isEqualToString:call.method])
+        result([self resolveInstance:nil].config.accountId);
     else if ([@"promptPushPrimer" isEqualToString:call.method])
         [self promptPushPrimer:call withResult:result];
     else if ([@"promptForPushNotification" isEqualToString:call.method])
@@ -370,7 +584,7 @@ static NSDateFormatter *dateFormatter;
     else if ([@"getPushNotificationPermissionStatus" isEqualToString:call.method])
         [self getPushNotificationPermissionStatus:call withResult:result];
     else if ([@"syncVariables" isEqualToString:call.method])
-        [self syncVariables];
+        [self syncVariables:call withResult:result];
     else if ([@"syncVariablesinProd" isEqualToString:call.method])
         [self syncVariablesinProd:call withResult:result];
     else if ([@"fetchVariables" isEqualToString:call.method])
@@ -445,7 +659,8 @@ static NSDateFormatter *dateFormatter;
 
 
 - (void)unmute:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    [[CleverTap sharedInstance] unmute];
+    CleverTap *instance = [self instanceForCall:call];
+    [instance unmute];
     result(nil);
 }
 
@@ -474,8 +689,9 @@ static NSDateFormatter *dateFormatter;
 }
 
 - (void)setPushTokenAsString:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
     
-    [[CleverTap sharedInstance] setPushTokenAsString:call.arguments[@"token"]];
+    [instance setPushTokenAsString:call.arguments[@"token"]];
     result(nil);
 }
 
@@ -501,22 +717,159 @@ static NSDateFormatter *dateFormatter;
 }
 
 - (void)setLibrary:(FlutterMethodCall*)call withResult:(FlutterResult)result {
+    // Remembered even when there is no default account, so accounts created later report it.
+    id libName = call.arguments[@"libName"];
+    if ([libName isKindOfClass:[NSString class]]) {
+        self.libraryName = libName;
+        self.libraryVersion = [call.arguments[@"libVersion"] intValue];
+    }
     [[CleverTap sharedInstance] setLibrary:call.arguments[@"libName"]];
     [[CleverTap sharedInstance] setCustomSdkVersion:call.arguments[@"libName"] version:[call.arguments[@"libVersion"]intValue]];
+    // Accounts wired before this call (launch accounts are wired in didFinishLaunching, before
+    // Dart runs) were never stamped: resolveInstance: stamps only once the name is known. The
+    // library name is per account in the SDK, so without this B's events went out without "lib".
+    if (self.libraryName != nil) {
+        NSString *defaultAccountId = [self currentDefaultAccountId];
+        for (NSString *accountId in [self.wiredAccountIds allObjects]) {
+            if ([accountId isEqualToString:defaultAccountId]) {
+                continue; // stamped just above
+            }
+            CleverTap *instance = [CleverTap getGlobalInstance:accountId];
+            [instance setLibrary:self.libraryName];
+            [instance setCustomSdkVersion:self.libraryName version:self.libraryVersion];
+        }
+    }
+    // This handler never answered before. Dart does not await setLibrary, so nothing waited, but
+    // every method call must be answered once.
+    result(nil);
+}
+
+#pragma mark - Multi-instance
+
+// "off" -> Off(-1), "info" -> Info(0), "debug" and "verbose" -> Debug(1). iOS has no verbose level.
+static CleverTapLogLevel ctLogLevelFromString(NSString *level) {
+    if ([level isEqualToString:@"off"]) return CleverTapLogOff;
+    if ([level isEqualToString:@"debug"] || [level isEqualToString:@"verbose"]) return CleverTapLogDebug;
+    return CleverTapLogInfo;
+}
+
+// "none" -> None(0), "medium" -> Medium(1, PII only), "high" -> High(2, all data).
+static CleverTapEncryptionLevel ctEncryptionLevelFromString(NSString *level) {
+    if ([level isEqualToString:@"medium"]) return CleverTapEncryptionMedium;
+    if ([level isEqualToString:@"high"]) return CleverTapEncryptionHigh;
+    return CleverTapEncryptionNone;
+}
+
+/// Creates an additional CleverTap account. Answers Dart with the account ID, or with an
+/// EINVALID / ECREATE error. Every path answers exactly once.
+///
+/// Example: @{@"accountId": @"ACC-B", @"accountToken": @"TOK-B", @"region": @"eu1"} answers
+/// @"ACC-B", and [self resolveInstance:@"ACC-B"] finds the account from then on.
+///
+/// Calling it again for the same account returns that account and ignores the new config (the SDK
+/// keeps the first one for the whole app run). A warning says so.
+- (void)createInstance:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    // 1. Check the input before building anything, so a bad config only fails the call.
+    NSString *configError = nil;
+    CleverTapPluginInstanceConfigRequest *request = [CleverTapPluginInstanceConfigRequest parse:call.arguments error:&configError];
+    if (request == nil) {
+        result([FlutterError errorWithCode:kCleverTapErrorCodeInvalidConfig
+                                   message:[@"createInstance: " stringByAppendingString:configError]
+                                   details:nil]);
+        return;
+    }
+    NSString *accountId = request.accountId;
+
+    // 2. Build the SDK config. Region, proxy and spiky proxy can only be set through one of the
+    //    four initializers, and none takes a region AND a proxy. So the region wins and the proxy
+    //    settings are ignored with a warning (Android applies both). Empty proxy strings count as
+    //    "not given".
+    BOOL hasProxy = request.proxyDomain.length > 0;
+    BOOL hasSpiky = request.spikyProxyDomain.length > 0;
+    CleverTapInstanceConfig *config;
+    if (request.region != nil) {
+        if (hasProxy || hasSpiky) {
+            NSLog(@"CleverTapFlutter: createInstance: iOS cannot combine region with proxyDomain/spikyProxyDomain; region applied, proxy settings ignored (Android applies both)");
+        }
+        config = [[CleverTapInstanceConfig alloc] initWithAccountId:accountId accountToken:request.accountToken accountRegion:request.region];
+    } else if (hasProxy && hasSpiky) {
+        config = [[CleverTapInstanceConfig alloc] initWithAccountId:accountId accountToken:request.accountToken proxyDomain:request.proxyDomain spikyProxyDomain:request.spikyProxyDomain];
+    } else if (hasProxy) {
+        config = [[CleverTapInstanceConfig alloc] initWithAccountId:accountId accountToken:request.accountToken proxyDomain:request.proxyDomain];
+    } else {
+        if (hasSpiky) {
+            NSLog(@"CleverTapFlutter: createInstance: spikyProxyDomain requires proxyDomain; ignored");
+        }
+        config = [[CleverTapInstanceConfig alloc] initWithAccountId:accountId accountToken:request.accountToken];
+    }
+    // These are writable properties. nil = not given: the config keeps its default.
+    if (request.handshakeDomain != nil) config.handshakeDomain = request.handshakeDomain;
+    if (request.identityKeys != nil) config.identityKeys = request.identityKeys;
+    if (request.logLevel != nil) config.logLevel = ctLogLevelFromString(request.logLevel);
+    if (request.analyticsOnly != nil) config.analyticsOnly = request.analyticsOnly.boolValue;
+    if (request.enablePersonalization != nil) config.enablePersonalization = request.enablePersonalization.boolValue;
+    if (request.disableAppLaunchedEvent != nil) config.disableAppLaunchedEvent = request.disableAppLaunchedEvent.boolValue;
+    if (request.encryptionLevel != nil) config.encryptionLevel = ctEncryptionLevelFromString(request.encryptionLevel);
+    if (request.encryptionInTransit != nil) config.encryptionInTransitEnabled = request.encryptionInTransit.boolValue;
+    if (request.useCustomCleverTapId != nil) config.useCustomCleverTapId = request.useCustomCleverTapId.boolValue;
+    if (request.disableIDFV != nil) config.disableIDFV = request.disableIDFV.boolValue;
+    if (request.enableFileProtection != nil) config.enableFileProtection = request.enableFileProtection.boolValue;
+
+    BOOL alreadyCreated = [self.wiredAccountIds containsObject:accountId];
+
+    // 3. Creation can throw, not just return nil: custom template producers run inside it, and a
+    //    duplicate template name raises CleverTapCustomTemplateException. Uncaught, that would
+    //    crash the app. We are on the main thread (Flutter calls this handler there), as the SDK's
+    //    unlocked instance map needs.
+    CleverTap *instance;
+    @try {
+        instance = (request.cleverTapId != nil)
+            ? [CleverTap instanceWithConfig:config andCleverTapID:request.cleverTapId]
+            : [CleverTap instanceWithConfig:config];
+    } @catch (NSException *exception) {
+        result([FlutterError errorWithCode:kCleverTapErrorCodeCreateFailed
+                                   message:[NSString stringWithFormat:@"createInstance failed for accountId %@: %@", accountId, exception.reason]
+                                   details:nil]);
+        return;
+    }
+    if (instance == nil) {
+        result([FlutterError errorWithCode:kCleverTapErrorCodeCreateFailed
+                                   message:[NSString stringWithFormat:@"createInstance failed for accountId %@", accountId]
+                                   details:nil]);
+        return;
+    }
+    if (alreadyCreated) {
+        NSLog(@"CleverTapFlutter: createInstance: account %@ already exists in this app run; the new config was ignored. Restart the app to apply a new config.", accountId);
+    }
+    // Stamps the wrapper name and version once per account (Phase 1 registry).
+    [self resolveInstance:accountId];
+    result(accountId);
 }
 
 
 #pragma mark - Personalization
 
 - (void)enablePersonalization:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    
-    [CleverTap enablePersonalization];
+    CleverTap *instance = [self instanceForCall:call];
+    // On the account's own config: immediate and per account, like Android. The class method only
+    // saves a setting that the SDK reads when it creates the default instance (the next launch).
+    instance.config.enablePersonalization = YES;
+    if ([self handleAccountIdOfCall:call] == nil) {
+        // A static call also saves it, so the next launch starts the same as before.
+        [CleverTap enablePersonalization];
+    }
     result(nil);
 }
 
 - (void)disablePersonalization:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    
-    [CleverTap disablePersonalization];
+    CleverTap *instance = [self instanceForCall:call];
+    // On the account's own config: immediate and per account, like Android. The class method only
+    // saves a setting that the SDK reads when it creates the default instance (the next launch).
+    instance.config.enablePersonalization = NO;
+    if ([self handleAccountIdOfCall:call] == nil) {
+        // A static call also saves it, so the next launch starts the same as before.
+        [CleverTap disablePersonalization];
+    }
     result(nil);
 }
 
@@ -525,85 +878,113 @@ static NSDateFormatter *dateFormatter;
 
 - (void)recordEvent:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     
-    [[CleverTap sharedInstance] recordEvent:call.arguments[@"eventName"] withProps:call.arguments[@"eventData"]];
+    // A handle call for an unknown account: instanceForCall: returns nil after the registry's
+    // warning, the call does nothing and completes (React Native parity), as a static call with no
+    // default account already does on iOS.
+    [[self instanceForCall:call] recordEvent:call.arguments[@"eventName"] withProps:call.arguments[@"eventData"]];
     result(nil);
 }
 
 - (void)recordChargedEvent:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
     
-    [[CleverTap sharedInstance] recordChargedEventWithDetails:call.arguments[@"chargeDetails"] andItems:call.arguments[@"items"]];
+    [instance recordChargedEventWithDetails:call.arguments[@"chargeDetails"] andItems:call.arguments[@"items"]];
     result(nil);
 }
 
 - (void)recordScreenView:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
     
-    [[CleverTap sharedInstance] recordScreenView:call.arguments[@"screenName"]];
+    [instance recordScreenView:call.arguments[@"screenName"]];
     result(nil);
 }
 
 - (void)profileSet:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     
-    [[CleverTap sharedInstance] profilePush:call.arguments[@"profile"]];
+    [[self instanceForCall:call] profilePush:call.arguments[@"profile"]];
     result(nil);
 }
 
 - (void)onUserLogin:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     
-    [[CleverTap sharedInstance] onUserLogin:call.arguments[@"profile"]];
+    [[self instanceForCall:call] onUserLogin:call.arguments[@"profile"]];
     result(nil);
 }
 
 - (void)setOptOut:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
     BOOL value = [call.arguments[@"value"] boolValue];
     if (call.arguments[@"allowSystemEvents"]) {
         BOOL allowSystemEvents = [call.arguments[@"allowSystemEvents"] boolValue];
-        [[CleverTap sharedInstance] setOptOut:value allowSystemEvents:allowSystemEvents];
+        [instance setOptOut:value allowSystemEvents:allowSystemEvents];
     } else {
-        [[CleverTap sharedInstance] setOptOut:value];
+        [instance setOptOut:value];
     }
     result(nil);
 }
 
 - (void)setOffline:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
     
-    [[CleverTap sharedInstance] setOffline:[call.arguments[@"value"] boolValue]];
+    [instance setOffline:[call.arguments[@"value"] boolValue]];
     result(nil);
 }
 
 - (void)enableDeviceNetworkInfoReporting:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
     
-    [[CleverTap sharedInstance] enableDeviceNetworkInfoReporting:[call.arguments[@"value"] boolValue]];
+    [instance enableDeviceNetworkInfoReporting:[call.arguments[@"value"] boolValue]];
     result(nil);
 }
 
 - (void)eventGetFirstTime:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
     
-    NSTimeInterval res = [[CleverTap sharedInstance] eventGetFirstTime:call.arguments[@"eventName"]];
+    NSTimeInterval res = [instance eventGetFirstTime:call.arguments[@"eventName"]];
     result(@(res));
 }
 
 - (void)eventGetLastTime:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
     
-    NSTimeInterval res = [[CleverTap sharedInstance] eventGetLastTime:call.arguments[@"eventName"]];
+    NSTimeInterval res = [instance eventGetLastTime:call.arguments[@"eventName"]];
     result(@(res));
 }
 
 - (void)eventGetOccurrences:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
     
-    int res = [[CleverTap sharedInstance] eventGetOccurrences:call.arguments[@"eventName"]];
+    int res = [instance eventGetOccurrences:call.arguments[@"eventName"]];
     result(@(res));
 }
 
 - (void)eventGetDetail:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
     
-    CleverTapEventDetail *detail = [[CleverTap sharedInstance] eventGetDetail:call.arguments[@"eventName"]];
+    CleverTapEventDetail *detail = [instance eventGetDetail:call.arguments[@"eventName"]];
     NSDictionary *res = [self _eventDetailToDict:detail];
     result(res);
 }
 
 - (void)getEventHistory:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
     
-    NSDictionary *history = [[CleverTap sharedInstance] userGetEventHistory];
+    NSDictionary *history = [instance userGetEventHistory];
     NSMutableDictionary *res = [NSMutableDictionary new];
     for (NSString *eventName in [history keyEnumerator]) {
         CleverTapEventDetail *detail = history[eventName];
@@ -614,15 +995,23 @@ static NSDateFormatter *dateFormatter;
 }
 
 - (void)getUserEventLog:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
     
-    CleverTapEventDetail *detail = [[CleverTap sharedInstance] getUserEventLog:call.arguments[@"eventName"]];
+    CleverTapEventDetail *detail = [instance getUserEventLog:call.arguments[@"eventName"]];
     NSDictionary *res = [self _eventDetailToDict:detail];
     result(res);
 }
 
 - (void)getUserEventLogHistory:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
     
-    NSDictionary *history = [[CleverTap sharedInstance] getUserEventLogHistory];
+    NSDictionary *history = [instance getUserEventLogHistory];
     NSMutableDictionary *res = [NSMutableDictionary new];
     for (NSString *eventName in [history keyEnumerator]) {
         CleverTapEventDetail *detail = history[eventName];
@@ -633,108 +1022,150 @@ static NSDateFormatter *dateFormatter;
 }
 
 - (void)getUserEventLogCount:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
     
-    int res = [[CleverTap sharedInstance] getUserEventLogCount:call.arguments[@"eventName"]];
+    int res = [instance getUserEventLogCount:call.arguments[@"eventName"]];
     result(@(res));
 }
 
 - (void)setLocation:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
     
     double lat = [call.arguments[@"latitude"] doubleValue];
     double lon = [call.arguments[@"longitude"] doubleValue];
     CLLocationCoordinate2D coordinate = CLLocationCoordinate2DMake(lat,lon);
-    [[CleverTap sharedInstance] setLocation: coordinate];
+    [instance setLocation: coordinate];
     result(nil);
 }
 
 - (void)profileGetCleverTapAttributionIdentifier:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
     
-    result([[CleverTap sharedInstance] profileGetCleverTapAttributionIdentifier]);
+    result([instance profileGetCleverTapAttributionIdentifier]);
 }
 
 - (void)profileGetCleverTapID:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
     
-    result([[CleverTap sharedInstance] profileGetCleverTapID]);
+    result([instance profileGetCleverTapID]);
 }
 
 - (void)getCleverTapID:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     
-    result([[CleverTap sharedInstance] profileGetCleverTapID]);
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
+    result([instance profileGetCleverTapID]);
 }
 
 - (void)profileGetProperty:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
     
-    result([[CleverTap sharedInstance] profileGet:call.arguments[@"propertyName"]]);
+    result([instance profileGet:call.arguments[@"propertyName"]]);
 }
 
 - (void)profileRemoveValueForKey:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
     
-    [[CleverTap sharedInstance] profileRemoveValueForKey:call.arguments[@"key"]];
+    [instance profileRemoveValueForKey:call.arguments[@"key"]];
     result(nil);
 }
 
 - (void)profileSetMultiValues:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
     
-    [[CleverTap sharedInstance] profileSetMultiValues:call.arguments[@"values"] forKey:call.arguments[@"key"]];
+    [instance profileSetMultiValues:call.arguments[@"values"] forKey:call.arguments[@"key"]];
     result(nil);
 }
 
 - (void)profileAddMultiValue:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
     
-    [[CleverTap sharedInstance] profileAddMultiValue:call.arguments[@"value"] forKey:call.arguments[@"key"]];
+    [instance profileAddMultiValue:call.arguments[@"value"] forKey:call.arguments[@"key"]];
     result(nil);
 }
 
 - (void)profileAddMultiValues:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    [[CleverTap sharedInstance] profileAddMultiValues:call.arguments[@"values"] forKey:call.arguments[@"key"]];
+    CleverTap *instance = [self instanceForCall:call];
+    [instance profileAddMultiValues:call.arguments[@"values"] forKey:call.arguments[@"key"]];
     result(nil);
 }
 
 - (void)profileRemoveMultiValue:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
     
-    [[CleverTap sharedInstance] profileRemoveMultiValue:call.arguments[@"value"] forKey:call.arguments[@"key"]];
+    [instance profileRemoveMultiValue:call.arguments[@"value"] forKey:call.arguments[@"key"]];
     result(nil);
 }
 
 - (void)profileRemoveMultiValues:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
     
-    [[CleverTap sharedInstance] profileRemoveMultiValues:call.arguments[@"values"] forKey:call.arguments[@"key"]];
+    [instance profileRemoveMultiValues:call.arguments[@"values"] forKey:call.arguments[@"key"]];
     result(nil);
 }
 
 - (void)profileIncrementValue:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
     
-    [[CleverTap sharedInstance] profileIncrementValueBy:call.arguments[@"value"] forKey:call.arguments[@"key"]];
+    [instance profileIncrementValueBy:call.arguments[@"value"] forKey:call.arguments[@"key"]];
     result(nil);
 }
 
 - (void)profileDecrementValue:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
     
-    [[CleverTap sharedInstance] profileDecrementValueBy:call.arguments[@"value"] forKey:call.arguments[@"key"]];
+    [instance profileDecrementValueBy:call.arguments[@"value"] forKey:call.arguments[@"key"]];
     result(nil);
 }
 
 - (void)pushInstallReferrer:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
     
-    [[CleverTap sharedInstance] pushInstallReferrerSource:call.arguments[@"source"] medium:call.arguments[@"medium"] campaign:call.arguments[@"campaign"]];
+    [instance pushInstallReferrerSource:call.arguments[@"source"] medium:call.arguments[@"medium"] campaign:call.arguments[@"campaign"]];
     result(nil);
 }
 
 - (void)sessionGetTimeElapsed:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
     
-    NSTimeInterval res = [[CleverTap sharedInstance] sessionGetTimeElapsed];
+    NSTimeInterval res = [instance sessionGetTimeElapsed];
     result(@(res));
 }
 
 - (void)sessionGetTotalVisits:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
     
-    int res = [[CleverTap sharedInstance] userGetTotalVisits];
+    int res = [instance userGetTotalVisits];
     result(@(res));
 }
 
 - (void)getUserAppLaunchCount:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
 
-    int res = [[CleverTap sharedInstance] getUserAppLaunchCount];
+    int res = [instance getUserAppLaunchCount];
     result(@(res));
 }
 
@@ -750,158 +1181,219 @@ static NSDateFormatter *dateFormatter;
 }
 
 - (void)sessionGetScreenCount:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
     
-    int res = [[CleverTap sharedInstance] userGetScreenCount];
+    int res = [instance userGetScreenCount];
     result(@(res));
 }
 
 - (void)sessionGetPreviousVisitTime:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
     
-    NSTimeInterval res = [[CleverTap sharedInstance] userGetPreviousVisitTime];
+    NSTimeInterval res = [instance userGetPreviousVisitTime];
     result(@(res));
 }
 
 - (void)getUserLastVisitTs:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
     
-    NSTimeInterval res = [[CleverTap sharedInstance] getUserLastVisitTs];
+    NSTimeInterval res = [instance getUserLastVisitTs];
     result(@(res));
 }
 
 - (void)sessionGetUTMDetails:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
     
-    CleverTapUTMDetail *detail = [[CleverTap sharedInstance] sessionGetUTMDetails];
+    CleverTapUTMDetail *detail = [instance sessionGetUTMDetails];
     NSDictionary *res = [self _utmDetailToDict:detail];
     result(res);
 }
 
 #pragma mark - InApp Notification Controls
 
-- (void)suspendInAppNotifications {
-    
-    [[CleverTap sharedInstance] suspendInAppNotifications];
+- (void)suspendInAppNotifications:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
+    [instance suspendInAppNotifications];
+    result(nil);
 }
 
 - (void)discardInAppNotifications:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
     NSNumber *dismissInAppIfVisible = call.arguments[@"dismissInAppIfVisible"];
     if (dismissInAppIfVisible != nil) {
-        [[CleverTap sharedInstance] discardInAppNotifications:[dismissInAppIfVisible boolValue]];
+        [instance discardInAppNotifications:[dismissInAppIfVisible boolValue]];
     } else {
-        [[CleverTap sharedInstance] discardInAppNotifications];
+        [instance discardInAppNotifications];
     }
     result(nil);
 }
 
-- (void)resumeInAppNotifications {
-
-    [[CleverTap sharedInstance] resumeInAppNotifications];
+- (void)resumeInAppNotifications:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
+    [instance resumeInAppNotifications];
+    result(nil);
 }
 
 - (void)dismissPipInApp:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    [[CleverTap sharedInstance] dismissPipInApp];
+    CleverTap *instance = [self instanceForCall:call];
+    [instance dismissPipInApp];
     result(nil);
 }
 
 #pragma mark - InApp Controls
 
 - (void)fetchInApps:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    [[CleverTap sharedInstance]fetchInApps:^(BOOL success) {
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingInstanceOfCall:call instance:instance result:result]) {
+        return;
+    }
+    [instance fetchInApps:^(BOOL success) {
         result(@(success));
     }];
 }
 
 - (void)clearInAppResources:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    BOOL expiredOnly = [call.arguments boolValue];
-    [[CleverTap sharedInstance] clearInAppResources: expiredOnly];
+    CleverTap *instance = [self instanceForCall:call];
+    BOOL expiredOnly = [[self scalarArgumentOfCall:call] boolValue];
+    [instance clearInAppResources: expiredOnly];
+    result(nil);
 }
 
 #pragma mark - Inbox
 
 - (void)pushInboxNotificationViewedEventForId:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
     
-    [[CleverTap sharedInstance] recordInboxNotificationViewedEventForID:call.arguments[@"messageId"]];
+    [instance recordInboxNotificationViewedEventForID:call.arguments[@"messageId"]];
     result(nil);
 }
 
 - (void)pushInboxNotificationClickedEventForId:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
     
-    [[CleverTap sharedInstance] recordInboxNotificationClickedEventForID:call.arguments[@"messageId"]];
+    [instance recordInboxNotificationClickedEventForID:call.arguments[@"messageId"]];
     result(nil);
 }
 
 - (void)markReadInboxMessageForId:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
     
-    [[CleverTap sharedInstance] markReadInboxMessageForID:call.arguments[@"messageId"]];
+    [instance markReadInboxMessageForID:call.arguments[@"messageId"]];
     result(nil);
 }
 
 - (void)markReadInboxMessagesForIds:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    [[CleverTap sharedInstance]markReadInboxMessagesForIDs:call.arguments[@"messageIds"]];
+    CleverTap *instance = [self instanceForCall:call];
+    [instance markReadInboxMessagesForIDs:call.arguments[@"messageIds"]];
     result(nil);
 }
 
 - (void)deleteInboxMessagesForIds:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    [[CleverTap sharedInstance]deleteInboxMessagesForIDs:call.arguments[@"messageIds"]];
+    CleverTap *instance = [self instanceForCall:call];
+    [instance deleteInboxMessagesForIDs:call.arguments[@"messageIds"]];
     result(nil);
 }
 
 - (void)deleteInboxMessageForId:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
     
-    [[CleverTap sharedInstance] deleteInboxMessageForID:call.arguments[@"messageId"]];
+    [instance deleteInboxMessageForID:call.arguments[@"messageId"]];
     result(nil);
 }
 
 - (void)getInboxMessageForId:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
     
-    CleverTapInboxMessage *message = [[CleverTap sharedInstance] getInboxMessageForId:call.arguments[@"messageId"]];
+    CleverTapInboxMessage *message = [instance getInboxMessageForId:call.arguments[@"messageId"]];
     NSDictionary *res = message.json;
     result(res);
 }
 
 - (void)getUnreadInboxMessages:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
     
-    NSArray *messages = [[CleverTap sharedInstance] getUnreadInboxMessages];
+    NSArray *messages = [instance getUnreadInboxMessages];
     NSArray *results = [self _cleverTapInboxMessagesToArray:messages];
     result(results);
 }
 
 - (void)getAllInboxMessages:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
     
-    NSArray *messages = [[CleverTap sharedInstance] getAllInboxMessages];
+    NSArray *messages = [instance getAllInboxMessages];
     NSArray *results = [self _cleverTapInboxMessagesToArray:messages];
     result(results);
 }
 
 - (void)getInboxMessageCount:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
     
-    int res = (int)[[CleverTap sharedInstance] getInboxMessageCount];
+    int res = (int)[instance getInboxMessageCount];
     result(@(res));
 }
 
 - (void)getInboxMessageUnreadCount:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
     
-    int res = (int)[[CleverTap sharedInstance] getInboxMessageUnreadCount];
+    int res = (int)[instance getInboxMessageUnreadCount];
     result(@(res));
 }
 
-- (void)initializeInbox {
+- (void)initializeInbox:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
+    // Registered on the call's account (main queue): its events carry that account's ID.
+    NSString *accountId = instance.config.accountId;
 
-    [[CleverTap sharedInstance] initializeInboxWithCallback:^(BOOL success) {
+    [instance initializeInboxWithCallback:^(BOOL success) {
         if (success) {
-            [self postNotificationWithName:kCleverTapInboxDidInitialize andBody:nil];
-            [[CleverTap sharedInstance] registerInboxUpdatedBlock:^{
-                [self postNotificationWithName:kCleverTapInboxMessagesDidUpdate andBody:nil];
+            [self postNotificationWithName:kCleverTapInboxDidInitialize andBody:nil accountId:accountId];
+            [instance registerInboxUpdatedBlock:^{
+                [self postNotificationWithName:kCleverTapInboxMessagesDidUpdate andBody:nil accountId:accountId];
             }];
         }
     }];
+    result(nil);
 }
 
 - (void)fetchInbox:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    [[CleverTap sharedInstance] fetchInboxWithCallback:nil];
+    CleverTap *instance = [self instanceForCall:call];
+    [instance fetchInboxWithCallback:nil];
     result(nil);
 }
 
 - (void)fetchInboxWithCallback:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    [[CleverTap sharedInstance] fetchInboxWithCallback:^(BOOL success) {
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingInstanceOfCall:call instance:instance result:result]) {
+        return;
+    }
+    [instance fetchInboxWithCallback:^(BOOL success) {
         result(@(success));
     }];
 }
@@ -924,17 +1416,25 @@ static NSDateFormatter *dateFormatter;
     if ([styleConfig isKindOfClass:[NSNull class]]) {
         styleConfig = nil;
     }
-    CleverTapInboxViewController *inboxController = [[CleverTap sharedInstance] newInboxViewControllerWithConfig:[self _dictToInboxStyleConfig:styleConfig ? styleConfig : nil] andDelegate:(id <CleverTapInboxViewControllerDelegate>)self];
+    CleverTap *instance = [self instanceForCall:call];
+    // This inbox's taps go to its own account's delegate, so they carry that account even when
+    // another account's inbox is on screen. The plugin itself (the default account) only if the
+    // account has no delegate, which the wiring in instanceForCall: should never allow.
+    id delegate = self.instanceDelegates[instance.config.accountId ?: @""] ?: self;
+    CleverTapInboxViewController *inboxController = [instance newInboxViewControllerWithConfig:[self _dictToInboxStyleConfig:styleConfig ? styleConfig : nil] andDelegate:(id <CleverTapInboxViewControllerDelegate>)delegate];
     if (inboxController) {
         UINavigationController *navigationController = [[UINavigationController alloc] initWithRootViewController:inboxController];
         UIWindow *keyWindow = [self ct_keyWindow];
         UIViewController *mainViewController = keyWindow.rootViewController;
         [mainViewController presentViewController:navigationController animated:YES completion:nil];
     }
+    result(nil);
 }
 
 - (void)dismissInbox:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    [[CleverTap sharedInstance]dismissAppInbox];
+    CleverTap *instance = [self instanceForCall:call];
+    [instance dismissAppInbox];
+    result(nil);
 }
 
 - (CleverTapInboxStyleConfig*)_dictToInboxStyleConfig: (NSDictionary *)dict {
@@ -1013,151 +1513,165 @@ static NSDateFormatter *dateFormatter;
 #pragma mark - Native Display
 
 - (void)getAllDisplayUnits:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
     
-    NSArray<CleverTapDisplayUnit *> *displayUnits = [[CleverTap sharedInstance] getAllDisplayUnits];
+    NSArray<CleverTapDisplayUnit *> *displayUnits = [instance getAllDisplayUnits];
     NSArray *results = [self _cleverTapDisplayUnitToArray:displayUnits];
     result(results);
 }
 
 - (void)getDisplayUnitForId:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
     
-    CleverTapDisplayUnit *unit = [[CleverTap sharedInstance] getDisplayUnitForID:call.arguments[@"unitId"]];
+    CleverTapDisplayUnit *unit = [instance getDisplayUnitForID:call.arguments[@"unitId"]];
     NSDictionary *res = unit.json;
     result(res);
 }
 
 - (void)pushDisplayUnitViewedEvent:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
     
-    [[CleverTap sharedInstance] recordDisplayUnitViewedEventForID:call.arguments[@"unitId"]];
+    [instance recordDisplayUnitViewedEventForID:call.arguments[@"unitId"]];
     result(nil);
 }
 
 - (void)pushDisplayUnitClickedEvent:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
 
-    [[CleverTap sharedInstance] recordDisplayUnitClickedEventForID:call.arguments[@"unitId"]];
+    [instance recordDisplayUnitClickedEventForID:call.arguments[@"unitId"]];
     result(nil);
 }
 
 - (void)pushDisplayUnitElementClickedEvent:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
 
-    [[CleverTap sharedInstance] recordDisplayUnitElementClickedEventForID:call.arguments[@"unitId"] additionalProperties:call.arguments[@"additionalProperties"]];
+    [instance recordDisplayUnitElementClickedEventForID:call.arguments[@"unitId"] additionalProperties:call.arguments[@"additionalProperties"]];
     result(nil);
 }
 
 - (void)pushDisplayUnitElementViewedEvent:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
 
-    [[CleverTap sharedInstance] recordDisplayUnitElementViewedEventForID:call.arguments[@"unitId"] additionalProperties:call.arguments[@"additionalProperties"]];
+    [instance recordDisplayUnitElementViewedEventForID:call.arguments[@"unitId"] additionalProperties:call.arguments[@"additionalProperties"]];
     result(nil);
 }
 
 - (void)fetchNativeDisplayMeta:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
 
-    [[CleverTap sharedInstance] fetchNativeDisplayMeta];
+    [instance fetchNativeDisplayMeta];
     result(nil);
 }
-
-- (void)displayUnitsUpdated:(NSArray<CleverTapDisplayUnit *> *)displayUnits {
-    
-    NSMutableDictionary *_dict = [NSMutableDictionary new];
-    [_dict setValue:[self _cleverTapDisplayUnitToArray:displayUnits] forKey:@"adUnits"];
-    [self postNotificationWithName:kCleverTapDisplayUnitsLoaded andBody:_dict];
-}
-
 
 #pragma mark - Product Config
 
 - (void)fetch:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    [[[CleverTap sharedInstance] productConfig] fetch];
+    CleverTap *instance = [self instanceForCall:call];
+    [[instance productConfig] fetch];
     result(nil);
 }
 
 - (void)fetchWithMinimumFetchIntervalInSeconds:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
     int interval = [call.arguments[@"interval"] intValue];
-    [[[CleverTap sharedInstance] productConfig] fetchWithMinimumInterval:interval];
+    [[instance productConfig] fetchWithMinimumInterval:interval];
     result(nil);
 }
 
 - (void)setMinimumFetchIntervalInSeconds:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
     int interval = [call.arguments[@"interval"] intValue];
-    [[[CleverTap sharedInstance] productConfig] setMinimumFetchInterval:interval];
+    [[instance productConfig] setMinimumFetchInterval:interval];
     result(nil);
 }
 
 - (void)activate:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    [[[CleverTap sharedInstance] productConfig] activate];
+    CleverTap *instance = [self instanceForCall:call];
+    [[instance productConfig] activate];
     result(nil);
 }
 
 - (void)fetchAndActivate:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    [[[CleverTap sharedInstance] productConfig] fetchAndActivate];
+    CleverTap *instance = [self instanceForCall:call];
+    [[instance productConfig] fetchAndActivate];
     result(nil);
 }
 
 - (void)setDefaultsMap:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    [[[CleverTap sharedInstance] productConfig] setDefaults:call.arguments[@"defaults"]];
+    CleverTap *instance = [self instanceForCall:call];
+    [[instance productConfig] setDefaults:call.arguments[@"defaults"]];
     result(nil);
 }
 
 - (void)getLastFetchTimeStampInMillis:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    NSDate *date = [[[CleverTap sharedInstance] productConfig] getLastFetchTimeStamp];
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
+    NSDate *date = [[instance productConfig] getLastFetchTimeStamp];
     double interval = date.timeIntervalSince1970;
     result(@(interval));
 }
 
 - (void)getBoolean:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
     NSString *key = call.arguments[@"key"];
-    BOOL value = [[[[CleverTap sharedInstance] productConfig] get:key]boolValue];
+    BOOL value = [[[instance productConfig] get:key]boolValue];
     result(@(value));
 }
 
 - (void)getString:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
     NSString *key = call.arguments[@"key"];
-    NSString *value = [[[[CleverTap sharedInstance] productConfig] get:key]stringValue];
+    NSString *value = [[[instance productConfig] get:key]stringValue];
     result(value);
 }
 
 - (void)getLong:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
     NSString *key = call.arguments[@"key"];
-    long value = [[[[CleverTap sharedInstance] productConfig] get:key] numberValue].longValue;
+    long value = [[[instance productConfig] get:key] numberValue].longValue;
     result(@(value));
 }
 
 - (void)getDouble:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
     NSString *key = call.arguments[@"key"];
-    double value = [[[[CleverTap sharedInstance] productConfig] get:key]numberValue].doubleValue;
+    double value = [[[instance productConfig] get:key]numberValue].doubleValue;
     result(@(value));
-}
-
-
-#pragma mark - Product Config Delegates
-
-- (void)ctProductConfigFetched {
-    
-    [self postNotificationWithName:kCleverTapProductConfigFetched andBody:nil];
-}
-
-- (void)ctProductConfigActivated {
-    [self postNotificationWithName:kCleverTapProductConfigActivated andBody:nil];
-}
-
-- (void)ctProductConfigInitialized {
-    [self postNotificationWithName:kCleverTapProductConfigInitialized andBody:nil];
 }
 
 
 #pragma mark - Feature Flag
 
 - (void)getFeatureFlag:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
     NSString *key = call.arguments[@"key"];
     BOOL defaultValue = [call.arguments[@"defaultValue"] boolValue];
-    BOOL value = [[[CleverTap sharedInstance] featureFlags] get:key withDefaultValue:defaultValue];
+    BOOL value = [[instance featureFlags] get:key withDefaultValue:defaultValue];
     result(@(value));
 }
-
-- (void)ctFeatureFlagsUpdated {
-    [self postNotificationWithName:kCleverTapFeatureFlagsUpdated andBody:nil];
-}
-
 
 #pragma mark - Helpers
 
@@ -1268,19 +1782,19 @@ static NSDateFormatter *dateFormatter;
     return _profile;
 }
 
-- (CTVar *)createVarForName:(NSString *)name andValue:(id)value {
+- (CTVar *)createVarForName:(NSString *)name andValue:(id)value instance:(CleverTap *)instance {
 
     if ([value isKindOfClass:[NSString class]]) {
-        return [[CleverTap sharedInstance]defineVar:name withString:value];
+        return [instance defineVar:name withString:value];
     }
     if ([value isKindOfClass:[NSDictionary class]]) {
-        return [[CleverTap sharedInstance]defineVar:name withDictionary:value];
+        return [instance defineVar:name withDictionary:value];
     }
     if ([value isKindOfClass:[NSNumber class]]) {
         if ([self isBoolNumber:value]) {
-            return [[CleverTap sharedInstance]defineVar:name withBool:[value boolValue]];
+            return [instance defineVar:name withBool:[value boolValue]];
         }
-        return [[CleverTap sharedInstance]defineVar:name withNumber:value];
+        return [instance defineVar:name withNumber:value];
     }
     return nil;
 }
@@ -1291,11 +1805,58 @@ static NSDateFormatter *dateFormatter;
     return (numID == boolID);
 }
 
-- (NSMutableDictionary *)getVariableValues {
+#pragma mark - Variables, one registry per account
+
+// One map per account, so account B defining "discount" does not replace the default account's
+// "discount" (with one map, CleverTapPlugin.getVariable('discount') returned B's value).
+// @synchronized like React Native: the iOS SDK can run a variable's value-changed blocks off the
+// main queue (iOS SDK 7.9.0 CTVar.m triggerValueChanged), while handlers write on the main queue.
+
+- (void)storeVariable:(CTVar *)var named:(NSString *)name forAccount:(nullable NSString *)accountId {
+    if (var == nil || name == nil || accountId == nil) {
+        return;
+    }
+    @synchronized (self.variablesByAccount) {
+        NSMutableDictionary<NSString *, CTVar *> *vars = self.variablesByAccount[accountId];
+        if (vars == nil) {
+            vars = [NSMutableDictionary dictionary];
+            self.variablesByAccount[accountId] = vars;
+        }
+        vars[name] = var;
+    }
+}
+
+- (nullable CTVar *)variableNamed:(id)name forAccount:(nullable NSString *)accountId {
+    if (![name isKindOfClass:[NSString class]] || accountId == nil) {
+        return nil;
+    }
+    @synchronized (self.variablesByAccount) {
+        return self.variablesByAccount[accountId][name];
+    }
+}
+
+/// Posts a variables event. Its userInfo stays the values, exactly as before (the notification
+/// names are public in CleverTapPlugin.h, so app code may observe them). The account and the
+/// registration ID Dart sent with onVariablesChanged etc. ride in `object`; emitVariablesEvent:
+/// passes the ID to Dart, which runs only that registration's handler (one run per change, as
+/// with the native SDK).
+- (void)postVariablesNotificationWithName:(NSString *)name values:(nullable NSDictionary *)values accountId:(nullable NSString *)accountId callbackId:(nullable id)callbackId {
+    NSMutableDictionary *source = [NSMutableDictionary dictionary];
+    source[@"accountId"] = accountId;
+    source[@"callbackId"] = callbackId;
+    [[NSNotificationCenter defaultCenter] postNotificationName:name object:[source copy] userInfo:values];
+}
+
+- (NSMutableDictionary *)variableValuesForAccount:(nullable NSString *)accountId {
     NSMutableDictionary *varValues = [NSMutableDictionary dictionary];
-    [self.allVariables enumerateKeysAndObjectsUsingBlock:^(id  _Nonnull key, CTVar*  _Nonnull var, BOOL * _Nonnull stop) {
-        varValues[key] = var.value;
-    }];
+    if (accountId == nil) {
+        return varValues;
+    }
+    @synchronized (self.variablesByAccount) {
+        [self.variablesByAccount[accountId] enumerateKeysAndObjectsUsingBlock:^(id  _Nonnull key, CTVar*  _Nonnull var, BOOL * _Nonnull stop) {
+            varValues[key] = var.value;
+        }];
+    }
     return varValues;
 }
 
@@ -1303,28 +1864,50 @@ static NSDateFormatter *dateFormatter;
 
 - (void)emitEventInternal:(NSNotification *)notification {
     dispatch_async(dispatch_get_main_queue(), ^{
-        [self.nativeToDartMethodChannel invokeMethod:notification.name arguments:notification.userInfo];
+        [self.nativeToDartMethodChannel invokeMethod:notification.name arguments:[self envelopeForNotification:notification payload:notification.userInfo]];
+    });
+}
+
+/// Sends a variables event as {__ctCallbackId: id, values: <userInfo>} in the account's envelope
+/// (see postVariablesNotificationWithName:values:accountId:callbackId:).
+- (void)emitVariablesEvent:(NSNotification *)notification {
+    NSDictionary *source = [notification.object isKindOfClass:[NSDictionary class]] ? notification.object : nil;
+    NSString *accountId = [source[@"accountId"] isKindOfClass:[NSString class]] ? source[@"accountId"] : nil;
+    NSDictionary *payload = @{
+        @"__ctCallbackId": source[@"callbackId"] ?: [NSNull null],
+        @"values": notification.userInfo ?: [NSNull null],
+    };
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [self.nativeToDartMethodChannel invokeMethod:notification.name arguments:[self envelopeForAccountId:accountId payload:payload]];
+    });
+}
+
+- (void)emitEventProfileSync:(NSNotification *)notification {
+    // Sends the SDK's updates directly ({"profile": {...}, "events": {...}}), like the other
+    // listeners send their data. The notification keeps its {"updates": ...} userInfo.
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [self.nativeToDartMethodChannel invokeMethod:notification.name arguments:[self envelopeForNotification:notification payload:notification.userInfo[@"updates"]]];
     });
 }
 
 - (void)emitEventPushPermissionResponse:(NSNotification *)notification {
     // Passed boolean value of `accepted` directly.
     dispatch_async(dispatch_get_main_queue(), ^{
-        [self.nativeToDartMethodChannel invokeMethod:notification.name arguments:notification.userInfo[@"accepted"]];
+        [self.nativeToDartMethodChannel invokeMethod:notification.name arguments:[self envelopeForNotification:notification payload:notification.userInfo[@"accepted"]]];
     });
 }
 
 - (void)emitEventDisplayUnitsLoaded:(NSNotification *)notification {
     // Passed CleverTapDisplayUnit Array directly.
     dispatch_async(dispatch_get_main_queue(), ^{
-        [self.nativeToDartMethodChannel invokeMethod:notification.name arguments:notification.userInfo[@"adUnits"]];
+        [self.nativeToDartMethodChannel invokeMethod:notification.name arguments:[self envelopeForNotification:notification payload:notification.userInfo[@"adUnits"]]];
     });
 }
 
 - (void)emitCustomTemplate:(NSNotification *)notification {
     // Passed Custom Template String directly.
     dispatch_async(dispatch_get_main_queue(), ^{
-        [self.nativeToDartMethodChannel invokeMethod:notification.name arguments:notification.userInfo[@"templateName"]];
+        [self.nativeToDartMethodChannel invokeMethod:notification.name arguments:[self envelopeForNotification:notification payload:notification.userInfo[@"templateName"]]];
     });
 }
 
@@ -1336,13 +1919,18 @@ static NSDateFormatter *dateFormatter;
                                                object:nil];
     
     [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(emitEventInternal:)
+                                             selector:@selector(emitEventProfileSync:)
                                                  name:kCleverTapProfileSync
                                                object:nil];
     
     [[NSNotificationCenter defaultCenter] addObserver:self
                                              selector:@selector(emitEventInternal:)
                                                  name:kCleverTapInAppNotificationDismissed
+                                               object:nil];
+
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(emitEventInternal:)
+                                                 name:kCleverTapInAppNotificationShow
                                                object:nil];
     
     [[NSNotificationCenter defaultCenter] addObserver:self
@@ -1406,32 +1994,32 @@ static NSDateFormatter *dateFormatter;
                                                object:nil];
 
     [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(emitEventInternal:)
+                                             selector:@selector(emitVariablesEvent:)
                                                  name:kCleverTapOnVariablesChanged
                                                object:nil];
 
     [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(emitEventInternal:)
+                                             selector:@selector(emitVariablesEvent:)
                                                  name:kCleverTapOnOneTimeVariablesChanged
                                                object:nil];
 
     [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(emitEventInternal:)
+                                             selector:@selector(emitVariablesEvent:)
                                                  name:kCleverTapOnVariablesChangedAndNoDownloadsPending
                                                object:nil];
 
     [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(emitEventInternal:)
+                                             selector:@selector(emitVariablesEvent:)
                                                  name:kCleverTapOnceVariablesChangedAndNoDownloadsPending
                                                object:nil];       
 
     [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(emitEventInternal:)
+                                             selector:@selector(emitVariablesEvent:)
                                                  name:kCleverTapOnFileValueChanged
                                                object:nil];
     
     [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(emitEventInternal:)
+                                             selector:@selector(emitVariablesEvent:)
                                                  name:kCleverTapOnValueChanged
                                                object:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self
@@ -1449,57 +2037,47 @@ static NSDateFormatter *dateFormatter;
 }
 
 - (void)postNotificationWithName:(NSString *)name andBody:(NSDictionary *)body {
-    [[NSNotificationCenter defaultCenter] postNotificationName:name object:nil userInfo:body];
+    // Public: the account is unknown (custom templates, older callers). Dart routes it to the
+    // default handlers, as before.
+    [self postNotificationWithName:name andBody:body accountId:nil];
+}
+
+- (void)postNotificationWithName:(NSString *)name andBody:(NSDictionary *)body accountId:(NSString *)accountId {
+    // The account rides in `object`. Observers registered with object:nil (ours, and any app's)
+    // still receive every notification, with the same name and userInfo as before.
+    [[NSNotificationCenter defaultCenter] postNotificationName:name object:accountId userInfo:body];
+}
+
+/// The value Dart receives: {__ctEnvelope: true, accountId, isDefault, payload}. Main queue only
+/// (it reads currentDefaultAccountId). An unknown account (nil) counts as default, which is where
+/// those events went before. The marker matches _envelopeMarker in lib/clevertap_plugin.dart.
+- (NSDictionary *)envelopeForNotification:(NSNotification *)notification payload:(id)payload {
+    NSString *accountId = [notification.object isKindOfClass:[NSString class]] ? notification.object : nil;
+    return [self envelopeForAccountId:accountId payload:payload];
+}
+
+- (NSDictionary *)envelopeForAccountId:(nullable NSString *)accountId payload:(id)payload {
+    BOOL isDefault = accountId == nil || [accountId isEqualToString:[self currentDefaultAccountId]];
+    return @{
+        @"__ctEnvelope": @YES,
+        @"accountId": accountId ?: [NSNull null],
+        @"isDefault": @(isDefault),
+        @"payload": payload ?: [NSNull null],
+    };
 }
 
 #pragma mark - Delegates
-#pragma mark CleverTapSyncDelegate
-
-- (void)profileDidInitialize:(NSString*)cleverTapID {
-    
-    if(!cleverTapID) {
-        return;
-    }
-    [self postNotificationWithName:kCleverTapProfileDidInitialize andBody:@{@"CleverTapID":cleverTapID}];
-}
-
-- (void)profileDataUpdated:(NSDictionary *)updates {
-    
-    if(!updates) {
-        return ;
-    }
-    [self postNotificationWithName:kCleverTapProfileSync andBody:@{@"updates":updates}];
-}
-
-
-#pragma mark CleverTapInAppNotificationDelegate
-
-- (void)inAppNotificationDismissedWithExtras:(NSDictionary *)extras andActionExtras:(NSDictionary *)actionExtras {
-    
-    NSMutableDictionary *body = [NSMutableDictionary new];
-    body[@"extras"] = (extras != nil) ? extras : [NSMutableDictionary new];
-    body[@"actionExtras"] = (actionExtras != nil) ? actionExtras : [NSMutableDictionary new];
-    [self postNotificationWithName:kCleverTapInAppNotificationDismissed andBody:body];
-}
-
-- (void)inAppNotificationButtonTappedWithCustomExtras:(NSDictionary *)customExtras {
-    
-    NSMutableDictionary *body = [NSMutableDictionary new];
-    if (customExtras != nil) {
-        body[@"customExtras"] = customExtras;
-    }
-    [self postNotificationWithName:kCleverTapInAppNotificationButtonTapped andBody:customExtras];
-}
-
-
 #pragma mark CleverTapInboxViewControllerDelegate
+
+// Used only when an account had no delegate in showInbox: the default account's inbox. Each
+// account's inbox normally reports through its CleverTapPluginInstanceDelegate.
 
 - (void)messageButtonTappedWithCustomExtras:(NSDictionary *_Nullable)customExtras {
     NSMutableDictionary *body = [NSMutableDictionary new];
     if (customExtras != nil) {
         body = [NSMutableDictionary dictionaryWithDictionary:customExtras];
     }
-    [self postNotificationWithName:kCleverTapInboxMessageButtonTapped andBody:body];
+    [self postNotificationWithName:kCleverTapInboxMessageButtonTapped andBody:body accountId:[self currentDefaultAccountId]];
 }
 
 - (void)messageDidSelect:(CleverTapInboxMessage *_Nonnull)message atIndex:(int)index withButtonIndex:(int)buttonIndex {
@@ -1511,67 +2089,59 @@ static NSDateFormatter *dateFormatter;
     }
     body[@"contentPageIndex"] = @(index);
     body[@"buttonIndex"] = @(buttonIndex);
-    [self postNotificationWithName:kCleverTapInboxMessageTapped andBody:body];
-}
-
-#pragma mark CleverTapPushNotificationDelegate
-
-- (void)pushNotificationTappedWithCustomExtras:(NSDictionary *)customExtras {
-    NSMutableDictionary *pushNotificationExtras = [NSMutableDictionary new];
-    if (customExtras != nil) {
-        pushNotificationExtras = [NSMutableDictionary dictionaryWithDictionary:customExtras];
-    }
-    [self postNotificationWithName:kCleverTapPushNotificationClicked andBody:pushNotificationExtras];
+    [self postNotificationWithName:kCleverTapInboxMessageTapped andBody:body accountId:[self currentDefaultAccountId]];
 }
 
 #pragma mark - Push Notifications
 
 - (void)pushNotificationViewedEvent:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
     
-    [[CleverTap sharedInstance] recordNotificationViewedEventWithData:call.arguments[@"notificationData"]];
+    [instance recordNotificationViewedEventWithData:call.arguments[@"notificationData"]];
     result(nil);
 }
 
 - (void)pushNotificationClickedEvent:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
     
-    [[CleverTap sharedInstance] recordNotificationClickedEventWithData:call.arguments[@"notificationData"]];
+    [instance recordNotificationClickedEventWithData:call.arguments[@"notificationData"]];
     result(nil);
 }
 
 #pragma mark - Push Primer
 
 - (void)promptForPushNotification:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    BOOL isFallbackToSettings = [call.arguments boolValue];
-    [[CleverTap sharedInstance] promptForPushPermission: isFallbackToSettings];
+    CleverTap *instance = [self instanceForCall:call];
+    BOOL isFallbackToSettings = [[self scalarArgumentOfCall:call] boolValue];
+    [instance promptForPushPermission: isFallbackToSettings];
+    result(nil);
 }
 
 - (void)promptPushPrimer:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
     NSDictionary *json = call.arguments;
     BOOL isJSONInvalid = [self validatePushPrimerRequiredSettings:json];
     if (!isJSONInvalid) {
         CTLocalInApp *localInAppBuilder = [self buildLocalInApp:json];
-        [[CleverTap sharedInstance] promptPushPrimer:localInAppBuilder.getLocalInAppSettings];
+        [instance promptPushPrimer:localInAppBuilder.getLocalInAppSettings];
     } else {
         NSLog(@"CleverTapFlutter: Invalid Push Primer JSON received");
     }
+    result(nil);
 }
 
 - (void)getPushNotificationPermissionStatus:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    [[CleverTap sharedInstance] getNotificationPermissionStatusWithCompletionHandler:^(UNAuthorizationStatus status) {
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingInstanceOfCall:call instance:instance result:result]) {
+        return;
+    }
+    [instance getNotificationPermissionStatusWithCompletionHandler:^(UNAuthorizationStatus status) {
         BOOL isPushEnabled = YES;
         if (status == UNAuthorizationStatusNotDetermined || status == UNAuthorizationStatusDenied) {
             isPushEnabled = NO;
         }
         result(@(isPushEnabled));
     }];
-}
-
-#pragma mark - CleverTapPushPermissionDelegate
-
-- (void)onPushPermissionResponse:(BOOL)accepted {
-    NSMutableDictionary *body = [NSMutableDictionary new];
-    body[@"accepted"] = [NSNumber numberWithBool:accepted];
-    [self postNotificationWithName:kCleverTapPushPermissionResponseReceived andBody:body];
 }
 
 - (BOOL)validatePushPrimerRequiredSettings:(NSDictionary *)json {
@@ -1651,16 +2221,24 @@ static NSDateFormatter *dateFormatter;
 
 #pragma mark - Product Experiences - syncVariables
 
-- (void)syncVariables {
-    [[CleverTap sharedInstance]syncVariables];
+- (void)syncVariables:(FlutterMethodCall *)call withResult:(FlutterResult)result {
+    CleverTap *instance = [self instanceForCall:call];
+    [instance syncVariables];
+    result(nil);
 }
 
 - (void)syncVariablesinProd:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    [[CleverTap sharedInstance]syncVariables:[call.arguments[@"isProduction"] boolValue]];
+    CleverTap *instance = [self instanceForCall:call];
+    [instance syncVariables:[call.arguments[@"isProduction"] boolValue]];
+    result(nil);
 }
 
 - (void)fetchVariables:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    [[CleverTap sharedInstance]fetchVariables:^(BOOL success) {
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingInstanceOfCall:call instance:instance result:result]) {
+        return;
+    }
+    [instance fetchVariables:^(BOOL success) {
         result(@(success));
     }];
 }
@@ -1673,11 +2251,13 @@ static NSDateFormatter *dateFormatter;
         return;
     }
 
+    CleverTap *instance = [self instanceForCall:call];
+    NSString *accountId = instance.config.accountId;
     [variables enumerateKeysAndObjectsUsingBlock:^(NSString*  _Nonnull key, id  _Nonnull value, BOOL * _Nonnull stop) {
-        CTVar *var = [self createVarForName:key andValue:value];
+        CTVar *var = [self createVarForName:key andValue:value instance:instance];
 
         if (var) {
-            self.allVariables[key] = var;
+            [self storeVariable:var named:key forAccount:accountId];
         }
     }];
     result(nil);
@@ -1687,99 +2267,142 @@ static NSDateFormatter *dateFormatter;
     NSString *fileVariable = call.arguments[@"fileVariable"];
     if (!fileVariable) return;
 
-    CTVar *fileVar = [[CleverTap sharedInstance] defineFileVar:fileVariable];
+    CleverTap *instance = [self instanceForCall:call];
+    CTVar *fileVar = [instance defineFileVar:fileVariable];
     if (fileVar) {
-        self.allVariables[fileVariable] = fileVar;
+        [self storeVariable:fileVar named:fileVariable forAccount:instance.config.accountId];
     }
     result(nil);
 }
 
 - (void)getVariables:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    NSMutableDictionary *varValues = [self getVariableValues];
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
+    NSMutableDictionary *varValues = [self variableValuesForAccount:instance.config.accountId];
     result(varValues);
 }
 
 - (void)getVariable:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    CTVar *var = self.allVariables[call.arguments[@"name"]];
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
+    CTVar *var = [self variableNamed:call.arguments[@"name"] forAccount:instance.config.accountId];
     result(var.value);
 }
 
 - (void)onVariablesChanged:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    [[CleverTap sharedInstance]onVariablesChanged:^{
-        [self postNotificationWithName:kCleverTapOnVariablesChanged andBody:[self getVariableValues]];
+    CleverTap *instance = [self instanceForCall:call];
+    // Registered on the call's account (main queue): its events carry that account's ID and values.
+    NSString *accountId = instance.config.accountId;
+    id callbackId = call.arguments[@"callbackId"];
+    [instance onVariablesChanged:^{
+        [self postVariablesNotificationWithName:kCleverTapOnVariablesChanged values:[self variableValuesForAccount:accountId] accountId:accountId callbackId:callbackId];
     }];
 }
 
 - (void)onOneTimeVariablesChanged:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    [[CleverTap sharedInstance]onceVariablesChanged:^{
-        [self postNotificationWithName:kCleverTapOnOneTimeVariablesChanged andBody:[self getVariableValues]];
+    CleverTap *instance = [self instanceForCall:call];
+    // Registered on the call's account (main queue): its events carry that account's ID and values.
+    NSString *accountId = instance.config.accountId;
+    id callbackId = call.arguments[@"callbackId"];
+    [instance onceVariablesChanged:^{
+        [self postVariablesNotificationWithName:kCleverTapOnOneTimeVariablesChanged values:[self variableValuesForAccount:accountId] accountId:accountId callbackId:callbackId];
     }];
 }
 
 - (void)onValueChanged:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    CTVar *var = self.allVariables[call.arguments[@"name"]];
+    CleverTap *instance = [self instanceForCall:call];
+    // Attached to the call's account's variable (main queue): its events carry that account's ID.
+    NSString *accountId = instance.config.accountId;
+    id callbackId = call.arguments[@"callbackId"];
+    CTVar *var = [self variableNamed:call.arguments[@"name"] forAccount:accountId];
     if (var) {
         [var onValueChanged:^{
             NSDictionary *varResult = @{
                 var.name: var.value
             };
-            [self postNotificationWithName:kCleverTapOnValueChanged andBody:varResult];
+            [self postVariablesNotificationWithName:kCleverTapOnValueChanged values:varResult accountId:accountId callbackId:callbackId];
         }];
     }
 }
 
 - (void)onVariablesChangedAndNoDownloadsPending:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    [[CleverTap sharedInstance]onVariablesChangedAndNoDownloadsPending:^{
-        [self postNotificationWithName:kCleverTapOnVariablesChangedAndNoDownloadsPending andBody:[self getVariableValues]];
+    CleverTap *instance = [self instanceForCall:call];
+    // Registered on the call's account (main queue): its events carry that account's ID and values.
+    NSString *accountId = instance.config.accountId;
+    id callbackId = call.arguments[@"callbackId"];
+    [instance onVariablesChangedAndNoDownloadsPending:^{
+        [self postVariablesNotificationWithName:kCleverTapOnVariablesChangedAndNoDownloadsPending values:[self variableValuesForAccount:accountId] accountId:accountId callbackId:callbackId];
     }];
 }
 
 - (void)onceVariablesChangedAndNoDownloadsPending:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    [[CleverTap sharedInstance]onceVariablesChangedAndNoDownloadsPending:^{
-        [self postNotificationWithName:kCleverTapOnceVariablesChangedAndNoDownloadsPending andBody:[self getVariableValues]];
+    CleverTap *instance = [self instanceForCall:call];
+    // Registered on the call's account (main queue): its events carry that account's ID and values.
+    NSString *accountId = instance.config.accountId;
+    id callbackId = call.arguments[@"callbackId"];
+    [instance onceVariablesChangedAndNoDownloadsPending:^{
+        [self postVariablesNotificationWithName:kCleverTapOnceVariablesChangedAndNoDownloadsPending values:[self variableValuesForAccount:accountId] accountId:accountId callbackId:callbackId];
     }];
 }
 
 - (void)onFileValueChanged:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    CTVar *var = self.allVariables[call.arguments[@"name"]];
+    CleverTap *instance = [self instanceForCall:call];
+    // Attached to the call's account's variable (main queue): its events carry that account's ID.
+    NSString *accountId = instance.config.accountId;
+    id callbackId = call.arguments[@"callbackId"];
+    CTVar *var = [self variableNamed:call.arguments[@"name"] forAccount:accountId];
     if (var) {
         [var onFileIsReady:^{
             NSDictionary *varFileResult = @{
                 var.name: var.value
             };
-            [self postNotificationWithName:kCleverTapOnFileValueChanged andBody:varFileResult];
+            [self postVariablesNotificationWithName:kCleverTapOnFileValueChanged values:varFileResult accountId:accountId callbackId:callbackId];
         }];
     }
 }
 
 - (void)setLocale:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    NSLocale *locale = [[NSLocale alloc] initWithLocaleIdentifier:call.arguments];
-    [[CleverTap sharedInstance] setLocale:locale];
+    CleverTap *instance = [self instanceForCall:call];
+    NSLocale *locale = [[NSLocale alloc] initWithLocaleIdentifier:[self scalarArgumentOfCall:call]];
+    [instance setLocale:locale];
     result(nil);
 }
 
 - (void)getVariants:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    NSArray<NSDictionary<NSString *, id> *> *variants = [[CleverTap sharedInstance] variants];
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
+    NSArray<NSDictionary<NSString *, id> *> *variants = [instance variants];
     result(variants);
 }
 
 #pragma mark - Custom Code Templates
 
 - (void)syncCustomTemplates:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    [[CleverTap sharedInstance] syncCustomTemplates];
+    [[self instanceForCall:call] syncCustomTemplates];
     result(nil);
 }
 
 - (void)syncCustomTemplatesInProd:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     BOOL isProduction = [call.arguments[@"isProduction"] boolValue];
-    [[CleverTap sharedInstance] syncCustomTemplates:isProduction];
+    [[self instanceForCall:call] syncCustomTemplates:isProduction];
     result(nil);
 }
 
 - (void)customTemplateSetDismissed:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    NSString *templateName = call.arguments;
+    // A bare name from CleverTapPlugin, {value, accountId} from a handle.
+    NSString *templateName = [self scalarArgumentOfCall:call];
     
-    CTTemplateContext *context = [[CleverTap sharedInstance] activeContextForTemplate:templateName];
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
+    CTTemplateContext *context = [instance activeContextForTemplate:templateName];
     if (context) {
         [context dismissed];
         result(nil);
@@ -1791,9 +2414,14 @@ static NSDateFormatter *dateFormatter;
 }
 
 - (void)customTemplateSetPresented:(FlutterMethodCall *)call withResult:(FlutterResult)result {
-    NSString *templateName = call.arguments;
+    // A bare name from CleverTapPlugin, {value, accountId} from a handle.
+    NSString *templateName = [self scalarArgumentOfCall:call];
     
-    CTTemplateContext *context = [[CleverTap sharedInstance] activeContextForTemplate:templateName];
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
+    CTTemplateContext *context = [instance activeContextForTemplate:templateName];
     if (context) {
         [context presented];
         result(nil);
@@ -1808,7 +2436,11 @@ static NSDateFormatter *dateFormatter;
     NSString *templateName = call.arguments[@"templateName"];
     NSString *argName = call.arguments[@"argName"];
     
-    CTTemplateContext *context = [[CleverTap sharedInstance] activeContextForTemplate:templateName];
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
+    CTTemplateContext *context = [instance activeContextForTemplate:templateName];
     if (context) {
         [context triggerActionNamed:argName];
         result(nil);
@@ -1823,7 +2455,11 @@ static NSDateFormatter *dateFormatter;
     NSString *templateName = call.arguments[@"templateName"];
     NSString *argName = call.arguments[@"argName"];
     
-    CTTemplateContext *context = [[CleverTap sharedInstance] activeContextForTemplate:templateName];
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
+    CTTemplateContext *context = [instance activeContextForTemplate:templateName];
     if (context) {
         NSString *str = [context stringNamed:argName];
         result(str ? str : [NSNull null]);
@@ -1838,7 +2474,11 @@ static NSDateFormatter *dateFormatter;
     NSString *templateName = call.arguments[@"templateName"];
     NSString *argName = call.arguments[@"argName"];
     
-    CTTemplateContext *context = [[CleverTap sharedInstance] activeContextForTemplate:templateName];
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
+    CTTemplateContext *context = [instance activeContextForTemplate:templateName];
     if (context) {
         NSNumber *number = [context numberNamed:argName];
         result(number ? number : [NSNull null]);
@@ -1853,7 +2493,11 @@ static NSDateFormatter *dateFormatter;
     NSString *templateName = call.arguments[@"templateName"];
     NSString *argName = call.arguments[@"argName"];
     
-    CTTemplateContext *context = [[CleverTap sharedInstance] activeContextForTemplate:templateName];
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
+    CTTemplateContext *context = [instance activeContextForTemplate:templateName];
     if (context) {
         NSNumber *boolean = [NSNumber numberWithBool:[context boolNamed:argName]];
         result(boolean);
@@ -1868,7 +2512,11 @@ static NSDateFormatter *dateFormatter;
     NSString *templateName = call.arguments[@"templateName"];
     NSString *argName = call.arguments[@"argName"];
     
-    CTTemplateContext *context = [[CleverTap sharedInstance] activeContextForTemplate:templateName];
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
+    CTTemplateContext *context = [instance activeContextForTemplate:templateName];
     if (context) {
         NSString *filePath = [context fileNamed:argName];
         result(filePath ? filePath : [NSNull null]);
@@ -1883,7 +2531,11 @@ static NSDateFormatter *dateFormatter;
     NSString *templateName = call.arguments[@"templateName"];
     NSString *argName = call.arguments[@"argName"];
     
-    CTTemplateContext *context = [[CleverTap sharedInstance] activeContextForTemplate:templateName];
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
+    CTTemplateContext *context = [instance activeContextForTemplate:templateName];
     if (context) {
         NSDictionary *dictionary = [context dictionaryNamed:argName];
         result(dictionary ? dictionary : [NSNull null]);
@@ -1897,14 +2549,18 @@ static NSDateFormatter *dateFormatter;
 - (void)customTemplateContextToString:(FlutterMethodCall *)call withResult:(FlutterResult)result {
     NSString *templateName = call.arguments[@"templateName"];
     
-    if (![CleverTap sharedInstance]) {
+    CleverTap *instance = [self instanceForCall:call];
+    if ([self answeredMissingAccountOfCall:call instance:instance result:result]) {
+        return;
+    }
+    if (!instance) {
         result([FlutterError errorWithCode:@"CustomTemplateError"
                                     message:@"CleverTap is not initialized"
                                     details:nil]);
         return;
     }
     
-    CTTemplateContext *context = [[CleverTap sharedInstance] activeContextForTemplate:templateName];
+    CTTemplateContext *context = [instance activeContextForTemplate:templateName];
     if (!context) {
         result([FlutterError errorWithCode:@"CustomTemplateError"
                                     message:[NSString stringWithFormat:@"Custom template: %@ is not currently being presented", templateName]

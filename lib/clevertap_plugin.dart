@@ -1,17 +1,33 @@
 import 'dart:async';
 import 'dart:ui';
 import 'dart:io';
+import 'dart:math' show Random;
 
 import 'package:clevertap_plugin/clevertap_plugin_web_wrapper.dart';
 import 'package:clevertap_plugin/src/types.dart';
+import 'package:clevertap_plugin/src/instance_config.dart';
 import 'package:clevertap_plugin/src/typedefs.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
 import 'src/clevertap_callback_dispatcher.dart';
+import 'src/platform.dart';
 
 export 'src/types.dart';
+export 'src/instance_config.dart';
+
+/// [value] with every nested map and list copied too, so changing the copy never changes
+/// [value]. Other values (strings, numbers, booleans, null) cannot be changed, so they are shared.
+Object? _deepCopy(Object? value) {
+  if (value is Map) {
+    return value.map((key, item) => MapEntry(key, _deepCopy(item)));
+  }
+  if (value is List) {
+    return value.map(_deepCopy).toList();
+  }
+  return value;
+}
 
 class CleverTapPlugin {
   late CleverTapInAppNotificationDismissedHandler
@@ -80,7 +96,7 @@ class CleverTapPlugin {
   static const libName = 'Flutter';
 
   static const libVersion =
-      40400; // If the current version is X.X.X then pass as X0X0X
+      40500; // If the current version is X.X.X then pass as X0X0X
 
   CleverTapPlugin._internal() {
     /// Set the CleverTap Flutter library name and the current version for version tracking
@@ -89,20 +105,209 @@ class CleverTapPlugin {
     _nativeToDartMethodChannel.setMethodCallHandler(_platformCallHandler);
   }
 
+  /// Creates an additional CleverTap account (Android and iOS) and returns its handle.
+  ///
+  /// ```dart
+  /// final insurance = await CleverTapPlugin.createInstance(
+  ///   CleverTapInstanceConfig(accountId: 'INS-ID', accountToken: 'INS-TOKEN', region: 'eu1'),
+  /// );
+  /// print(insurance.accountId); // INS-ID
+  /// ```
+  ///
+  /// Calling it again with the same `accountId` returns the same account. The new config is
+  /// ignored for the rest of the app run (a native warning says so).
+  ///
+  /// Throws a [PlatformException]:
+  /// - `EINVALID`: the config is not acceptable, for example an empty `accountId`. The message
+  ///   names the field.
+  /// - `ECREATE`: the native SDK could not create the account, for example because two custom
+  ///   templates share a name.
+  /// - `Unimplemented`: on Web, which does not support additional accounts.
+  static Future<CleverTapInstance> createInstance(
+      CleverTapInstanceConfig config) async {
+    // Make sure setLibrary has been sent first. Static methods do not build the plugin object,
+    // and its constructor is what sends setLibrary. Calls on one channel reach native in order,
+    // so native knows the wrapper version before it sets up the new account.
+    _clevertapPlugin;
+    final String? accountId = await _dartToNativeMethodChannel
+        .invokeMethod<String>('createInstance', config.toMap());
+    return getInstance(accountId ?? config.accountId);
+  }
+
+  // One handle per account ID, for the life of the app: the handle holds that account's handlers.
+  static final Map<String, CleverTapInstance> _instances = {};
+
+  /// The handle for [accountId]. Always the same object for the same ID. The first call in the app
+  /// starts the plugin (as [createInstance] and `CleverTapPlugin()` do): Dart starts receiving native
+  /// events and sends the wrapper version. Later calls never call native.
+  ///
+  /// Use it for an account that already exists: one created earlier with [createInstance], or the
+  /// default account (`AndroidManifest.xml` / `Info.plist`). A handle's handlers receive only that
+  /// account's events. Set them right after the account is created, before any other `await`,
+  /// to receive its first events.
+  ///
+  /// ```dart
+  /// final b = CleverTapPlugin.getInstance('B-ID');
+  /// b.setCleverTapProfileDidInitializeHandler(() => print('B is ready'));
+  /// ```
+  ///
+  /// Throws an [ArgumentError] when [accountId] is empty.
+  static CleverTapInstance getInstance(String accountId) {
+    if (accountId.isEmpty) {
+      throw ArgumentError.value(accountId, 'accountId', 'must not be empty');
+    }
+    // Start the plugin. Its constructor is where Dart starts listening for native events. Without
+    // this, an app that only uses handles (for example a launch-config account reached with
+    // getInstance, and no CleverTapPlugin() anywhere) received no events at all.
+    _clevertapPlugin;
+    return _instances.putIfAbsent(accountId, () => CleverTapInstance._(accountId));
+  }
+
+  /// The key that marks a native event envelope. Native sends every event as
+  /// `{__ctEnvelope: true, accountId: 'B', isDefault: false, payload: <value>}`
+  /// (CleverTapEventEmitter.ENVELOPE_MARKER on Android, CleverTapPlugin.m on iOS).
+  static const String _envelopeMarker = '__ctEnvelope';
+
+  // ---- Variables listeners: one native SDK callback per registration.
+  //
+  // Each onX(handler) call gets an ID and its own native callback, which sends the ID back with
+  // every event, and only that registration's handler runs. This is how the native SDKs behave:
+  // one run per registration per change. Before, every native callback ran every handler in the
+  // list. Example: onVariablesChanged(a) and onVariablesChanged(b), then one change: a, b
+  // (before: a, b, a, b). A once handler runs once (before: again whenever another once handler
+  // was added), and onValueChanged('x', h) sees only x's changes (before: every variable's).
+
+  /// The six variables events; native sends their payload as `{__ctCallbackId: id, values: map}`.
+  static const Set<String> _variablesEvents = {
+    'onVariablesChanged',
+    'onOneTimeVariablesChanged',
+    'onValueChanged',
+    'onVariablesChangedAndNoDownloadsPending',
+    'onceVariablesChangedAndNoDownloadsPending',
+    'onFileValueChanged',
+  };
+
+  /// The key of a variables event's registration ID inside its payload.
+  static const String _callbackIdKey = '__ctCallbackId';
+
+  // Differs on every Dart start. Native callbacks survive a hot restart; one left from before it
+  // sends an ID of the old session, which matches no registration and is ignored.
+  static final String _variablesSession =
+      DateTime.now().microsecondsSinceEpoch.toRadixString(36) +
+          Random().nextInt(1 << 30).toRadixString(36);
+  static int _variablesCount = 0;
+  static final Map<String, _VariablesRegistration> _variablesRegistrations = {};
+
+  /// Stores [handler] under a new ID and asks native for one SDK callback that sends that ID
+  /// back. Example: `onValueChanged {name: discount, callbackId: k3f9q2-7, accountId: B}`.
+  /// [staticList] is the public list a static registration also lives in; null for a handle.
+  static void _registerVariablesHandler(
+      String method, Function handler, Map<String, dynamic> arguments,
+      {required bool once, List<Function>? staticList, String? accountId}) {
+    // A variables callback arrives as a native event, which Dart receives only once the plugin is
+    // started. An app may register CleverTapPlugin.onVariablesChanged without ever calling
+    // CleverTapPlugin(), and its callbacks were then lost.
+    _clevertapPlugin;
+    final String callbackId = '$_variablesSession-${++_variablesCount}';
+    _variablesRegistrations[callbackId] =
+        _VariablesRegistration(handler, once, staticList, accountId);
+    _dartToNativeMethodChannel.invokeMethod(method, {
+      ...arguments,
+      'callbackId': callbackId,
+      if (accountId != null) 'accountId': accountId,
+    });
+  }
+
+  /// Runs the one handler a variables event belongs to, with the same map as before. An unknown
+  /// ID (another Flutter engine's, or from before a hot restart) is ignored, and so is an event
+  /// whose account is not the registration's (a static registration belongs to the default).
+  static void _deliverVariablesEvent(
+      String method, dynamic payload, String? accountId, bool isDefault) {
+    final Object? callbackId = payload is Map ? payload[_callbackIdKey] : null;
+    final _VariablesRegistration? registration =
+        _variablesRegistrations[callbackId];
+    if (registration == null) {
+      return;
+    }
+    final bool sameAccount = registration.accountId == null
+        ? isDefault
+        : registration.accountId == accountId;
+    if (!sameAccount) {
+      return;
+    }
+    if (registration.once) {
+      // Removed before it runs, so a handler that throws cannot run again.
+      _variablesRegistrations.remove(callbackId);
+    }
+    final List<Function>? staticList = registration.staticList;
+    if (staticList != null) {
+      if (!staticList.contains(registration.handler)) {
+        // The app took the handler out of the public list: it stops, as before.
+        _variablesRegistrations.remove(callbackId);
+        return;
+      }
+      if (registration.once) {
+        staticList.remove(registration.handler);
+      }
+    }
+    try {
+      final Map<dynamic, dynamic> values = (payload as Map)['values'];
+      registration.handler(values.cast<String, dynamic>());
+    } catch (error, stack) {
+      print("CleverTapPlugin: a $method handler threw: $error\n$stack");
+    }
+  }
+
   Future _platformCallHandler(MethodCall call) async {
     print("_platformCallHandler call ${call.method} ${call.arguments}");
+    // Open the envelope. The marker key keeps an app-defined payload that happens to contain
+    // "accountId" or "payload" keys from being mistaken for one. A value without the marker is
+    // treated as the default account's (a native path that does not wrap still works).
+    dynamic payload = call.arguments;
+    String? accountId;
+    bool isDefault = true;
+    if (payload is Map && payload[_envelopeMarker] == true) {
+      accountId = payload['accountId'];
+      isDefault = payload['isDefault'] == true;
+      payload = payload['payload'];
+    }
+    if (_variablesEvents.contains(call.method)) {
+      // Routed by registration ID, which already belongs to one account.
+      _deliverVariablesEvent(call.method, payload, accountId, isDefault);
+      return;
+    }
+    // The account's handle, if the app made one and set a handler for this event. For the
+    // default account this is in addition to the static handlers below, so the handle gets its
+    // own copy: a change it makes never reaches them. Example: the handle removes 'route' from a
+    // push-click map; the static handler still reads 'route'. One handler only: no copy.
+    final CleverTapInstance? handle =
+        accountId == null ? null : _instances[accountId];
+    final bool deliveredToHandle = handle != null &&
+        handle._deliver(
+            call.method,
+            isDefault && handle._handlers.containsKey(call.method)
+                ? _deepCopy(payload)
+                : payload);
+    if (!isDefault) {
+      // The static handlers belong to the default account only.
+      if (!deliveredToHandle) {
+        print("CleverTapPlugin: ${call.method} for account $accountId has no handler "
+            "(set one on CleverTapPlugin.getInstance('$accountId'))");
+      }
+      return;
+    }
     switch (call.method) {
       case "inAppNotificationDismissed":
-        Map<dynamic, dynamic> args = call.arguments;
+        Map<dynamic, dynamic> args = payload;
         cleverTapInAppNotificationDismissedHandler(
             args.cast<String, dynamic>());
         break;
       case "inAppNotificationShow":
-        Map<dynamic, dynamic> args = call.arguments;
+        Map<dynamic, dynamic> args = payload;
         cleverTapInAppNotificationShowHandler(args.cast<String, dynamic>());
         break;
       case "onInAppButtonClick":
-        Map<dynamic, dynamic> args = call.arguments;
+        Map<dynamic, dynamic> args = payload;
         cleverTapInAppNotificationButtonClickedHandler(
             args.cast<String, dynamic>());
         break;
@@ -110,7 +315,10 @@ class CleverTapPlugin {
         cleverTapProfileDidInitializeHandler();
         break;
       case "profileDataUpdated":
-        cleverTapProfileSyncHandler(call.arguments);
+        // Cast like every other map event. Without it Dart threw a TypeError (the channel gives a
+        // Map<Object?, Object?>) and the handler never ran, from 1.0.0 until this fix.
+        Map<dynamic, dynamic>? args = payload;
+        cleverTapProfileSyncHandler(args?.cast<String, dynamic>());
         break;
       case "inboxDidInitialize":
         cleverTapInboxDidInitializeHandler();
@@ -119,12 +327,12 @@ class CleverTapPlugin {
         cleverTapInboxMessagesDidUpdateHandler();
         break;
       case "onInboxButtonClick":
-        Map<dynamic, dynamic> args = call.arguments;
+        Map<dynamic, dynamic> args = payload;
         cleverTapInboxNotificationButtonClickedHandler(
             args.cast<String, dynamic>());
         break;
       case "onInboxMessageClick":
-        Map<dynamic, dynamic> args = call.arguments;
+        Map<dynamic, dynamic> args = payload;
         Map<dynamic, dynamic> message = args["data"];
         int contentPageIndex = args["contentPageIndex"];
         int buttonIndex = args["buttonIndex"];
@@ -132,7 +340,7 @@ class CleverTapPlugin {
             message.cast<String, dynamic>(), contentPageIndex, buttonIndex);
         break;
       case "onDisplayUnitsLoaded":
-        List<dynamic>? args = call.arguments;
+        List<dynamic>? args = payload;
         cleverTapDisplayUnitsLoadedHandler(args);
         break;
       case "featureFlagsUpdated":
@@ -148,74 +356,29 @@ class CleverTapPlugin {
         cleverTapProductConfigActivatedHandler();
         break;
       case "pushAmpPayloadReceived":
-        Map<dynamic, dynamic> args = call.arguments;
+        Map<dynamic, dynamic> args = payload;
         cleverTapPushAmpPayloadReceivedHandler(args.cast<String, dynamic>());
         break;
 
       case "pushClickedPayloadReceived":
-        Map<dynamic, dynamic> args = call.arguments;
+        Map<dynamic, dynamic> args = payload;
         cleverTapPushClickedPayloadReceivedHandler(
             args.cast<String, dynamic>());
         break;
       case "pushPermissionResponseReceived":
-        bool accepted = call.arguments;
+        bool accepted = payload;
         cleverTapPushPermissionResponseReceivedHandler(accepted);
         break;
-      case "onVariablesChanged":
-        Map<dynamic, dynamic> args = call.arguments;
-        cleverTapOnVariablesChangedHandlers
-            .forEach((cleverTapOnVariablesChangedHandler) {
-          cleverTapOnVariablesChangedHandler(args.cast<String, dynamic>());
-        });
-        break;
-      case "onOneTimeVariablesChanged":
-        Map<dynamic, dynamic> args = call.arguments;
-        cleverTapOnOneTimeVariablesChangedHandlers
-            .forEach((cleverTapOnOneTimeVariablesChangedHandler) {
-          cleverTapOnOneTimeVariablesChangedHandler(
-              args.cast<String, dynamic>());
-        });
-        break;
-      case "onValueChanged":
-        Map<dynamic, dynamic> args = call.arguments;
-        cleverTapOnValueChangedHandlers
-            .forEach((cleverTapOnValueChangedHandler) {
-          cleverTapOnValueChangedHandler(args.cast<String, dynamic>());
-        });
-        break;
-      case "onVariablesChangedAndNoDownloadsPending":
-        Map<dynamic, dynamic> args = call.arguments;
-        cleverTapOnVariablesChangedAndNoDownloadsPendingHandlers
-            .forEach((cleverTapOnVariablesChangedAndNoDownloadsPendingHandler) {
-          cleverTapOnVariablesChangedAndNoDownloadsPendingHandler(
-              args.cast<String, dynamic>());
-        });
-        break;
-      case "onceVariablesChangedAndNoDownloadsPending":
-        Map<dynamic, dynamic> args = call.arguments;
-        cleverTapOnceVariablesChangedAndNoDownloadsPendingHandlers.forEach(
-            (cleverTapOnceVariablesChangedAndNoDownloadsPendingHandler) {
-          cleverTapOnceVariablesChangedAndNoDownloadsPendingHandler(
-              args.cast<String, dynamic>());
-        });
-        break;
-      case "onFileValueChanged":
-        Map<dynamic, dynamic> args = call.arguments;
-        cleverTapOnFileValueChangedHandlers
-            .forEach((cleverTapOnFileValueChangedHandler) {
-          cleverTapOnFileValueChangedHandler(args.cast<String, dynamic>());
-        });
-        break;
       case "customTemplatePresent":
-        String templateName = call.arguments;
+        String templateName = payload;
         cleverTapCustomTemplatePresentHandler(templateName);
         break;
       case "customFunctionPresent":
-        String templateName = call.arguments;
+        String templateName = payload;
         cleverTapCustomFunctionPresentHandler(templateName);
         break;
       case "customTemplateClose":
-        String templateName = call.arguments;
+        String templateName = payload;
         cleverTapCustomTemplateCloseHandler(templateName);
         break;
       default:
@@ -230,7 +393,8 @@ class CleverTapPlugin {
    * failed
    */
   void invokeStartEmission(String name) {
-    if (!kIsWeb && Platform.isAndroid) {
+    // The real OS (isAndroidHost), as in 4.4.0: only Android has the native event buffer.
+    if (isAndroidHost()) {
       _dartToNativeMethodChannel.invokeMethod('startEmission', name);
     }
   }
@@ -242,13 +406,13 @@ class CleverTapPlugin {
   }
 
   void setCleverTapCustomFunctionPresentHandler(
-      CleverTapCustomTemplateCloseHandler handler) {
+      CleverTapCustomFunctionPresentHandler handler) {
     invokeStartEmission('CleverTapCustomFunctionPresent');
     cleverTapCustomFunctionPresentHandler = handler;
   }
 
   void setCleverTapCustomTemplateCloseHandler(
-      CleverTapCustomFunctionPresentHandler handler) {
+      CleverTapCustomTemplateCloseHandler handler) {
     invokeStartEmission('CleverTapCustomTemplateClose');
     cleverTapCustomTemplateCloseHandler = handler;
   }
@@ -260,7 +424,8 @@ class CleverTapPlugin {
     cleverTapInAppNotificationDismissedHandler = handler;
   }
 
-  /// Only for Android - Define a method to handle inApp notification shown
+  /// Define a method to handle inApp notification shown. The handler receives the in-app's JSON.
+  /// Android and iOS.
   void setCleverTapInAppNotificationShowHandler(
       CleverTapInAppNotificationShowHandler handler) {
     invokeStartEmission('CleverTapInAppNotificationShowed');
@@ -350,7 +515,11 @@ class CleverTapPlugin {
     cleverTapProductConfigActivatedHandler = handler;
   }
 
-  /// Define a method to handle Push Amplification payload
+  /// Define a method to handle Push Amplification payload (Android only).
+  ///
+  /// Setting it means the SDK no longer draws Push Amplification notifications
+  /// for the default account: [handler] must draw them, for example with
+  /// [createNotification]. Without a handler, the SDK draws them.
   void setCleverTapPushAmpPayloadReceivedHandler(
       CleverTapPushAmpPayloadReceivedHandler handler) {
     invokeStartEmission('CleverTapPushAmpPayloadReceived');
@@ -1122,12 +1291,13 @@ class CleverTapPlugin {
         .invokeMethod('getUnreadInboxMessages', {});
   }
 
-  /// Returns a json string representation of CTInboxMessage for given messageId
+  /// Returns a json string representation of CTInboxMessage for given messageId.
+  /// An empty map when there is no message with that ID.
   static Future<Map<String, dynamic>> getInboxMessageForId(
       String messageId) async {
-    Map<dynamic, dynamic> response = await _dartToNativeMethodChannel
+    Map<dynamic, dynamic>? response = await _dartToNativeMethodChannel
         .invokeMethod('getInboxMessageForId', {'messageId': messageId});
-    return response.cast<String, dynamic>();
+    return (response ?? {}).cast<String, dynamic>();
   }
 
   /// Deletes the CTInboxMessage object for given messageId
@@ -1184,11 +1354,11 @@ class CleverTapPlugin {
     return null;
   }
 
-  ///Returns Display unit info as a Map
+  ///Returns Display unit info as a Map. An empty map when there is no unit with that ID.
   static Future<Map<String, dynamic>> getDisplayUnitForId(String unitId) async {
-    Map<dynamic, dynamic> response = await _dartToNativeMethodChannel
+    Map<dynamic, dynamic>? response = await _dartToNativeMethodChannel
         .invokeMethod('getDisplayUnitForId', {'unitId': unitId});
-    return response.cast<String, dynamic>();
+    return (response ?? {}).cast<String, dynamic>();
   }
 
   ///Raise Notification Viewed for Display Unit id passed
@@ -1435,7 +1605,8 @@ class CleverTapPlugin {
   static void onVariablesChanged(CleverTapOnVariablesChangedHandler handler) {
     if (!kIsWeb) {
       cleverTapOnVariablesChangedHandlers.add(handler);
-      _dartToNativeMethodChannel.invokeMethod('onVariablesChanged', {});
+      _registerVariablesHandler('onVariablesChanged', handler, {},
+          once: false, staticList: cleverTapOnVariablesChangedHandlers);
     } else {
       CleverTapPluginWeb.onVariablesChanged(handler);
     }
@@ -1444,14 +1615,16 @@ class CleverTapPlugin {
   static void onOneTimeVariablesChanged(
       CleverTapOnOneTimeVariablesChangedHandler handler) {
     cleverTapOnOneTimeVariablesChangedHandlers.add(handler);
-    _dartToNativeMethodChannel.invokeMethod('onOneTimeVariablesChanged', {});
+    _registerVariablesHandler('onOneTimeVariablesChanged', handler, {},
+        once: true, staticList: cleverTapOnOneTimeVariablesChangedHandlers);
   }
 
   static void onValueChanged(
       String name, CleverTapOnValueChangedHandler handler) {
     if (!kIsWeb) {
       cleverTapOnValueChangedHandlers.add(handler);
-      _dartToNativeMethodChannel.invokeMethod('onValueChanged', {'name': name});
+      _registerVariablesHandler('onValueChanged', handler, {'name': name},
+          once: false, staticList: cleverTapOnValueChangedHandlers);
     } else {
       CleverTapPluginWeb.onValueChanged(name, handler);
     }
@@ -1460,22 +1633,22 @@ class CleverTapPlugin {
   static void onVariablesChangedAndNoDownloadsPending(
       CleverTapOnVariablesChangedAndNoDownloadsPendingHandler handler) {
     cleverTapOnVariablesChangedAndNoDownloadsPendingHandlers.add(handler);
-    _dartToNativeMethodChannel
-        .invokeMethod('onVariablesChangedAndNoDownloadsPending', {});
+    _registerVariablesHandler('onVariablesChangedAndNoDownloadsPending', handler, {},
+        once: false, staticList: cleverTapOnVariablesChangedAndNoDownloadsPendingHandlers);
   }
 
   static void onceVariablesChangedAndNoDownloadsPending(
       CleverTapOnceVariablesChangedAndNoDownloadsPendingHandler handler) {
     cleverTapOnceVariablesChangedAndNoDownloadsPendingHandlers.add(handler);
-    _dartToNativeMethodChannel
-        .invokeMethod('onceVariablesChangedAndNoDownloadsPending', {});
+    _registerVariablesHandler('onceVariablesChangedAndNoDownloadsPending', handler, {},
+        once: true, staticList: cleverTapOnceVariablesChangedAndNoDownloadsPendingHandlers);
   }
 
   static void onFileValueChanged(
       String name, CleverTapOnFileValueChangedHandler handler) {
     cleverTapOnFileValueChangedHandlers.add(handler);
-    _dartToNativeMethodChannel
-        .invokeMethod('onFileValueChanged', {'name': name});
+    _registerVariablesHandler('onFileValueChanged', handler, {'name': name},
+        once: false, staticList: cleverTapOnFileValueChangedHandlers);
   }
 
   ///Sets the user locale.
@@ -1604,4 +1777,1028 @@ class CleverTapPlugin {
     return await _dartToNativeMethodChannel
         .invokeMethod('getAllQualifiedCampaignDetails', {});
   }
+}
+
+/// A handle to one CleverTap account, from [CleverTapPlugin.createInstance] or
+/// [CleverTapPlugin.getInstance].
+///
+/// Its handlers receive only this account's events. The setters work like the static ones on
+/// [CleverTapPlugin]: one handler per event, and setting it again replaces it.
+///
+/// Two handles are equal when they point to the same account.
+class CleverTapInstance {
+  /// The CleverTap account ID this handle sends to.
+  final String accountId;
+
+  CleverTapInstance._(this.accountId);
+
+  // This account's handlers, by the event's method name (as native sends it).
+  final Map<String, Function> _handlers = {};
+
+  /// Stores [handler] for [method] and, on Android, releases this account's events the native
+  /// buffer held for it at start-up (`startEmission` with this account). Web has no per-account
+  /// events, so there it only warns.
+  void _setHandler(String method, String nativeEvent, Function handler) {
+    if (kIsWeb) {
+      print("CleverTapPlugin: account handlers are not supported on Web; "
+          "the $method handler for $accountId is ignored");
+      return;
+    }
+    _handlers[method] = handler;
+    if (isAndroidHost()) {
+      CleverTapPlugin._dartToNativeMethodChannel.invokeMethod(
+          'startEmission', {'event': nativeEvent, 'accountId': accountId});
+    }
+  }
+
+  /// Calls this account's handler for [method] with [payload], converted exactly as for the
+  /// static handlers. Returns false when there is no handler for it. A handler that throws is
+  /// reported and does not stop the static handlers for the same event.
+  bool _deliver(String method, dynamic payload) {
+    final Function? handler = _handlers[method];
+    if (handler == null) {
+      return false;
+    }
+    try {
+      switch (method) {
+        case "profileDidInitialize":
+        case "inboxDidInitialize":
+        case "inboxMessagesDidUpdate":
+        case "featureFlagsUpdated":
+        case "productConfigInitialized":
+        case "productConfigFetched":
+        case "productConfigActivated":
+          handler();
+          break;
+        case "profileDataUpdated":
+          handler((payload as Map?)?.cast<String, dynamic>());
+          break;
+        case "inAppNotificationDismissed":
+        case "inAppNotificationShow":
+        case "onInAppButtonClick":
+        case "onInboxButtonClick":
+        case "pushAmpPayloadReceived":
+        case "pushClickedPayloadReceived":
+          handler((payload as Map).cast<String, dynamic>());
+          break;
+        case "onInboxMessageClick":
+          final Map args = payload as Map;
+          handler((args["data"] as Map).cast<String, dynamic>(),
+              args["contentPageIndex"] as int, args["buttonIndex"] as int);
+          break;
+        case "onDisplayUnitsLoaded":
+          handler(payload as List?);
+          break;
+        case "pushPermissionResponseReceived":
+          handler(payload as bool);
+          break;
+        case "customTemplatePresent":
+        case "customFunctionPresent":
+        case "customTemplateClose":
+          handler(payload as String);
+          break;
+        default:
+          return false;
+      }
+    } catch (error, stack) {
+      print("CleverTapPlugin: the $method handler for account $accountId threw: $error\n$stack");
+    }
+    return true;
+  }
+
+  /// Registers [handler] for this account's variables event [method]: one native callback of
+  /// its own, on this account (see CleverTapPlugin._registerVariablesHandler). Web has no
+  /// per-account variables, so there it only warns.
+  void _addVariablesHandler(String method, Function handler,
+      Map<String, dynamic> arguments, {required bool once}) {
+    if (kIsWeb) {
+      print("CleverTapPlugin: account handles are not supported on Web; $method for $accountId is ignored");
+      return;
+    }
+    CleverTapPlugin._registerVariablesHandler(method, handler, arguments,
+        once: once, accountId: accountId);
+  }
+
+  // ---- Methods. Each one sends today's arguments plus this handle's accountId; native routes the
+  // call to this account only (never the default). A method is added here only once its native
+  // side reads the accountId; otherwise it would silently reach the default account.
+
+  /// Sends [method] to native for this account. On Web, which has no per-account support, it only
+  /// warns. For an account that does not exist, native logs one warning; void methods then complete
+  /// normally and methods that return a value throw a [PlatformException].
+  Future<T?> _invoke<T>(String method, Map<String, dynamic> arguments) async {
+    if (kIsWeb) {
+      print("CleverTapPlugin: account handles are not supported on Web; $method for $accountId is ignored");
+      return null;
+    }
+    return CleverTapPlugin._dartToNativeMethodChannel
+        .invokeMethod<T>(method, {...arguments, 'accountId': accountId});
+  }
+
+  /// [_invoke] for a method whose static version returns a non-nullable map: the same cast as the
+  /// static method. A null answer becomes an empty map, as for the static getInboxMessageForId and
+  /// getDisplayUnitForId (an unknown ID); the other map methods never answer null. On Web, after
+  /// [_invoke]'s warning, an empty map, since there is no value.
+  Future<Map<String, dynamic>> _invokeMap(String method, Map<String, dynamic> arguments) async {
+    if (kIsWeb) {
+      await _invoke(method, arguments);
+      return {};
+    }
+    Map<dynamic, dynamic>? response = await _invoke(method, arguments);
+    return (response ?? {}).cast<String, dynamic>();
+  }
+
+  /// Records [eventName] with [properties] for this account.
+  Future<void> recordEvent(String eventName, Map<String, dynamic> properties) =>
+      _invoke<void>('recordEvent', {'eventName': eventName, 'eventData': properties});
+
+  /// Logs a user in to this account (creates or switches its profile).
+  Future<void> onUserLogin(Map<String, dynamic> profile) =>
+      _invoke<void>('onUserLogin', {'profile': profile});
+
+  /// Pushes a profile update to this account.
+  Future<void> profileSet(Map<String, dynamic> profile) =>
+      _invoke<void>('profileSet', {'profile': profile});
+
+  /// This account's CleverTap ID.
+  Future<String?> getCleverTapID() => _invoke<String>('getCleverTapID', {});
+
+  /// Set the FCM Token for Push Notifications
+  Future<void> setPushToken(String value) async {
+    return await _invoke('setPushToken', {'token': value});
+  }
+
+  /// Set the Token for Push Notifications for push providers other than FCM
+  Future<void> pushRegistrationToken(
+      String value, Map<String, String> pushType) async {
+    return await _invoke(
+        'pushRegistrationToken', {'token': value, 'pushType': pushType});
+  }
+
+  /// Use this method to manage the user's consent for event and profile tracking.
+  /// You must call this method separately for each active user profile.
+  ///
+  /// This method supports the following consent management scenarios:
+  ///
+  /// 1. **Complete Opt-Out (value = true, allowSystemEvents = false):**
+  ///    No events will be saved remotely or locally for the current user.
+  /// 2. **Full Opt-In (value = false):**
+  ///    All events (custom and system) will be tracked and saved. This is the default behavior.
+  /// 3. **Partial Opt-In (value = true, allowSystemEvents = true):**
+  ///    Only system-level CleverTap events will be tracked. Custom events will be filtered out.
+  ///
+  /// [value] Set to `true` to opt the user out of custom event tracking.
+  /// Set to `false` to opt the user into custom event tracking.
+  ///
+  /// [allowSystemEvents] Set to `true` to allow system-level CleverTap events.
+  /// Set to `false` to disallow system-level events. This value is only respected when `value` is `true`.
+  Future<void> setOptOut(bool value, [bool? allowSystemEvents]) async {
+    final Map<String, dynamic> args = {'value': value};
+
+    if (allowSystemEvents != null) {
+      args['allowSystemEvents'] = allowSystemEvents;
+    }
+
+    return await _invoke('setOptOut', args);
+  }
+
+  /// Sets the CleverTap SDK to offline
+  Future<void> setOffline(bool value) async {
+    return await _invoke('setOffline', {'value': value});
+  }
+
+  /// Enables Device & Networking Information Reporting to CleverTap
+  Future<void> enableDeviceNetworkInfoReporting(bool value) async {
+    return await _invoke('enableDeviceNetworkInfoReporting', {'value': value});
+  }
+
+  ///Record Notification Clicked event
+  Future<void> pushNotificationClickedEvent(
+      Map<String, dynamic> extras) async {
+    return await _invoke(
+        'pushNotificationClickedEvent', {'notificationData': extras});
+  }
+
+  ///Record Notification Viewed event
+  Future<void> pushNotificationViewedEvent(
+      Map<String, dynamic> extras) async {
+    return await _invoke(
+        'pushNotificationViewedEvent', {'notificationData': extras});
+  }
+
+  /// Record a Screen View event
+  Future<void> recordScreenView(String screenName) async {
+    return await _invoke('recordScreenView', {'screenName': screenName});
+  }
+
+  ///**
+  /// * Push Charged event, which describes a purchase made.
+  /// *
+  /// * @param chargeDetails A Map, with keys as strings, and values as String,
+  /// *                      Integer, Long,  Boolean}, Float, Double,
+  /// *                      java.util.Date, or Character
+  /// * @param items         A List which contains up to 15 Map objects,
+  /// *                      where each Map object describes a particular item purchased
+  ///
+  Future<void> recordChargedEvent(Map<String, dynamic> chargeDetails,
+      List<Map<String, dynamic>> items) async {
+    return await _invoke(
+        'recordChargedEvent', {'chargeDetails': chargeDetails, 'items': items});
+  }
+
+  /// Returns the timestamp of the first time the given event was raised
+  @Deprecated(
+      "This method is deprecated since 3.1.0. User getUserEventLog() instead")
+  Future<dynamic> eventGetFirstTime(String eventName) async {
+    return await _invoke('eventGetFirstTime', {'eventName': eventName});
+  }
+
+  /// Returns the timestamp of the last time the given event was raised
+  @Deprecated(
+      "This method is deprecated since 3.1.0. User getUserEventLog() instead")
+  Future<dynamic> eventGetLastTime(String eventName) async {
+    return await _invoke('eventGetLastTime', {'eventName': eventName});
+  }
+
+  /// Returns the total count of the specified event
+  @Deprecated(
+      "This method is deprecated since 3.1.0. User getUserEventLogCount() instead")
+  Future<int?> eventGetOccurrences(String eventName) async {
+    return await _invoke('eventGetOccurrences', {'eventName': eventName});
+  }
+
+  /// Returns a Map object for the particular event passed. EventDetail consists of event name, count, first time
+  //  and last time timestamp of the event.
+  @Deprecated(
+      "This method is deprecated since 3.1.0. User getUserEventLog() instead")
+  Future<Map<String, dynamic>> eventGetDetail(String eventName) async {
+    return _invokeMap('eventGetDetail', {'eventName': eventName});
+  }
+
+  /// Returns a Map of event names and corresponding event details of all the events raised
+  @Deprecated(
+      "This method is deprecated since 3.1.0. User getUserEventLogHistory() instead")
+  Future<Map<String, dynamic>> getEventHistory(String eventName) async {
+    return _invokeMap('getEventHistory', {'eventName': eventName});
+  }
+
+  /// Returns a Map object for the particular event passed. UserEventLog consists of eventName, normalizedEventName, count, deviceID, firstTime and lastTime timestamp of the event.
+  Future<Map<String, dynamic>> getUserEventLog(String eventName) async {
+    return _invokeMap('getUserEventLog', {'eventName': eventName});
+  }
+
+  /// Returns the total count of the specified event
+  Future<int?> getUserEventLogCount(String eventName) async {
+    return await _invoke('getUserEventLogCount', {'eventName': eventName});
+  }
+
+  /// Returns a Map of event names and corresponding UserEventLog of all the events raised
+  Future<Map<String, dynamic>> getUserEventLogHistory() async {
+    return _invokeMap('getUserEventLogHistory', {});
+  }
+
+  /// Returns the total number of times user has launched the app
+  Future<int?> getUserAppLaunchCount() async {
+    return await _invoke('getUserAppLaunchCount', {});
+  }
+
+  /// Returns the timestamp of user's last app visit
+  Future<num?> getUserLastVisitTs() async {
+    return await _invoke('getUserLastVisitTs', {});
+  }
+
+  /// Set the user profile location in CleverTap
+  Future<void> setLocation(double latitude, double longitude) async {
+    return await _invoke(
+        'setLocation', {'latitude': latitude, 'longitude': longitude});
+  }
+
+  /// Returns the user profile property value for the specified key.
+  Future<Object?> profileGetProperty(String propertyName) async {
+    return await _invoke('profileGetProperty', {'propertyName': propertyName});
+  }
+
+  /// Returns a unique CleverTap identifier suitable for use with install attribution providers.
+  @Deprecated(
+      "This method is deprecated since v1.3.0. Use getCleverTapID() instead")
+  Future<String?> profileGetCleverTapAttributionIdentifier() async {
+    return await _invoke('profileGetCleverTapAttributionIdentifier', {});
+  }
+
+  /// Returns a unique identifier by which CleverTap identifies this user.
+  @Deprecated(
+      "This method is deprecated since v1.3.0. Use getCleverTapID() instead")
+  Future<String?> profileGetCleverTapID() async {
+    return await _invoke('profileGetCleverTapID', {});
+  }
+
+  ///Remove the user profile property value specified by key from the user profile
+  Future<void> profileRemoveValueForKey(String key) async {
+    return await _invoke('profileRemoveValueForKey', {'key': key});
+  }
+
+  /// Set a collection of unique values as a multi-value user profile property, any existing value will be overwritten.
+  /// Max 100 values, on reaching 100 cap, oldest value(s) will be removed.
+  /// Values must be Strings and are limited to 512 characters.
+  Future<void> profileSetMultiValues(String key, List values) async {
+    return await _invoke('profileSetMultiValues', {'key': key, 'values': values});
+  }
+
+  /// Add a unique value to a multi-value user profile property
+  /// If the property does not exist it will be created
+  /// <p/>
+  /// Max 100 values, on reaching 100 cap, oldest value(s) will be removed.
+  /// Values must be Strings and are limited to 512 characters.
+  /// <p/>
+  /// If the key currently contains a scalar value, the key will be promoted to a multi-value property
+  /// with the current value cast to a string and the new value(s) added
+  Future<void> profileAddMultiValue(String key, String value) async {
+    return await _invoke('profileAddMultiValue', {'key': key, 'value': value});
+  }
+
+  ///Increment given num value. The value should be in positive range
+  Future<void> profileIncrementValue(String key, num value) async {
+    return await _invoke('profileIncrementValue', {'key': key, 'value': value});
+  }
+
+  ///Decrement given num value. The value should be in positive range
+  Future<void> profileDecrementValue(String key, num value) async {
+    return await _invoke('profileDecrementValue', {'key': key, 'value': value});
+  }
+
+  /// Add a collection of unique values to a multi-value user profile property
+  /// If the property does not exist it will be created
+  /// <p/>
+  /// Max 100 values, on reaching 100 cap, oldest value(s) will be removed.
+  /// Values must be Strings and are limited to 512 characters.
+  /// <p/>
+  /// If the key currently contains a scalar value, the key will be promoted to a multi-value property
+  /// with the current value cast to a string and the new value(s) added
+  Future<void> profileAddMultiValues(String key, List values) async {
+    return await _invoke('profileAddMultiValues', {'key': key, 'values': values});
+  }
+
+  /// Remove a unique value from a multi-value user profile property
+  /// <p/>
+  /// If the key currently contains a scalar value, prior to performing the remove operation
+  /// the key will be promoted to a multi-value property with the current value cast to a string.
+  /// If the multi-value property is empty after the remove operation, the key will be removed.
+  Future<void> profileRemoveMultiValue(String key, String value) async {
+    return await _invoke('profileRemoveMultiValue', {'key': key, 'value': value});
+  }
+
+  /// Remove a collection of unique values from a multi-value user profile property
+  /// <p/>
+  /// If the key currently contains a scalar value, prior to performing the remove operation
+  /// the key will be promoted to a multi-value property with the current value cast to a string.
+  /// If the multi-value property is empty after the remove operation, the key will be removed.
+  Future<void> profileRemoveMultiValues(String key, List values) async {
+    return await _invoke(
+        'profileRemoveMultiValues', {'key': key, 'values': values});
+  }
+
+  /// This method is used to push install referrer via UTM source, medium & campaign parameters
+  Future<void> pushInstallReferrer(
+      String source, String medium, String campaign) async {
+    return await _invoke('pushInstallReferrer',
+        {'source': source, 'medium': medium, 'campaign': campaign});
+  }
+
+  /// Returns the time elapsed by the user on the app
+  Future<dynamic> sessionGetTimeElapsed() async {
+    return await _invoke('sessionGetTimeElapsed', {});
+  }
+
+  /// Returns the total number of times the app has been launched
+  @Deprecated(
+      "This method is deprecated since 3.1.0. User getUserAppLaunchCount() instead")
+  Future<int?> sessionGetTotalVisits() async {
+    return await _invoke('sessionGetTotalVisits', {});
+  }
+
+  /// Returns the number of screens which have been displayed by the app
+  Future<int?> sessionGetScreenCount() async {
+    return await _invoke('sessionGetScreenCount', {});
+  }
+
+  /// Returns the timestamp of the previous visit
+  @Deprecated(
+      "This method is deprecated since 3.1.0. User getUserLastVisitTs() instead")
+  Future<dynamic> sessionGetPreviousVisitTime() async {
+    return await _invoke('sessionGetPreviousVisitTime', {});
+  }
+
+  /// Returns a Map of UTMDetail object which consists of UTM parameters like source, medium & campaign
+  Future<Map<String, dynamic>> sessionGetUTMDetails() async {
+    return _invokeMap('sessionGetUTMDetails', {});
+  }
+
+  /// Suspends the display of InApp Notifications and discards any new InApp Notifications to be shown
+  /// after this method is called.
+  /// The InApp Notifications will be displayed only once resumeInAppNotifications() is called.
+  ///
+  /// Parameters:
+  /// - [dismissInAppIfVisible]: If true, also dismisses any currently visible InApp notification.
+  ///   If false or not provided, only queued/future InApps are discarded.
+  Future<void> discardInAppNotifications(
+      {bool? dismissInAppIfVisible}) async {
+    final Map<String, dynamic> args = {};
+    if (dismissInAppIfVisible != null) {
+      args['dismissInAppIfVisible'] = dismissInAppIfVisible;
+    }
+    return await _invoke('discardInAppNotifications', args);
+  }
+
+  /// Dismisses the currently visible Picture-in-Picture (PIP) InApp Notification, if any.
+  ///
+  /// This is a no-op when no PIP InApp is visible. Other InApp Notification types are
+  /// never affected.
+  ///
+  /// Note: dismissing releases the InApp display slot, so the next queued InApp (if any)
+  /// may show immediately. To keep a screen free of all InApps, pair this with
+  /// suspendInAppNotifications() on screen entry and resumeInAppNotifications() on exit.
+  Future<void> dismissPipInApp() async {
+    return await _invoke('dismissPipInApp', {});
+  }
+
+  /// Resumes event tracking, overriding any active mute period.
+  Future<void> unmute() async {
+    return await _invoke('unmute', {});
+  }
+
+  /// Triggers an on-demand refresh of the App Inbox messages.
+  ///
+  /// This is a fire-and-forget call. To be notified of the refresh result,
+  /// use [fetchInboxWithCallback] instead.
+  ///
+  /// Note: the native SDK throttles this to one refresh every 5 minutes.
+  /// Calls made within that window are skipped.
+  Future<void> fetchInbox() async {
+    return await _invoke('fetchInbox', {});
+  }
+
+  /// Triggers an on-demand refresh of the App Inbox messages and returns the result.
+  ///
+  /// Note: the native SDK throttles this to one refresh every 5 minutes.
+  /// A call made within that window is skipped and completes with `false`.
+  ///
+  /// Returns: `true` if the inbox was refreshed successfully, `false` otherwise.
+  Future<bool?> fetchInboxWithCallback() async {
+    return await _invoke('fetchInboxWithCallback', {});
+  }
+
+  /// Returns the count of all inbox messages for the user
+  Future<int?> getInboxMessageCount() async {
+    return await _invoke('getInboxMessageCount', {});
+  }
+
+  /// Returns the count of total number of unread inbox messages for the user
+  Future<int?> getInboxMessageUnreadCount() async {
+    return await _invoke('getInboxMessageUnreadCount', {});
+  }
+
+  /// Returns a list of json string representation of all CTInboxMessage
+  Future<List?> getAllInboxMessages() async {
+    return await _invoke('getAllInboxMessages', {});
+  }
+
+  /// Returns a list of json string representation of unread CTInboxMessage
+  Future<List?> getUnreadInboxMessages() async {
+    return await _invoke('getUnreadInboxMessages', {});
+  }
+
+  /// Returns a json string representation of CTInboxMessage for given messageId.
+  /// An empty map when there is no message with that ID.
+  Future<Map<String, dynamic>> getInboxMessageForId(
+      String messageId) async {
+    return _invokeMap('getInboxMessageForId', {'messageId': messageId});
+  }
+
+  /// Deletes the CTInboxMessage object for given messageId
+  Future<void> deleteInboxMessageForId(String messageId) async {
+    return await _invoke('deleteInboxMessageForId', {'messageId': messageId});
+  }
+
+  /// Deletes the CTInboxMessage objects for given messageIds
+  Future<void> deleteInboxMessagesForIds(List<String> messageIds) async {
+    return await _invoke('deleteInboxMessagesForIds', {'messageIds': messageIds});
+  }
+
+  /// Marks the given messageId of CTInboxMessage object as read
+  Future<void> markReadInboxMessageForId(String messageId) async {
+    return await _invoke('markReadInboxMessageForId', {'messageId': messageId});
+  }
+
+  /// Marks the given messageIds of CTInboxMessage objects as read
+  Future<void> markReadInboxMessagesForIds(
+      List<String> messageIds) async {
+    return await _invoke(
+        'markReadInboxMessagesForIds', {'messageIds': messageIds});
+  }
+
+  /// Pushes the Notification Clicked event for App Inbox to CleverTap.
+  Future<void> pushInboxNotificationClickedEventForId(
+      String messageId) async {
+    return await _invoke(
+        'pushInboxNotificationClickedEventForId', {'messageId': messageId});
+  }
+
+  /// Pushes the Notification Viewed event for App Inbox to CleverTap.
+  Future<void> pushInboxNotificationViewedEventForId(
+      String messageId) async {
+    return await _invoke(
+        'pushInboxNotificationViewedEventForId', {'messageId': messageId});
+  }
+
+  ///Returns a List of Display units as a Map
+  Future<List?> getAllDisplayUnits() async {
+    if (kIsWeb || Platform.isAndroid || Platform.isIOS) {
+      return await _invoke('getAllDisplayUnits', {});
+    }
+    return null;
+  }
+
+  ///Returns Display unit info as a Map. An empty map when there is no unit with that ID.
+  Future<Map<String, dynamic>> getDisplayUnitForId(String unitId) async {
+    return _invokeMap('getDisplayUnitForId', {'unitId': unitId});
+  }
+
+  ///Raise Notification Viewed for Display Unit id passed
+  Future<void> pushDisplayUnitViewedEvent(String unitId) async {
+    return await _invoke('pushDisplayUnitViewedEvent', {'unitId': unitId});
+  }
+
+  ///Raise Notification Clicked for Display Unit id passed
+  Future<void> pushDisplayUnitClickedEvent(String unitId) async {
+    return await _invoke('pushDisplayUnitClickedEvent', {'unitId': unitId});
+  }
+
+  /// Raise Notification Clicked event for a specific element of a Display Unit,
+  /// enriched with additional properties.
+  ///
+  /// Parameters:
+  /// - [unitId]: Unique id of the Display Unit
+  /// - [additionalProperties]: Additional key-value properties to attach to the event
+  Future<void> pushDisplayUnitElementClickedEvent(
+      String unitId, Map<String, dynamic> additionalProperties) async {
+    return await _invoke(
+        'pushDisplayUnitElementClickedEvent', {
+      'unitId': unitId,
+      'additionalProperties': additionalProperties
+    });
+  }
+
+  /// Raise Notification Viewed event for a specific element of a Display Unit,
+  /// enriched with additional properties.
+  ///
+  /// Parameters:
+  /// - [unitId]: Unique id of the Display Unit
+  /// - [additionalProperties]: Additional key-value properties to attach to the event
+  Future<void> pushDisplayUnitElementViewedEvent(
+      String unitId, Map<String, dynamic> additionalProperties) async {
+    return await _invoke(
+        'pushDisplayUnitElementViewedEvent', {
+      'unitId': unitId,
+      'additionalProperties': additionalProperties
+    });
+  }
+
+  /// Requests fresh Native Display frequency-cap rules mid-session.
+  Future<void> fetchNativeDisplayMeta() async {
+    return await _invoke('fetchNativeDisplayMeta', {});
+  }
+
+  ///Returns boolean value of Feature Flag
+  @Deprecated(
+      "This method is deprecated since v1.3.0. Use getCleverTapID() instead")
+  Future<bool?> getFeatureFlag(String key, bool defaultValue) async {
+    return await _invoke(
+        'getFeatureFlag', {'key': key, 'defaultValue': defaultValue});
+  }
+
+  ///Sets Default Values for Product Config using the passed Map
+  @Deprecated(
+      "This method is deprecated since version 1.7.0 and will be removed in the future versions of this SDK.")
+  Future<void> setDefaultsMap(Map<String, dynamic> defaults) async {
+    return await _invoke('setDefaultsMap', {'defaults': defaults});
+  }
+
+  ///Fetches the Product Configs from CleverTap
+  @Deprecated(
+      "This method is deprecated since version 1.7.0 and will be removed in the future versions of this SDK.")
+  Future<void> fetch() async {
+    return await _invoke('fetch', {});
+  }
+
+  ///Fetches Product configs, adhering to the specified minimum fetch interval in seconds.
+  @Deprecated(
+      "This method is deprecated since version 1.7.0 and will be removed in the future versions of this SDK.")
+  Future<void> fetchWithMinimumIntervalInSeconds(int interval) async {
+    return await _invoke(
+        'fetchWithMinimumFetchIntervalInSeconds', {'interval': interval});
+  }
+
+  ///Activates the most recently fetched Product configs
+  @Deprecated(
+      "This method is deprecated since version 1.7.0 and will be removed in the future versions of this SDK.")
+  Future<void> activate() async {
+    return await _invoke('activate', {});
+  }
+
+  ///Fetches and then activates the fetched Product configs.
+  @Deprecated(
+      "This method is deprecated since version 1.7.0 and will be removed in the future versions of this SDK.")
+  Future<void> fetchAndActivate() async {
+    return await _invoke('fetchAndActivate', {});
+  }
+
+  ///Sets the minimum interval between successive fetch calls.
+  @Deprecated(
+      "This method is deprecated since version 1.7.0 and will be removed in the future versions of this SDK.")
+  Future<void> setMinimumFetchIntervalInSeconds(int interval) async {
+    return await _invoke(
+        'setMinimumFetchIntervalInSeconds', {'interval': interval});
+  }
+
+  ///Returns the last fetched timestamp in millis.
+  @Deprecated(
+      "This method is deprecated since version 1.7.0 and will be removed in the future versions of this SDK.")
+  Future<int?> getLastFetchTimeStampInMillis() async {
+    return await _invoke('getLastFetchTimeStampInMillis', {});
+  }
+
+  ///Returns the parameter value for the given key as a String.
+  @Deprecated(
+      "This method is deprecated since version 1.7.0 and will be removed in the future versions of this SDK.")
+  Future<String?> getProductConfigString(String key) async {
+    return await _invoke('getString', {'key': key});
+  }
+
+  ///Returns the parameter value for the given key as a boolean.
+  @Deprecated(
+      "This method is deprecated since version 1.7.0 and will be removed in the future versions of this SDK.")
+  Future<bool?> getProductConfigBoolean(String key) async {
+    return await _invoke('getBoolean', {'key': key});
+  }
+
+  ///Returns the parameter value for the given key as a long (int for Dart).
+  @Deprecated(
+      "This method is deprecated since version 1.7.0 and will be removed in the future versions of this SDK.")
+  Future<int?> getProductConfigLong(String key) async {
+    return await _invoke('getLong', {'key': key});
+  }
+
+  ///Returns the parameter value for the given key as a double.
+  @Deprecated(
+      "This method is deprecated since version 1.7.0 and will be removed in the future versions of this SDK.")
+  Future<double?> getProductConfigDouble(String key) async {
+    return await _invoke('getDouble', {'key': key});
+  }
+
+  ///Deletes all activated, fetched and defaults configs as well as all Product Config settings.
+  @Deprecated(
+      "This method is deprecated since version 1.7.0 and will be removed in the future versions of this SDK.")
+  Future<void> resetProductConfig() async {
+    return await _invoke('reset', {});
+  }
+
+  ///Returns true if push permission is enabled.
+  Future<bool?> getPushNotificationPermissionStatus() async {
+    return await _invoke('getPushNotificationPermissionStatus', {});
+  }
+
+  ///Sets the user locale.
+  Future<void> setLocale(Locale locale) async {
+    String localeString = locale.toString();
+    return await _invoke('setLocale', {'value': localeString});
+  }
+
+  /// Returns experiment variant information for the current user.
+  ///
+  /// Each dictionary in the returned list contains details about an assigned A/B test variant,
+  /// with common keys like "name", "abTestId", and "abTestName".
+  ///
+  /// Returns: A list of variant dictionaries, or empty list if no variants are assigned.
+  Future<List?> getVariants() async {
+    return await _invoke('getVariants', {});
+  }
+
+  ///Fetch Client Side In-Apps
+  Future<bool?> fetchInApps() async {
+    return await _invoke('fetchInApps', {});
+  }
+
+  /// Enables the Profile/Events Read and Synchronization API
+  Future<void> enablePersonalization() async {
+    return await _invoke('enablePersonalization', {});
+  }
+
+  /// Disables the Profile/Events Read and Synchronization API
+  Future<void> disablePersonalization() async {
+    return await _invoke('disablePersonalization', {});
+  }
+
+  /// Suspends display of InApp Notifications.
+  /// The InApp Notifications are queued once this method is called
+  /// and will be displayed once resumeInAppNotifications() is called.
+  Future<void> suspendInAppNotifications() async {
+    return await _invoke('suspendInAppNotifications', {});
+  }
+
+  /// Resumes display of InApp Notifications.
+  /// If suspendInAppNotifications() was called previously, calling this method will instantly show
+  /// all queued InApp Notifications and also resume InApp Notifications on events raised after this
+  /// method is called.
+  /// If discardInAppNotifications() was called previously, calling this method will only resume
+  /// InApp Notifications on events raised after this method is called.
+  Future<void> resumeInAppNotifications() async {
+    return await _invoke('resumeInAppNotifications', {});
+  }
+
+  /// Initializes the inbox controller and sends a callback
+  Future<void> initializeInbox() async {
+    return await _invoke('initializeInbox', {});
+  }
+
+  /// Opens CTInboxActivity to display Inbox Messages
+  Future<void> showInbox(Map<String, dynamic> styleConfig) async {
+    return await _invoke('showInbox', {'styleConfig': styleConfig});
+  }
+
+  ///Dismisses the App Inbox screen
+  Future<void> dismissInbox() async {
+    return await _invoke('dismissInbox', {});
+  }
+
+  ///Creates a push primer asking user to enable push notification.
+  Future<void> promptPushPrimer(
+      Map<String, dynamic> pushPrimerJSON) async {
+    return await _invoke(
+        'promptPushPrimer', pushPrimerJSON);
+  }
+
+  ///Directly calls OS hard dialog for requesting push permission.
+  Future<void> promptForPushNotification(bool fallbackToSettings) async {
+    return await _invoke(
+        'promptForPushNotification', {'value': fallbackToSettings});
+  }
+
+  ///Only for Android - Unregisters PushPermissionNotificationResponseListener
+  Future<void>
+      unregisterPushPermissionNotificationResponseListener() async {
+    return await _invoke(
+        'unregisterPushPermissionNotificationResponseListener', {});
+  }
+
+  ///Uploads variables to the server. Requires Development/Debug build/configuration.
+  Future<void> syncVariables() async {
+    return await _invoke('syncVariables', {});
+  }
+
+  ///Uploads variables to the server.
+  /// * @param isProduction Provide `true` if variables must be sync in Production build/configuration.
+  Future<void> syncVariablesinProd(bool isProduction) async {
+    return await _invoke('syncVariablesinProd', {'isProduction': isProduction});
+  }
+
+  ///Forces variables to update from the server.
+  Future<bool?> fetchVariables() async {
+    return await _invoke('fetchVariables', {});
+  }
+
+  ///Create variables.
+  /// * @param {object} variables The JSON Object specifying the varibles to be created.
+  Future<void> defineVariables(Map<String, dynamic> variables) async {
+    return await _invoke('defineVariables', {'variables': variables});
+  }
+
+  ///Create File variable.
+  /// * @param {object} variables The JSON Object specifying the varibles to be created.
+  Future<void> defineFileVariable(String fileVariable) async {
+    return await _invoke('defineFileVariable', {'fileVariable': fileVariable});
+  }
+
+  ///Get all variables via a JSON object.
+  Future<Map<Object?, Object?>> getVariables() async {
+    return await _invoke<Map<Object?, Object?>>('getVariables', {}) ?? {};
+  }
+
+  ///Get a variable or a group for the specified name.
+  /// * @param {string} name - name.
+  Future<dynamic> getVariable(String name) async {
+    return await _invoke('getVariable', {'name': name});
+  }
+
+  Future<void> clearInAppResources(bool expiredOnly) async {
+    return await _invoke('clearInAppResources', {'value': expiredOnly});
+  }
+
+  // ---- Variables listeners. Like the native SDK: each call registers one callback on this account,
+  // and each runs once per change (a once handler only once). Never for another account's changes.
+
+  void onVariablesChanged(CleverTapOnVariablesChangedHandler handler) =>
+      _addVariablesHandler('onVariablesChanged', handler, {}, once: false);
+
+  void onOneTimeVariablesChanged(
+          CleverTapOnOneTimeVariablesChangedHandler handler) =>
+      _addVariablesHandler('onOneTimeVariablesChanged', handler, {}, once: true);
+
+  void onValueChanged(String name, CleverTapOnValueChangedHandler handler) =>
+      _addVariablesHandler('onValueChanged', handler, {'name': name}, once: false);
+
+  void onVariablesChangedAndNoDownloadsPending(
+          CleverTapOnVariablesChangedAndNoDownloadsPendingHandler handler) =>
+      _addVariablesHandler('onVariablesChangedAndNoDownloadsPending', handler, {}, once: false);
+
+  void onceVariablesChangedAndNoDownloadsPending(
+          CleverTapOnceVariablesChangedAndNoDownloadsPendingHandler handler) =>
+      _addVariablesHandler('onceVariablesChangedAndNoDownloadsPending', handler, {}, once: true);
+
+  void onFileValueChanged(String name, CleverTapOnFileValueChangedHandler handler) =>
+      _addVariablesHandler('onFileValueChanged', handler, {'name': name}, once: false);
+
+  // ---- Custom templates. The definitions are app-wide (registered once, natively), but each
+  // account presents its own: these act on the template this account is showing. Example: A and B
+  // both show "Spin"; b.customTemplateSetDismissed('Spin') dismisses B's only.
+
+  /// Uploads the custom templates and app functions to this account's dashboard (debug builds).
+  Future<void> syncCustomTemplates() async {
+    return await _invoke('syncCustomTemplates', {});
+  }
+
+  /// Like [syncCustomTemplates]; on iOS [isProduction] allows a release build to sync.
+  Future<void> syncCustomTemplatesInProd(bool isProduction) async {
+    return await _invoke(
+        'syncCustomTemplatesInProd', {'isProduction': isProduction});
+  }
+
+  /// Tells this account that the app closed [templateName]. The static method sends the bare
+  /// name; a handle must also send its accountId, so it sends {value, accountId}.
+  Future<void> customTemplateSetDismissed(String templateName) async {
+    return await _invoke('customTemplateSetDismissed', {'value': templateName});
+  }
+
+  /// Tells this account that the app is showing [templateName].
+  Future<void> customTemplateSetPresented(String templateName) async {
+    return await _invoke('customTemplateSetPresented', {'value': templateName});
+  }
+
+  /// Runs the action argument [argName] of this account's [templateName].
+  Future<void> customTemplateRunAction(
+      String templateName, String argName) async {
+    return await _invoke(
+        'customTemplateRunAction',
+        {'templateName': templateName, 'argName': argName});
+  }
+
+  Future<String?> customTemplateGetStringArg(
+      String templateName, String argName) async {
+    return await _invoke(
+        'customTemplateGetStringArg',
+        {'templateName': templateName, 'argName': argName});
+  }
+
+  Future<num?> customTemplateGetNumberArg(
+      String templateName, String argName) async {
+    return await _invoke(
+        'customTemplateGetNumberArg',
+        {'templateName': templateName, 'argName': argName});
+  }
+
+  Future<bool?> customTemplateGetBooleanArg(
+      String templateName, String argName) async {
+    return await _invoke(
+        'customTemplateGetBooleanArg',
+        {'templateName': templateName, 'argName': argName});
+  }
+
+  Future<String?> customTemplateGetFileArg(
+      String templateName, String argName) async {
+    return await _invoke(
+        'customTemplateGetFileArg',
+        {'templateName': templateName, 'argName': argName});
+  }
+
+  Future<Object?> customTemplateGetObjectArg(
+      String templateName, String argName) async {
+    return await _invoke(
+        'customTemplateGetObjectArg',
+        {'templateName': templateName, 'argName': argName});
+  }
+
+  Future<String?> customTemplateContextToString(
+      String templateName) async {
+    return await _invoke(
+        'customTemplateContextToString', {'templateName': templateName});
+  }
+
+  // ---- Handlers.
+
+  void setCleverTapProfileDidInitializeHandler(
+          CleverTapProfileDidInitializeHandler handler) =>
+      _setHandler('profileDidInitialize', 'CleverTapProfileDidInitialize', handler);
+
+  void setCleverTapProfileSyncHandler(CleverTapProfileSyncHandler handler) =>
+      _setHandler('profileDataUpdated', 'CleverTapProfileSync', handler);
+
+  void setCleverTapInAppNotificationDismissedHandler(
+          CleverTapInAppNotificationDismissedHandler handler) =>
+      _setHandler('inAppNotificationDismissed', 'CleverTapInAppNotificationDismissed', handler);
+
+  void setCleverTapInAppNotificationShowHandler(
+          CleverTapInAppNotificationShowHandler handler) =>
+      _setHandler('inAppNotificationShow', 'CleverTapInAppNotificationShowed', handler);
+
+  void setCleverTapInAppNotificationButtonClickedHandler(
+          CleverTapInAppNotificationButtonClickedHandler handler) =>
+      _setHandler('onInAppButtonClick', 'CleverTapInAppNotificationButtonTapped', handler);
+
+  void setCleverTapInboxDidInitializeHandler(
+          CleverTapInboxDidInitializeHandler handler) =>
+      _setHandler('inboxDidInitialize', 'CleverTapInboxDidInitialize', handler);
+
+  void setCleverTapInboxMessagesDidUpdateHandler(
+          CleverTapInboxMessagesDidUpdateHandler handler) =>
+      _setHandler('inboxMessagesDidUpdate', 'CleverTapInboxMessagesDidUpdate', handler);
+
+  void setCleverTapInboxNotificationButtonClickedHandler(
+          CleverTapInboxNotificationButtonClickedHandler handler) =>
+      _setHandler('onInboxButtonClick', 'CleverTapInboxMessageButtonTapped', handler);
+
+  void setCleverTapInboxNotificationMessageClickedHandler(
+          CleverTapInboxNotificationMessageClickedHandler handler) =>
+      _setHandler('onInboxMessageClick', 'CleverTapInboxMessageTapped', handler);
+
+  void setCleverTapDisplayUnitsLoadedHandler(
+          CleverTapDisplayUnitsLoadedHandler handler) =>
+      _setHandler('onDisplayUnitsLoaded', 'CleverTapDisplayUnitsLoaded', handler);
+
+  void setCleverTapFeatureFlagUpdatedHandler(
+          CleverTapFeatureFlagUpdatedHandler handler) =>
+      _setHandler('featureFlagsUpdated', 'CleverTapFeatureFlagsDidUpdate', handler);
+
+  void setCleverTapProductConfigInitializedHandler(
+          CleverTapProductConfigInitializedHandler handler) =>
+      _setHandler('productConfigInitialized', 'CleverTapProductConfigDidInitialize', handler);
+
+  void setCleverTapProductConfigFetchedHandler(
+          CleverTapProductConfigFetchedHandler handler) =>
+      _setHandler('productConfigFetched', 'CleverTapProductConfigDidFetch', handler);
+
+  void setCleverTapProductConfigActivatedHandler(
+          CleverTapProductConfigActivatedHandler handler) =>
+      _setHandler('productConfigActivated', 'CleverTapProductConfigDidActivate', handler);
+
+  void setCleverTapPushClickedPayloadReceivedHandler(
+          CleverTapPushClickedPayloadReceivedHandler handler) =>
+      _setHandler('pushClickedPayloadReceived', 'CleverTapPushNotificationClicked', handler);
+
+  void setCleverTapPushPermissionResponseReceivedHandler(
+          CleverTapPushPermissionResponseReceivedHandler handler) =>
+      _setHandler('pushPermissionResponseReceived', 'CleverTapPushPermissionResponseReceived', handler);
+
+  /// Android only. Setting it means the SDK no longer draws this account's
+  /// Push Amplification notifications: [handler] must draw them, for example
+  /// with [CleverTapPlugin.createNotification].
+  void setCleverTapPushAmpPayloadReceivedHandler(
+          CleverTapPushAmpPayloadReceivedHandler handler) =>
+      _setHandler('pushAmpPayloadReceived', 'CleverTapPushAmpPayloadReceived', handler);
+
+  /// Runs when this account presents a custom template. Only this account's templates.
+  void setCleverTapCustomTemplatePresentHandler(
+          CleverTapCustomTemplatePresentHandler handler) =>
+      _setHandler('customTemplatePresent', 'CleverTapCustomTemplatePresent', handler);
+
+  /// Runs when this account presents an app function.
+  void setCleverTapCustomFunctionPresentHandler(
+          CleverTapCustomFunctionPresentHandler handler) =>
+      _setHandler('customFunctionPresent', 'CleverTapCustomFunctionPresent', handler);
+
+  /// Runs when the close action of this account's custom template is triggered.
+  void setCleverTapCustomTemplateCloseHandler(
+          CleverTapCustomTemplateCloseHandler handler) =>
+      _setHandler('customTemplateClose', 'CleverTapCustomTemplateClose', handler);
+
+  @override
+  bool operator ==(Object other) =>
+      other is CleverTapInstance && other.accountId == accountId;
+
+  @override
+  int get hashCode => accountId.hashCode;
+
+  @override
+  String toString() => 'CleverTapInstance{accountId: $accountId}';
+}
+
+/// One variables-listener registration. For a static registration, [staticList] is the public
+/// CleverTapPlugin list the handler was also added to: apps may edit those lists (there is no
+/// remove API), so a static handler runs only while it is still in its list. [accountId] is the
+/// handle's account; null for a static registration (the default account).
+class _VariablesRegistration {
+  final Function handler;
+  final bool once;
+  final List<Function>? staticList;
+  final String? accountId;
+
+  _VariablesRegistration(this.handler, this.once, this.staticList, this.accountId);
 }

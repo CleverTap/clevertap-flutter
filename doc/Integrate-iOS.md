@@ -74,3 +74,7 @@ If your app uses the `UIScene` lifecycle (a `SceneDelegate` with a `UIApplicatio
   ```
 
 
+
+### Several CleverTap accounts
+
+The account in `Info.plist` is your default account. To send data to more accounts from one app, see [Multi-Instance](MultiInstance.md). An extra account that sends push notifications should be created in `didFinishLaunchingWithOptions` with a [launch config](MultiInstance.md#ios), so the tap that opens the app reaches it.
