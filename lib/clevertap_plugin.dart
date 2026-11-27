@@ -17,6 +17,18 @@ import 'src/platform.dart';
 export 'src/types.dart';
 export 'src/instance_config.dart';
 
+/// [value] with every nested map and list copied too, so changing the copy never changes
+/// [value]. Other values (strings, numbers, booleans, null) cannot be changed, so they are shared.
+Object? _deepCopy(Object? value) {
+  if (value is Map) {
+    return value.map((key, item) => MapEntry(key, _deepCopy(item)));
+  }
+  if (value is List) {
+    return value.map(_deepCopy).toList();
+  }
+  return value;
+}
+
 class CleverTapPlugin {
   late CleverTapInAppNotificationDismissedHandler
       cleverTapInAppNotificationDismissedHandler;
@@ -265,9 +277,17 @@ class CleverTapPlugin {
       return;
     }
     // The account's handle, if the app made one and set a handler for this event. For the
-    // default account this is in addition to the static handlers below.
-    final bool deliveredToHandle = accountId != null &&
-        (_instances[accountId]?._deliver(call.method, payload) ?? false);
+    // default account this is in addition to the static handlers below, so the handle gets its
+    // own copy: a change it makes never reaches them. Example: the handle removes 'route' from a
+    // push-click map; the static handler still reads 'route'. One handler only: no copy.
+    final CleverTapInstance? handle =
+        accountId == null ? null : _instances[accountId];
+    final bool deliveredToHandle = handle != null &&
+        handle._deliver(
+            call.method,
+            isDefault && handle._handlers.containsKey(call.method)
+                ? _deepCopy(payload)
+                : payload);
     if (!isDefault) {
       // The static handlers belong to the default account only.
       if (!deliveredToHandle) {

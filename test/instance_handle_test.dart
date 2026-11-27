@@ -307,6 +307,39 @@ void main() {
     ]);
   });
 
+  // Both handlers get a default-account event; the handle runs first. Before the copy, a change
+  // it made (removing 'route', editing nested data) reached the static handler too.
+  test('a change made by the default-ID handle never reaches the static handler',
+      () async {
+    plugin.setCleverTapPushClickedPayloadReceivedHandler(
+        (m) => received.add(['static', m]));
+    CleverTapPlugin.getInstance('DEF')
+        .setCleverTapPushClickedPayloadReceivedHandler((m) {
+      received.add(['handle', m['route']]);
+      m.remove('route');
+      (m['data'] as Map)['id'] = 'changed';
+      (m['tags'] as List).add('changed');
+    });
+    await fromNative(
+        'pushClickedPayloadReceived',
+        envelope({
+          'route': '/order/42',
+          'data': {'id': 'p1'},
+          'tags': ['a']
+        }, accountId: 'DEF', isDefault: true));
+    expect(received, [
+      ['handle', '/order/42'],
+      [
+        'static',
+        {
+          'route': '/order/42',
+          'data': {'id': 'p1'},
+          'tags': ['a']
+        }
+      ],
+    ]);
+  });
+
   test('an unknown-account event reaches only the static handler', () async {
     plugin.setCleverTapProfileSyncHandler((m) => received.add(['static', m]));
     CleverTapPlugin.getInstance('DEF')
