@@ -115,10 +115,6 @@
 @property (strong, nonatomic) FlutterMethodChannel *nativeToDartMethodChannel;
 // Every account's variables: account ID -> (name -> CTVar). See storeVariable:named:forAccount:.
 @property(nonatomic, strong) NSMutableDictionary<NSString *, NSMutableDictionary<NSString *, CTVar *> *> *variablesByAccount;
-// The account whose App Inbox showInbox opened. This plugin is the inbox delegate, and the tap
-// callbacks stamp their events with this account. nil until an inbox is shown.
-@property(nonatomic, copy, nullable) NSString *inboxAccountId;
-
 // Account lookup state (see resolveInstance:). Main queue only: every caller is a method-channel
 // handler or init, and Flutter runs both on the main thread.
 @property(nonatomic, strong, nullable) CleverTap *defaultInstance;
@@ -1421,10 +1417,12 @@ static CleverTapEncryptionLevel ctEncryptionLevelFromString(NSString *level) {
         styleConfig = nil;
     }
     CleverTap *instance = [self instanceForCall:call];
-    CleverTapInboxViewController *inboxController = [instance newInboxViewControllerWithConfig:[self _dictToInboxStyleConfig:styleConfig ? styleConfig : nil] andDelegate:(id <CleverTapInboxViewControllerDelegate>)self];
+    // This inbox's taps go to its own account's delegate, so they carry that account even when
+    // another account's inbox is on screen. The plugin itself (the default account) only if the
+    // account has no delegate, which the wiring in instanceForCall: should never allow.
+    id delegate = self.instanceDelegates[instance.config.accountId ?: @""] ?: self;
+    CleverTapInboxViewController *inboxController = [instance newInboxViewControllerWithConfig:[self _dictToInboxStyleConfig:styleConfig ? styleConfig : nil] andDelegate:(id <CleverTapInboxViewControllerDelegate>)delegate];
     if (inboxController) {
-        // Remember whose inbox is on screen: the tap callbacks below stamp their events with it.
-        self.inboxAccountId = instance.config.accountId;
         UINavigationController *navigationController = [[UINavigationController alloc] initWithRootViewController:inboxController];
         UIWindow *keyWindow = [self ct_keyWindow];
         UIViewController *mainViewController = keyWindow.rootViewController;
@@ -2071,17 +2069,15 @@ static CleverTapEncryptionLevel ctEncryptionLevelFromString(NSString *level) {
 #pragma mark - Delegates
 #pragma mark CleverTapInboxViewControllerDelegate
 
-/// The account whose inbox showInbox opened; the default account when none was opened through it.
-- (nullable NSString *)accountIdOfOpenInbox {
-    return self.inboxAccountId ?: [self currentDefaultAccountId];
-}
+// Used only when an account had no delegate in showInbox: the default account's inbox. Each
+// account's inbox normally reports through its CleverTapPluginInstanceDelegate.
 
 - (void)messageButtonTappedWithCustomExtras:(NSDictionary *_Nullable)customExtras {
     NSMutableDictionary *body = [NSMutableDictionary new];
     if (customExtras != nil) {
         body = [NSMutableDictionary dictionaryWithDictionary:customExtras];
     }
-    [self postNotificationWithName:kCleverTapInboxMessageButtonTapped andBody:body accountId:[self accountIdOfOpenInbox]];
+    [self postNotificationWithName:kCleverTapInboxMessageButtonTapped andBody:body accountId:[self currentDefaultAccountId]];
 }
 
 - (void)messageDidSelect:(CleverTapInboxMessage *_Nonnull)message atIndex:(int)index withButtonIndex:(int)buttonIndex {
@@ -2093,7 +2089,7 @@ static CleverTapEncryptionLevel ctEncryptionLevelFromString(NSString *level) {
     }
     body[@"contentPageIndex"] = @(index);
     body[@"buttonIndex"] = @(buttonIndex);
-    [self postNotificationWithName:kCleverTapInboxMessageTapped andBody:body accountId:[self accountIdOfOpenInbox]];
+    [self postNotificationWithName:kCleverTapInboxMessageTapped andBody:body accountId:[self currentDefaultAccountId]];
 }
 
 #pragma mark - Push Notifications

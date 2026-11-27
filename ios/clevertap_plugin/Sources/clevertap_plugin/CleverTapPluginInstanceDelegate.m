@@ -38,13 +38,19 @@
 #import "CleverTapInAppNotificationDelegate.h"
 #endif
 
+#if __has_include(<CleverTapSDK/CleverTap+Inbox.h>)
+#import <CleverTapSDK/CleverTap+Inbox.h>
+#else
+#import "CleverTap+Inbox.h"
+#endif
+
 #if __has_include(<CleverTapSDK/CleverTap+PushPermission.h>)
 #import <CleverTapSDK/CleverTap+PushPermission.h>
 #else
 #import "CleverTap+PushPermission.h"
 #endif
 
-@interface CleverTapPluginInstanceDelegate () <CleverTapSyncDelegate, CleverTapInAppNotificationDelegate, CleverTapDisplayUnitDelegate, CleverTapProductConfigDelegate, CleverTapFeatureFlagsDelegate, CleverTapPushNotificationDelegate, CleverTapPushPermissionDelegate>
+@interface CleverTapPluginInstanceDelegate () <CleverTapSyncDelegate, CleverTapInAppNotificationDelegate, CleverTapDisplayUnitDelegate, CleverTapProductConfigDelegate, CleverTapFeatureFlagsDelegate, CleverTapPushNotificationDelegate, CleverTapPushPermissionDelegate, CleverTapInboxViewControllerDelegate>
 @end
 
 @implementation CleverTapPluginInstanceDelegate
@@ -70,6 +76,33 @@
 /// Every callback posts through here, tagged with this account.
 - (void)post:(NSString *)name body:(nullable NSDictionary *)body {
     [[CleverTapPlugin sharedInstance] postNotificationWithName:name andBody:body accountId:self.accountId];
+}
+
+#pragma mark CleverTapInboxViewControllerDelegate
+
+// showInbox gives each inbox screen its own account's delegate, so a tap is tagged with the
+// account of the inbox it happened in. Example: A's inbox is open and b.showInbox() is refused by
+// UIKit ("already presenting"); a tap in A's inbox still reaches A, not B. The bodies are the ones
+// the plugin sent before.
+
+- (void)messageButtonTappedWithCustomExtras:(NSDictionary *_Nullable)customExtras {
+    NSMutableDictionary *body = [NSMutableDictionary new];
+    if (customExtras != nil) {
+        body = [NSMutableDictionary dictionaryWithDictionary:customExtras];
+    }
+    [self post:kCleverTapInboxMessageButtonTapped body:body];
+}
+
+- (void)messageDidSelect:(CleverTapInboxMessage *_Nonnull)message atIndex:(int)index withButtonIndex:(int)buttonIndex {
+    NSMutableDictionary *body = [NSMutableDictionary new];
+    if ([message json] != nil) {
+        body[@"data"] = [NSMutableDictionary dictionaryWithDictionary:[message json]];
+    } else {
+        body[@"data"] = [NSMutableDictionary new];
+    }
+    body[@"contentPageIndex"] = @(index);
+    body[@"buttonIndex"] = @(buttonIndex);
+    [self post:kCleverTapInboxMessageTapped body:body];
 }
 
 #pragma mark CleverTapSyncDelegate
