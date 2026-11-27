@@ -99,7 +99,7 @@ Only `accountId` and `accountToken` are required. A setting left `null` keeps th
 | `disableAppLaunchedEvent` | `bool?` | Do not send App Launched for this account. |
 | `encryptionLevel` | `CleverTapEncryptionLevel?` | `none`, `medium` (personal data only), `high` (all data). |
 | `encryptionInTransit` | `bool?` | Encrypt the network payload. |
-| `useCustomCleverTapId`, `cleverTapId` | `bool?`, `String?` | Use your own CleverTap ID. Give both together, or neither. |
+| `useCustomCleverTapId`, `cleverTapId` | `bool?`, `String?` | Use your own CleverTap ID. Give both together, or neither. The SDK checks the ID: 1 to 64 characters, letters, digits and `= \| < > ; + . ( ) ! : $ @ _ -`. An invalid ID (for example `user#42`) is replaced by an error CleverTap ID, and the SDK logs why. |
 | `android` | `CleverTapAndroidConfig?` | `useGoogleAdId`, `backgroundSync`, `pushProviders` (`CleverTapPushProvider`). Ignored on iOS. |
 | `ios` | `CleverTapIosConfig?` | `disableIDFV`, `enableFileProtection`. Ignored on Android. |
 
