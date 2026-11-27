@@ -237,6 +237,25 @@ static NSString *const kCleverTapErrorCodeCreateFailed = @"ECREATE";
     return self.defaultInstance.config.accountId;
 }
 
+/// Any account's instance: the default if there is one, else any account this plugin wired. For
+/// isCleverTapNotification:, which looks only at key prefixes (W$, wzrk_), so every account gives
+/// the same answer (iOS SDK 7.9.0 CleverTap.m:1669). Example: no Info.plist account, B from a
+/// launch config: B answers, where the default (nil) said NO and a launch push was missed.
+/// Main queue only (reads wiredAccountIds).
+- (nullable CleverTap *)anyInstance {
+    CleverTap *instance = [CleverTap sharedInstance];
+    if (instance != nil) {
+        return instance;
+    }
+    for (NSString *accountId in self.wiredAccountIds) {
+        instance = [CleverTap getGlobalInstance:accountId];
+        if (instance != nil) {
+            return instance;
+        }
+    }
+    return nil;
+}
+
 /// The accountId a CleverTapInstance (handle) call sends, or nil for a static call. Anything that
 /// is not a non-empty string counts as absent (the default account, as before).
 - (nullable NSString *)handleAccountIdOfCall:(FlutterMethodCall *)call {
@@ -289,7 +308,7 @@ static NSString *const kCleverTapErrorCodeCreateFailed = @"ECREATE";
         self.launchDeepLink = notification[@"wzrk_dl"];
         NSLog(@"CleverTapFlutter: setting launch deeplink: %@", self.launchDeepLink);
     }
-    if (notification && [[CleverTap sharedInstance] isCleverTapNotification:notification]) {
+    if (notification && [[self anyInstance] isCleverTapNotification:notification]) {
         self.launchNotification = notification;
     }
 }
@@ -353,7 +372,7 @@ static NSString *const kCleverTapErrorCodeCreateFailed = @"ECREATE";
                 self.launchDeepLink = userInfo[@"wzrk_dl"];
                 NSLog(@"CleverTapFlutter: setting launch deeplink (scene): %@", self.launchDeepLink);
             }
-            if (userInfo && [[CleverTap sharedInstance] isCleverTapNotification:userInfo]) {
+            if (userInfo && [[self anyInstance] isCleverTapNotification:userInfo]) {
                 self.launchNotification = userInfo;
             }
         }
